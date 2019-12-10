@@ -1,0 +1,259 @@
+\documentclass[10pt]{article} 
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{epstopdf}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{bm}
+\usepackage{hyperref}
+
+\newtheorem{lemma}{Lemma}[section]
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\likelihood}{\mathcal{L}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\sign}{\mathrm{sign}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\new}{\mathrm{new}}
+
+\newcommand{\IF}{\textbf{if}\ }
+\newcommand{\THEN}{\textbf{then}\ }
+\newcommand{\ELSE}{\textbf{else}\ }
+\newcommand{\END}{\textbf{end}\ }
+\newcommand{\RETURN}{\textbf{return}\ }
+
+\title{Computing the Discrete Gauss Transform}
+\author{Pramook Khungurn}
+
+\begin{document}
+\maketitle	
+
+Given $N$ Gaussian distributions located at $\ve{x}_1$, $\ve{x}_2$, $\dotsc$, $\ve{x}_N$ with weights $q_1$, $q_2$, $\dotsc$, $q_N$. The {\bf discrete Gauss transform} evaluated at point $\ve{x}$ is given by
+\begin{align*}
+G(\ve{x}) = \sum_{i=1}^N q_i e^{-\| \ve{x} - \ve{x}_i \|^2 / h^2}
+\end{align*}
+The positions of the Gaussians are called the {\bf source points}, and $\ve{x}$ is called the {\bf target point}. This document is written as I study algorithms to compute the discrete Gauss transforms.
+
+The main note I consult is ``The fast Gauss transform with all the proofs'' by Vikas C. Raykar \cite{vikas}.
+
+\section{Hermite Polynomial and Functions}\label{sec:hermite_polynomials} % (fold)
+
+\begin{itemize}
+  \item The {\bf Hermite polynomial} $H_n(y)$ is defined as:
+  \begin{align*}
+    H_n(y) &= (-1)^n e^{y^n} \frac{\dee^n }{\dee y^n} e^{-y^2}.
+  \end{align*}
+  
+  \item The generating functiong for the Hermite polynomial is:
+  \begin{align*}
+    e^{2yx - x^2} &= \sum_{n=0}^\infty \frac{x^n}{n!} H_n(y).
+  \end{align*}
+  
+  \item Multiplying boths sides by $e^{-y^2}$ yields:
+  \begin{align*}
+    e^{-(y-x)^2} = \sum_{n=0}^\infty \frac{x^n}{n!} h_n(y)
+  \end{align*}
+  where $h_n(y)$ is the {\bf Hermite function}. The function is defined as:
+  \begin{align*}
+    h_n(y) &= e^{-y^2} H_n(y).
+  \end{align*}
+  
+  \item Putting in the bandwidth and expanding the function around $c$, we have
+  \begin{align*}
+    e^{-(y-x)^2/h^2} = e^{-[(y-c)/h - (x-c)/h]^2} = \sum_{n=0}^\infty \frac{1}{n!} \bigg( \frac{x - c}{h} \bigg)^n h_n\bigg( \frac{y-c}{h} \bigg).
+  \end{align*}
+  
+  \item The following recurrence relation is useful in evaluating the Hermite function:
+  \begin{align*}
+    h_{n+1}(y) = 2yh_n(y) - 2n h_{n-1}(y).
+  \end{align*}
+  
+  \item Hermite polynomial satisfies the Cramer's inequality:
+  \begin{align*}
+    |H_n(y)| \leq K 2^{n/2} \sqrt{n!} e^{y^2/2}
+  \end{align*}
+  where $K < 1.09$.
+  This gives the following bound on the Hermite function:
+  \begin{align*}
+    \frac{1}{n!} |h_n(y)| \leq K 2^{n/2} \frac{1}{\sqrt{n!}} e^{-y^2/2}.
+  \end{align*}
+  However, the following version is also true:
+  \begin{align*}
+    \frac{1}{n!} |h_n(y)| \leq 2^{n/2} \frac{1}{\sqrt{n!}} e^{-y^2/2}.
+  \end{align*}
+\end{itemize}
+
+\section{Multi-Dimensional Expansion of the Gaussian Kernel}
+  
+\begin{itemize}
+  \item A {\bf multi-index} $\alpha = (\alpha_1, \alpha_2, \dotsc, \alpha_d)$ is a $d$-tuple of non-negative integers. 
+  
+  The length of $\alpha$, denoted by $|\alpha|$, is deinfed to be $\alpha_1 + \dotsb + \alpha_d$.
+  
+  We say that $\alpha \geq p$ if $\alpha_i \geq i$ for all $i$. The proposition $\alpha \leq p$ is defined similarly.
+  
+  The factorial of $\alpha$, denoted by $\alpha!$, is defined to be $\alpha_1! \alpha_2! \dotsm \alpha_d!$.
+  
+  The $d$-variate monomial $\ve{x}^\alpha$ is defined to be $x_1^{\alpha_1} x_2^{\alpha_2} \dotsm x_d^{\alpha_d}$. Notice that the degree of $x^\alpha$ is $|\alpha|$.  
+  
+  The $\alpha$th derivative with respect to $\ve{x}$ is
+  \begin{align*}
+    \frac{\dee^\alpha}{\dee \ve{x}^\alpha} = \frac{\partial^{\alpha_1}}{\partial x^{\alpha_1}} \frac{\partial^{\alpha_2}}{\partial x^{\alpha_2}} \dotsm \frac{\partial^{\alpha_d}}{\partial x^{\alpha_d}}.
+  \end{align*}
+  
+  \item The multi-dimentional Hermite function is define as:
+  \begin{align*}
+    h_\alpha(\ve{y}) = e^{-\| \ve{y} \|^2} H_\alpha(y) = h_{\alpha_1}(y_1) h_{\alpha_2}(y_2) \dotsm h_{\alpha_d}(y_d).
+  \end{align*}
+  
+  \item The Hermite expansion of $e^{-\| \ve{x} - \ve{y} \|^2}$ is given by:
+  \begin{align*}
+    e^{-\| \ve{x} - \ve{y} \|^2/h^2} = \sum_{\alpha \geq 0} \frac{1}{\alpha!} \bigg( \frac{\ve{x} - \ve{c}}{h} \bigg)^\alpha h_\alpha\bigg( \frac{\ve{y} - \ve{c}}{h} \bigg).
+  \end{align*}
+  The Taylor expansion is given by:
+    \begin{align*}
+    e^{-\| \ve{x} - \ve{y} \|^2/h^2} = \sum_{\beta \geq 0} \frac{1}{\beta!} h_n \bigg( \frac{\ve{x} - \ve{c}}{h} \bigg) \bigg( \frac{\ve{y} - \ve{c}}{h} \bigg)^\beta.
+  \end{align*}
+  
+  \item The Taylor expansion of the multi-dimensional Hermite function around $\ve{c}$ is given by:
+  \begin{align*}
+    h_\alpha(\ve{y}) = \sum_{\beta \geq 0} \frac{(\ve{y}-\ve{c})^\beta}{\beta!}\frac{\dee^\beta}{\dee \ve{y}^\beta} h_\alpha(\ve{c})
+  \end{align*}
+  where
+  \begin{align*}
+    h_\alpha(\ve{c}) = (-1)^\alpha \frac{\dee^\alpha}{\dee \ve{y}^\alpha} e^{-\|\ve{c}\|^2}.
+  \end{align*}
+  Because
+  \begin{align*}
+    \frac{\dee^\beta}{\dee \ve{y}^\beta} h_\alpha(\ve{c}) = \sum_{\beta \geq 0} (-1)^\beta h_{\alpha + \beta}(\ve{c}),
+  \end{align*}
+  we have that
+  \begin{align*}
+    h_\alpha(\ve{y}) = \sum_{\beta \geq 0} \frac{(\ve{y}-\ve{c})^\beta}{\beta!} (-1)^\beta h_{\alpha + \beta}(\ve{c}).
+  \end{align*}
+\end{itemize}
+% section section_name (end)
+
+\section{Far Field Expansion}\label{sec:far_field_expansion} % (fold)
+
+\begin{itemize}
+  \item Let $B$ be a box $B$ of side length at most $h / \sqrt{2}$. Let $\ve{c}_B$ be the box's center. For any point $\ve{y}$, we have that
+  \begin{align*}
+    G(\ve{y}) = \sum_{i: \ve{x}_i \in B} q_i \sum_{\alpha \geq 0} \frac{1}{\alpha!} \bigg( \frac{\ve{x}_i - \ve{c}_B}{h} \bigg)^\alpha h_\alpha \bigg( \frac{\ve{y} - \ve{c}_B}{h} \bigg)
+    \approx \sum_{i: \ve{x}_i \in B} q_i \sum_{0 \leq \alpha \leq p} \frac{1}{\alpha!} \bigg( \frac{\ve{x}_i - \ve{c}_B}{h} \bigg)^\alpha h_\alpha \bigg( \frac{\ve{y} - \ve{c}_B}{h} \bigg).
+  \end{align*}
+  Hence, if we define the {\bf moment}
+  \begin{align*}
+    A_\alpha^B = \sum_{i : \ve{x}_i \in B} q_i \frac{1}{\alpha!} \bigg( \frac{\ve{x}_i - \ve{c}_B}{h} \bigg)^\alpha,
+  \end{align*}
+  then we have
+  \begin{align*}
+    G(\ve{y}) \approx \sum_{0 \leq \alpha \leq p} A_\alpha^B h_\alpha \bigg( \frac{\ve{y} - \ve{c}_B}{h} \bigg).
+  \end{align*}
+  This is the far-field expansion used in the original fast Gauss transform by Greengard and Strain.
+  
+  \item However, the Greengard expansion is not suitable for high-dimensional Gauss transform because there are $(p+1)^d$ coefficients, which grows exponentially in $d$. 
+  
+  \item Yang \etal \cite{yang} proposes another expansion of the Gaussian kernel so that there are $O(p^d)$ terms instead. We shall discuss this expansion here.
+  
+  \item We have that
+  \begin{align*}
+    e^{-\| \ve{y} - \ve{x}_i \|^2 / h^2}
+    = e^{-\| (\ve{y} - \ve{c}_B) - (\ve{x}_i - \ve{c}_B) \|^2 / h^2}
+    = e^{-\| \ve{y} - \ve{c}_B \|^2 / h^2} e^{-\| \ve{x}_i - \ve{c}_B \|^2 / h^2} e^{2 (\ve{y} - \ve{c}_B) \cdot (\ve{x}_i - \ve{c}_B) / h^2}.
+  \end{align*}
+  We shall show that there are functions $\Phi_\alpha$ and $\Psi_\alpha$ such that
+  \begin{align*}
+    e^{2 (\ve{y} - \ve{c}_B) \cdot (\ve{x} - \ve{c}_B) / h^2}
+    = \sum_{\alpha \geq 0} \Phi_\alpha\bigg(\frac{\ve{y} - \ve{c}_B}{h}\bigg) \Psi_\alpha\bigg(\frac{\ve{x}_i - \ve{c}_B}{h}\bigg).
+  \end{align*}
+  Then, we can write the Gaussian kernel as:
+  \begin{align*}
+    e^{-\| \ve{y} - \ve{x}_i \|^2 / h^2}
+    &= e^{-\| \ve{y} - \ve{c}_B \|^2 / h^2} e^{-\| \ve{x}_i - \ve{c}_B \|^2 / h^2} \sum_{\alpha \geq 0} \Phi_\alpha\bigg(\frac{\ve{y} - \ve{c}_B}{h}\bigg) \Psi_\alpha\bigg(\frac{\ve{x}_i - \ve{c}_B}{h}\bigg)\\
+    &= \sum_{\alpha \geq 0} \bigg( e^{-\| \ve{y} - \ve{c}_B \|^2 / h^2} \Phi_\alpha\bigg(\frac{\ve{y} - \ve{c}_B}{h}\bigg) \bigg) \bigg( e^{-\| \ve{x}_i - \ve{c}_B \|^2 / h^2} \Psi_\alpha\bigg(\frac{\ve{x}_i - \ve{c}_B}{h}\bigg) \bigg)
+  \end{align*}
+  As a result, the Gauss transform can be written as:
+  \begin{align*}
+    G(\ve{y}) = \sum_{\alpha \geq 0} \bigg( \sum_{i:\ve{x}_i \in B} q_i e^{-\| \ve{x}_i - \ve{c}_B \|^2 / h^2} \Psi_\alpha\bigg(\frac{\ve{x}_i - \ve{c}_B}{h}\bigg) \bigg) \bigg( e^{-\| \ve{y} - \ve{c}_B \|^2 / h^2} \Phi_\alpha\bigg(\frac{\ve{y} - \ve{c}_B}{h}\bigg) \bigg)
+  \end{align*}
+  We can thus define the moment $A_\alpha^B$ as
+  \begin{align*}
+    A_\alpha^B = \sum_{i:\ve{x}_i \in B} q_i e^{-\| \ve{x}_i - \ve{c}_B \|^2 / h^2} \Psi_\alpha\bigg(\frac{\ve{x}_i - \ve{c}_B}{h}\bigg)
+  \end{align*}
+  and get
+  \begin{align*}
+    G(\ve{y}) = \sum_{\alpha \geq 0} A_\alpha^B \bigg( e^{-\| \ve{y} - \ve{c}_B \|^2 / h^2} \Phi_\alpha\bigg(\frac{\ve{y} - \ve{c}_B}{h}\bigg) \bigg).
+  \end{align*}
+  
+  \item We have that
+  \begin{align*}
+    (\ve{x} \cdot \ve{y})^n = \sum_{|\alpha|=n} \frac{n!}{\alpha!} \ve{x}^\alpha \ve{y}^\alpha.
+  \end{align*}
+  Hence,
+  \begin{align*}
+    e^{\ve{x} \cdot \ve{y}} 
+    &= \sum_{n=0}^\infty \frac{(\ve{x} \cdot \ve{y})^n}{n!}
+    = \sum_{n=0}^\infty \sum_{|\alpha|=n} \frac{1}{\alpha!} \ve{x}^\alpha \ve{y}^\alpha
+    = \sum_{\alpha \geq 0} \frac{1}{\alpha!} \ve{x}^\alpha \ve{y}^\alpha.
+  \end{align*}
+  As a result
+  \begin{align*}
+    e^{2(\ve{x}_i - \ve{c}_B) \cdot (\ve{y} - \ve{c}_B)/h^2} 
+    &= \sum_{\alpha \geq 0} \frac{2^{|\alpha|}}{\alpha!} \bigg( \frac{\ve{x_i} - \ve{c}_B}{h} \bigg)^\alpha \bigg( \frac{\ve{y} - \ve{c}_B}{h} \bigg)^\alpha.
+  \end{align*}
+  Therefore, we can define
+  \begin{align*}
+    \Phi_\alpha(\ve{x}) &= \frac{2^{|\alpha|}}{\alpha!} \ve{x}^\alpha,\\
+    \Psi_\alpha(\ve{y}) &= \ve{y}^\alpha.
+  \end{align*}
+  
+  \item This expansion gives:
+  \begin{align*}
+    A_\alpha^B = \frac{ 2^{|\alpha|} } {\alpha!} \sum_{i:\ve{x}_i \in B} q_i e^{-\| \ve{x}_i - \ve{c}_B \|^2/h^2} \bigg( \frac{\ve{x}_i - \ve{c}_B }{h} \bigg)^\alpha,
+  \end{align*}
+  and
+  \begin{align*}
+    G(\ve{y}) = e^{-\| \ve{y} - \ve{c}_B \|^2 / h^2} \sum_{\alpha \geq 0} A_\alpha^B \bigg(\frac{\ve{y} - \ve{c}_B}{h}\bigg)^\alpha.
+  \end{align*}
+  
+  \item Yang \etal\ truncate the series to terms such that $|a| \leq p$:
+  \begin{align*}
+    G(\ve{y}) = e^{-\| \ve{y} - \ve{c}_B \|^2 / h^2} \sum_{0 \leq \alpha \leq p} A_\alpha^B \bigg(\frac{\ve{y} - \ve{c}_B}{h}\bigg)^\alpha.
+  \end{align*}
+  
+\end{itemize}
+
+% section section_name (end)
+  
+\bibliographystyle{plain}
+\bibliography{gaussxform}	
+
+\end{document}

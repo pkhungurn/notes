@@ -1,0 +1,330 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+\usepackage{verbatim}
+\usepackage{hyperref}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+\newtheorem{assumption}[lemma]{Assumption}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\Dee}{\mathrm{D}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\Var}{\mathrm{Var}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+\newcommand{\ov}[1]{\overline{#1}}
+
+\title{Wasserstein GAN and Its Improved Training}
+
+\begin{document}
+  \maketitle
+
+  This document is written as I read the ``Wasserstein GAN'' paper \cite{Arjovsky:2017} and the ``Improved Training of Wasserstein GANs'' paer \cite{Gulrajani:2017}.
+
+  \section{Introduction}
+
+  \begin{itemize}
+  	\item We are concerned with learning a probability density.
+
+  	\item We have real data examples $\{ x^{(i)} \}_{i=1}^m$ generated from a probability distribution $P_r$ (whose density is denoted by $P_r$) that we do not know.
+
+  	\item We define a parameteric familiy of probability density function $(P_\theta)_{\theta \in \mathbb{R}^d}$. We then would like to find the $\theta$ that yields the density matches that of $P_r$.
+
+  	\item In the GAN approach, we define a random variable $Z$ with a fixed distribution $p(z)$. We pass it through a parameteric function $g_\theta: \mathcal{Z} \rightarrow \mathcal{X}$. We then attempt to find $\theta$ so that the distribution of $g_\theta(Z)$ matches that of $P_r$.
+
+  	\item We typically find $\theta$ by starting with a random initial parameter and evolve it until the parameter ``converges.''
+
+  	\item In the above formulation, there is a hidden assumption that the mapping from $\theta$ to $P_\theta$ is \emph{continuous}. This means that when a sequence of parameter $(\theta_t)_{t \in \mathbb{N}}$ converges to $\theta$ (say, in the Euclidean space), then $P_{\theta_t}$ should converge to $P_\theta$. After all, there is no use if there parameter converges, but the distribution does not.
+
+  	\item Convergence of probability distributions depends on how we define the distance between them.
+
+  	\item Let $\rho(P_\theta, P_r)$ denote a distance function between $P_\theta$ and $P_r$.
+
+  	\item A sequence of distribution $(P_t)_{t \in \mathbb{N}}$ \emph{converges} if and only if there is a distribution $P_\infty$ such that $\rho(P_t, P_\infty)$ tends to zero.
+
+  	\item We say a distance $\rho$ \emph{induces a weaker topology} if it makes it easier for a sequence of distribution to converge. More precisely, the topology induces by $\rho$ is weaker than that induced by $\rho'$ if the set of convergence sequences of $\rho$ is a superset of that under $\rho'$.
+
+  	\item From the discussion on convergence of $P_\theta$, it is desirable that the distance function $\rho$ we use induces a weaker topology because it would allow the optimization process to converge on more paths.
+
+  	\item Moreover, we can use $\rho(P_\theta, P_r)$ as the loss function for the optimization. Minimizing this function is indeed trying to make the model distribution match that of the real distribution. 
+  \end{itemize}
+
+  \section{Different Distances}
+
+  \begin{itemize}
+  	\item Let:
+  	\begin{itemize}
+  		\item $\mathcal{X}$ be a compact metric set;
+  		\item $\Sigma$ denote the set of all Borel subsets of $\mathcal{X}$;
+  		\item $\mathrm{Prob}(\mathcal{X})$ denote the space of probability measure defined on $\mathcal{X}$.
+  	\end{itemize}
+
+  	\item There are several well-known distance between two probability distribution $P_r, P_g \in \mathrm{Prob}(\mathcal{X}).$ 
+
+  	\begin{itemize}
+  		\item The \emph{Total Variation} (TV) distance
+  		\begin{align*}
+  			\delta(P_r, P_g) = \sum_{A \in \Sigma} \| P_r(A) - P_g(A) \|.
+  		\end{align*}
+  		
+  		\item The \emph{Kullback--Leibler} (KL) divergence
+  		\begin{align*}
+  			KL(P_r\|P_g) = \int \log\bigg( \frac{P_r(x)}{P_g(x)} \bigg) P_r(x)\ \dee\mu(x),
+  		\end{align*}
+  		where $\mu$ is a measure defined on $\mathcal{X}$. The KL divergence is asymmetric. It can also be infinite when there points such that $P_g(x) = 0$ and $P_r(x) > 0$.
+
+  		\item The \emph{Jensen--Shannon} (JS) divergence
+  		\begin{align*}
+  			JS(P_r,P_g) = KL(P_r\|P_m) + KL(P_g\|P_m)
+  		\end{align*}
+  		where $P_m = (P_r + P_g)/2$. This divergence is symmetrical and always defined because $\mu$ can be chosen to make the KL divergence well-behaved.
+
+  		\item The \emph{Earth-Mover} (EM) distance or Wasserstain-1
+  		\begin{align*}
+  			W(P_r, P_g) = \inf_{\gamma \in \Pi(P_r, P_g)} E_{(x,y)\sim\gamma} [ \| x - y|]
+  		\end{align*}
+  		where $\Pi(P_r, P_g)$ is the set of all joint distributions $\gamma(x,y)$ whose marginals are $P_r$ and $P_g$, respectively.
+  		\begin{itemize}
+  			\item  $\gamma(x,y)$ indicates how much ``mass'' must be transported from $x$ to $y$ in order to transform $P_r$ into $P_g$.
+  			\item The EM distance is the ``cost'' of the optimal transport plan.
+  		\end{itemize}
+  	\end{itemize}
+
+  	\item The paper gives an example of where a simple sequence of probability distributions converges under EM but does not converge under other distances. The target distribution is defined on a low-dimensional manifold which intersects with the model distribution on a set of measure zero. All the distance functions other than EM are not continuous, so we cannot even optimize. The example shows that it is easier to learn a probability distribution under EM in this case.
+
+  	\item It can be shown that EM is much weaker than JS.
+
+  	\item Moreover, $W(P_r, P_g)$ is continuous under mild assumptions.
+
+  	\item Before we can discuss this assumption, though, let us remind ourselves of Lipschitz continuity.
+
+  	\begin{itemize}
+  		\item Given two metric spaces $(\mathcal{X}, d_{\mathcal{X}})$ and $(\mathcal{Y}, d_{\mathcal{Y}})$, a function $f$ is \emph{Lipschitz} if there exists a real constant $K \geq 0$ such that
+	  	\begin{align*}
+	  		d_{\mathcal{Y}}(f(x_1), f(x_2)) \leq K d_{\mathcal{X}}(x_1, x_2)
+	  	\end{align*}
+	  	for all $x_1, x_2 \in \mathcal{X}$.
+
+	  	\item We say that $f$ is \emph{locally Lipschitz} if, for every $x \in \mathcal{X}$, there exists a neighborhood $U$ of $x$ such that $f$, restricted to $U$ is Lipschitz continuous.
+  	\end{itemize}
+
+  	\item Recall the GAN generator function $g: \mathcal{Z} \times \mathbb{R}^d \rightarrow \mathcal{X}$. We will denote the latent vector by $z$ and the generator's parameter by $\theta$. The function is denoted by $g_\theta(z)$.
+
+  	\item The assumption for EM's distance continuity is as follows:
+  	\begin{assumption} \label{assumption-1}
+  		Let the GAN generator function be locally Lipschitz. We say that $g$ satisfies this assumption for a certain probability $p$ over $\mathcal{Z}$ if there are local Lipschitz constants $L(\theta,z)$ such that
+  		\begin{align*}
+  			E_{z \sim p}[L(\theta,z)] < \infty.
+  		\end{align*}
+  	\end{assumption}
+  	That is, the expected value of the local Lipschitz constant is well defined.
+  	
+  	\item We are now ready for the main result.
+  	\begin{theorem}
+  		Let $P_r$ be a fixed distribution over $\mathcal{X}$. Let $Z$ be a random variable (e.g. Gaussian) over another space $\mathcal{Z}$. Let $g: \mathcal{Z} \times \mathcal{R}^d \rightarrow \mathcal{X}$ be a function denoted by $g_\theta(z)$ where $z \in \mathcal{Z}$ and $\theta \in \mathbb{R}^d$. Let $P_\theta$ denote the distribution of $g_\theta(Z)$. Then,
+  		\begin{enumerate}
+  			\item If $g$ is continuous in $\theta$, then so is $W(P_r, P_\theta)$.
+  			\item If $g$ is locally Lipschitz and satisfies Assumption \ref{assumption-1}, then $W(P_r, P_g)$ is continuous everywhere, and differentiable almost everywhere.
+  			\item The previous two statements are false for JS and KL.
+  		\end{enumerate}
+  	\end{theorem}
+
+  	\begin{corollary}
+  		Let $g_\theta$ be any feedforward neural network parameterized by $\theta$, and $p(z)$ a prior over $z$ such that $E_{z \sim p(z)} [\|z\|] < \infty$ (e.g. Gaussian, uniform, etc.). Then Assumption \ref{assumption-1} is satisfied and therefore $W(P_r, P_\theta)$ is continuous everywhere and differentiable almost everywhere.
+  	\end{corollary}
+
+  	\item The following theorem states that EM is weaker than all the other distances.
+  	\begin{theorem}
+  		Let $P$ be a distribution on a compact space $\mathcal{X}$ and $(P_n)_{n \in \mathbb{N}}$ a sequence of distribution on $\mathcal{X}$. Then, considering all limits as $n \rightarrow \infty$:
+  		\begin{enumerate}
+  			\item  The following statements are equivalent:
+  			\begin{itemize}
+  				\item $\delta(P_n, P) \rightarrow 0$.
+  				\item $JS(P_n, P) \rightarrow 0$.
+  			\end{itemize}
+
+  			\item The following statements are equivalent:
+  			\begin{itemize}
+  				\item $W(P_n, P) \rightarrow 0$.
+  				\item $P_n \rightarrow P$ in the sence of convergence in distribution for random variables.
+  			\end{itemize}
+
+  			\item $KL(P_n\|P) \rightarrow$ or $KL(P\|P_n) \rightarrow 0$ implies the statement in 1.
+
+  			\item The statements in 1 imply the statements in 2.
+  		\end{enumerate}  	
+  	\end{theorem}
+  \end{itemize}
+
+  \section{Wassersteing GAN}
+
+  \begin{itemize}
+  	\item We now consider the problem of incorporating the Wasserstein distance into GAN training. The first problem is how we might evaluate it.
+
+  	\item The Kantorovich--Rubinstein duality theorem gives another formula for the Wasserstein distance:
+  	\begin{align}
+  		W(P_r,P_\theta) = \sup_{\| f\|_L \leq 1} E_{x \sim P_r}[f(x)] - E{x \sim P_\theta} [f(x)] \label{wasserstein-dual}
+  	\end{align}
+  	where the supermum is over all the $1$-Lipshitz functions $f: \mathcal{X} \rightarrow \mathcal{R}$.
+
+  	\item Recall that a real-valued function $f$ is $K$-Lipshitz if
+  	\begin{align*}
+  		|f(x_1) - f(x_1)| \leq K d_{\mathcal{X}}(x_1, x_2)
+  	\end{align*}
+  	for all $x_1, x_2 \in \mathcal{X}$.
+
+  	\item In Equation \eqref{wasserstein-dual}, if we replace $\| f \|_L \leq 1$ with $\| f\|_L \leq K$, then the LHS becomes $K \cdot W(P_r, P_\theta)$.
+
+  	\item To approximate the supremum in Equation \eqref{wasserstein-dual}, we can prepare a family of $K$-Lipschitz functions $\{ f_w \}_{w \in \mathcal{W}}$. Then, we can compute:
+  	\begin{align*}
+  		\max_{w \in \mathcal{W}} E_{w \sim P_r} [f_w(x)] - E_{z \in p(z)} [f_w(g_\theta(z))].
+  	\end{align*}
+  	
+  	\item To optimize $\theta$, we can also find the gradient of the expression with respect to $\theta$ by estimating:
+  	\begin{align*}
+  		E_{z \sim p(z)} [\nabla_\theta f_w(g_\theta(z))].
+  	\end{align*}
+
+  	\item \begin{theorem}
+  		Let $P_r$ be any distribution. Let $P_\theta$ be the distribution of $g_\theta(Z)$ with $Z$ a random variable with density $p$ and $g_\theta$ a function satisfying Assumption \ref{assumption-1}. Then, there is a solution $f: \mathcal{X} \rightarrow \mathcal{R}$ to the problem
+  		\begin{align*}
+  			\max_{\| f\|_L \leq 1} E_{x \sim P_r} [f(x)] - E_{x \sim P_\theta} [f(x)]
+  		\end{align*}
+  		and we have 
+  		\begin{align*}
+  			\nabla_\theta W(P_r, P_\theta) 
+  			= - E_{z~p(z)} [\nabla_\theta f(g_\theta(z))]  			
+  		\end{align*}
+  		when both terms are well-defined.
+  	\end{theorem}
+
+  	\item So, how do we find such an $f$ in the theorem? We can have $f_w$ be a neural network parametermized with weight $w$ lying in a compact space $\mathcal{W}$ to maximize $E_{x \sim P_r} [f_w(x)] - E_{x \sim P_\theta} [f_w(x)]$.
+
+  	\item Note that, since $\mathcal{W}$ is a compact space, all function $f_w$ will be $K$-Lipshitz for some constant $K$. So, maximizing the function would approximate the supermum upto a scaling factor and the capacity of the function $f_w$. (The paper calls $f_w$ the ``critic,'' not the discriminator.)
+
+  	\item To make sure that $w$ lies in a compact space, we can clamp the weights to a fixed box, say $\mathcal{W} = [-0.01,0.01]^l$, after each gradient update.
+
+  	\item The WGAN algorithm builds on the above idea. It requires the following parameter:
+  	\begin{itemize}
+  		\item $\alpha$ is the learning rate. The paper uses $\alpha = 5 \times 10^{-5}$.
+  		\item $c$ is the weight clamping constant. The paper uses $c = 0.01$.
+  		\item $m$ is the minibatch size. The paper uses $m = 64$.
+  		\item $n_{critic}$ is the number of times to update the critic's weight for each generator weight update. The paper uses  $n_{critic} = 5$.
+  	\end{itemize}
+  	The algorithm is as follows:
+  	\begin{verse}
+  		\textbf{while} $\theta$ has not converged \textbf{do}  \\
+  		$\quad$ \textbf{for} $t = 0$ \textbf{to} $n_{critic}$ \textbf{do} \\
+  		$\quad\quad$ Sample a batch $\{x^(i)\}_{i=1}^m \sim P_r$ of real data. \\
+  		$\quad\quad$ Sample a batch $\{z^(i)\}_{i=1}^m \sim p(z)$ of latent vectors. \\
+  		$\quad\quad$ Compute the gradient for the critic weight:
+  		\begin{align*}
+  			g_w \gets \nabla_w \bigg[ 
+  				\frac{1}{m} \sum_{i=1}^m f_w(x^{(i)})
+  				- \frac{1}{m} \sum_{i=1}^m f_w(g_\theta(z^{(i)}))
+  			\bigg]
+  		\end{align*} \\
+  		$\quad\quad$ $w \gets \mbox{Weight-Update}(w, g_w, \alpha)$ \\
+  		$\quad$ \textbf{end for} \\
+  		$\quad$ Sample a batch $\{z^(i)\}_{i=1}^m \sim p(z)$ of latent vectors. \\
+  		$\quad$ Compute the gradient of the generator parameter:
+  		\begin{align*}
+  			g_\theta \gets -\nabla_{\theta} \frac{1}{m} \sum_{i=1}^m f_w(g_\theta(z^{(i)}))
+  		\end{align*} \\
+  		$\quad$ $\theta \gets \mbox{Weight-Update}(\theta, \theta_w, \alpha)$ \\
+  		\textbf{end while}
+  	\end{verse}
+  \end{itemize}
+
+  \section{Problems with Weight Clipping}
+
+  \begin{itemize}
+  	\item It is later found that weight clipping in WGAN leads to optimization problems \cite{Gulrajani:2017}. Other weight contraints such as L2 norm clipping, weight normalization, and soft contraints such as L1 nad L2 weight decay, also exhibit similar problems. The problems are
+  	\begin{itemize}
+		\item Capacity underuse.
+		\item Exploding and vanishing gradients.
+	\end{itemize}
+  \end{itemize}
+
+  \subsection{Capacity Underuse}
+
+  \begin{itemize}
+  	\item Weight clipping biases the critic towards mcuh simpler functions.
+
+  	\begin{proposition} \label{unit-gradient}
+  		Let $P_r$ and $P_g$ be two distributions in a compact metric space $\mathcal{X}$. Let $f^*$ be the $1$-Lipschitz function which is the optimal solution of $\max_{\| f\|_L \leq 1} E_{y \sim P_r } [f(y)] - E_{x \sim P_g}[f(x)]$. Let $\pi$ be the optimal joint distribution between $P_r$ and $P_g$. If $f^*$ is differentiable, $\pi(x = y) = 0$, and $x_t = tx + (1-t)y$ with $0 \leq t \leq 1$, it holds that
+  		\begin{align*}
+  			P_{(x,y) \sim \pi} \bigg[ \nabla f^*(x_t) = \frac{y - x_t}{\| y - x_t \|} \bigg] = 1.
+  		\end{align*}
+  	\end{proposition}
+
+  	\begin{corollary}
+  		$f^*$ has gradient norm 1 almost everywhere under $P_r$ and $P_g$.
+  	\end{corollary}
+
+  	In other words, the optimal WGAN critic has unit gradient norm almost everywhere.
+
+  	\item Experimentally, it is observed that the critic will end up being very simple functions.  	
+  \end{itemize}
+
+  \subsection{Explding and Vanishing Gradients}
+
+  \begin{itemize}
+  	\item The authors of \cite{Gulrajani:2017} trained WGAN on Swiss Roll toy dataset, varying the clipping threshold $c$ to values in $[10^{-1}, 10^{-2}, 10^{-3}]$, and plot the norm fo the gradient of the critic loss with respect to the layers in the network. They found that the gradient either grows or decays exponentially as they move back through the network.
+  \end{itemize}
+
+  \section{Gradient Penalty}
+
+  \begin{itemize}
+  	\item A differentiable function is $1$-Lipschitz if and only if it has gradients with norm at most $1$ everywhere.
+
+  	\item A way to enforce this is to constrain the gradient norm of the critic with respect to the inputs (not the weights). This is done through having a panelty term on the magnitude of the gradient:
+  	\begin{align*}
+  		L = E_{x \sim P_g} [f(x)] - E_{x \sim P_r} [f(x)] + \lambda E_{x \sim P_x} [(\| \nabla_x f(x) \|_2 - 1)^2].
+  	\end{align*}
+  	Enforcing the gradient to be $1$ everywhere is nigh impossible. So, the probability distribution $P_x$ samples uniformly along straight lines between pairs of points sampled from the data distribution $P_r$ and the generator distribution $P_g$. This is motivated by Proposition~\ref{unit-gradient}.
+
+  	\item All experiments in the paper uses $\lambda = 10$.
+
+  	\item The paper does not use batch normalization in the critic because it changes the form of the critic function from one input to one output to one input batch to one output batch. The method works with any normalization techniques that introduces correlation between the samples.
+
+  	\item The lost encourages the norm to go towards $1$ instead of just staying below $1$. Empirially, this does not contrain the function too much because the optiomal WGAN critic has gradient norm of $1$ almost everywhere.
+  \end{itemize}
+
+  \bibliographystyle{apalike}
+  \bibliography{wgan}  
+\end{document}

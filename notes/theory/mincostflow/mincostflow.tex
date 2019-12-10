@@ -1,0 +1,634 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{clrscode3e}
+
+\newtheorem{lemma}{Lemma}[section]
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{claim}[lemma]{Claim}
+
+\title{Notes on Minimum-Cost Flow Algorithms}
+\author{Pramook Khungurn}
+
+\begin{document}
+  \maketitle
+  
+  \section{Problem Definitions} % (fold)
+  \label{sec:problem-definition}
+  
+    \begin{itemize}
+      \item In the \emph{minimum-cost flow problem}, you are given:
+        \begin{itemize}
+          \item a graph $G = (V,E)$;
+          \item a \emph{capacity function} $u: E \rightarrow \mathbb{R}^{+} \cup \{ 0 \}$;
+          \item a \emph{demand function} (defined on the vertices) $b: V \rightarrow \mathbb{R}$;
+          \item a \emph{cost function} $c: E \rightarrow \mathbb{R}$.
+        \end{itemize}
+        You are to find a \emph{flow} $f: E \rightarrow \mathbb{R}^{+} \cup \{ 0 \}$ such that
+        \begin{itemize}
+          \item for all edge $e \in E$, we have $0 \leq f(e) \leq u(e)$;
+          \item for all vertex $v \in V$, $$\sum_{(v,w) \in E} f(v,w) - \sum_{(w,v) \in E} f(w,v) = b(v);$$
+          \item the \emph{the cost of the flow} $\sum_{e \in E} c(e)f(e)$ is minimal.
+        \end{itemize}
+      
+      \item The min-cost flow problem is a generalization of many graphs problems. For examples:
+        \begin{itemize}
+          \item The {\bf shortest path} problem is a min-cost flow where you set
+            (1) the capacity of every edge to 1, (2) the cost to its length,
+            and (3) $b(s) = 1$ and $b(t) = -1.$
+          
+          \item The {\bf max flow} problem sets the cost of all edges to zero,
+            and tries to find the maximum possible flow. (We shall see
+            that this is actually equivalent to min-cost flow.)
+          
+          \item The {\bf disjoint path} problem asks to connect $s$ and $t$
+            with $k$ disjoint paths using the smallest number of edges
+            possible. This can be casted as a min-cost flow problem
+            where (1) all the edges have capacity 1 and cost 1, and 
+            (2) $b(s) = k$ and $b(t) = -k.$
+        \end{itemize}
+      
+      \item In the \emph{minimum-cost circulation problem}, you are given:
+        \begin{itemize}
+          \item a graph $G = (V,E);$
+          \item a \emph{capacity function} $u: E \rightarrow \mathbb{R}^{+} \cup \{ 0 \}$;
+          \item a \emph{demand function} $l: E \rightarrow \mathbb{R}^{+} \cup \{ 0 \}$ such that $l(e) \leq u(e)$ for all $e \in E$;
+          \item a \emph{cost function} $c: E \rightarrow \mathbb{R}$.
+        \end{itemize}
+        You are to find a \emph{circulation} $f: E \rightarrow \mathbb{R}^+ \cup \{ 0 \}$ such that
+        \begin{itemize}
+          \item for all edge $e \in E$, we have $l(e) \leq f(e) \leq u(e)$;
+          \item for all vertex $v \in V$, $$\sum_{(v,w) \in E} f(v,w) - \sum_{(w,v) \in E} f(w,v) = 0;$$
+          \item the \emph{the cost of the circulation} $\sum_{e \in E} c(e)f(e)$ is minimal.
+        \end{itemize}
+        
+      \item
+        \begin{lemma}
+          The min-cost flow problem and the min-cost circulation problem are equivalent.
+        \end{lemma}
+        
+        \begin{proof}
+          ($circulation \implies flow$) Let $(G, u, b, c)$ be an instance of
+            min-cost flow problem. Construct instance $(G', u', l', c')$ of
+            the min-cost circulation problem as follows:
+            \begin{itemize}
+              \item Construct $G'$ by adding a new vertex $s$ to $G$.
+              \item For each $v \in V$ where $b(v) > 0$, add an edge $(s,v)$
+                with $u'(s,v) = l'(s,v) = b(v)$, and $c(s,v) = 0$.
+              \item For each $v \in V$ where $b(v) < 0$, add an edge $(v,s)$
+                with $u'(v,s) = l'(v,s) = |b(v)|$ and $c(v,s) = 0$.
+              \item For any other edge $e$, set $l'(e) = 0$ and
+                $u'(e) = u(e)$ and $c'(e) = c(e)$.
+            \end{itemize}
+            Then, there is a bijection between a feasible flow in $G$ and 
+            a feasible circulation in $G'$. Moreover, since the new edges
+            added to $G'$ have cost 0, the cost of the flow equals to
+            the cost of the circulation. Hence, a min-cost circulation
+            gives a min-cost flow.
+            
+          ($flow \implies circulation$) Let $(G, u, l, c)$ be an instance 
+            of min-cost circulation problem. Construct instance $(G', u', b', c')$
+            of the min-cost flow problem as follows:
+            \begin{itemize}
+              \item $G'$ is the same as $G$.
+              \item For all $e \in E$, set $u'(e) = u(e) - l(e)$.
+              \item For all $v \in V$, set $b'(v) = \sum_{(v,w) \in E} l(v,w) - \sum_{(w,v) \in E} l(w,v)$.
+              \item For all $e \in E$, set $c'(e) = c(e).$
+            \end{itemize}
+            There is a bijection between a feasible circulation in $G$
+            and a feasible flow in $G'$. The cost of the flow in $G'$
+            is not equal to the cost of circulation in $G$, but they
+            differ by a constant. Hence, a min-cost flow gives a
+            min-cost circulation.
+        \end{proof}
+        
+        Since the two problems are equivalent, we will work only with
+        the min-cost circulation problem.
+        
+      \item The circulation problem's formulation can be simplified to
+        make proofs and algorithm descriptions easier as follows:
+        \begin{itemize}
+          \item We replace each edge by two edges of opposite direction.
+          \item For each newly created opposite $(w,v)$ of edge $(v,w)$,
+            we set:
+            \begin{itemize}
+              \item $u(w,v) = -l(v,w)$.
+              \item $c(w,v) = -c(v,w)$.
+            \end{itemize}
+          \item We eliminate the lower bound function altogether.
+        \end{itemize}
+        
+        Now, we define a new notion of circulation in the above graph
+        as follows: a function $f: E \rightarrow \mathbb{R}$ is a
+        \emph{circulation} if the following conditions are satisfied:
+        \begin{itemize}
+          \item $f(v,w) = -f(w,v)$ for all $(v,w) \in E$,
+          \item $f(e) \leq u(e)$ for all $e \in E$, and
+          \item $\sum_{(v,w) \in E} f(v,w) = 0$.
+        \end{itemize}
+        
+        Let us note that the new formulation is equivalent to the old
+        one. For each old edge $(v,w)$, we have that $f(v,w) \geq l(v,w)$
+        iff $-f(v,w) \leq -l(v,w)$. So the new opposite edges enforces
+        the lower bound of the flow. 
+        
+        If $(v,w)$ is one of the edge in the graph of the previous
+        formulation. The cost this edge incurs is $c(v,w)f(v,w)$.
+        In the new formulation, there is also a flow of value $-f(v,w)$ 
+        going across $(w,v)$. So the cost incurs by the edge $(v,w)$
+        is actually $$c(v,w)f(v,w) + c(w,v)f(w,v)
+        = c(v,w)f(v,w) + (-c(v,w)(-f(v,w)) = 2c(v,w)f(v,w).$$
+        Hence, the cost of the circulation in the new formulation
+        is two times that in the old formulation.
+
+      \item 
+        \begin{lemma}
+          Given one instance of the min-cost circulation
+          problem, we can find whether there is a \emph{feasible}
+          solution by running a single max flow.
+        \end{lemma}
+        
+        \begin{proof}
+          We revert the problem back to the version with demand.
+          Let $(G, u, l, c)$ be an instance of the min-cost circulation
+          problem. For vertex $v$, define its \emph{demand} $b(v)$
+          as $\sum_{(v,w) \in E} l(v,w) - \sum_{(w,v) \in E} l(w,v).$
+          We construct a new instance $(G', u')$ for max flow problem 
+          as follows:
+          \begin{itemize}
+            \item $G'$ is obtained by adding a source vertex $s$ and
+              a sink vertex $t$ to $G$.
+            \item For any edge $(v,w)$ in $G$ with positive capacity,
+              we set $u'(v,w) = u(v,w) - l(v,w)$.
+            \item For any vertex $v$ in $G'$ with $b(v) > 0$,
+              we create an edge $(v,t)$ with $u'(v,t) = b(v)$.
+            \item For any vertex $v$ in $G'$ with $b(v) < 0$,
+              we create an edge $(s,v)$ with $u'(s,v) = -b(v)$.
+          \end{itemize}
+          
+          Note that it is the case that $\sum_{v \in V} b(v) = 0.$
+          Let $B = \sum_{b(v) > 0} b(v) = -\sum_{b(v) < 0} b(v).$
+          
+          It should be clear a max flow of value $B$ yields a 
+          feasible circulation, and vice versa.
+        \end{proof}
+    \end{itemize}
+  % section  (end)
+  
+  \section{Optimality Conditions} % (fold)
+  \label{sec:optimality_conditions}
+  
+  \begin{itemize}
+    \item From now on, let $G = (V,E)$ be a graph such that each directed
+      edge has a backward edge. Let $(G, u, c)$ be a flow network, and $f$ be 
+      a circulation in it.
+    
+    \item The \emph{residual network} $(G_f, u_f, c)$ is given by:
+      \begin{itemize}
+        \item $G_f = (V, E_f)$ where $E_f$ is the set of edges such
+          that $u(e) - f(e) > 0$.
+        \item $u_f(e) = u(e) - f(e)$ for all $e \in E_f$, and
+      \end{itemize}
+      
+    \item A function $p: V \rightarrow \mathbb{R}$ is called a \emph{potential function}
+      or a \emph{price function}.
+      
+    \item Let $p$ be a price function, and $c$ be a cost function in network.
+      The \emph{reduced cost function} $c^p$ is defined as: $c^p(v,w) = c(v,w) + c(v) - c(w).$
+      
+    \item If $\Gamma$ is a cycle in $G$ and $c$ is a cost function, 
+      let $c(\Gamma) = \sum_{e \in \Gamma} c(e).$
+      
+    \item 
+      \begin{claim}
+        For any cycle $\Gamma$, we have $c(\Gamma) = c^p(\Gamma).$
+      \end{claim}
+      \begin{proof}
+        Let $\Gamma = (v_1, v_2), (v_2, v_3), \dotsc, (v_k, v_1).$
+        We have
+        \begin{align*}
+          c^p(\Gamma) &= c^p(v_1, v_2) + c^p(v_2, v_3) + \dotsb c(v_k, v_1)\\
+          &= [c(v_1, v_2) + p(v_1) - p(v_2)] + [c(v_2, v_3) + p(v_2) - p(v_3)] + \dotsb + [c(v_k, v_1) + p(v_k) - p(v_1)]\\
+          &= [c(v_1, v_2) + c(v_2, v_3) + \dotsb + c(v_k, v_1)] + [p(v_1) - p(v_2) + p(v_2) - p(v_3) + \dotsb + p(v_k) - p(v_1)]\\
+          &= c(v_1, v_2) + c(v_2, v_3) + \dotsb + c(v_k, v_1) = c(\Gamma).
+        \end{align*}
+      \end{proof}
+      
+    \item If $c$ is a cost function and $f$ a circulation, let $c \cdot f = \sum_{e \in E} c(e) f(e).$
+    
+    \item
+      \begin{claim} \label{cycle-invariant}
+        For any cost function $c$ and price function $p$ and circulation $f$, we have
+        $$c \cdot f = c^p \cdot f.$$
+      \end{claim}
+      \begin{proof}
+        \begin{align*}
+          c^p \cdot f 
+          &= \sum_{(v,w) \in E} c^p(v,w) f(v,w) \\
+          &= \sum_{(v,w) \in E} (c(v,w) + p(v) - p(w))f(v,w) \\
+          &= \sum_{(v,w) \in E} c(v,w) + \sum_{(v,w) \in E} p(v) f(v,w) - \sum_{(v,w) \in E} p(w) f(v,w)\\
+          &= c \cdot f + \sum_{(v,w) \in E} p(v) f(v,w) - \sum_{(v,w) \in E} p(v) f(w,v) \\
+          &= c \cdot f + \sum_{(v,w) \in E} p(v) (f(v,w) - f(w,v))\\
+          &= c \cdot f + \sum_{v \in V} p(v) \Big( \sum_{(v,w) \in E} f(v,w) - \sum_{(w,v) \in E} f(w,v) \Big)\\
+          &= c \cdot f.
+        \end{align*}
+        The last equality is true because $\sum_{(v,w) \in E} f(v,w) = \sum_{(w,v) \in E} f(w,v) = 0$
+        because of flow conservation.
+      \end{proof}
+    
+    \item
+      \begin{theorem} \label{optimality}
+        The following statements are equivalent:
+        \renewcommand{\labelenumi}{(\alph{enumi})}
+        \begin{enumerate}
+          \item $f$ is a minimum-cost circulation.
+          \item There is no negative-cost cycle in the residual network $G_f$.
+          \item There exists a price function $p$ such that $c^p(e) \geq 0$ for all $e \in E_f$
+        \end{enumerate}
+      \end{theorem}
+      \begin{proof}
+        ($\neg(b) \rightarrow \neg(a)$) Augment along the negative-cost cycle gives
+          a circulation with the lower cost. \medskip
+        
+        ($\neg(a) \rightarrow \neg(b)$) Let $f$ be a feasible circulation that is not of minimum-cost.
+          Let $f^*$ be feasible circulation with minimum-cost. We have that $f* - f$ is a circulation
+          that is feasible in $G_f$ (because $f*(v,w) - f(v,w) \leq u(v,w) - f(v,w)$).
+          Since $f^*$ has lower cost than $f$, we have that $f^* -f$ has negative cost.
+          We can decompose $f^* - f$ into cycles, and at least one cycle must be of negative cost.
+          \medskip
+          
+        ($(b) \rightarrow (c)$) Start with $G_f$. Construct a new vertex $s$ 
+          and connect $s$ to every vertex $v$ with $c(s,v) = 0.$ 
+          Since there is no negative cycle, the shortest path distance is well-defined.
+          Now, define $p(s) = 0$, and $p(v) =$ shortest path distance from $s$ to $v$, 
+          taking $c$ is the length of each edge.
+          
+          By property of shortest path distance, we have that $p(w) \leq p(v) + c(v,w)$
+          for all edge $(v,w) \in E_f$. Hence, $c^p(v,w) = c(v,w) + p(v) - p(w) \geq 0.$ \medskip
+          
+        ($(c) \rightarrow (b)$) By Claim~\ref{cycle-invariant}, $c(\Gamma) = c^p(\Gamma)$
+         for any cycle $\Gamma$. Since $c^p(e) \geq 0$ for all $e \in E$, we have
+         that all cycle has positive cost.
+      \end{proof}
+  \end{itemize}
+  % section optimality_criteria (end)
+  
+  \section{Cycle Canceling Algorithm} % (fold)
+  \label{sec:cycle_canceling_algorithm}
+    \begin{itemize}
+      \item The above theorem gives a simple algorithm for finding min-cost flow.
+        Just find a negative-cost cycle and augment along it. Repeat until
+        there are no negative-cost cycle.
+        
+        This algorithm is called Klein's algorithm.
+      
+      \item
+        \begin{theorem}
+          Let $(G, u, c)$ be a network with integer capacity and integer cost.
+          Let $U = \max_{e \in E} \{ u(e) \}$ and $C = \max_{e \in E} \{ |c(e)| \}.$
+          Then, Klein's algorithm runs in $O(m^2nUC).$
+        \end{theorem}
+        
+        \begin{proof}
+          We can find a negative cycle in $O(mn)$ using Bellman--Ford algorithm.
+          The minimum-cost is bounded below by $-mUC.$ Each negative cycle
+          decreases the cost of the circulation by at most $-1$. So $mUC$ cycles
+          suffice.
+        \end{proof}
+    \end{itemize}
+  % section cycle_canceling_algorithm (end)
+  
+  \section{Minimum Mean-Cost Cycle Canceling Algorithm} % (fold)
+  \label{sec:minimum_mean_cost_cycle_canceling_algorithm}
+    \begin{itemize}
+      \item For any cycle $\Gamma$, we define its \emph{mean cost}
+        $\mu(\Gamma) = c(\Gamma) / |\Gamma|.$
+        
+      \item Let $\mu^*$ be the minimum mean cost of all cycles.
+        In other words, $\mu^* = \min_{\Gamma} \mu(\Gamma)$
+        
+      \item Instead of picking any negative-cost cycle,
+        this algorithm picks the one with cost $\mu^*$ and augment
+        along that cycle.
+        
+      Let $C = \max_{e \in E} \{ |c(E)| \}$. It can be shown
+        that only $O(m^2 n\log n)$ augmentation suffices. We will
+        not be showing why this is true.
+        
+      \item An interesting problem is how to find the minimum mean cost cycle.
+        We will present two algorithms: one with complexity $O(mn \log (n^2C))$
+        and the other with complexity $O(mn).$
+        
+      \item In the $O(mn \log(n^2C))$ algorithm, we assume that the edges
+        have integer costs. The idea is to binary search for $\mu^*$.
+        We know that $\mu^* \in [-C, C]$ so we can set the search interval
+        accordingly.
+        
+        Suppose that we guess $\mu^* = a.$ We will subtract $a$ from
+        all the edge cost of the graph. Notice that for any cycle,
+        its mean cost is reduced by $a.$ We have the following case.
+        \begin{itemize}
+          \item If $\mu^* \geq a$, then all the cycles have positive mean
+            cost, and thus they have positive cost.
+          \item If $\mu^* = a$, then there exists some cycle with
+            zero cost, but none of the cycles have negative cost.
+          \item If $\mu^* < a$, then some cycles have negative cost.
+        \end{itemize}
+        We can check whether there is a negative-cost cycle by running
+        Bellman--Ford algorithm, which takes $O(mn)$ time.
+        
+        How many iterations do we need? Since the denominator
+        of $\mu^*$ is an integer from $1$ to $n$, we have that
+        two candidate values for $\mu^*$ cannot differ by
+        more than $1/n^2$. So, when the interval is smaller
+        than $1/n^2$, we can be sure that only one candidate
+        is inside. Hence, we need at most $O(\log(n^2C))$
+        iterations to shrink the interval to this size.
+        
+        Once the interval is small enough, we can find the value by 
+        searching though all possible denominators, which takes 
+        $O(n)$ time. Overall, the algorithm takes $O(mn \log (n^2C))$
+        time.
+      
+      \item Once we find $\mu^*$, how can we find a cycle
+        with minimum mean cost?
+        
+        We first subtract $\mu^*$ form all edge cost.
+        Since there is no negative-cost cycle,
+        by Theorem~\ref{optimality}
+        there exists a price function $p$ such that
+        $c^p(e) \geq 0$ for all $e \in E.$
+        This function can be founded by taking
+        $p(v) = $ the shortest path distance
+        from a new vertex $s$ with an edge of cost $0$
+        pointing to every vertex.
+        
+        Now, the cycle with minimum mean cost 
+        turns into a cycle with zero cost.
+        Since all edges have non-negative cost,
+        the cycle has to consists only of edges
+        with zero cost. We can locate all those edges
+        and find a cycle formed by them.
+        
+      \item The $O(mn)$ algorithm is rather involved. We start
+        with a definition.
+        \begin{definition}
+          Let $v$ be a vertex and $k$ be a non-negative integer.
+          Define $d_k(v)$ to be the cost of a walk
+          containing exactly $k$ edges ending at $v$
+          with the least possible cost.
+        \end{definition}
+        Then, $\mu^*$ can be characterized as follows:
+        \begin{lemma} \label{min-mean-cost-characterization}
+          $$\mu^* = \min_{v \in V} \max_{0 \leq k \leq n-1} \Bigg\{ \frac{d_n(v) - d_k(v)}{n - k} \Bigg\}$$
+        \end{lemma}
+        \begin{proof}
+          Let $\alpha$ denote the RHS of the equation. 
+          Notice that if we subtract $a$ from all the edge cost
+          then $\alpha$ is reduced by $a$ as well.
+          Hence, we  can show that $\mu^* = \alpha$ by working 
+          in a graph where $\mu^*$ is subtracted from the cost of 
+          all edge and show that $\alpha = 0$ in this graph.
+          Note that, in this graph, all cycles have positive cost,
+          and there is at least one cycle with zero cost. \medskip
+          
+          ($\alpha \geq 0$) Let $$\alpha(v) = 
+            \max_{0 \leq k \leq n-1} \frac{d_n(v) - d_k(v)}{n-k}.$$
+            Let $v$ be the vertex where $\alpha(v)$ is minimum.
+            Let $p$ be the walk of length $n$ ending at $v$ with
+            minimum cost, i.e., $c(p) = d_n(v).$ Since $p$ has
+            length $n$, it must contain a cycle. Thus, we
+            can compose $p$ into a cycle $\pi$ and a path $\tau$
+            leading to $v$. Let $j$ be the number of edges in $\tau$.
+            We must have that $c(\tau) = d_j(v),$ otherwise $p$
+            would not have been the shortest walk. So,
+            $$\alpha(v) = \max_{0 \leq k \leq n-1} \frac{d_n(v) - d_k(v)}{n-k} 
+              \geq \frac{d_n(v) - d_j(v)}{n-j} = \frac{c(\tau)}{n-j} \geq 0.$$
+            \medskip
+            
+        ($\alpha \leq 0$) Let $\Gamma$ be a cycle with cost $0$,
+          and let $v$ be a vertex in the cycle. 
+          
+          Consider the sequence $d_0(v), d_1(v), d_2(v), \dotsc$. 
+          We claim that there exists $r$ such that $d_r(v)$ is minimum 
+          and $r < n$. That is, Suppose that $r \geq n.$
+          Since the walk that achieves $d_r(v)$ has at least $n$ edges,
+          it must contain a cycle. We can take the cycle out without 
+          increasing $d_r(v)$ until there $r < n$.
+          
+          Let $\eta$ be a walk from $v$ that proceeds along the cycle
+          for $n-r$ hops, and let the last vertex in the hop be $w$.
+          Let $\tau$ be the walk from $w$ along the cycle to $v$.
+          We have that $c(\tau) + c(\eta) = 0.$ So, for any $k$,
+          we have that $$d_k(w) = d_v(w) + c(\tau) + c(\eta) \geq d_r(v) + c(\eta)
+           \geq d_n(w).$$
+          The inequality $d_v(w) + d(\tau) \geq d_r(v)$ comes from
+          the fact that $d_v(w) + d(\eta)$ is the length of a path
+          to $v$. Moreover, $d_r(v) + c(\eta) \geq d_n(v)$ because
+          $d_r(v) + c(\eta)$ is the length of a path of length $n$
+          to $w$. Hence, $d_n(w) - d_k(w) \leq 0.$ So, $\alpha \leq 0.$ 
+        \end{proof}
+      
+      \item The $O(mn)$ algorithm computes $d_k(v)$ for all $0 \leq k \leq n$
+        and $v \in V$, which can be done by dynamic programming in $O(mn).$
+        It then compute $\mu^*$ according to the formula given 
+        by Lemma~\ref{min-mean-cost-characterization}, and
+        then uses $\mu^*$ to find the minimum mean cost cycle.
+    \end{itemize}
+  % section minimum_mean_cost_cycle_canceling_algorithm (end)
+  
+  \section{Cost Scaling Algorithm} % (fold)
+  \label{sec:cost_scaling_algorithm}
+    \begin{itemize}
+      \item A potential function is said to be \emph{$\epsilon$-optimal}
+        if $c^p(e) \geq -\epsilon$ for all $e \in E.$
+        
+      \item Let $f$ be a circulation. Define $\epsilon(f)$ to
+        be the minimal $\epsilon$ such that there exists a potential
+        function that is $\epsilon$-optimal in $G_f$.
+        
+      \item Let $\mu^*(f)$ be the mean cost of the cycle in $G_f$
+        with the minimum cost.
+        
+      \item
+        \begin{lemma}
+          $$\mu^*(f) = -\epsilon(f)$$
+        \end{lemma}
+        \begin{proof}
+          ($\mu^*(f) \leq - \epsilon(f)$) Subtract $\mu^*(f)$ from
+            all edge cost in the residual graph. Add a new vertex $s$
+            and add edge $(s,v)$ with cost $0$ to all $v \in V.$ 
+            Define $p(v)$ to be the shortest path distance from $s$ to $v$.
+            We know that $p(w) \leq p(v) + c(v,w) - \mu^*(f)$ for all edges
+            in $G_f.$ Hence, $c(u,v) + p(v) - p(w) \geq \mu^*(f).$
+            Therefore, $p$ is $-\mu^*(f)$-optimal, which means that
+            $\epsilon(f) \leq -\mu^*(f)$ or $\mu^*(f) \leq -\epsilon(f).$
+            \medskip
+
+          ($\mu^*(f) \geq -\epsilon(f)$) Let $p$ be a position function
+            that is $\epsilon(f)$-optimal. Take any cycle $\Gamma$ 
+            with the minimum negative mean cost in $G_f$. 
+            We have that $|\Gamma| \mu^*(f) = c(\Gamma) = c^p(\Gamma) \geq -|\Gamma|\epsilon(f)$.
+            Therefore, $\mu^*(f) \geq -\epsilon(f).$
+        \end{proof}
+      \item 
+        \begin{lemma}
+          In a network with integer cost, if $\epsilon(f) < 1/n$, then
+          $f$ is the min-cost circulation. 
+        \end{lemma}
+        \begin{proof}
+          Let $p$ be a potential function that is $\epsilon(f)$ optimal.
+          Take any cycle $\Gamma$ of length at most $n$ in $G_f.$ We have that
+          $c(\Gamma) = c^p(\Gamma) \geq |\Gamma|\mu^*(f) = -|\Gamma|\epsilon(f) > -|\Gamma|/n = 1.$
+          Since the cost of the cycle is integral, we have that $c(\Gamma) \geq 0.$
+          
+          Now, for any cycle of length more than $n$, we can break it to
+          a number of cycles of length at most $n$. So, its cost is greater
+          than or equal to 0 as well. In conclusion, there is no negative-cost
+          cycle, and $f$ is optimal.
+        \end{proof}
+      
+      \item The idea of cost-scaling algorithm is that, when we start with $f = 0$,
+        we have that $\epsilon(f) \leq C.$ We will then do something to the flow
+        so that $\epsilon(f)$ is reduced by a half until it is less than $1/n$,
+        which at thas point we have an optimal flow. Hence, we will need $\log(nC)$
+        iterations.
+        
+      \item A function $f: E \rightarrow \mathbb{R}$ is said to be a \emph{preflow}
+        if it satisfies the following condition:
+        \begin{itemize}
+          \item $f(v,w) = -f(w,v)$, and
+          \item $f(v,w) \leq u(v,w)$
+        \end{itemize}
+        for all $(v,w) \in E.$
+        
+      \item Let $f$ be a preflow. We define the \emph{excess} of vertex $v$, denoted
+        by $e^f(v)$ as $$e^f(v) = \sum_{(v,w) \in E} f(v,w).$$
+        Intuitively, a vertex with positive excess has left-over flow to send out. 
+        One with negative excess needs flow to come in.
+        
+      \item Obviously, if all vertices' excesses are zero, then the preflow
+        is a circulation.
+        
+      \item We now describe an algorithm that takes in 
+        \begin{itemize}
+          \item a circulation $f'$, and
+          \item a potential function $p'$ that is $2\epsilon$-optimal in $G_{f'}$
+        \end{itemize}
+        and produces a
+        \begin{itemize}
+          \item a circulation $f$, and
+          \item a potential function $p$ that is $\epsilon$-optimal in $G_{f}$.
+        \end{itemize}
+        
+        We first set $f = f'$ and $p = p'.$ We then make $p$ $0$-optimal
+        by saturating any edges with $c^p(e) < 0$, thereby removing
+        them from $G_f.$ However, this makes $f$ a preflow, not a circulation.
+        
+        The rest of the process is to make $f$ a circulation again,
+        while maintaining $\epsilon$-optimality of $p$. This is done
+        by a push/relabel type of algorithm as follows:
+        \begin{itemize}
+          \item {\bf Push:} If there is an edge $(v,w)$ such that
+            $e^f(v) > 0$ and $u^f(v,w) > 0$ and $c^p(v,w) < 0$,
+            we push $\min\{ e^f(v), u^f(v,w) \}$ through the edge.
+          \item {\bf Relabel:} For any vertex $v$ with no edges
+            that flow can be pushed trough, we set 
+            $$p(v) = \max_{(v,w) \in E} \{ p(w) - c(v,w) - \epsilon. \}$$
+            Note that setting $p(v)$ to this value makes $c^p(v,w) = p(v) - p(w) + c(v,w) \geq -\epsilon$
+            for all edges going out from $v$.
+        \end{itemize}
+        
+        The above description can be summarized into the following pseudocode.
+        \begin{codebox}
+          \Procname{$\proc{Find-$\epsilon$-Opt-Circ}(f', p', \epsilon)$}
+          \li Set $f \gets f'$ and $p \gets p'.$
+          \li For all $e \in E_f$ such that $c^p(e) < 0$, set $f(e) = u(e).$
+          \li \While there exists $v$ such that $e^f(v) > 0$
+          \li   \Do
+                  \If there exists $(v,w)$ such that $u^f(u,v) > 0$ and $c^p(u,v) < 0$
+          \li       \Then
+                      Push flow $\min\{ u^f(u,v), e^f(v) \}$ through $(u,v).$
+          \li       \Else
+                      Set $p(v) = \max_{(v,w) \in E} \{ p(w) - c(v,w) - \epsilon\}$.
+                    \End
+                \End
+        \end{codebox}
+        
+        Using the FIFO implementation of Push/Relabel algorithm, the routine 
+        $\proc{Find-$\epsilon$-Opt-Circ}(f', p', \epsilon)$ runs in $O(n^3)$ time.
+      
+      \item Hence, the cost scaling algorithm takes $O(n^3 \log(nC))$ time.
+    \end{itemize}
+  % section cost_scaling_algorithm (end)
+  
+  \section{Capacity Scaling Algorithm} % (fold)
+  \label{sec:capacity_scaling_algorithm}
+    \begin{itemize}
+      \item The capacity scaling algorithm tries to maintain a preflow
+        that is $0$-optimal on subgraphs with residual capacity more than
+        $\Delta$. It then divides $\Delta$ until $\Delta < 1$, at which point
+        the preflow becomes the optimal circulation.
+        
+        Initially, we set $f = 0$, $p = 0$, and $\Delta = U = \max_{e \in E} u(e).$
+       
+        Let $$A^f(\Delta) = \{ e \in E : u^f(e) \geq \Delta \}.$$
+        The algorithm looks for any edge $e \in A^f(\Delta)$ such 
+        that $c^p(e) < 0.$ It then pushes $\Delta$ amount of flow through
+        the edge. This creates a preflow where some nodes have positive
+        excesses and some have negative excesses. Let
+        \begin{itemize}
+          \item $S^f(\Delta) = \{ v \in V : e^f(v) \geq \Delta \}$, and
+          \item $T^f(\Delta) = \{ v \in V : e^f(v) \leq -\Delta \}.$
+        \end{itemize}
+        The algorithm then tries to move $\Delta$ unit of flow from
+        a vertex in $S^f(\Delta)$ to one in $T^f(\Delta)$ until
+        $S^f(\Delta) = \emptyset$ or $T^f(\Delta) = \emptyset,$
+        while maintaining $0$-optimality of $p$. It then divides $\Delta$
+        by $2$ and proceed with the above process again.
+        
+        Note that it must be possible to move flow from a 
+        vertex to any other vertex in other for the algorithm to
+        work. This can be made possible by adding edges with infinite
+        capacity but with high cost to the graph.
+      \item 
+        \begin{lemma}
+          In a network with integer capacity, when $\Delta < 1$, 
+          then $f$ is an optimal circulation.
+        \end{lemma}
+        \begin{proof}
+          After the algorithm finishes $S^f(\Delta) = \{ v \in V : e^f(v) \geq 1 \} = \emptyset$
+          and $T^f(\Delta) = \{ v \in V : e^f(v) \leq -1 \} = \emptyset$.
+          This implies that all $e^f(v) = 0$. So $f$ is a circulation.
+          
+          When $\Delta < 1$, then $A^f(\Delta)$ is the whole graph $G_f$.
+          Since $p$ is $0$-optimal, we have that $G_f$ has no negative-cost
+          cycle.
+        \end{proof}
+      
+      \item How do we send $\Delta$ unit of flow from a vertex in $S^f(\Delta)$
+        to a vertex in $T^f(\Delta)$ while maintaining $0$-optimality of $p$?
+        We do this as follows:
+        \begin{itemize}
+          \item Find a vertex $s \in S^f(\Delta)$.
+          \item Compute $\hat{p}(v) = $ shortest path distance from $s$ to $v$
+            using $c^p(e)$ as length of edge $e$.
+            This can be done because $p$ is $0$-optimal.
+          \item Compute a shortest path from $s$ to some vertex in $T^f(e)$.
+            Push $\Delta$ unit of flow along the shortest path.
+          \item Update $p(v) = p(v) + \hat{p}(v).$
+        \end{itemize}
+        This procedure amounts to running Dijkstra's algorithm one time. 
+        So it takes $O(m + n\log n)$ time.
+      
+      \item It can be shown that the total amount of excess after saturating
+        edges is at most $2\Delta(n+m).$ Hence, $O(m+n)$ flow pushing is enough
+        before we halve $\Delta.$ Therefore, the whole algorithm takes
+        $O((m+n)(m + n\log n)\log U) = O(m^2 \log U)$ time.
+    \end{itemize}
+  % section capacity_scaling_algorithm (end)
+\end{document}

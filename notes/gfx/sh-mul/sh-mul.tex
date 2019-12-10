@@ -1,0 +1,456 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+\usepackage{verbatim}
+\usepackage{hyperref}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\Dee}{\mathrm{D}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\Var}{\mathrm{Var}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+\newcommand{\ov}[1]{\overline{#1}}
+
+\title{Multiplication of Real Spherical Harmonics}
+\author{Pramook Khungurn}
+
+\begin{document}
+	\maketitle
+
+	\section{Preliminaries}
+
+	\begin{itemize}
+		\item Let $\omega \in S^2$.  The direction is parametermized by two angles---the \textbf{elevation angle} $\theta$ and the \textbf{azimuthal angle} $\phi$---such that:
+        \begin{align*}
+            \omega
+            = \begin{bmatrix}
+                x \\ y \\ z
+            \end{bmatrix}
+            = \begin{bmatrix}
+                \sin\theta \cos\phi \\
+                \sin\theta \sin\phi \\
+                \cos\theta
+            \end{bmatrix}.
+        \end{align*}
+
+        \item We denote a \textbf{real spherical harmonic basis function} by the symbol $Y_{l,m}: S^2 \ra \Real$ where $l \geq 0$ and $-l \leq m \leq l$.  We have that:
+        \begin{align*}
+            Y_{l,m}(\omega)
+            = \begin{cases}
+                \sqrt{2} K_l^m \cos (m\phi) P_l^m (\cos\theta), & m > 0 \\
+                \sqrt{2} K_l^m \sin (|m|\phi) P_l^{|m|} (\cos\theta), & m > 0 \\
+                K_l^0 P_l^0 (\cos\theta), & m = 0
+            \end{cases}.
+        \end{align*}
+        Here,
+        \begin{align*}
+            K_l^m \sqrt{\frac{(2l+1)(l-|m|)!}{4\pi(l+|m|)!}},
+        \end{align*}
+        and $P_l^m$ is the \textbf{associated Legendre polynomial}, which may be computed by the following recurrence relations:
+        \begin{align*}            
+            P_0^0(x) &= 1 \\
+            P^{l+1}_{l+1}(x) &= -(2l+1) \sqrt{1 - x^2} P^l_l(x) \\
+            P^l_{l+1}(x) &= x(2l+1)P^l_l(x)
+        \end{align*}
+
+        \item The \textbf{complex spherical harmonics basis function} is denoted by $\mathcal{Y}_{l,m}$.  We have that
+        \begin{align*}
+            \mathcal{Y}_{0,0}(\omega) &= \frac{1}{\sqrt{4\pi}},
+        \end{align*}
+        and
+        \begin{align*}
+            \mathcal{Y}_{l,m}(\omega) &= i^{m+|m|} \sqrt{\frac{(2l+1)(l-|m|)!}{4\pi(l+|m|)!}} P_l^{|m|}(\cos\theta) e^{im\phi}
+        \end{align*}
+        for all $(l,m) \neq (0,0)$.
+
+        \item The complex basis functions are related to the real basis functions as follows:
+        \begin{align*}
+            Y_{l,m}(\omega) &= \begin{cases}
+                \mathcal{Y}_{l,0}(\omega), & m=0 \\
+                \frac{1}{\sqrt{2}}[\mathcal{Y}_{l,m}(\omega) + (-1)^m \mathcal{Y}_{l,-m}(\omega)] , & m>0 \\
+                \frac{i}{\sqrt{2}}[(-1)^m \mathcal{Y}_{l,m}(\omega) - \mathcal{Y}_{l,-m}(\omega)] , & m<0 \\
+            \end{cases}
+        \end{align*}
+
+        \item We shall call the basis functions with the same $l$-index as belonging to the same \textbf{band}.  We will also refer to the bands by its $l$-index; for examples, Band 0, Band 1, and so on.
+
+        \item The \textbf{real SH expansion of order $L$} of a spherical function $f$ is an approximation of $f$ by a linear combination of SH basis functions:
+        \begin{align*}
+            f(\omega) \approx \sum_{l=0}^L \sum_{m=-l}^l \tilde{f}_{l,m} Y_{l,m}(\omega)
+        \end{align*}
+        where the coefficient $\tilde{f}^m_l$ is given by:
+        \begin{align*}
+            \tilde{f}_{l,m} = \int_{S^2} f(\omega) Y_{l,m}(\omega)\ \dee\omega.
+        \end{align*}
+        It follows that an expansion of order $L$ has $(L+1)^2$ coefficients.              
+	\end{itemize}
+
+	\section{Spherical Harmonics Multiplication}
+
+	\begin{itemize}
+		\item In this document, the problem we are interested in this: we are given two functions $f$ and $g$ that are expanded in the real SH basis.  We would like to compute the real SH expansion of $h = fg$.
+
+		\item The tool of the trade is the following identify:
+		\begin{align*}
+			\mathcal{Y}_{l_1, m_1}(\omega) \mathcal{Y}_{l_2, m_2}(\omega) 
+			= \sum_{l} \sum_{m} \sqrt{\frac{(2l_1+1)(2l_2+1)(2l + 1)}{4\pi}}
+			\begin{pmatrix}
+				l_1 & l_2 & l \\ 0 & 0 & 0 
+			\end{pmatrix}
+			\begin{pmatrix}
+				l_1 & l_2 & l \\ m_1 & m_2 & -m
+			\end{pmatrix}
+			(-1)^m
+			\mathcal{Y}_{l,m}(\omega).
+		\end{align*}
+		For convenience, let
+		\begin{align*}
+			\begin{Bmatrix}
+				l_1 & l_2 & l \\ m_1 & m_2 & m
+			\end{Bmatrix}
+			 = \sum_{l} \sum_{m} \sqrt{\frac{(2l_1+1)(2l_2+1)(2l + 1)}{4\pi}}
+			\begin{pmatrix}
+				l_1 & l_2 & l \\ 0 & 0 & 0 
+			\end{pmatrix}
+			\begin{pmatrix}
+				l_1 & l_2 & l \\ m_1 & m_2 & -m
+			\end{pmatrix}
+			(-1)^m.
+		\end{align*}
+		So, we may write:
+		\begin{align*}
+			\mathcal{Y}_{l_1, m_1}(\omega) \mathcal{Y}_{l_2, m_2}(\omega) 
+			= \sum_{l} \sum_{m} 
+			\begin{Bmatrix}
+				l_1 & l_2 & l \\ m_1 & m_2 & m
+			\end{Bmatrix}
+			\mathcal{Y}_{l,m}(\omega)
+		\end{align*}		
+		
+		\item The term
+		\begin{align*}
+			\begin{pmatrix}
+				l_1 & l_2 & l \\
+				m_1 & m_2 & m
+			\end{pmatrix}
+		\end{align*}
+		is called the \textbf{Wigner $3j$-symbol}.  The symbol is zero any of the following conditions is not satisifed:
+		\begin{enumerate}
+			\item $-l_1 \leq m_1 \leq l_1$, $-l_2 \leq m_2 \leq l_2$, and $-l \leq m \leq l$.
+			\item $m = -(m_1 + m _2)$,
+			\item $|l_1-l_2| \leq l \leq l_1+l_2$.
+		\end{enumerate}
+		The general formula of the symbol is complicated.  However, Mathematica has a function called \texttt{ThreeJSymbol} that computes it.
+
+		As a result of Condition 2, we have that:
+		\begin{align*}
+			\mathcal{Y}_{l_1, m_1}(\omega) \mathcal{Y}_{l_2, m_2}(\omega) 
+			= \sum_{l}
+			\begin{Bmatrix}
+				l_1 & l_2 & l \\ m_1 & m_2 & m_1+m_2
+			\end{Bmatrix}
+			\mathcal{Y}_{l,m_1+m_2}(\omega)
+		\end{align*}
+
+		\item The $3j$-symbol satisfies the following identity:
+		\begin{align*}
+			\begin{pmatrix}
+				l_1 & l_2 & l \\
+				m_1 & m_2 & m
+			\end{pmatrix}
+			&= (-1)^{m_1 + m_2 + m} \begin{pmatrix}
+				l_1 & l_2 & l \\
+				-m_1 & -m_2 & -m
+			\end{pmatrix}
+		\end{align*}
+		So, when $m = -(m_1+m_2)$, we have that
+		\begin{align*}
+			\begin{pmatrix}
+				l_1 & l_2 & l \\
+				m_1 & m_2 & -(m_1 + m_2)
+			\end{pmatrix}
+			&= \begin{pmatrix}
+				l_1 & l_2 & l \\
+				-m_1 & -m_2 & m_1 + m_2
+			\end{pmatrix}
+		\end{align*}.
+		As a result,
+		\begin{align*}
+			\begin{Bmatrix}
+				l_1 & l_2 & l \\
+				m_1 & m_2 & -m_1 + m_2
+			\end{Bmatrix}
+			&= \begin{Bmatrix}
+				l_1 & l_2 & l \\
+				-m_1 & -m_2 & -m_1 - m_2
+			\end{Bmatrix}
+		\end{align*}
+
+		\item We would like to derive an expression similiar to the big identity above for real SH basis functions.  There are six cases, and we will evaluate them all.
+
+		\item When $m_1 = 0, m_2 = 0$, we have that
+		\begin{align*}
+			Y_{l_1, 0}(\omega) Y_{l_2, 0}(\omega)
+			&= \mathcal{Y}_{l_1, 0}(\omega) \mathcal{Y}_{l_2, 0}(\omega) \\
+			&= \sum_{l} \sum_{m} \begin{Bmatrix}
+				l_1 & l_2 & l \\
+				0 & 0 & m
+			\end{Bmatrix} 
+			(-1)^m \mathcal{Y}_{l,m}(\omega)\\
+			&= \sum_{l} \begin{Bmatrix}
+				l_1 & l_2 & l \\
+				0 & 0 & 0
+			\end{Bmatrix}
+			\mathcal{Y}_{l,0}(\omega)\\
+			&= \sum_{l} \begin{Bmatrix}
+				l_1 & l_2 & l \\
+				0 & 0 & 0
+			\end{Bmatrix} 
+			Y_{l,0}(\omega).
+		\end{align*}
+
+		\item When $m_1 = 0$ and  $m_2 > 0$, we have that
+		\begin{align*}
+			& Y_{l_1, 0}(\omega) Y_{l_2, m_2}(\omega)\\
+			&= \mathcal{Y}_{l_1, 0}(\omega) \frac{1}{\sqrt{2}} \bigg( \mathcal{Y}_{l_2, m_2}(\omega) + (-1)^{m_2} \mathcal{Y}_{l_2, -m_2}(\omega) \bigg) \\
+			&= \frac{1}{\sqrt{2}} \mathcal{Y}_{l_1, 0}(\omega) \mathcal{Y}_{l_2, m_2}(\omega) + 
+			\frac{(-1)^{m_2}}{\sqrt{2}} \mathcal{Y}_{l_1, 0}(\omega) \mathcal{Y}_{l_2, -m_2}(\omega) \\
+			&= \frac{1}{\sqrt{2}} \sum_l \begin{Bmatrix}
+				l_1 & l_2 & l \\ 0 & m_2 & m_2
+			\end{Bmatrix}
+			\mathcal{Y}_{l,m_2}(\omega) + 
+			\frac{(-1)^{m_2}}{\sqrt{2}} \sum_l \sum_m \begin{Bmatrix}
+				l_1 & l_2 & l \\ 0 & -m_2 & -m_2
+			\end{Bmatrix}
+			\mathcal{Y}_{l,-m_2}(\omega) \\
+			&= \frac{1}{\sqrt{2}} \sum_l \begin{Bmatrix}
+				l_1 & l_2 & l \\ 0 & m_2 & m_2
+			\end{Bmatrix}
+			\mathcal{Y}_{l,m_2}(\omega) + 
+			\frac{(-1)^{m_2}}{\sqrt{2}} \sum_l \sum_m \begin{Bmatrix}
+				l_1 & l_2 & l \\ 0 & m_2 & m_2
+			\end{Bmatrix}
+			\mathcal{Y}_{l,-m_2}(\omega) \\
+			&= \sum_l \begin{Bmatrix}
+				l_1 & l_2 & l \\ 0 & m_2 & m_2
+			\end{Bmatrix}
+			\bigg( \frac{1}{\sqrt{2}}  \mathcal{Y}_{l,m_2}(\omega) + \frac{(-1)^{m_2}}{\sqrt{2}} \mathcal{Y}_{l,-m_2}(\omega)  \bigg)\\
+			&= \sum_l \begin{Bmatrix}
+				l_1 & l_2 & l \\ 0 & m_2 & m_2
+			\end{Bmatrix}
+			Y_{l,m_2}(\omega).
+		\end{align*}
+
+		\item When $m_1 = 0$  and $m_2 < 0$, we have that
+		\begin{align*}
+			& Y_{l_1, 0}(\omega) Y_{l_2, m_2}(\omega)\\
+			&= \mathcal{Y}_{l_1, 0}(\omega) \frac{i}{\sqrt{2}} \bigg( (-1)^{m_2} \mathcal{Y}_{l_2, m_2}(\omega) - \mathcal{Y}_{l_2, -m_2}(\omega) \bigg) \\
+			&= (-1)^{m_2} \frac{i}{\sqrt{2}} \mathcal{Y}_{l_1, 0}(\omega) \mathcal{Y}_{l_2, m_2}(\omega) - 
+			\frac{i}{\sqrt{2}} \mathcal{Y}_{l_1, 0}(\omega) \mathcal{Y}_{l_2, -m_2}(\omega) \\
+			&= (-1)^{m_2} \frac{i}{\sqrt{2}} \sum_l \begin{Bmatrix}
+				l_1 & l_2 & l \\ 0 & m_2 & m_2
+			\end{Bmatrix} \mathcal{Y}_{l,m_2}(\omega) 
+			- \frac{i}{\sqrt{2}} \sum_l \sum_m \begin{Bmatrix}
+				l_1 & l_2 & l \\ 0 & -m_2 & -m_2
+			\end{Bmatrix} \mathcal{Y}_{l,-m_2}(\omega) \\
+			&= (-1)^{m_2} \frac{i}{\sqrt{2}} \sum_l \begin{Bmatrix}
+				l_1 & l_2 & l \\ 0 & m_2 & m_2
+			\end{Bmatrix} \mathcal{Y}_{l,m_2}(\omega) 
+			- \frac{i}{\sqrt{2}} \sum_l \sum_m \begin{Bmatrix}
+				l_1 & l_2 & l \\ 0 & m_2 & m_2
+			\end{Bmatrix} \mathcal{Y}_{l,-m_2}(\omega) \\
+			&= \sum_l \begin{Bmatrix}
+				l_1 & l_2 & l \\ 0 & m_2 & m_2
+			\end{Bmatrix}
+			\bigg( (-1)^{m_2} \frac{i}{\sqrt{2}}  \mathcal{Y}_{l,m_2}(\omega) - \frac{i}{\sqrt{2}} \mathcal{Y}_{l,-m_2}(\omega)  \bigg)\\
+			&= \sum_l \begin{Bmatrix}
+				l_1 & l_2 & l \\ 0 & m_2 & m_2
+			\end{Bmatrix}
+			Y_{l,m_2}(\omega).
+		\end{align*}
+
+		\item When $m_1 > 0$  and $m_2 > 0$, we have that
+		\begin{align*}
+			& Y_{l_1, m_1} Y_{l_2, m_2}\\
+			&= \frac{1}{\sqrt{2}} \bigg( \mathcal{Y}_{l_1, m_1} + (-1)^{m_1} \mathcal{Y}_{l_1, -m_1} \bigg) \frac{1}{\sqrt{2}} \bigg( \mathcal{Y}_{l_2, m_2} + (-1)^{m_2} \mathcal{Y}_{l_2, -m_2} \bigg) \\
+			&= \frac{1}{2} \bigg( 
+			\mathcal{Y}_{l_1, m_1}\mathcal{Y}_{l_2, m_2}
+			+ (-1)^{m_2} \mathcal{Y}_{l_1, m_1}\mathcal{Y}_{l_2, -m_2} 
+			+ (-1)^{m_1} \mathcal{Y}_{l_1, -m_1}\mathcal{Y}_{l_2, m_2} 
+			+ (-1)^{m_1+m_2} \mathcal{Y}_{l_1, -m_1}\mathcal{Y}_{l_2, -m_2}
+			\bigg) \\
+			&= \frac{1}{2} \bigg( 
+			\sum_{l} \begin{Bmatrix} l_1 & l_2 & l \\ m_1 & m_2 & m_1 + m_2 \end{Bmatrix} \mathcal{Y}_{l, m_1+m_2} \\
+			&\qquad + (-1)^{m_2} \sum_{l} \begin{Bmatrix} l_1 & l_2 & l \\ m_1 & -m_2 & m_1 - m_2 \end{Bmatrix} \mathcal{Y}_{l, m_1-m_2} \\
+			&\qquad + (-1)^{m_1} \sum_{l} \begin{Bmatrix} l_1 & l_2 & l \\ -m_1 & m_2 & -m_1 + m_2 \end{Bmatrix} \mathcal{Y}_{l, -m_1+m_2} \\
+			&\qquad + (-1)^{m_1+m_2} \sum_{l} \begin{Bmatrix} l_1 & l_2 & l \\ -m_1 & -m_2 & -m_1 - m_2 \end{Bmatrix} \mathcal{Y}_{l, -m_1-m_2}
+			\bigg) \\
+			&= \frac{1}{\sqrt{2}} \bigg( 
+			\sum_{l} \begin{Bmatrix} l_1 & l_2 & l \\ m_1 & m_2 & m_1 + m_2 \end{Bmatrix} \frac{1}{\sqrt{2}} \bigg( \mathcal{Y}_{l, m_1+m_2} + (-1)^{m_1+m_2} \mathcal{Y}_{l, -m_1-m_2} \bigg)  \\
+			&\qquad + (-1)^{m_2} \sum_{l} \begin{Bmatrix} l_1 & l_2 & l \\ m_1 & -m_2 & m_1 - m_2 \end{Bmatrix} \frac{1}{\sqrt{2}} \bigg(  \mathcal{Y}_{l, m_1-m_2} + (-1)^{m_1-m_2} \mathcal{Y}_{l, -m_1+m_2} \bigg) \bigg) \\
+			&= \frac{1}{\sqrt{2}} \bigg( 
+			\sum_{l} \begin{Bmatrix} l_1 & l_2 & l \\ m_1 & m_2 & m_1 + m_2 \end{Bmatrix} Y_{l,m_1+m_2}  \\
+			&\qquad + (-1)^{m_2} \sum_{l} \begin{Bmatrix} l_1 & l_2 & l \\ m_1 & -m_2 & m_1 - m_2 \end{Bmatrix} \frac{1}{\sqrt{2}} \bigg(  \mathcal{Y}_{l, m_1-m_2} + (-1)^{m_1-m_2} \mathcal{Y}_{l, -m_1+m_2} \bigg) \bigg).
+		\end{align*}
+		Here, there are three cases.  
+
+		If $m_1 > m_2$, we have that:
+		\begin{align*}
+			Y_{l_1, m_1} Y_{l_2, m_2}
+			&= \frac{1}{\sqrt{2}} \bigg( 
+			\sum_{l} \begin{Bmatrix} l_1 & l_2 & l \\ m_1 & m_2 & m_1 + m_2 \end{Bmatrix} Y_{l,m_1+m_2} 
+			+ (-1)^{m_2} \sum_{l} \begin{Bmatrix} l_1 & l_2 & l \\ m_1 & -m_2 & m_1 - m_2 \end{Bmatrix} Y_{l,m_1-m_2} \bigg).
+		\end{align*}
+
+		If $m_1 = m_2$, we have that:
+		\begin{align*}
+			Y_{l_1, m_1} Y_{l_2, m_2}
+			&= \frac{1}{\sqrt{2}} \bigg( 
+			\sum_{l} \begin{Bmatrix} l_1 & l_2 & l \\ m_1 & m_2 & m_1 + m_2 \end{Bmatrix} Y_{l,m_1+m_2} 
+			+ (-1)^{m_2} \sqrt{2} \sum_{l} \begin{Bmatrix} l_1 & l_2 & l \\ m_1 & -m_2 & 0 \end{Bmatrix} Y_{l,0} \bigg).
+		\end{align*}
+
+		If $m_1 < m_2$, we can swap them to get back to the case where $m_1 > m_2$.
+
+		\item When $m_1 < 0$ and $m_2 < 0$, we have that
+		\begin{align*}
+			& Y_{l_1, m_1} Y_{l_2, m_2}\\
+			&= \frac{i}{\sqrt{2}} \bigg( (-1)^{m_1} \mathcal{Y}_{l_1, m_1} - \mathcal{Y}_{l_1, -m_1} \bigg) \frac{i}{\sqrt{2}} \bigg( (-1)^{m_2} \mathcal{Y}_{l_2, m_2} - \mathcal{Y}_{l_2, -m_2} \bigg) \\
+			&= -\frac{1}{2} \bigg( (-1)^{m_1+m_2} \mathcal{Y}_{l_1, m_1} \mathcal{Y}_{l_2, m_2} - (-1)^{m_1} \mathcal{Y}_{l_1, m_1}\mathcal{Y}_{l_2, -m_2} - (-1)^{m_2} \mathcal{Y}_{l_1, -m_1} \mathcal{Y}_{l_2, m_2} + \mathcal{Y}_{l_1, -m_1} \mathcal{Y}_{l_2, -m_2} \bigg) \\
+			&= -\frac{1}{2} \bigg( 
+			(-1)^{m_1+m_2}  \sum_{l} \begin{Bmatrix} l_1 & l_2 & l \\ m_1 & m_2 & m_1 + m_2 \end{Bmatrix} \mathcal{Y}_{l, m_1+m_2} \\
+			& \qquad - (-1)^{m_1} \sum_{l} \begin{Bmatrix} l_1 & l_2 & l \\ m_1 & -m_2 & m_1 - m_2 \end{Bmatrix} \mathcal{Y}_{l, m_1-m_2} \\
+			& \qquad - (-1)^{m_2} \sum_{l} \begin{Bmatrix} l_1 & l_2 & l \\ -m_1 & m_2 & -m_1 + m_2 \end{Bmatrix} \mathcal{Y}_{l, -m_1+m_2} \\
+			& \qquad + \sum_{l} \begin{Bmatrix} l_1 & l_2 & l \\ -m_1 & -m_2 & -m_1 - m_2 \end{Bmatrix} \mathcal{Y}_{l, -m_1-m_2} \bigg) \\
+			&= -\frac{1}{\sqrt{2}} \bigg( 
+			\sum_{l} \begin{Bmatrix} l_1 & l_2 & l \\ -m_1 & -m_2 & -m_1 - m_2 \end{Bmatrix} \frac{1}{\sqrt{2}} \bigg( \mathcal{Y}_{l, -m_1-m_2} + (-1)^{m_1+m_2} \mathcal{Y}_{l, m_1+m_2} \bigg)  \\
+			& \qquad - (-1)^{m_2} \sum_{l} \begin{Bmatrix} l_1 & l_2 & l \\ -m_1 & m_2 & -m_1 + m_2 \end{Bmatrix}
+			\frac{1}{\sqrt{2}} \bigg( \mathcal{Y}_{l, -m_1+m_2} + (-1)^{m_1 - m_2} \mathcal{Y}_{l, m_1-m_2} \bigg) \bigg) \\
+			&= -\frac{1}{\sqrt{2}} \bigg( 
+			\sum_{l} \begin{Bmatrix} l_1 & l_2 & l \\ -m_1 & -m_2 & -m_1 - m_2 \end{Bmatrix} Y_{l,-m_1-m_2}  \\
+			& \qquad - (-1)^{m_2} \sum_{l} \begin{Bmatrix} l_1 & l_2 & l \\ -m_1 & m_2 & -m_1 + m_2 \end{Bmatrix}
+			\frac{1}{\sqrt{2}} \bigg( \mathcal{Y}_{l, -m_1+m_2} + (-1)^{m_1 - m_2} \mathcal{Y}_{l, m_1-m_2} \bigg) \bigg).
+		\end{align*}
+		There are three cases again.
+
+		If $-m_1+m_2 > 0$, we have
+		\begin{align*}
+			Y_{l_1, m_1} Y_{l_2, m_2}
+			&= -\frac{1}{\sqrt{2}} \bigg( 
+			\sum_{l} \begin{Bmatrix} l_1 & l_2 & l \\ -m_1 & -m_2 & -m_1 - m_2 \end{Bmatrix} Y_{l,-m_1-m_2}  \\
+			& \qquad - (-1)^{m_2} \sum_{l} \begin{Bmatrix} l_1 & l_2 & l \\ -m_1 & m_2 & -m_1 + m_2 \end{Bmatrix}
+			Y_{l,-m_1+m_2} \bigg).
+		\end{align*}
+
+		If $-m_1+m_2 = 0$, we have
+		\begin{align*}
+			Y_{l_1, m_1} Y_{l_2, m_2}
+			&= -\frac{1}{\sqrt{2}} \bigg( 
+			\sum_{l} \begin{Bmatrix} l_1 & l_2 & l \\ -m_1 & -m_2 & -m_1 - m_2 \end{Bmatrix} Y_{l,-m_1-m_2}  \\
+			& \qquad - (-1)^{m_2} \sqrt{2} \sum_{l} \begin{Bmatrix} l_1 & l_2 & l \\ -m_1 & m_2 & 0 \end{Bmatrix}
+			Y_{l, 0} \bigg).
+		\end{align*}
+
+		If $-m_1+m_2 < 0$, we can flip it so that we end up with the $-m_1+m_2 > 0$ case.
+
+		\item If $m_1 > 0$ and $m_2 < 0$, we have that
+		\begin{align*}
+			& Y_{l_1, m_1} Y_{l_2, m_2}\\
+			& = \frac{1}{\sqrt{2}} \bigg( \mathcal{Y}_{l_1, m_1} + (-1)^{m_1} \mathcal{Y}_{l_1, -m_1} \bigg)
+			\frac{i}{\sqrt{2}} \bigg( (-1)^{m_2} \mathcal{Y}_{l_2, m_2} - \mathcal{Y}_{l_2, -m_2} \bigg) \\
+			& = \frac{i}{2} \bigg( 
+			- \mathcal{Y}_{l_1, m_1} \mathcal{Y}_{l_2, -m_2}
+			+ (-1)^{m_1+m_2} \mathcal{Y}_{l_1, -m_1} \mathcal{Y}_{l_2, m_2}
+			+ (-1)^{m_2} \mathcal{Y}_{l_1, m_1} \mathcal{Y}_{l_2, m_2}
+			- (-1)^{m_1} \mathcal{Y}_{l_1, -m_1} \mathcal{Y}_{l_2, -m_2}
+			\bigg) \\
+			& = \frac{i}{2} \bigg( 
+			- \sum_{l} \begin{Bmatrix} l_1 & l_2 & l \\ m_1 & -m_2 & m_1 - m_2 \end{Bmatrix} \mathcal{Y}_{l, m_1-m_2} \\
+			& \qquad + (-1)^{m_1+m_2} \sum_{l} \begin{Bmatrix} l_1 & l_2 & l \\ -m_1 & m_2 & -m_1 + m_2 \end{Bmatrix} \mathcal{Y}_{l, -m_1+m_2} \\
+			& \qquad + (-1)^{m_2} \sum_{l} \begin{Bmatrix} l_1 & l_2 & l \\ m_1 & m_2 & m_1 + m_2 \end{Bmatrix} \mathcal{Y}_{l, m_1+m_2} \\
+			& \qquad - (-1)^{m_1} \sum_{l} \begin{Bmatrix} l_1 & l_2 & l \\ -m_1 & -m_2 & -m_1 - m_2 \end{Bmatrix} \mathcal{Y}_{l, -m_1-m_2}
+			\bigg) \\
+			& = \frac{1}{\sqrt{2}} \bigg( 
+			 \sum_{l} \begin{Bmatrix} l_1 & l_2 & l \\ m_1 & -m_2 & m_1 - m_2 \end{Bmatrix}\frac{i}{\sqrt{2}} \bigg( - \mathcal{Y}_{l, m_1-m_2} + (-1)^{m_1+m_2} \mathcal{Y}_{l, -m_1+m_2}  \bigg) \\			
+			& \qquad + \sum_{l} \begin{Bmatrix} l_1 & l_2 & l \\ m_1 & m_2 & m_1 + m_2 \end{Bmatrix} \frac{i}{\sqrt{2}} \bigg( (-1)^{m_2} \mathcal{Y}_{l, m_1+m_2}  - (-1)^{m_1}\mathcal{Y}_{l, -m_1-m_2} \bigg)
+			\bigg). \\
+			& = \frac{1}{\sqrt{2}} \bigg( 
+			 \sum_{l} \begin{Bmatrix} l_1 & l_2 & l \\ m_1 & -m_2 & m_1 - m_2 \end{Bmatrix} Y_{l,-m_1+m_2} \\			
+			& \qquad + \sum_{l} \begin{Bmatrix} l_1 & l_2 & l \\ m_1 & m_2 & m_1 + m_2 \end{Bmatrix} \frac{i}{\sqrt{2}} \bigg( (-1)^{m_2} \mathcal{Y}_{l, m_1+m_2}  - (-1)^{m_1}\mathcal{Y}_{l, -m_1-m_2} \bigg)
+			\bigg).
+		\end{align*}
+
+		There are three cases.
+
+		If $m_1 + m_2 > 0$, we have that
+		\begin{align*}
+			& Y_{l_1, m_1} Y_{l_2, m_2} \\
+			& = \frac{1}{\sqrt{2}} \bigg( 
+			 \sum_{l} \begin{Bmatrix} l_1 & l_2 & l \\ m_1 & -m_2 & m_1 - m_2 \end{Bmatrix} Y_{l,-m_1+m_2} \\			
+			& \qquad - (-1)^{m_2} \sum_{l} \begin{Bmatrix} l_1 & l_2 & l \\ m_1 & m_2 & m_1 + m_2 \end{Bmatrix} \frac{i}{\sqrt{2}} \bigg(-  \mathcal{Y}_{l, m_1+m_2}  + (-1)^{m_1+m_2}\mathcal{Y}_{l, -m_1-m_2} \bigg)
+			\bigg) \\
+			& = \frac{1}{\sqrt{2}} \bigg( 
+			 \sum_{l} \begin{Bmatrix} l_1 & l_2 & l \\ m_1 & -m_2 & m_1 - m_2 \end{Bmatrix} Y_{l,-m_1+m_2} 
+			- (-1)^{m_2} \sum_{l} \begin{Bmatrix} l_1 & l_2 & l \\ m_1 & m_2 & m_1 + m_2 \end{Bmatrix} Y_{l,-m_1-m_2}
+			\bigg).
+		\end{align*}
+		
+		If $m_1+m_2 = 0$, we have that
+		\begin{align*}
+			Y_{l_1, m_1} Y_{l_2, m_2}
+			= \frac{1}{\sqrt{2}} \sum_{l} \begin{Bmatrix} l_1 & l_2 & l \\ m_1 & -m_2 & m_1 - m_2 \end{Bmatrix} Y_{l,-m_1+m_2}.			
+		\end{align*}
+
+		If $m_1+m_2 < 0$, we have that
+		\begin{align*}
+			& Y_{l_1, m_1} Y_{l_2, m_2} \\
+			& = \frac{1}{\sqrt{2}} \bigg( 
+			 \sum_{l} \begin{Bmatrix} l_1 & l_2 & l \\ m_1 & -m_2 & m_1 - m_2 \end{Bmatrix} Y_{l,-m_1+m_2} \\			
+			& \qquad + (-1)^{m_1} \sum_{l} \begin{Bmatrix} l_1 & l_2 & l \\ m_1 & m_2 & m_1 + m_2 \end{Bmatrix} \frac{i}{\sqrt{2}} \bigg( (-1)^{m_1+m_2} \mathcal{Y}_{l, m_1+m_2}  - \mathcal{Y}_{l, -m_1-m_2} \bigg)
+			\bigg) \\
+			& = \frac{1}{\sqrt{2}} \bigg( 
+			 \sum_{l} \begin{Bmatrix} l_1 & l_2 & l \\ m_1 & -m_2 & m_1 - m_2 \end{Bmatrix} Y_{l,-m_1+m_2}
+			+ (-1)^{m_1} \sum_{l} \begin{Bmatrix} l_1 & l_2 & l \\ m_1 & m_2 & m_1 + m_2 \end{Bmatrix} Y_{l,m_1+m_2} \bigg).
+		\end{align*}
+
+	\end{itemize}	
+
+	\bibliographystyle{apalike}
+	\bibliography{sh-mul}  
+\end{document}

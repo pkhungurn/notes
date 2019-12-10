@@ -1,0 +1,105 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+\usepackage{verbatim}
+\usepackage{hyperref}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\Dee}{\mathrm{D}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\Var}{\mathrm{Var}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+\newcommand{\ov}[1]{\overline{#1}}
+
+\title{GAN Papers from Nvidia}
+
+\begin{document}
+  \maketitle
+
+  In 2017 and 2018, researchers at Nvidia produced two significant papers on generative adversarial networks (GANs) \cite{Karras:2017, Karras:2018}. These papers results in automatic generation of high quality and high resolution of images of human faces. (See \url{http://thispersondoesnotexist.com}, for example.) This note is written as I read those papers.
+
+  \section{StyleGAN Paper}
+
+  This is the ``A Style-Based Generator Arcthitecture for Generative Adversarial Network'' paper \cite{Karras:2018}, which was published to CVPR 2019.
+
+  \subsection{High-Level Description}
+
+  \begin{itemize}
+  	\item The paper describes a new architecture for GAN's generator, which is inspired by the networks for style transfer \cite{Huang:2017}.
+
+  	\item Typical GANs start with a latent code, which is then transformed directly by the network into an output.
+
+  	\item However, the paper's architecture starts with a learned constant input which is adjusted to the style given by the latent code as it progresses through the network.
+
+  	\item The constant input starts at a low resolution. It is then adjusted for style and then upsampled. This is repeated for a number of times until the desired resolution is achieved. The upsampling is inspired by the previous GAN paper \cite{Karras:2017}.
+
+  	\item The paper claims that the new generator can separate high-level attributes (pose, identity, etc.) from low-level ones (freckles, hair, etc.).
+
+  	\item One insight of the paper is the benefit of distribution of latent codes from the real distribution. In previous GANs, the distribution of the latent codes must follow that of the training data. Using the latent codes to adjust styles leads the two distributions to become less entangled.
+
+  	\begin{itemize}
+  		\item The paper introduces two metrics---perceptual path length and linear separability---for measuring disentanglement between two distributions.
+
+  		\item Using the new metrics, the paper shows that their generators yields a more linear, less entanbled representatin of different factors of variation.
+  	\end{itemize}
+
+  	\item The paper also provides a new dataset of human faces called the Flickr-Faces-HQ (FFHQ) dataset.
+  \end{itemize}
+
+  \subsection{The Generator}
+
+  \begin{itemize}
+  	\item For a given latent code $\ve{z} \in \mathcal{Z}$, the paper uses a non-linear mapping network $f: \mathcal{Z} \rightarrow \mathcal{W}$ to produce $\ve{w} \in \mathcal{W}$.
+
+  	\begin{itemize}
+  		\item Both $\ve{z}$ and $\ve{w}$ are vectors of size $512$.
+
+  		\item The mapping $f$ is implemented with an $8$-layered multi-layer perceptron.
+  	\end{itemize}
+
+  	\item Learned affine transformations then transform $\ve{w}$ to styles $\ve{y} = (\ve{y}_s, \ve{y}_b)$ that contains adaptive instance normalization (AdaIN) layers \cite{Huang:2017}:
+  	\begin{align*}
+  		\mathrm{AdaIN}(\ve{x}_i, \ve{y})
+  		= \ve{y}_{s,i} \frac{\ve{x}_i - \mu(\ve{x}_i)}{\sigma(\ve{x}_i)} + \ve{y}_{b,i}.
+  	\end{align*}
+  \end{itemize}
+
+  \bibliographystyle{acm}
+  \bibliography{nvidia-gan-papers}  
+\end{document}

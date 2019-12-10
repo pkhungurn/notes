@@ -1,0 +1,407 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+\usepackage{verbatim}
+\usepackage{hyperref}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\Dee}{\mathrm{D}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\Var}{\mathrm{Var}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+\newcommand{\ov}[1]{\overline{#1}}
+
+\title{Conditioning Neural Networks with\\Feature-wise Affine Transformations}
+
+\begin{document}
+  \maketitle
+
+  In this note, I summarize the Distill article ``Feature-wise transformations'' \cite{Dumoulin:2018} and also some other papers that directly use the technique.
+
+  \section{Conditioning}
+
+  \begin{itemize}
+  	\item Consider a general problem of computing a function that has two inputs, say $f(\ve{x},\ve{y})$. We are interested in the problems of the form where $\ve{x}$ is the \textbf{main subject} of a problem; it is the thing to be analyzed or to make something out of. On the other hand, $\ve{y}$ is the \textbf{ocnditioning information}; it describes what to be done with the main subject. Examples of problems of this type include:
+  	\begin{itemize}
+  		\item \textbf{Conditional GANs (cGANs).} Here, $\ve{x}$ is a latent code, and $\ve{y}$ is the class we want the generated image to be in. The output $f(\ve{x},\ve{y})$ should be an image of class $y$.
+
+  		\item \textbf{Conditional image translation.} $x$ is an image, and $y$ describes how we want the image to be transformed. For example, in the GANimation paper \cite{Pumarola:2019}, $\ve{x}$ is an image of a human face, $\ve{y}$ is the Action Units (AUs) describing a facial expression, and $f(\ve{x},\ve{y})$ should be the image of the same human with the expression changed to the one specified by $\ve{y}$.
+
+  		\item \textbf{Style transfer}. $\ve{x}$ is the ``content'' image, $\ve{y}$ is the ``style'' image, and $f(\ve{x},\ve{y})$ is an image with the content of $\ve{x}$ and the style of $\ve{y}$.
+
+  		\item \textbf{Answering questions about images.} Again, $\ve{x}$ is an image. However, this time, $\ve{y}$ is a natural language question about the image such as ``what material is the blue sphere made of?'' \cite{Johnson:2016}.
+  	\end{itemize}
+  	Performing computation with conditioning information is important, especially for the domain I'm interested in.
+
+  	\item One way to think about the conditioning information is that it describes the \textbf{tasks} to be done to the main subject.
+
+  	\item An easy way to include the conditioning information is to just concatenate $\ve{y}$ to $\ve{x}$ and feed that to the network that computes the function. This is easy for cGANs and conditinal image translation because it is easy to transform $\ve{y}$ to something that has the same format as $\ve{x}$. However, how would you do this for the question answering problem?
+
+  	\item There's a way to do the same thing as concatenating that is more general: \textbf{feature-wise transformation by adding bias}. After the input is processed by a number of layers, yielding immediate feature representation $g(\ve{x})$, we simply add a transformed value $\gamma(\ve{y})$ to $h(\ve{x})$ and then pass the transformed features to the next step:
+  	\begin{align*}
+  		f(\ve{x},\ve{y}) := h(g(\ve{x}) + \gamma(\ve{y})).
+  	\end{align*}
+  	Note that, when $\ve{x}$ and intermediate features are images, then $\gamma(\ve{y})$ is a vector with the same number of channels as $g(\ve{x})$, and the same $\gamma(\ve{y})$ is added to all spatial locations of $g(\ve{x}).$ This is why we call the approach ``feature-wise.''
+
+  	\item Let's see why the above approach is the same as concatenating. Let us denote the concatenated input by
+  	\begin{align*}
+  		\tilde{\ve{x}} = \begin{bmatrix} \ve{x} \\ \ve{y} \end{bmatrix}.
+  	\end{align*}
+  	Invariably, the first layer of the network is a linear layer, which would compute:
+  	\begin{align*}
+  		W \tilde{\ve{x}} 
+  		= \begin{bmatrix} W_1 & W_2 \end{bmatrix} 
+  		\begin{bmatrix} \ve{x} \\ \ve{y} \end{bmatrix}
+  		= W_1 \ve{x} + W_2 \ve{y}.
+  	\end{align*}
+  	Note that the same computation can be achieved by setting $\gamma(\ve{y} ) := W_2 \ve{y}$ and making the first linear layer having weight matrix $W_1$ instead of $W$.
+
+  	\item With the above equivalence, we can see that feature-wise transformation is more powerful than concatenation. This is because \textbf{it can be inserted to many places in the network}, allowing the conditioning information to be used in multiple steps. Concatenation, on the other hand, forces the network to preserve the conditioning information as it goes through the layers in order to do so.
+
+  	\item We can generalize feature-wise transformation by adding bias by adding a scalign factor to get \textbf{feature-wise transformation by affine transformation} or \textbf{\emph{f}eature-w\emph{i}se \emph{l}inear \emph{m}odulation (FiLM)} as called by Perez \etal~\cite{Perez:2017} as follows:
+  	\begin{align*}
+  		f(x,y) = h\big(\beta(\ve{y}) \odot g(\ve{x}) + \gamma(\ve{y})\big)
+  	\end{align*}
+  	where $\odot$ denotes the element-wise multiplication. When dealing with images, $\odot$ multiplies the same $\beta(\ve{y})$ to all spetial locations of $g(\ve{x})$.
+
+  	\item FiLM is a general framework that subsumes many previous similar techniques such as conditional batch normalization (CBN) and adaptive instance normalization (AdaIN). In the following sections, we will summarize papers those papers.
+  \end{itemize}
+
+  \section{Conditional Batch Normalization}
+
+  \begin{itemize}
+  	\item \emph{Conditional batch normalization} (CBN) is used heavily by de Vries \etal~\cite{deVries:2017}. The problem they tackled is \emph{visual question answering} (VQA) in which the system is given an image and a natural language question about the image. The goal is for the system to answer the question. (We'll make this more specific later.)
+
+    \item One common way to tackle VQA is to compute two feature vectors: one from the image, and the other from the question. Then, these two features would be fused, and the answer would be derived from the fused feature vector. This approach means that the question has no impact on the pipeline that processes the image, and the content of the question is only incorporated at the very large stage of the pipeline.
+
+    \item However, there are psychological evidences that natural language cues (e.g., hearing some words) can influence how human process visual signals from the eyes down to low-level features. This suggests that it is advisable to have the question influence how a network processes the image an early stage.
+
+    \item The authors worked on two datasets:
+    \begin{itemize}
+      \item VQA v1 \cite{Antol:2015}
+
+      \begin{itemize}
+        \item 614K question on 204K images. 
+        
+        \item There are three types of questions: 
+        
+        \begin{itemize}
+          \item Yes/no: Is this a vegetarian pizza?
+          \item Numerical answer: How many slices of pizza are there?
+          \item Free form: What is just under the tree?
+        \end{itemize}
+
+        \item Here, the length of the answers are at most 3 words.
+
+        \item From the official implementation of the paper, it seems that the last layer of the network is a softmap layer, so it might not be able to answer free from questions with multiple words answer. 
+
+        \item The dataset contains common sense questions that can be answered without the image.
+      \end{itemize}
+
+      \item GuessWhat?! \cite{deVries:2017:GuessWhat}
+
+      \begin{itemize}
+        \item 822K yes/no questions on 67K images.
+
+        \item This is based on two player game. There are two players: the questioner and the Oracle. Both players see the same image. The Oracle is assigned an object in the scene. The questioner is to find what the object is by asking the Oracle yes/no questions. The Oracle can answer yes, no, or not applicable.
+
+        \item Example questions:
+        \begin{itemize}
+          \item Is it an elephant?
+          \item Is in on the left?
+          \item Can you see the person's face?
+          \item Is she holding it?
+          \item The log on the right?
+          \item A chair? 
+        \end{itemize}
+
+        \item The dataset contains fewer common sense questions than VQA v1.
+      \end{itemize}
+    \end{itemize}
+  \end{itemize}
+
+  \subsection{The Algorithm}
+
+  \begin{itemize}
+  	\item The input question is process to get an embedding.
+  	\begin{itemize}
+  		\item A question $\ve{q} = [w_k]_{k=1}^K$ is a sequence of tokens $w_k$ from a predefined vocabulary $V$.
+  		
+  		\item Each token is transformed into a dense word embedding $e(w_k)$. The details of this is not that important (at least for me).
+
+  		\item The sequence of dense embedding $[e(w_k)]_{k=1}^K$ is then fed to a RNN. The RNN used in the paper is the LSTM.
+
+  		\item The last hidden state of the LSTM is taken as the embedding of the question. Let us denote this by $\ve{e}_{\ve{q}}$.
+  	\end{itemize}
+
+  	\item For the GuessWhat?! dataset, the image given to the nnetwork is the original image cropped around the object the Oracle is assigned. To make the network able to answer questions as an Oracle, the paper computes an embedding of the crop window and the class of the object. Then, it concatenates that vector to $\ve{e}_{\ve{q}}$ as computed above to produce the final embedding of the question.
+
+  	\item The paper uses a pretrained ResNet (ResNet-50) to convert the image to answer.
+
+  	\item ResNet employs \emph{batch normalization}. 
+  	\begin{itemize}
+  		\item The input is a feature map $F \in \Real^{N \times C \times H \times W}$. Let is denote an element of this feature map` by $F_{n,c,h,w}$.
+  		
+  		\item Batch normalization is given by the following function:
+  		\begin{align*}
+  			BN(F_{n,c,h,w}|\gamma_c,\beta_c) 
+  			:= \gamma_c \frac{F_{n,c,w,h} - E_{n,h,w}[F_{\cdot,c,\cdot,\cdot}]}{\sqrt{\mathrm{Var}_{n,h,w}(F_{\cdot,c,\cdot,\cdot}) + \epsilon}} + \beta_c
+  		\end{align*}
+  		where $\beta_c$ and $\gamma_c$ are learned parameters. At test time, where the batch may not be available, the batch mean and variance are replaced by the exponentially moving average computed during training.
+  	\end{itemize}
+  	
+
+  	\item The pretrained ResNet is connected to the question embedding through \textbf{conditional batch normalization}: the batch normalization parameters of all batch normalization units are changed by the following procedure.
+  	\begin{itemize}
+  		\item The embedding $\ve{e}_{\ve{q}}$ is fed to two one-hidden-layer multi-layer perceptron to produce changes to $\beta_c$ and $\gamma_c$:
+  		\begin{align*}
+  			\Delta \beta_c &= MLP(\ve{e}_{\ve{q}}) \\
+  			\Delta \gamma_c &= MLP(\ve{e}_{\ve{q}}).
+  		\end{align*}
+
+  		\item Then, batch normalization is computed by $BN(F_{n,c,h,w}|\hat\beta_c, \hat\gamma_c)$ where:
+  		\begin{align*}
+  			\hat\beta_c &= \beta_c + \Delta\beta_c \\
+  			\hat\gamma_c &= \gamma_c + \Delta\gamma_c
+  		\end{align*}
+  	\end{itemize}
+    Parameters for the MLPs only consist of $1\%$ of the total parameters of the ResNet. 
+
+    \item Besides the changed batch normalization parameters, all the other parameters of the ResNet are fixed.
+
+    \item After the input image is processed by the (CBNed) ResNet-50, the paper extracts the last feature maps $F$ of the layer before the last pooling layer. The feature map is of size $7\times 7$.
+
+    \item An attention map is then computed from $F$ conditioned on the embedding $\ve{e}_{\ve{q}}$ of the question:
+    \begin{align*}
+      \xi_{h,w} &= MLP(\mathrm{concat}(\ve{F}_{i,\cdot,h,w}, \ve{e}_{\ve{q}})), \\
+      \alpha_{h,w} &= \frac{\exp(\xi_{h,w})}{\sum_{h,w} \exp(\xi_{h,w})}.
+    \end{align*}
+    For the MLP function, the paper uses a multi-layer perceptron with one hidden layer.
+
+    \item The paper then uses the attention map to contract the feature map into one vector:
+    \begin{align*}
+      \ve{e}_{\ve{v}} = \sum_{h,w} \alpha_{h,w} \ve{F}_{i,\cdot,h,w}.
+    \end{align*}
+
+    \item The two embedding vectors are then fused:
+    \begin{align*}
+        \mathrm{fuse}(\ve{e}_{\ve{q}}, \ve{e}_{\ve{v}}) = P\big( \tanh(U \ve{e}_{\ve{q}}) \odot \tanh(V \ve{e}_{\ve{q}}) \big) + \ve{b}_P
+    \end{align*}
+    where P, U, V are trainable weight matrices, and $\ve{b}_P$ are trainable bias vector.
+
+    \item The fused vector is then passed to a linear layer and then a softmax to produce a probability distribution over the discrete answers.
+
+    \item The authors also used another algorithm \cite{Kim:2016} (the paper calls it MRN) to produce $\ve{e}_{\ve{v}}$: instead of looking at the feature maps once, the network would look at them in glimpses:
+    \begin{align*}
+    	\xi_{h,w}^g 
+    	&= P_{g} \big( \tanh(U'\ve{e}_{\ve{q}}) \odot \tanh(V' \ve{F}_{i,\cdot,h,w}) \big) \\
+    	a_{h,w}^g
+    	&= \frac{\exp(\xi^g_{h,w})}{\sum_{h,w} \exp(\xi^g_{h,w})} \\
+    	\ve{e}_{\ve{v}} &= 
+    	\bigg\|_g \sum_{h,w}  \alpha^g_{h,w} \ve{F}_{i,\cdot, h, w}.
+    \end{align*}
+    where $P_g$ is a trainable weight matrix for glimpse $g$, $U'$ and $V'$ are trainable weight matrices shared among the glimpsed, and the operator $\|$ denotes vector concatenation.
+  \end{itemize}
+
+  \subsection{Results}
+
+  \begin{itemize}
+  	\item Using CBN with ResNet-50 achieved about $2\%$ accuracy improvement over other SOTA methods on the VQA v1 dataset.
+
+  	\item For GuessWhat?!, the errors dropped also by about $3\%$ from that of the network that does not perform CBN at all.
+
+  	\item When t-SNE is performed on the feature maps before the attention mechanism (i.e., $\alpha_{h,w}$), we can observe that they form clusters based on answer types in ResNet with CBN. However, the same is not true for raw ResNet.
+
+  	\item Performance slowly decreases when CBN is applied exclusively to later stages.
+  \end{itemize}
+
+  \section{Conditional Instance Normalization}
+
+  \begin{itemize}
+  	\item Ghiasi \etal~\cite{Ghiasi:2017} is a paper using \emph{conditional instance normalization} (CIN) in order to perform image stylization.
+
+  	\item The inputs are two images. The \emph{content image} is typically a photograph, and the \emph{style image} is typically a painting. We would like to compute an output image containing the scene and objects of the content image but looks like it was painted in the style of the style image.
+
+  	\item Let $c$ denote the content image, $s$ the style image, and $x$ the output image. The loss function for the style transfer task is given by:
+  	\begin{align*}
+  		\min_x \mathcal{L}_c (x,c) + \lambda_s \mathcal{L}_s (x,s)
+  	\end{align*}
+  	where $\mathcal{L}_c$ denotes the content loss, and $\mathcal{L}_s$ denotes the style loss. $\lambda_s$ is a hyperparameter specifying the relative importance of the style in the output image. The two sublosses are given by:
+  	\begin{align*}
+  		\mathcal{L}_c(x,c)
+  		&= \sum_{j \in \mathcal{C}} \frac{1}{n_j} \| f_j(x) - f_j(x) |_2^2 \\
+  		\mathcal{L}_s(x,s)
+  		&= \sum_{i \in \mathcal{S}} \frac{1}{n_i} \| \mathcal{G}[f_i(x)] - \mathcal{G}[f_i(s)] \|_F^2.
+  	\end{align*}
+  	Here, $\mathcal{C}$ is a set of higher layers in an image classification network, and $\mathcal{S}$ is the set of lower layers. (The paper claims that contents are represented by higher layers and styles are represented by lower layers.) $f_l$ denotes the feature map that the output of Layer $l$ of the classification network, and $n_l$ denotes the number of elements in the feature map. Lastly, $\mathcal{G}[f_l(x)]$ is the Gram matrix associated with $f_l(x)$.
+
+  	\item The style transfer network used in the paper has an encoder-decoder architecture. However, instead of using the standard batch normalization units, it uses a conditional instance normalization where the unit's output is given by:
+  	\begin{align*}
+  		\tilde{z} = \gamma_s \frac{z-\mu}{\sigma} + \beta_s
+  	\end{align*}
+  	where $\mu$ and $\sigma$ are the per-channel mean and standard deviation across the pixels of the input feature map $z$. The parameters $\gamma_s$ and $\beta_s$ define an affine transformation on the normalized feature map, specialized to a specific style image.
+
+  	\item The collection of $\beta_s$ and $\gamma_s$ for all the normalization layers forms a 3000-dimensional vector, forming a space of artistic styles that can be interpolated. Dumoulin \etal~\cite{Dumoulin:2016} learned such vectors for $32$ paintings, allowing them to use the network to transfer photos to the styles of these 32 paintings and also the interpolated styles.
+
+  	\item Ghiasi \etal\ extends the work of Dumoulin \etal\ by proposing a style transfer network $P(\cdot)$ which takes a style image $s$ and compute the normalization parameters.
+
+  	In particular, they feed $s$ to a pretrained Inception-v3 network and compute the mean across each channel of the Mixed-6e layer, resulting in a vector with dimension $768$. This is then passed to two fully connected layers to compute the embedding parameters. The first fully connected layer has only $100$ units in order to compress the representation.
+
+  	\item In summary, the results of the paper are as follows:
+  	\begin{itemize}
+  	 	\item The authors were able to perform style transfer on arbirary content and style images. This was not possible before 2017.
+
+  	 	\item The network generalizes to styles of unobserved paintings.
+
+  	 	\item Training with more style images does not improve losses. However, it does improve generalization to unseen style images. The losses on unobserved paintings plateaus after about 16,000 style images are used.
+
+  	 	\item The space of normalization parametersr capture semantic structure of styles and allow for exploration.
+  	 \end{itemize} 
+  \end{itemize}
+
+  \section{Adaptive Instance Normalization}
+
+  \begin{itemize}
+  	\item \emph{Adaptive instance normalization} (AdaIN) is proposed by Huang and Belongie \cite{Huang:2017}. It is very similar to CIN.
+
+  	\item The AdaIN unit takes in two inputs:
+  	\begin{itemize}
+  		\item $x$ is the feature map (computed somehow) of the content image $c$.
+  		\item $y$ is the feature map (computed in the same way as the content image) of the style image $s$.
+  	\end{itemize}
+  	The unit matches the per-channel means and variances of $x$ to those of $y$:
+  	\begin{align*}
+  	 	\mathrm{AdaIN}(x,y) = \sigma(y) \frac{x - \mu(x)}{\sigma(x)} + \mu(y)
+  	 \end{align*}
+  	 where $\mu(\cdot)$ and $\sigma(\cdot)$ denote the per-channel mean and standard deviation of the input.
+
+  	\item The style transfer network of Huang and Belongie also has a encoder-decoder architecture.
+
+  	\begin{itemize}
+  		\item The encoder network $f$ is the first few layers of pretrained VGG-19. The paper uses up to \textbf{relu4\_1}. This part is fixed.
+
+  		\item The first step of processing is to compute $f(c)$ and $f(s)$.
+
+  		\item AdaIN is then used to match the statistics of $f(c)$ to that of $f(s)$:
+  		\begin{align*}
+  			t = \mathrm{AdaIN}(f(c), f(s)).
+  		\end{align*}
+
+  		\item Then, $t$ is passed to a decoder $g$ to get the final image. $g$ is the only part of the network that needs to be trained.
+  	\end{itemize}
+
+  	\item The loss function used to train $g$ is given by:
+  	\begin{align*}
+  		\mathcal{L} = \mathcal{L}_c + \lambda \mathcal{L}_s.
+  	\end{align*}
+  	The first term is the content loss. It encourages the decoder image to preserve the content with respect to the encoder:
+  	\begin{align*}
+  		\mathcal{L}_c = \| f(g(t)) - t \|_2.
+  	\end{align*}
+  	The second term is the style loss. It encourages the decoded image to match the statistics of the style image, after being processed by several layers of VGG-19:
+  	\begin{align*}
+  		\mathcal{L}_s
+  		&= \sum_{i=1}^L \| \mu(\phi_i(g(t))) - \mu(\phi_i(s)) \|_2
+  		+ \sum_{i=1}^L \| \sigma(\phi_i(g(t))) - \sigma(\phi_i(s)) \|_2
+  	\end{align*}
+  	where $\phi_i$ denotes output of a layer in VGG-19. The paper uses \texttt{relu1\_1}, \texttt{relu2\_1}, \texttt{relu3\_1}, and \texttt{relu4\_1}. The interesting thing is that it doesn't use any Gram matrices at all.
+
+  	\item Compared to CIN in Ghiasi \etal's paper, AdaIN is simpler but is less flexible. Ghiasi \etal's paper observes that CIN is better at reducing both content and style losses than AdaIN.
+  \end{itemize}
+
+  \section{Feature-wise Linear Modulation}
+
+  \begin{itemize}
+  	\item \emph{Feature-wise Linear Modulation} (FiLM, centainly a confusing acronym) is introduced by Perez \etal~\cite{Perez:2017}. It is a genalization of CIN that basically decouples the affine transformation from normalization.
+
+  	\item The task the paper tackles is VQA. However, they work on the CLEVR dataset \cite{Johnson:2016}. The dataset contains images of rendered objects with simple shapes and textures, but the questions are complex and require logic to answer. Example questions include:
+  	\begin{itemize}
+  		\item What   number of cylinders are small purple things or yellow rubber things?
+  		\item What color is the other object that is the same shape as the large brown matte thing?
+  	\end{itemize}
+
+  	\item FiLM proposes modifying the intermediate feature map in the image processing network by per-channel affine transformation:
+  	\begin{align*}
+  		\mathrm{FiLM}(\ve{F}_{i,c,\cdot,\cdot} | \gamma_{i,c}, \beta_{i,c})
+  		&= \gamma_{i,c} \ve{F}_{i,c,\cdot,\cdot} + \beta_{i,c}
+  	\end{align*}
+  	Here, $\gamma_{i,c}$ and $\beta_{i,c}$ are scalars computed from feeding two learned functions of another input $\ve{x}_i$ (that is, the question):
+  	\begin{align*}
+  		\gamma_{i,c} &= f_c(\ve{x}_i) \\
+  		\beta_{i,c} &= h_c(\ve{x}_i).
+  	\end{align*}
+
+  	\item In the paper, $f$ and $h$ are neural networks. First, the question is fed to a GRU, token by token, and the $4096$-dimensional internal state of the GRU is extracted. This vector is then passed to leanred affine transformation to produce $\gamma^n_{i,c}$ and $\beta^n_{i,c}$ for the $n$th modification points.
+
+  	\item The image processing network takes in a $224 \times 224$ image, and it extracts a $128 \times 14 \times 14$ feature map. The network that does the extraction is either:
+  	\begin{itemize}
+  		\item A network trained from scratch, containing 4 blocks, each with a $4 \times 4$ convolutional unit that halves the feature map size each time followed by a ReLU and a batch normalization.
+
+  		\item ResNet-101, pretrained on ImageNet, up to \emph{conv4}.
+  	\end{itemize}
+
+  	\item The feature map from the last step is then processed that 4 residual blocks with FiLM units. The output is then passed to:
+  	\begin{itemize}
+  		\item A $1 \times 1$ convolution to increase the number of channels to $512$. (Size = $512 \times 14 \times 14$.)
+
+  		\item A global max pooling unit.  (Size = $512 \times 1 \times 1$.)
+
+  		\item Two-layer MLP with $1024$ hidden units.
+
+  		\item Softmax to output distribution over the answers.
+  	\end{itemize}
+
+  	\item The residual block is used in the above step has the following train of units:
+  	\begin{itemize}
+  		\item $1 \times 1$ convolution.
+  		\item ReLU.
+  		\item $3 \times 3$ convolution.
+  		\item Batch normalization (without affine transformation).
+  		\item FiLM
+  		\item ReLU. 
+  	\end{itemize}
+  	As usual, the output of this train of units are added back to the original input.
+
+  	\item Their FiLMed network outperformed humans and halved SOTA errors.
+
+  \end{itemize}
+
+  \bibliographystyle{acm}
+  \bibliography{affine-conditioning}  
+\end{document}

@@ -1,0 +1,737 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{epstopdf}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+
+\newtheorem{lemma}{Lemma}[section]
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\Dee}{\mathrm{D}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\likelihood}{\mathcal{L}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\new}{\mathrm{new}}
+\newcommand{\Arg}{\mathrm{Arg\,}}
+\newcommand{\Log}{\mathrm{Log\,}}
+\newcommand{\RE}{\mathrm{Re\,}}
+\newcommand{\IM}{\mathrm{Im\,}}
+\newcommand{\Res}{\mathrm{Res}}
+\newcommand{\pv}{\mathrm{p.v.}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+\newcommand{\II}{\mathrm{II}}
+
+\title{Differential Geometry Notes of 04/15/2013}
+\author{Pramook Khungurn}
+
+\begin{document}
+  \maketitle
+
+  \section{Covariant Derivative}
+  \begin{itemize}
+    \item A {\bf (tangent) vector field } in an open set $U \sseq S$ of a regular surface $S$\\
+    is a function $w$ that assigns to each $p \in U$ a vector $w(p) \in T_p(S)$.
+
+    \item The vector field $w$ is {\bf differentiable} at $p$ if,\\
+    for some parameterization $\ve{x}(u,v) \in p$,\\
+    the components $a$ and $b$ of $w = a \ve{x}_u + b \ve{x}_v$ in the basis $\{ \ve{x}_u, \ve{x}_v \}$ are differentiable functions at $p$.    
+
+    \item $w$ is differentiable in $U$ if it is differentiable at every point $p \in U$.
+
+    \item \begin{definition}
+      Let 
+      \begin{itemize}
+        \item $U \sseq S$ be an open set,
+        \item $w$ be a differentiable vector field in $U$,
+        \item $p \in U$, and
+        \item $y \in T_p(S)$.
+      \end{itemize}
+      Consider a parameterized curve $\alpha: (-\epsilon, \epsilon) \ra U$ with
+      \begin{itemize}
+        \item $\alpha(0) = p$, and
+        \item $\alpha'(0) = y$.
+      \end{itemize}
+      Let $w(t) = w(\alpha(t))$ where $t \in (-\epsilon, \epsilon)$ be the restriction of the vector field to $\alpha$.
+
+      The vector obtained by the normal projection of $(\dee w / \dee t)(0)$ onto the plane $T_p(S)$ is called the {\bf covariant derivative at $p$ of the vector field $w$ relative to the vector $y$}.
+
+      This covariant derivative is denoted by $(\Dee w/\dee t)(0)$ or $(\Dee_y w)(p)$.
+    \end{definition}
+
+    \item The covariant derivative seems to depend on the normal vector $S$ (otherwise we cannot project the vector).
+
+    It also appears that it depends on the curve $\alpha$.
+
+    In  fact, it is an intrinsic concept that depends only on the first fundamental form and the vector $y$.
+
+    To see that this is true, we shall obtain the quantity in terms of intrinsic quantities ($E$, $F$, $G$ and its derivatives).
+
+    \item Let $\alpha(t) = \ve{x}(u(t), v(t))$. Let
+    \begin{align*}
+      w(t) 
+      &= a(u(t),v(t))\ve{x}_u + b(u(t), v(t))\ve{x}_v \\
+      &= a(t)\ve{x}_u + b(t)\ve{x}_v.
+    \end{align*}
+    So,
+    \begin{align*}
+      \frac{\dee w}{\dee t} = a(\ve{x}_{uu} u' + \ve{x}_{uv} v') + b(\ve{x}_{uv}u' + \ve{x}_{vv}v') + a'\ve{x}_u + b'\ve{x}_v.
+    \end{align*}
+    Writing $\ve{x}_{uu},$ $\ve{x}_{uv}$, $\ve{x}_{vv}$ as linear combinations of $\ve{x}_u$, $\ve{x}_v$, and $N$, we have that
+    \begin{align*}
+      \frac{\dee w}{\dee t} 
+      &= (a' + a \Gamma_{11}^1 u' + a \Gamma_{12}^1 v' + b \Gamma^1_{12} u' + b \Gamma^1_{22} v') \ve{x}_u\\
+      & \phantom{\ = \ } + (a' + b \Gamma_{11}^2 u' + a \Gamma_{12}^2 v' + b \Gamma^2_{12} u' + b \Gamma^2_{22} v') \ve{x}_u\\
+      & \phantom{\ = \ } + (a e u' + a f v' + b f u' + b g v') N
+    \end{align*}
+    Dropping the $N$ component, we have that
+    \begin{align*}
+      \frac{\Dee w}{\dee t} 
+      &= (a' + a \Gamma_{11}^1 u' + a \Gamma_{12}^1 v' + b \Gamma^1_{12} u' + b \Gamma^1_{22} v') \ve{x}_u\\
+      & \phantom{\ = \ } + (b' + b \Gamma_{11}^2 u' + a \Gamma_{12}^2 v' + b \Gamma^2_{12} u' + b \Gamma^2_{22} v') \ve{x}_v
+    \end{align*}
+    Recall that
+    \begin{align*}
+      a' &= \frac{\dee a}{\dee t} = \frac{\partial a}{\partial u} u'+ \frac{\partial a}{\partial v} v' = a_u u' + a_v v'\\
+      b' &= \frac{\dee b}{\dee t} = \frac{\partial a}{\partial u} u'+ \frac{\partial a}{\partial v} v' = b_u u' + b_v v'.
+    \end{align*}
+    So,
+    \begin{align*}
+      \frac{\Dee w}{\dee t} 
+      &= (a_u u' + a_v v' + a \Gamma_{11}^1 u' + a \Gamma_{12}^1 v' + b \Gamma^1_{12} u' + b \Gamma^1_{22} v') \ve{x}_u\\
+      & \phantom{\ = \ } + (b_u u' + b_v v' + b \Gamma_{11}^2 u' + a \Gamma_{12}^2 v' + b \Gamma^2_{12} u' + b \Gamma^2_{22} v') \ve{x}_u\\
+      &= \big( (a_u + a\Gamma_{11}^1 + b \Gamma_{12}^1, a_v + a \Gamma_{12}^1 + b\Gamma_{22}^1) \cdot (u',v') \big) \ve{x}_u + \\
+      & \phantom{\ = \ } \big( (b_u + a\Gamma_{11}^2 + b \Gamma_{12}^2, b_v + a \Gamma_{12}^2 + b\Gamma_{22}^2) \cdot (u',v') \big) \ve{x}_v
+    \end{align*}
+    Because $a$, $b$ and the Christoffel symbols do not depend on the curve $\alpha$, we have that the expression only depends on $(u',v')$, which only depends on the vector $y$.
+
+    \item If $S$ is a plane, we can find a parameterization so that $E = G = 1$ and $F = 0$.\\
+    In this case, all the Christoffel symbols become zero.\\
+    So, $\Dee w/\dee t = a' \ve{x}_u + b' \ve{x}_v$, which is the usual derivative of vectors in the plane.
+
+    As a result, the covariant derivative is a generization of the usual derivative of vectors in the plane.
+  \end{itemize}
+
+  \section{Covariant Derivative along a Curve}
+  \begin{itemize}
+    \item \begin{definition}
+      A parameterized curve $\alpha : [0, l] \ra S$ is the restriction to $[0,l]$ of a differentiable mapping of $(0-\epsilon, 1+\epsilon)$, $\epsilon > 0$, into $S$.
+
+      If $\alpha(0) = p$ and $\alpha(l) = q$, we say that $\alpha$ joints $p$ to $q$.
+
+      We say that $\alpha$ is regular if $\alpha'(t) \neq \ve{0}$ for all $t \in [0, l]$.      
+    \end{definition}
+
+    We shall denote $[0,l]$ by $I$ when mentioning $l$ is not necessary.
+
+    \item \begin{definition}
+      Let $\alpha : I \ra S$ be a parameterized curve in $S$.\\
+      A {\bf vector field $w$ along $\alpha$} is a function the assigns to each $t \in I$ a vector $w(t) \in T_{\alpha(t)}(S)$.
+
+      We say that $w$ is differentiable at $t_0 \in I$ if,\\
+      for some parameterization $\ve{x}(u,v)$ at $\alpha(t_0)$,\\
+      the components $a(t), b(t)$ of $w(t) = a \ve{x}_u + b \ve{x}_v$ are differentiable functions of $t$ at $t_0$.
+
+      $w$ is differentiable in $I$ if it is differentiable at all $t_0 \in I$.
+    \end{definition} 
+
+    \item An example of a (differentiable) vector field along $\alpha$ is given by the field $\alpha'(t)$ of the tangent vector of $\alpha$.
+
+    \item \begin{definition}
+      Let $w$ be a differentiable vector field along $\alpha : I \ra S$.\\
+      The expression $(\Dee w / \dee t)(t)$ for $t \in I$ is well defined and is called the {\bf covariant derivative of $w$ at $t$}.
+    \end{definition}
+
+    \item When two surfaces are tangent along a parameterized curve $\alpha$,\\
+    the covariant derivative of a field $w$ along $\alpha$ is the same for both surfaces.
+
+    \item If $\alpha(t)$ is a curve on $S$, we can think of it as the trajectory of a point which is moving on the surface.\\
+    $\alpha'(t)$ is then the velocity.\\
+    $\alpha''(t)$ is the acceleration.\\
+    The covariant derivative $\Dee \alpha'/ \dee t$ of the field $\alpha'$ is the tangential component of the acceleration $\alpha''(t)$.\\
+    Intuitively $\Dee \alpha'/\dee t$ is the acceleration of the point ``ass seen from the surface $S$.''    
+  \end{itemize}
+
+  \section{Parallel Vector Fields}
+  
+  \begin{itemize}
+    \item \begin{definition}
+      A vector field $w$ along a parameterized curve $\alpha : I \ra S$ is said to be {\bf parallel}\\
+      if $\Dee w/ \dee t = \ve{0}$ for every $t \in I$.    
+    \end{definition}    
+
+    \item In the case where $S$ is a plane, it means that $w$ is constant along the curve.
+
+    \item \begin{proposition} \label{parallel-vector-field-preserves-dot-product}
+      Let $w$ and $v$ are parallel vector fields along $\alpha : I \ra S$.\\
+      Then $\langle w(t), v(t) \rangle$ is constant.\\
+      In particular, $|w(t)|$ and $|v(t)|$ is constant,\\
+      and the angle between $w(t)$ and $v(t)$ is constant.
+    \end{proposition}
+    \begin{proof}
+      To say tha the vector field $w$ is parallel along $\alpha$ means that $\dee w / \dee t$ is normal to the plane. So, it is tangent to the surface at $\alpha(t)$. Since $v(t) \in T_{\alpha(t)}(S)$, we have that
+      \begin{align*}
+        \langle v(t), w'(t) \rangle = 0
+      \end{align*}
+      for all $t \in I$. Similarly, $\langle v'(t), w(t) \rangle = 0$. Therefore,
+      \begin{align*}
+        \langle v(t), w(t) \rangle' = \langle v'(t), w(t) \rangle + \langle v(t), w'(t) \rangle = 0.
+      \end{align*}
+      Therefore, $\langle v(t), w(t) \rangle$ is constant.
+    \end{proof}
+
+    \item Consider the sphere $S^2$. We have that the tangent vector field of a meridian (parameterized by arc length) of $S^2$ is a parallel field. This is because the acceleration along a meridian (the great circle) is perpendicular to the sphere.
+
+    \item \begin{proposition} \label{existence-of-parallel-field}
+      Let $\alpha : I \ra S$ be a parameterized curve in $S$.\\
+      Let $w_0 \in T_{\alpha(t_0)}$, $t_0 \in I$.\\
+      Then, there exists a unique parallel vector field $w(t)$ along $\alpha(t)$, with $w(t_0) = w_0$.
+    \end{proposition}
+    The proof is given later in the document, but it is the result of exitence of solutions to differential equations.    
+  \end{itemize}
+
+  \section{Parallel Transport}
+
+  \begin{itemize}
+    \item Let $\alpha : I \ra S$ be a parameterized curve.\\
+    Let $w_0 \in T_{\alpha(t_0)}(S)$, $t_0 \in I$\\
+    Let $w$ be the unique parallel vector field along $\alpha$, with $w(t_0) = w$.\\
+    The vector $w(t_1), t_1 \in I$, is called the {\bf parallel transport of $w_0$ along $\alpha$ at the point $t_1$}.
+
+    \item If $\alpha : I \ra S$, $t \in I$, is regular,\\
+    then the parallel transport does not depend on the parameterization of $\alpha(I)$.
+
+    In fact, if $\beta : J \ra S$, $\sigma \in J$, is another regular parameterization for $\alpha(I)$, it follows that
+    \begin{align*}
+      \frac{\Dee w}{\dee \sigma} = \frac{\Dee w}{\dee t} \frac{\dee t}{\dee \sigma}.
+    \end{align*}
+    Since $\dee t / \dee \sigma \neq 0$, we have that $w(t)$ is parallel if and only if $w(\sigma)$ is parallel.
+
+    \item \begin{proposition}
+      Let $p, q \in S$\\
+      Let $\alpha: I \ra S$ be a parameterized curve with $\alpha(0) = p$ and $\alpha(1) = q$.\\
+      Let $P_\alpha: T_p(S) \ra T_q(S)$ be the map that assigns to each $v \in T_p(S)$ its parallel transport along $\alpha$ at $q$.\\
+      Then, for $v_1, v_2 \in V$, we have that
+      \begin{align*}
+        \langle v_1, v_2 \rangle = \langle P_\alpha(v_1), P_\alpha(v_2) \rangle.
+      \end{align*}
+      In other words, $P_\alpha$ is an isometry.
+    \end{proposition}
+    \begin{proof}
+      Let $w_1$ be the parallel vector field on $\alpha$ with $w_1(0) = v_1$, and let $w_2$ be defined similarly. Proposition~\ref{parallel-vector-field-preserves-dot-product} tells us that $\langle w_1(t), w_2(t) \rangle$ is constant. Therefore,
+      \begin{align*}
+        \langle v_1, v_2 \rangle = \langle w_1(0), w_2(0) \rangle = \langle w_1(1), w_2(1) \rangle = \langle P_\alpha(v_1), P_\alpha(v_2) \rangle
+      \end{align*}
+      as required.
+    \end{proof}
+
+    \item \begin{proposition}
+      Let $S$ and $\bar S$ be two surfaces tangent along the curve $\alpha$.\\
+      Let $w_0$ be a vector in $T_{\alpha(t_0)}(S) = T_{\alpha(t_0)}(\bar S)$.\\
+      Then $w(t)$ is a parallel transport of $w_0$ relative to $S$ if and only if $w(t)$ is a parallel transport of $w_0$ relative to $\bar S$.
+    \end{proposition}
+
+    This proposition follows from the fact that $\Dee w / \dee t = 0$ on both surfaces and the fact that parallel transport is unique.
+
+    \item \begin{definition}
+    A map $\alpha : [0,l] \ra S$ is a {\bf parameterized piecewise regular curve} if $\alpha$ is continuous and there exists a subdivision
+    \begin{align*}
+      0 = t_0 < t_1 < t_2 < \dotsb < t_k < t_{k+1} = l
+    \end{align*}
+    of the interval $[0,l]$ in such a way that the restriction $\alpha | \{ t_i, t_{i+1} \}$, $i = 0, 1, \dotsc, k$, is a parameterized regular curve. Each $\alpha| \{ t_i, t_{i+1} \}$ is called a {\bf regular arc} of $\alpha$.
+    \end{definition}
+
+    \item The notion of parallel transport can be extended to parameterized piecewise regular curve. 
+  \end{itemize}  
+
+  \section{Geodesics}
+
+  \begin{itemize}
+    \item The parameterized curve $\gamma : I \ra \Real^2$ of a plane along which the field of their tangent vector $\gamma'(t)$ is parallel are precisely the straight lines of the plane.
+
+    The parameterized curves that satisfy an analogous condition for a surface are called {\bf geodesics}.
+
+    \item \begin{definition}
+      A nonconstant, parameterized curve $\gamma : I \ra S$ is said to be {\bf geodesic} at $t \in I$ if the field of its tangent vector $\gamma'(t)$ is parallel along $\gamma$ at $t$; that is,
+      \begin{align*}
+        \frac{\Dee \gamma'(t)}{\dee t} = 0.
+      \end{align*}
+      We say that $\gamma$ is a {\bf parameterized geodesic} if it is geodesic for all $t \in I$.
+    \end{definition}
+
+    \item By Proposition~\ref{parallel-vector-field-preserves-dot-product}, we have that $|\gamma'(t)| = c \neq 0$ is constant. 
+
+    As a result, we may introduce the arclength $s = ct$ as a parameter. As a result, the parameter $t$ is linearly proportional to $s$.
+
+    \item A parameterized geodesic may have self-intersection.
+
+    \item \begin{definition}
+      A regular connected curve $C$ in $S$ is said to be a {\bf geodesic} if, for every $p \in C$, the parameterization $\alpha(s)$ of a coordinate neighborhood of $p$ be the arc length $s$ is a parameterized geodesic; that is, $\alpha'(s)$ is a parallel vector field along $\alpha(s)$.
+    \end{definition}
+
+    Every straight line contained in $S$ satisfies the above definition.
+
+    \item The above definition says that $\alpha''(s) = \kappa n$ is normal to the tangent plane; that is, parallel to the normal of the surface.
+
+    In other words, a regular curve $C \sseq S$ $(\kappa \neq 0)$ is a geodesic if and only if its principal normal at each point $p \in C$ is parallel to the normal to $S$ at $p$.
+
+    \item The great circles of a sphere $S^2$ are geodesics.
+
+    \item For the right circular cylinder over the circle $x^2 + y^2 = 1$, the circles obtained by the intersetion of the cylinder with planes that are normal to the axis of the cylinder are geodesics.
+
+    Also, the straight lines of the cylinders (the generators) are also geodesics.
+
+    For other geodesics, consider the parameterization:
+    \begin{align*}
+      \ve{x}(u,v) = ( \cos u, \sin u, v ).
+    \end{align*}
+    Let $p = \ve{x}(0,0)$. 
+
+    Let $C$ be a geodesic which passes through $p$. In the parameterization, a neighborhood of $p$ in $C$ is expressed by $\ve{x}(u(s), v(s))$, where $s$ is the arc length of $C$. Note that $\ve{x}$ is a local isometry that maps $uv$-plane to the cylinder. Since the condition of being a geodesic is local and invariant by isometries, the curve $(u(s), v(s))$ must be a geodesic in $U$ passing through $(0,0)$. Geodesics in the plane are straight lines. Therefore,
+    \begin{align*}
+      u(s) &= as, & v(s) &= bs, & a^2 + b^2 &= 1.
+    \end{align*}    
+    It follows that when a regular curve $C$ is a geodesic of the cylinder, then it is locally of the form
+    \begin{align*}
+      (\cos as, \sin as, bs).
+    \end{align*}
+    In other words, it is a helix if $a \neq 0$ and $b \neq 0$.
+
+    \item Given two points on a cylinder which are not in a circle parallel to the $xy$-plane, it is possible to connect them through an infinite number of helices. In other words, two points of a cylinder may be connected through an infinite number of geodesics.
+
+    \item Let $\gamma : I \ra S$ be a parameterized curve of $S$.\\
+    Let $\ve{x}(u,v)$ be a parameterization of $S$ in a neighberhood $V$ of $\gamma(t_0)$ for some $t_0 \in I$.\\
+    Let $J \sseq I$ be an open interval containing $t_0$ such that $\gamma(J) \sseq V$.\\
+    Let $\ve{x}(u(t), v(t))$, $t \in J$, be the expresssion of $\gamma : J \ra S$ in the parameterization $\ve{x}$.\\
+    The tangent vector field $\gamma'(t)$ is given by:
+    \begin{align*}
+      w = u'(t)\ve{x}_u + v' \ve{x}_v = a(t) \ve{x}_u + b(t) \ve{x}_v.
+    \end{align*}
+    Suppose that $w$ is parallel. We have that
+    \begin{align*}
+      \ve{0} &= \frac{\Dee w}{\dee t} = (a' + a \Gamma_{11}^1 u' + a \Gamma_{12}^1 v' + b \Gamma^1_{12} u' + b \Gamma^1_{22} v') \ve{x}_u
+      + (b' + a \Gamma_{11}^2 u' + a \Gamma_{12}^2 v' + b \Gamma^2_{12} u' + b \Gamma^2_{22} v') \ve{x}_v\\
+      &= (u'' +  \Gamma_{11}^1 (u')^2 +  \Gamma_{12}^1 u' v' + \Gamma^1_{12} u'v' + \Gamma^1_{22} (v')^2) \ve{x}_u
+      + (v'' + \Gamma_{11}^2 (u')^2 + \Gamma_{12}^2 u'v' + \Gamma^2_{12} u'v' + \Gamma^2_{22} (v')^2) \ve{x}_v
+    \end{align*}
+    Because $\ve{x}_u$ and $\ve{x}_v$ are linearly independent, we have 
+    \begin{align*}
+      u'' +  \Gamma_{11}^1 (u')^2 +  \Gamma_{12}^1 u' v' + \Gamma^1_{12} u'v' + \Gamma^1_{22} (v')^2 &= 0\\
+      v'' + \Gamma_{11}^2 (u')^2 + \Gamma_{12}^2 u'v' + \Gamma^2_{12} u'v' + \Gamma^2_{22} (v')^2 &= 0.
+    \end{align*}
+    In other words, $\gamma : I \ra S$ is a geodesic if and only if the above system of equation is satisifed for every interval $J \sseq I$ such that $\gamma(J)$ is contained in a coordinate neighborhood. The above system is called the {\bf differential equation of the geodesic of $S$}.
+
+    \item \begin{proposition}
+      Given a point $p \in S$ and a vector $w \in T_p(S)$ and a vector $w \in T_p(S), w \neq \ve{0}$, there exists an $\epsilon > 0$ and a unique parameterized geodesic $\gamma: (-\epsilon, \epsilon) \ra S$ such that $\gamma(0) = p$ and $\gamma'(0) = w$.
+    \end{proposition}    
+  \end{itemize}
+
+  \section{Geodesic Curvature}
+
+  \begin{itemize}
+    \item \begin{definition}
+      Let $w$ be a differentiable field of unit vectors along a parameterized curve $\alpha: I \ra S$ on an oriented surface $S$. Since $w(t)$, $t \in I$, is a unit vector field $(\dee w / \dee t)(t)$ is normal to $w(t)$, and therefore
+      \begin{align*}
+        \frac{\Dee w}{\dee t} = \lambda(N \wedge w(t)).
+      \end{align*}
+      The real number $\lambda = \lambda(t)$, denoted by $[\Dee w / \dee t]$, is called the algebraic value of the covariant derivative of $w$ at $t$.
+    \end{definition}
+
+    Observe that the sign of $[\Dee w/ \dee t]$ depends on the orientation of $S$, and that $[\Dee w / \dee t] = \langle \dee w / \dee t, N \wedge w \rangle$.
+
+    \item \begin{definition}
+      Let $C$ be an oriented regular curve contained on an oriented surface $S$, let $\alpha(s)$ be a parameterization of $C$, in a neighborhood of $p \in S$, by the arc length $s$. The algebraic value of the covariant derivative $[D\alpha'(s) / \dee s] = \kappa_g$ of $\alpha'(s)$ at $p$ is called the {\bf geodesic curvature} of $C$ at $p$.
+    \end{definition}
+
+    \item The geodesics which are regular curves are curves whose geodesic curvature is zero.
+
+    \item The absolute value of the geodesic curvature $\kappa_g$ of $C$ at $p$ is the absolute value of the tangential component of the vector $\alpha''(s) = \kappa n$, where $\kappa$ is the curvature of $C$ at $p$ and $n$ is the normal vector of $C$ at $p$.
+
+    \item Because the absolute value of the normal component of $\kappa n$ is the absolute value of the normal curvature $\kappa_n$ of $C \sseq S$ at $p$, we have that
+    \begin{align*}
+      \kappa^2 = \kappa^2_g + \kappa^2_n.
+    \end{align*}
+
+    \item Consider the sphere $S^2$. Consider the parallel with colatitude $\varphi$. That is, the curve $$\alpha(\theta) = (\sin \varphi \cos (\theta / \sin\varphi), \sin \varphi (\sin \theta / \sin\varphi), \cos \varphi)$$ with $\theta \in [0,2\pi \sin \varphi)$. We have that
+    \begin{align*}
+      \alpha'(\theta) &= (-\sin (\theta / \sin\varphi), \cos (\theta / \sin \varphi), 0)\\
+      \alpha''(\theta) &= (-\cos (\theta / \sin\varphi) / \sin\varphi, -\sin (\theta / \sin \varphi) / \sin\varphi, 0).
+    \end{align*}
+    So, $\kappa = |\alpha''| = 1/\sin\varphi$, and $n = (-\cos(\theta/\sin\varphi), -\sin(\theta/\sin\varphi), 0)$. Now, we have that
+    \begin{align*}
+      N = (\sin \varphi \cos (\theta / \sin\varphi), \sin \varphi (\sin \theta / \sin\varphi), \cos \varphi).
+    \end{align*}
+    Now,
+    \begin{align*}
+      |\kappa_n| = |\alpha'' \circ N| = \cos^2 (\theta/\sin\phi) + \sin^2 (\theta / \sin\phi) = 1.
+    \end{align*}
+    As a result,
+    \begin{align*}
+      \kappa^2 &= \kappa_n^2 + \kappa^2_g\\
+      \frac{1}{\sin^2 \varphi} &= 1 + \kappa^2_g.
+    \end{align*}
+    In other words, $\kappa^2_g = 1/\sin^2 \varphi - 1 = \cot^2 \varphi$.
+
+    \item When two surfaces are tangent along a regular curve $C$, the absolute value of the geodesic curvature of $C$ is the same relative to any of the two surfaces.
+
+    \item We will now obtain an expression for the geodesic curvature in terms of the coefficients of the first fundamental forms and their derivatives.
+
+    \item Let $\alpha : I \ra S$ be a parameterized curve.\\
+    Let $v$ and $w$ be two differentiable vector fields along $\alpha$, with $|v(t)| = |w(t)| = 1$, $t \in I$.\\
+    We want to define a differentiable function $\varphi : I \ra \Real$ in such a way that\\
+    $\varphi(t)$, $t \in I$, is a determination of the angle from $v(t)$ to $w(t)$ in the orientation of $S$.
+
+    For this, we define a differentiable vector field $\bar v$ along $\alpha$, defined by the condition that $\{ v(t), \bar v(t) \}$ is an orthonormal positive basis for every $t \in I$. Thus, $w(t)$ may be expressed as:
+    \begin{align*}
+      w(t) = a(t) v(t) + b(t) \bar v(t).
+    \end{align*}
+    where $a$ and $b$ are differentiable functions and $a^2 + b^2 = 1$.
+
+    \item \begin{lemma}
+      Let $a$ and $b$ be differentiable functions in $I$ with $a^2 + b^2 = 1$.\\
+      Let $\varphi_0$ be such that $a(t_0) = \cos \varphi_0$ and $b(t_0) = \sin \varphi_0$.\\
+      Then, the differentiable function
+      \begin{align*}
+        \varphi(t) = \varphi_0 + \int_{t_0}^t (ab' - ba')\, \dee u
+      \end{align*}
+      is such that $\cos \varphi(t) = a(t)$, $\sin \varphi(t) = b(t)$ for all $t \in I$, and $\varphi(t_0) = \varphi_0$.
+    \end{lemma}
+    \begin{proof}
+      It suffices to show that
+      \begin{align*}
+        (a - \cos\varphi)^2 + (b - \sin\varphi)^2 = 0
+      \end{align*}
+      for all value of $t$. Now,
+      \begin{align*}
+        (a - \cos\varphi)^2 + (b - \sin\varphi)^2 = a^2 - 2a \cos \varphi + \cos^2 \varphi + b^2 -2b\sin \varphi + \sin^2 \varphi = 2 - 2(a \cos \varphi + b\sin\varphi).
+      \end{align*}
+      Setting the above equal to 0, we have
+      \begin{align*}
+        2 - 2(a \cos \varphi + b\sin\varphi) &= 0\\
+        a \cos \varphi + b \sin\varphi &= 1.
+      \end{align*}
+      Set $A = a \cos\varphi + b \sin\varphi$. We have that:
+      \begin{align*}
+        A' 
+        &= -a (\sin\varphi ) \varphi' + b (\cos \varphi) \varphi' + a' \cos \varphi + b' \sin\varphi\\
+        &= -a (\sin\varphi ) (ab' - ba') + b (\cos \varphi) (ab' - ba') + a' \cos \varphi + b' \sin\varphi\\
+        &= -(\sin\varphi ) (a^2b' - baa') + (\cos \varphi) (abb' - b^2a') + a' \cos \varphi + b' \sin\varphi.
+      \end{align*}
+      Because $a^2 + b^2 = 1$, we have that $aa' + bb' = 0$. In other words, $aa' = -bb'$. So,
+      \begin{align*}
+        A'
+        &= -(\sin\varphi ) (a^2b' + b^2 b') + (\cos \varphi) (-a^2 a' - b^2a') + a' \cos \varphi + b' \sin\varphi\\
+        &= -b'(\sin\varphi ) (a^2 + b^2) - a'(\cos \varphi) (a^2  + b^2) + a' \cos \varphi + b' \sin\varphi\\
+        &= -b'(\sin\varphi ) - a'(\cos \varphi) + a' \cos \varphi + b' \sin\varphi\\
+        &= 0.
+      \end{align*}
+      Therefore, $A(t)$ is a constant. Now $A(t_0) = 1$, so we have that $A(t) = 1$ for all $t$.      
+    \end{proof}
+
+    \item \begin{lemma} \label{covariant-curvature-difference-in-terms-of-angle-difference}
+        Let $v$ and $w$ be two differentiable vector fields along the curve $\alpha: I \ra S$, with $|w(t)| = |v(t)| = 1$, $t \in I$. Then,
+        \begin{align*}
+          \bigg[ \frac{\Dee w}{\dee t} \bigg] - \bigg[ \frac{\Dee v}{\dee t} \bigg] = \frac{\dee \varphi}{\dee t}
+        \end{align*}
+        where $\varphi$ is one of the differentiable determinations of the angle from $v$ to $w$, as given in the last lemma.        
+      \end{lemma}
+      \begin{proof}
+        Let $\bar v = N \wedge v$ and $\bar w = N \wedge w$, Then, we have that
+        \begin{align*}
+          w &= (\cos \varphi) v + (\sin \varphi) \bar v\\
+          \bar w 
+          &= N \wedge w =  (\cos \varphi) N \wedge v + (\sin \varphi) N \wedge \bar v\\
+          &= (\cos \varphi) \bar v - (\sin \varphi) v.
+        \end{align*}
+        Differentiating $w$ with respect to $t$, we have that
+        \begin{align*}
+          w' &= -(\sin \varphi)\varphi' v + (\cos \varphi) v' + (\cos \varphi) \varphi' \bar v + (\sin\varphi)\bar v'
+        \end{align*}
+        As a result,
+        \begin{align*}
+          \langle w', \bar w \rangle 
+          &= (\sin^2 \varphi) \varphi' + (\cos^2 \varphi) \langle \bar v, v' \rangle + (\cos^2 \varphi) \varphi' - (\sin^2 \varphi) \langle v, \bar v' \rangle\\
+          &= \varphi' + (\cos^2 \varphi) \langle \bar v, v' \rangle - (\sin^2 \varphi) \langle v, \bar v' \rangle.
+        \end{align*}
+        Because $\langle v, \bar v \rangle = 0$, we have that $\langle v', \bar v \rangle = - \langle v, \bar v' \rangle$, we further have that
+        \begin{align*}
+          \langle w', \bar w \rangle = \varphi' + \langle v', \bar v \rangle
+        \end{align*}
+        It follows that
+        \begin{align*}
+          \bigg[ \frac{\Dee w}{\dee t} \bigg] = \langle w', \bar w \rangle = \varphi' + \langle v', \bar v \rangle = \frac{\dee \varphi}{\dee t} + \bigg[ \frac{\Dee v}{\dee t} \bigg]
+        \end{align*}
+        as required.
+      \end{proof}
+
+    \item Let $C$ be a regular oriented curve on $S$.\\
+    Let $\alpha(s)$ be a parameterization of the curve by arc length at $p \in C$.\\
+    Let $v(s)$ be a parallel vector field along $\alpha(s)$.\\
+    Then, by taking $w(s) = \alpha'(s)$, we have that
+    \begin{align*}
+      \kappa_g(s) = \bigg[ \frac{\Dee \alpha'}{\dee t} \bigg] = \frac{\dee \phi}{\dee s}.
+    \end{align*}
+    In other words, {\bf the geodesic curvature is the rate of chnage of the angle that the tangent to the curve makes with a parallel direction along the curve.}
+
+    In the case of the plane, the parallel direction is fixed and the geodesic curvature reduces to the usual curvature.
+
+    \item \begin{proposition} \label{geodesic-curvature-formula}
+      Let $\ve{x}(u,v)$ be an orthogonal parameterization (that is, $F = 0$) of a neighborhood of an oriented surface $S$.\\
+      Let $w(t)$ be a differentiable field of unit vector along the curve $\ve{x}(u(t), v(t))$.\\
+      Then,
+      \begin{align*}
+        \bigg[ \frac{\Dee w}{\dee t} \bigg] = \frac{1}{2\sqrt{EG}} \bigg\{ G_u \frac{\dee v}{\dee t} - E_v \frac{\dee u}{\dee t} \bigg\} + \frac{\dee \varphi}{\dee t}
+      \end{align*}
+      where $\varphi(t)$ is the angle from $\ve{x}_u$ to $w(t)$ in the given orientation.
+    \end{proposition}
+    \begin{proof}
+      Let $e_1 = \ve{x}_u / \sqrt{E}$, and $e_2 = \ve{x}_v / \sqrt{G}$ be the unit vectors tangent to the coordinate curves. Observe that $N = e_1 \wedge e_2$, where $N$ is the given orientation.
+
+      Using Lemma~\ref{covariant-curvature-difference-in-terms-of-angle-difference}, we have that
+      \begin{align*}
+        \bigg[ \frac{\Dee w}{\dee t} \bigg] = \bigg[ \frac{\Dee e_1}{\dee t} \bigg] + \frac{\dee \varphi}{\dee t},
+      \end{align*}
+      where $e_1(t) = e_1(u(t), v(t))$ is the field $e_1$ restricted to the curve $\ve{x}(u(t), v(t))$. Now,
+      \begin{align*}
+        \bigg[ \frac{\Dee w}{\dee t} \bigg] 
+        = \bigg\langle \frac{\dee e_1}{\dee t}, N \wedge e_1 \bigg\rangle 
+        = \bigg\langle \frac{\dee e_1}{\dee t}, e_2 \bigg\rangle 
+        = \langle (e_1)_u, e_2 \rangle \frac{\dee u}{\dee t} + \langle (e_1)_v, e_2 \rangle \frac{\dee v}{\dee t}.
+      \end{align*}
+      Since $F = 0$, we have
+      \begin{align*}
+        \langle \ve{x}_{uu}, \ve{x}_v \rangle = -\frac{1}{2}E_v
+      \end{align*}
+      and therefore,
+      \begin{align*}
+        \langle (e_1)_u, e_2 \rangle = \bigg\langle \bigg( \frac{\ve{x}_u}{\sqrt{E}} \bigg)_u, \frac{\ve{x}_v}{\sqrt{G}} \bigg\rangle = -\frac{1}{2} \frac{E_v}{\sqrt{EG}}.
+      \end{align*}
+      Similarly, we can argue that
+      \begin{align*}
+        \langle (e_1)_v, e_2 \rangle = \frac{1}{2} \frac{G_u}{\sqrt{EG}}.
+      \end{align*}
+      Therefore,
+      \begin{align*}
+        \bigg[ \frac{\Dee w}{\dee t} \bigg]
+        = \frac{1}{2\sqrt{EG}} \bigg\{ G_u \frac{\dee v}{\dee t} - E_v \frac{\dee u}{\dee t}\bigg\} + \frac{\dee \varphi}{\dee t},
+      \end{align*}
+      which completes the proof.
+    \end{proof}
+
+    \item \begin{proof} (Proposition~\ref{existence-of-parallel-field}, the existence of parallel field) Let us initially that the parameterized curve $\alpha: I \ra S$ is contained in a coordinate neighborhood of an orthogonal parameterization $\ve{x}(u,v)$. Let $w$ be a parallel field. Using the previous proposition, we have that
+    \begin{align*}
+      0 = \frac{1}{2\sqrt{EG}} \bigg\{ G_u \frac{\dee v}{\dee t} - E_v \frac{\dee u}{\dee t} \bigg\} + \frac{\dee \varphi}{\dee t},
+    \end{align*}
+    or
+    \begin{align*}
+      \frac{\dee \varphi}{\dee t} = -\frac{1}{2\sqrt{EG}} \bigg\{ G_u \frac{\dee v}{\dee t} - E_v \frac{\dee u}{\dee t} \bigg\}.
+    \end{align*}
+    Let $B(t) = \dee \varphi / \dee t$. Denoting by $\varphi_0$ a determination of the oriented angle from $\ve{x}_u$ to $w_0$, the field $w$ is entirely determined by
+    \begin{align*}
+      \varphi = \varphi_0 + \int_{t_0}^t B(u)\, \dee u.
+    \end{align*}
+    Using $\varphi$, we can completely determined $w$.
+
+    If $\alpha(I)$ is not contained in a coordinate neighborhood, we shall use the compactness of $I$ to divide $\alpha(I)$ into a finite number of parts, each contained in a coordinate neighborhood. By using the uniqueness of the first part of the proof in the the nonempty intersections of these pieces, it is easy to extend the reuslt to all the cases.
+
+    (By the way, the coordinate neighborhood where $F = 0$ always exist because an isothermal parameterization.)
+    \end{proof}
+
+    \item \begin{proposition}[Liouville's formula] \label{louisville-formula}
+      Let $p \in S$ where $S$ is an oriented surface.\\
+      Let $C$ be a regular oriented curve at $p$.\\
+      Let $\alpha(s)$ be a parameterization by arc length of $C$\\
+      Let $\ve{x}(u,v)$ be an orthogonal parameterization of $S$ around $p$.\\
+      Let $\varphi(s)$ be the angle the $\ve{x}_u$ makes with $\alpha'(s)$ in the given orientation.
+      Then,
+      \begin{align*}
+        \kappa_g = (\kappa_g)_1 \cos \varphi + (\kappa_g)_2 \sin \varphi + \frac{\dee \varphi}{\dee s}
+      \end{align*}
+      where $(\kappa_g)_1$ and $(\kappa_g)_2$ are the geodesic curvatures of the coordinate curves $v = const.$ and $u = const.$, respectively.
+    \end{proposition}
+    \begin{proof}
+      Setting $w = \alpha'$, we have that by Louisville's formula,
+      \begin{align*}
+        \kappa_g = \frac{1}{2\sqrt{EG}} \bigg\{ G_u \frac{\dee v}{\dee s} - E_v \frac{\dee u}{\dee s} \bigg\} + \frac{\dee \varphi}{\dee t}.
+      \end{align*}
+      Let $\alpha_1(s)$ be the coordinate curve $v = const.$ parametermized by arc length. Because we know that $\alpha'_1(s) = \ve{x}_u / \sqrt{E} = \ve{x}_u u'.$ We have that $u' = \dee u / \dee s = 1 / \sqrt{E}$. Also, if $\varphi_1$ is the angle from $\ve{x}_u$ to $\alpha;(s)$, we know that $\varphi_1 = 0$. So, $\dee \varphi_1 / \dee s = 0$. As a result,
+      \begin{align*}
+        (\kappa_g)_1 = - \frac{E_v}{2 E \sqrt{G}}.
+      \end{align*}
+      Similarly, let $\alpha_2(s)$ be the coordinate curve $u = const.$ parameterized by arc length. We can argue similarly that
+      \begin{align*}
+        (\kappa_g)_2 = \frac{G_u}{2 G \sqrt{E}}.
+      \end{align*}
+      So,
+      \begin{align*}
+        \kappa_g = (\kappa_g)_1 \sqrt{E} \frac{\dee u}{\dee s} + (\kappa_g)_2 \sqrt{G} \frac{\dee v}{\dee s} + \frac{\dee \varphi}{\dee t}.
+      \end{align*}
+      Now,
+      \begin{align*}
+        \cos \varphi = \bigg\langle \alpha'(s), \frac{\ve{x}_u}{\sqrt{E}} \bigg\rangle
+        &= \bigg\langle \ve{x}_u u' + \ve{x}_v v', \frac{\ve{x}_u}{\sqrt{E}} \bigg\rangle = \frac{\langle \ve{x}_u, \ve{x}_u \rangle}{\sqrt{E}} u' = \sqrt{E} \frac{\dee u}{\dee s}.
+      \end{align*}
+      We may also argue that
+      \begin{align*}
+        \sin\varphi 
+        = \bigg\langle \alpha'(s), \frac{\ve{x}_v}{\sqrt{E}} \bigg\rangle
+        = \sqrt{G} \frac{\dee v}{\dee s}.
+      \end{align*}
+      Therefore,
+      \begin{align*}
+        \kappa_g = (\kappa_g)_1 \cos \varphi + (\kappa_g)_2 \sin \varphi + \frac{\dee \varphi}{\dee s}
+      \end{align*}
+      as required.
+    \end{proof}    
+  \end{itemize}  
+
+  \section{Surfaces of Revolution}
+
+  \begin{itemize}
+    \item The surface of revolution has parameterization
+    \begin{align*}
+      x &= f(v) \cos u, & y &= f(v) \sin u,& z &= g(v).
+    \end{align*}
+    
+    \item The Christoffel symbols are given by
+    \begin{align*}
+      \Gamma_{11}^1 &= 0, & 
+      \Gamma_{11}^2 &= - \frac{ff'}{(f')^2 + (g')^2}, \\
+      \Gamma_{12}^1 &= \frac{ff'}{f^2}, &
+      \Gamma_{12}^2 &= 0, \\
+      \Gamma_{22}^1 &= 0, &
+      \Gamma_{22}^2 &= \frac{f'f'' + g'g''}{(f')^2 + (g')^2}.
+    \end{align*}
+    
+    \item With the above values, the differential equations of the geodesics become:
+    \begin{align*}
+      u'' + \frac{2ff'}{f^2}u'v' &= 0,\\
+      v'' - \frac{ff'}{(f')^2 + (g')^2}(u')^2 + \frac{f'f'' + g'g''}{(f')^2 + (g')^2}(v')^2 &= 0.
+    \end{align*}
+
+    \item The meridians are the curves where $u = const.$ and $v = v(s)$ paramerized by arc length. 
+
+    Since $u'' = u' = 0$, the first equation is trivially satisifed. 
+
+    The second equation becomes:
+    \begin{align*}
+      v'' + \frac{f'f'' + g'g''}{(f')^2 + (g')^2}(v')^2 &= 0.
+    \end{align*}
+
+    Recall that $\ve{x}_u$ and $\ve{x}_v$ are orthogonal. Moreover, since the meridian is parametermized by arc length, we have that $v' = 1 / \sqrt{G}$. Now,
+    \begin{align*}
+      G = \langle \ve{x}_v, \ve{x}_v \rangle = (f')^2 + (g')^2.
+    \end{align*}
+    As a result,
+    \begin{align*}
+      (v')^2 &= \frac{1}{(f')^2 + (g')^2}.
+    \end{align*}
+    Therefore,
+    \begin{align*}
+      ((v')^2)'
+      &= \bigg( \frac{1}{(f')^2 + (g')^2} \bigg)'\\
+      2v'v''
+      &= -2 \frac{f'f'' + g'g''}{((f')^2 + (g')^2)^2} v'\\
+      2v'v''
+      &= -2 \frac{f'f'' + g'g''}{(f')^2 + (g')^2} (v')^3.
+    \end{align*}
+    Therefore,
+    \begin{align*}
+      v'' &= -\frac{f'f'' + g'g''}{((f')^2 + (g')^2)^2} (v')^2,
+    \end{align*}
+    so the second equation is also satisifed.
+
+    We can now conclude that the meridian is a parameterized geodesic.
+
+    \item The parallel is the curve where $u = u(s)$ and $v = const.$ paramterized by arc length. 
+
+    The first equation becomes $u'' = 0$, which means that $u' = const.$
+
+    The second equation becomes
+    \begin{align*}
+      \frac{ff'}{(f')^2 + (g')^2}(u')^2 &= 0.
+    \end{align*}
+    Note that $u' \neq 0$ (because we cannot have a curve with $u = const.$ and $v = const.$). Since $(f')^2 + (g')^2 \neq 0$ and $f \neq 0$, it must be the case that $f' = 0$.
+
+    Therefore, a necessary condition for a parallel of a surface of revolution to be a geodesic is that such a parallel be generated by the rotation of a point of the generating curve where the tangent is parallel to the axis of revolution.
+
+    The condition is also sufficient since it implies that the normal vector of the parallel agrees with the normal vector to the surface
+
+    \item Observe that the first equation may be written as:
+    \begin{align*}
+      ((f(v))^2u')' 
+      &= f^2 u'' + 2ff' u' v' = 0.
+    \end{align*}
+    Therefore, $f^2 u' = const. = c$.
+
+    \item The angle $\theta$, $0 \leq \theta \leq \pi/2$, of a geodesic with a parallel that intersects it is given by:
+    \begin{align*}
+      \cos \theta = \frac{|\langle \ve{x}_u, \ve{x}_u u' + \ve{x}_v v' \rangle|}{|\ve{x}_u|} = |f u'|.
+    \end{align*}
+
+    \item Since $f = r$ is the radius of the parallel at the intersection point, we obtain {\bf Clairaut's relation}:
+    \begin{align*}
+      r \cos \theta = f | \cos \theta | = |f^2 u' | = |c|.
+    \end{align*}
+
+    \item Let $u = u(s)$ and $v = v(s)$ be a geodesic parameterized by arc length, which is not a meridian or a parallel.
+
+    The first equation is $f^2 u' = const. = c$.
+
+    The first fundamental form along $(u(s), v(s))$ is given by:
+    \begin{align*}
+      1 &= f^2 (u')^2 + ((f')^2 + (g')^2) (v')^2\\
+      1 &= c^2 / f^2 + ((f')^2 + (g')^2) (v')^2\\
+      ((f')^2 + (g')^2) (v')^2 &= 1 - \frac{c^2}{f^2}.
+    \end{align*}
+    Differentiating with respect to $s$,
+    \begin{align*}
+      2 v' v'' ((f')^2 + (g')^2) + (2f'f'' + 2g'g'')(v')^3 = \frac{2ff'c^2}{f^4} v'
+    \end{align*}
+    Because the geodesic is not a meridian, we have that $c \neq 0$, we have that $u' \neq 0$. So,
+    \begin{align*}
+      1 &= f^2 (u')^2 + ((f')^2 + (g')^2) (v')^2\\
+      \frac{1}{(u')^2} &= f^2 + ((f')^2 + (g')^2) \bigg( \frac{v'}{u'} \bigg)^2.
+    \end{align*}
+    Because $f^2 u' = c$, we have that $f^4 (u')^2 = c^2$. So, $1/(u')^2 = f^4 /c^2$. So,
+    \begin{align*}
+      \frac{f^4}{c^2} &= f^2 + ((f')^2 + (g')^2) \bigg( \frac{\dee v }{\dee s} \frac{\dee s}{\dee u} \bigg)^2\\
+      f^2 &= c^2 + c^2 \frac{(f')^2 + (g')^2}{f^2} \bigg( \frac{\dee v}{\dee u} \bigg)^2\\
+      \frac{\dee v}{\dee u} &= \frac{1}{c} f \sqrt{\frac{f^2 - c^2}{(f')^2 + (g')^2}}.      
+    \end{align*}
+    Therefore,
+    \begin{align*}
+      u = c \int \frac{1}{f} \sqrt{\frac{(f')^2 + (g')^2}{f^2 - c^2}}\, \dee v + const.
+    \end{align*}    
+  \end{itemize}  
+\end{document}

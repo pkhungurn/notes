@@ -1,0 +1,267 @@
+\documentclass[10pt]{article} 
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{epstopdf}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{bm}
+\usepackage{hyperref}
+
+\newtheorem{lemma}{Lemma}[section]
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\likelihood}{\mathcal{L}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\sign}{\mathrm{sign}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\new}{\mathrm{new}}
+
+\newcommand{\IF}{\textbf{if}\ }
+\newcommand{\THEN}{\textbf{then}\ }
+\newcommand{\ELSE}{\textbf{else}\ }
+\newcommand{\END}{\textbf{end}\ }
+\newcommand{\RETURN}{\textbf{return}\ }
+
+\title{Fast Multipole Methods}
+\author{Pramook Khungurn}
+
+\begin{document}
+\maketitle	
+	
+I write this document as I read notes on fast multipole methods (FMMs). The main note is ``A short course on fast multipole methods'' by Rick Beatson and Leslie Greengard \cite{fmm}.
+	
+\section{Introduction}\label{sec:introduction} % (fold)
+
+\begin{itemize}
+  \item In the $N$-body problem, we are given $N$ \textbf{source points} $\ve{y}_1$, $\ve{y}_2$, $\dotsc$, $\ve{y}_N$, each with associated weight $w_1$, $w_2$, $\dotsc$, $w_N$, respectively. Then, for a \textbf{target point} $\ve{x}$, we wish to evaluate the sum
+  \begin{align*}
+    u(\ve{x}) = \sum_{i=1}^N w_i K(\ve{x}, \ve{y}_i)
+  \end{align*}
+  where the function $K(\ve{x},\ve{y})$ is called the \textbf{kernel function}.
+  
+  \item For example, suppose there are $N$ charges $q_1$, $q_2$, $\dotsc$, $q_N$ located at points $\ve{y}_1$, $\ve{y}_2$, $\dotsc$, $\ve{y}_N$. Then the electric potential at point $\ve{x}$ is given by:
+  \begin{align*}
+    \Phi(\ve{x}) \sum_{i=1}^n \frac{q_i}{\| \ve{x} - \ve{y}_i \|},
+  \end{align*}
+  and the electric field at $\ve{x}$ is given by:
+  \begin{align*}
+    \ve{E}(\ve{x}) = \sum_{i=1}^n q_i \frac{\ve{x} - \ve{y}_i}{\| \ve{x} - \ve{y}_i \|^3}.
+  \end{align*}
+  
+  \item If there are $M$ target points, direct evaluation of the sum for all of them would take $O(MN)$ time. 
+  
+  Any algorithm that reduces the complexity to $O(M f(N))$ where $f(N) = o(N)$ is called a \textbf{fast summation method}. The fast Fourier transform (FFT) is one example of such a method.
+  
+  \item Fast multipole methods can approximate the sum for $M$ points faster than $O(NM)$. (They are referred to as ``methods'' instead of a ``method'' because they refer to a general class algorithm. One FMM is specific to one kernel.)
+  
+\end{itemize}
+
+% section section_name (end)
+
+\section{Degenerate Kernels}\label{sec:degenerate_kernels} % (fold)
+
+\begin{itemize}
+  \item If the kernel is of the form:
+  \begin{align*}
+    K(\ve{x}, \ve{y}) = \sum_{k=1}^p \phi_k(\ve{x}) \psi_k(\ve{y}),
+  \end{align*}
+  we call such a kernel \textbf{finite rank} or \textbf{degenerate}.
+  
+  \item In an $N$-body problem with such a kernel, we can precompute the \textbf{moment}:
+  \begin{align*}
+    A_k = \sum_{i=1}^N w_i \psi_k(\ve{y}_i)
+  \end{align*}
+  for each $k$ in $O(Np)$ time. For each target point $\ve{x}$, we can evaluate $u(\ve{x})$ in $O(p)$ time using:
+  \begin{align*}
+    u(\ve{x}) = \sum_{k=1}^p A_k \phi_k(\ve{x}).
+  \end{align*}
+  
+  \item Certain FMMs rely on approximating the kernel with a degenerate kernel to gain speedups.
+\end{itemize}
+
+% section section_name (end)
+
+\section{FMMs in One-Dimension}\label{sec:fmms_in_one_dimension} % (fold)
+
+\begin{itemize}
+  \item FMMs rely on the following features:
+  \begin{itemize}
+    \item a specified acceptable accuracy $\epsilon$,
+    \item a hierarchical subdivision of space,
+    \item a far field expansion of the kernel into a degenerate kernel, and
+    \item the conversion of far field expansions into local expansions (optional).
+  \end{itemize}
+  
+  \item As an example, we consider the evaluation of multiquadrics radial basis function:
+  \begin{align*}
+    s(x) = \sum_{j=1}^N d_j K(x, x_j)
+  \end{align*}
+  where $$K(x, x_j) = \sqrt{(x-x_j)^2 + c^2},$$ and $0 \leq c \leq h$
+  
+  \item We have that, when $|x| > \sqrt{t^2 + c^2}$, the expansion
+  \begin{align*}
+    K(x, t)
+    &= \sqrt{(x-t)^2 + c^2}\\
+    &= \sign(x) \bigg\{ (x-t) + \frac{1}{2}c^2 x^{-1} + \frac{1}{2} tc^2 x^{-2} + \frac{1}{8}(4t^2 c^2 -c^4) x^3 + \dotsb + q_p(c,t) x^{-p} + \dotsb \bigg\}
+  \end{align*}
+  affords the error bound
+  \begin{align*}
+  \bigg| K(x,t) - \sign(x) \bigg\{ (x-t) + \sum_{k=1}^p q_k(c,t) x^{-k} \bigg\} \bigg|  
+  \leq 2(|t|+c) \bigg( \frac{\sqrt{t^2 + c^2}}{|x|} \bigg)^{p+1} \frac{1}{1 - \frac{\sqrt{t^2+c^2}}{|x|}}.
+  \end{align*}
+  
+  \item Notice that each term of expansion of $K(x,t)$ consists of $q_k(c,t)$, which depends on the source point alone, and $x^{-k}$, which depends on the target point alone. So, we have a degenerate kernel.
+  
+  \item Next, we subdivide the real line into contiguous intervals called \textbf{panels}. Let $T$ denote a panel.
+  
+  \item For each panel, let $s_T(x)$ denote the exact contribution of all the source points in the panel:
+  \begin{align*}
+    s_T(x) = \sum_{j: x_j \in T} d_j K(x, x_j).
+  \end{align*}
+  
+  \item Assume for the moment that the panel is centered about $x = 0$. We let $r_T(x)$ denote the far-field constribution of the panel computed by the truncated expansion of the kernel:
+  \begin{align*}
+    r_T(x) = \sign(x) \{ a_{-1}x + a_0 + a_1 x^{-1} + \dotsb + a_p x^{-p} \}
+  \end{align*}
+  where $a_k$'s are the moments computed from all the points in the panel. That is:
+  \begin{align*}
+    a_k = \sum_{j: x_j \in T} d_j q_k(c, x_j).
+  \end{align*}
+  
+  \item Suppose that $T = [-h, h)$ and $|x| \geq 3h$. We have that
+  \begin{align*}
+    \max_{j: x_j \in T} \frac{\sqrt{x_j^2 + c^2}}{|x|} \leq \frac{\sqrt{h^2 + h^2}}{3h} \leq \frac{\sqrt{2}}{3} = \frac{1}{2.12\ldots}.
+  \end{align*}
+  Hence, the error of using $r_T(x)$ instead of $s_T(x)$ is given by:
+  \begin{align}
+    |s_T(x) - r_T(x)| \leq D_T 4h \bigg( \frac{1}{2.12\ldots} \bigg)^{p+1} \frac{1}{1 - \frac{1}{2.12\ldots}} \label{multiquadric-error-bound}
+  \end{align}
+  where $D_T = \sum_{j: x_j \in T} |d_j|$.
+  
+  \item If the panel is $[t-h, t+h)$, which is centered at $x = t$, then the far field expansion should be centered at $x = t$. So $r_T(x)$ becomes:
+  \begin{align*}
+    r_T(x) = \sign(x-t) \{ a_{-1}(x-t) + a_0 + a_1(x-t)^{-1} + \dotsb + q_p(x-t)^{-p}\}
+  \end{align*}
+  where
+  \begin{align*}
+    a_k = \sum_{j: x_j \in T} d_j q_k(x_j - t, c).
+  \end{align*}
+  The far field expansion enjoys the error bound in \eqref{multiquadric-error-bound} if $|x-t| \geq 3h$.
+  
+  \item Points such that $r_T(x)$ converges to $s_T(x)$ at a fast rate are said to be \textbf{well separated} from $T$. In our case, point $x$ is well separated from $T$ if its distance to $T$ is at least $T$'s diameter. (The diameter must be at least $2c$ for this to work.)
+  
+  \item Now, we construct a binary tree of points by repeatedly subdividing the interval containing the points in half. Note that each node in the tree is also a panel. For each panel, we compute the coefficients $a_{-1}$ to $a_p$ as discussed above.
+  
+  \item The following function approximates $s_T(x)$ for any panel in the tree:
+  \begin{verse}
+    \textsc{Compute-Sum}$(x, T)$\\
+    \quad \IF $T$ is a leaf \THEN\\
+    \quad \quad \RETURN $\sum_{j: x_j\in T} d_j K(x, x_j)$\\
+    \quad \ELSE \IF $x$ is well separated from $T$ \THEN\\
+    \quad \quad \RETURN $r_T(x)$\\
+    \quad \ELSE\\
+    \quad \quad Let $R$ and $L$ be the right and left children of $T$, respectively.\\
+    \quad \quad \RETURN \textsc{Compute-Sum}$(x,R)$ + \textsc{Compute-Sum}$(x,L)$
+  \end{verse}
+  
+  \item Given $\epsilon$, we can set $p \approx \log_{2.12}(\epsilon/(\sum_{j} |d_j|))$ to achieve absolute error of $\epsilon$.
+  
+  \item If the tree has $O(\log N)$ level and each leaf panel has $O(1)$ source points in it, then the algorithm can approximate $s(x)$ in $O(\log N)$ time. 
+  
+  The justification for this is obtained when we consider the path from the panel containing a point $x$ to the root. At each level of the tree, we only need to do something with the node on the path and the nodes immediately to its left or to its right.
+  
+  \item We can make the evaluation of $s(x)$ take $O(1)$ time by noticing that, for each panel $T$, the expression
+  \begin{align*}
+    r_T = \sign(x-t)(a_{-1}(x-t) + a_0 + a_1(x-t)^{-1} + \dotsb + a_p(x-t)^{-p})
+  \end{align*}
+  is smooth when $x$ is far away from $t$. Therefore, we can approximate it with a truncated Taylor's series expansion to get a polynomial. This polynomial gives the contribution of all source points in $T$ to a point $x$ far away from $T$.
+  
+  Now, for each panel $T$, we sum up the polynomials of all the panels far away from it. So, if $x \in T$, we can approximate the contribution of all points far away from $T$ with a single polynomial evaluation. Given that there are a constant number of panels that are ``near'' $x$, the evaluation of $s(x)$ takes $O(1)$ time.
+\end{itemize}
+
+% section section_name (end)
+
+\section{Fast Gauss Transform in 2D}\label{sec:fast_gauss_transform_in_2d} % (fold)
+
+\begin{itemize}
+  \item Given set of source points $\ve{x}_i = (x_i, y_i)$ with strength $w_i$, the function $$U(\ve{x}) = \sum_{i=1}^N w_i e^{-\| \ve{x} - \ve{x}_i \|^2 / 4T}$$ is called the {\bf discrete Gauss transform}.
+  
+  \item Define \textbf{Hermite function} $h_n(x)$ as
+  \begin{align*}
+    h_n(x) = (-1)^n \frac{d^n}{dx^n} (e^{-x^2}).
+  \end{align*}
+  
+  \item Suppose that $\ve{x}_i$ is located in a square with center $\ve{c} = (c_1, c_2)$ and side length $\sqrt{T}$. Then,
+  \begin{align*}
+    e^{-\| \ve{x} - \ve{x}_i \|^2/4T} = \sum_{n_1, n_2 = 0}^\infty \Phi_{n_1 n_2}(\ve{x} - \ve{c}) \Psi_{n_1 n_2}(\ve{x}_i - \ve{c})
+  \end{align*}
+  where
+  \begin{align*}
+    \Psi_{n_1 n_2}(\ve{x}) &= \frac{1}{n_1! n_2!}\bigg( \frac{x}{\sqrt{4T}} \bigg)^{n_1} \bigg( \frac{y}{\sqrt{4T}} \bigg)^{n_2}\\
+    \Phi_{n_1 n_2}(\ve{x}) &= h_{n_1}\bigg( \frac{x}{\sqrt{4T}} \bigg) h_{n_2}\bigg( \frac{y}{\sqrt{4T}} \bigg).
+  \end{align*}
+  
+  \item The error bound of the truncation of the above series expansion is:
+  \begin{align*}
+    \bigg| e^{-\| \ve{x} - \ve{x}_i \|^2/4T} - \sum_{n_1, n_2 = 0}^p \Phi_{n_1 n_2}(\ve{x} - \ve{c}) \Psi_{n_1 n_2}(\ve{x}_i - \ve{c}) \bigg| \leq \frac{1}{p!}\bigg( \frac{1}{8} \bigg)^p
+  \end{align*}
+  This error decays very rapidly. For four digit accuracy, choose $p = 4$. For eight digits, choose $p = 6$. For fourteen digits, choose $p = 10$.
+  
+  \item Suppose that all sources and targets slie in a square $B_0$ of unit area. Let us subdivide $B_0$ into squares of length $\sqrt{T}$.
+  
+  \item The fast Guass transform works as follows:
+  \begin{enumerate}
+    \item Sort the $N$ sourcdes into the fine squares.
+    \item Choose $p$ sufficiently large so that the error estimate is less than the desired precision $\epsilon$.
+    \item For each fine square $B$ with center $\ve{c}$, compute the moments
+    \begin{align*}
+      A_{n_1 n_2} = \sum_{j: \ve{x}_j \in B} w_j \Psi(\ve{x}_j).
+    \end{align*}
+    \item For target point $\ve{x}$, find the box $B$ in which point $\ve{x}$ lies. 
+    
+    Because the kernel decays exponentially fast, we ignore all but the nearest $(2n+1)^2$ boxes. This incurs the error of order $e^{-n^2/4}$, which is $10^{-4}$ for $n = 6$. 
+    
+    The contribution of the sources in these boxes can be obtained by evaluating:
+    \begin{align*}
+      \sum_{n_1, n_2 = 0}^p A^j_{n_1 n_2} \Phi_{n_1n_2} (\ve{x} - \ve{c_j}).
+    \end{align*}
+    where $A^j_{n_1n_2}$ are the precomputed moments for neighbor $j$ whose center is $\ve{c}_j$.
+  \end{enumerate}
+  
+  \item The running time for each query point is $O(n^2 p^2)$.
+  
+\end{itemize}
+
+% section section_name (end)
+  
+\bibliographystyle{plain}
+\bibliography{fmm}	
+
+\end{document}

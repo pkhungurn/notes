@@ -1,0 +1,189 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+
+\newtheorem{lemma}{Lemma}[section]
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{claim}[lemma]{Claim}
+
+\title{Introduction to Mechanism Design}
+\author{Pramook Khungurn}
+
+\begin{document}
+	\maketitle
+	
+	\section{Social Choice Theory}
+	
+		\begin{itemize}
+			
+			\item Let $A$ be a finite set of \emph{alternatives}. 
+			
+			\item A \emph{preference} $\prec$ on $A$ is an anti-symmetric, transitive,
+			and complete binary relation on $A$. That is, a preference
+			is a \emph{total order} on $A.$
+			
+			\item Let $L$ denote the set of all preferences on $A$.
+			
+			\item We can think of a set of $n$ voters, each with his own preferences
+			over the alternatives. We typically write $\prec_i$ as the preference
+			of Voter $i$. 
+			
+			A \emph{preference profile} is a tuple containing preferences of all voters.
+			We typically use $\pi$ to denote a profile, and we write $\pi = (\prec_1, \prec_2, \dotsc, \prec_n)$
+			to show the components of $\pi$.
+			
+			\item The set of preferences of all voters is precisely $L^n.$
+			
+			\item A function $F: L^n \rightarrow L$ is called a \emph{social welfare} function.
+			
+			A function $f: L^n \rightarrow A$ is called a \emph{social choice} function.
+			
+		\end{itemize}
+	
+	\subsection{Arrow's Impossibility Theorem}
+	
+		\begin{itemize}
+			
+			\item A social welfare function $F$ is said to satisfies \emph{unanimity} if it
+			satisfies the following condition:
+			
+			\begin{quote}
+				Let $a$ and $b$ be any two alternatives in $A$. \\
+				Let $\pi = (\prec_1, \prec_2, \dotsc, \prec_n)$ be any profile. \\
+				Let $\prec = F(\pi).$ \\
+				\\
+				If $a \prec_i b$ for all $i$, then $a \prec b$.
+			\end{quote}
+			
+			That is, if all voters prefer $b$ over $a$, then the group prefers $b$ over $a$.
+			
+			\item A social welfare function $F$ is said to satisfies \emph{independence of irrelevant alternatives} (IIA)
+			if it satisfies the following condition:
+			
+			\begin{quote}
+				Let $a$ and $b$ be any two alternatives in $A.$ \\
+				Let $\pi = (\prec_1, \prec_2, \dotsc, \prec_n)$ and $\pi' = (\prec_1', \prec_2', \dotsc, \prec_n')$ be any two profiles. \\
+				Let $\prec = F(\pi)$ and $\prec' = F(\pi').$ \\
+				\\
+				If $a \prec_i b \iff a \prec_i' b$, then $a \prec b \iff a \prec' b.$
+			\end{quote}
+			
+			That is, the preference between $a$ and $b$ of the group depends only on the preferences between $a$ and $b$ of
+			the voters. Information regarding other alternatives are irrelevant.
+			
+			\item Voter $i$ is said to be a \emph{dictator} of social welfare function $F$
+			if $F(\prec_1, \prec_2, \dotsc, \prec_n) = \prec_i$ for all profiles.
+			
+			If $F$ has a dictator, we say that $F$ is a \emph{dictatorship}.
+			
+			\item 
+			\begin{theorem}[Arrow's Impossibility Theorem]
+				Every social welfare function on set $A$ with more than two elements that satisfies unanimity and
+				IIA is a dictatorship.
+			\end{theorem}
+			
+			We first prove the following claim.
+			
+			\begin{claim}
+				Let $F$ be a social welfare function on set $A$ with at least 3 elements that satisfies unanimity and IIA. 
+				Then, $F$ satisfies the following \emph{neutrality} condition:
+				
+				\begin{quote}
+					Let $a, b, \alpha, \beta$ be any four alternatives in $A$ such that $a \neq b$ and $\alpha \neq \beta$ \\
+					Let $\pi = (\prec_1, \prec_2, \dotsc, \prec_n)$ and $\pi' = (\prec_1', \prec_2', \dotsc, \prec_n')$ be any two profiles. \\
+					Let $\prec = F(\pi)$ and $\prec' = F(\pi').$ \\
+					\\
+					If $a \prec_i b \iff \alpha \prec_i' \beta$, then $a \prec b \iff \alpha \prec' \beta.$
+				\end{quote}
+				
+				That is, the decision is made the same way for every two alternatives.
+			\end{claim}
+
+			\begin{proof} (Claim) WLOG, we can assume that, in profile $\pi$, the group prefers $b$ over $a$. 
+				That is, $a \prec b$.
+				
+				Our strategy is to construct a new profile $\pi^* = (\prec^*_1, \prec^*_2, \dotsc, \prec^*_n)$
+				with the following properties:
+				\begin{enumerate}
+					\item the preferences between $a$ and $b$ are the same as those in $\pi$, 
+					\item the preferences between $\alpha$ and $\beta$ are the same as those in $\pi'$, and
+					\item for all $i$, $\alpha \prec^*_i a$ and $b \prec^*_I \beta$.
+				\end{enumerate}
+				
+				Assuming that we are successful, let $\prec^* = F(\pi^*).$ We have that:
+
+				\begin{itemize}
+					\item By Property 1 and IIA, it is the case that $a \prec^* b$.
+					\item By Property 3 and unanimity, it is the case that $\alpha \prec^* a$ and $b \prec^* \beta$.
+					\item Thus, $\alpha \prec^* a \prec^* b \prec^* \beta$. Therefore, $\alpha \prec^* \beta$.
+					\item Lastly, by Property 2 and IIA, we have that $\alpha \prec' \beta$ as well.
+				\end{itemize}  
+				
+				Hence, the claim is true if we can establishes the existence of $\pi^*.$
+				
+				To construct $\pi^*$, we first assume that $\alpha \neq b$ and $\beta \neq a$, and we will deal with
+				other cases later. We now specify each $\prec^*_i$. We construct $\prec^*_i$ by first setting it to $\prec_i$.
+				Then, we move $\alpha$ and $\beta$ so that $\alpha$ is just before $a$ (if $\alpha \neq a$) and 
+				$\beta$ is just after $b$ (if $\beta \neq b$). This is done in such a way that preserves the relative
+				order between $a$ and $b$ and that between $\alpha$ and $\beta$. More precisely,
+				
+				\begin{itemize}
+					\item if $a \prec_i b$ and $\alpha \prec'_i \beta$, then we move $\alpha$ and $\beta$ so that
+						$\alpha \prec^*_i a \prec^*_i b \prec^*_i \beta$;
+					\item if $b \prec_i a$ and $\beta \prec'_i \alpha$, then we move $\alpha$ and $\beta$ so that
+						$b \prec^*_i \beta \prec^*_i \alpha \prec^*_i a$.
+				\end{itemize}
+				
+				It can be seen that the new profile $\pi^*$ satisfies all the three properties.
+				
+				Now, we turn to cases where $\alpha = b$ or $\beta = a$. Let $c$ be an alternative
+				which is different from $a$ and $b$. From what we have proved so far, we know that decisions 
+				about $(a,b)$ are made in the same way as those about $(a,c)$. These
+				decisions, in turn, are made the same way as those about $(b,c)$,
+				and then $(b,a)$, and then $(c,a)$. We have covered all the cases.
+			\end{proof}
+			
+			\begin{proof} (Arrow's impossibility theorem)
+				Let $a$ and $b$ be two alternatives. We define a set of profiles
+				$\pi^0$, $\pi^1$, $\pi^2$, $\dotsc$, $\pi^n$ as follows.
+				In $\pi^i$, the first $i$ voters prefers $b$ over $a$, but
+				the remaining voters prefer $a$ over $b.$ (That is, $a \prec_j b$
+				if $j \leq i$, and $b \prec_j a$ if $j > i$.)
+				
+				Let $\prec^i = F(\pi^i)$ for all $i$. By unanimity, we have
+				that $b \prec^0 a$, but $a \prec^n b$. Hence, there must be
+				a profile $i^*$ such that $b \prec^{i^*-1} a$, but $a \prec^{i^*} b$.
+				We call voter $i^*$ the \emph{pivotal voter}.
+				
+				We now show that $i^*$ is a dictator. Let $\pi = (\prec_1, \prec_2, \dotsc, \prec_n)$
+				be an arbitrary profile, and let $\prec = F(\pi).$ We shall show that,
+				for any $c, d \in A$, if $c \prec_{i^*} d$, then $c \prec d$.
+				
+				To do so, let $e$ be an alternative different from $c$ and $d$.
+				By IIA, moving $e$ around the preferences of any voter without
+				changing the relative order between $c$ and $d$ does not change
+				the group's preference between $c$ and $d$. We then conduct the
+				following moves:
+				
+				\begin{itemize}
+					\item for $j < i^*$, we move $e$ so that it is the least preferred alternative in
+					$\prec_j$.
+					\item for $j > i^*$, we move $e$ so that it is the most preferred alternative in
+					$\prec_j$.
+					\item we move $e$ so that $c \prec_i e \prec_i d$.
+				\end{itemize}
+				
+				Note that the relative orders of $c$ and $e$ are the same as those
+				of $a$ and $b$ in $\pi^{i^*-1}$. By neutrality, we can conclude that
+				$c \prec e$. Note also that the relative orders of $e$ and $d$ are
+				the same as those of $b$ and $a$ in $\pi^{i^*}$. Hence, $e \prec d$.
+				So, we have that $c \prec e \prec d$.
+			\end{proof}
+			
+		\end{itemize}
+		
+\end{document}

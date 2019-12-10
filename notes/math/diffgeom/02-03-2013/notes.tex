@@ -1,0 +1,362 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{epstopdf}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+
+\newtheorem{lemma}{Lemma}[section]
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\likelihood}{\mathcal{L}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\new}{\mathrm{new}}
+\newcommand{\Arg}{\mathrm{Arg\,}}
+\newcommand{\Log}{\mathrm{Log\,}}
+\newcommand{\RE}{\mathrm{Re\,}}
+\newcommand{\IM}{\mathrm{Im\,}}
+\newcommand{\Res}{\mathrm{Res}}
+\newcommand{\pv}{\mathrm{p.v.}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+
+\title{Differential Geometry Notes of 02/03/2013}
+\author{Pramook Khungurn}
+
+\begin{document}
+	\maketitle
+
+  \section{Regular Surfaces} % (fold)
+  \label{sec:regular_surfaces}
+
+  \begin{itemize}
+    \item A regular surface in $\Real^3$ is obtained by taking pieces of a plane, deforming them, and arranging them so that:
+    \begin{itemize}
+      \item the resulting figures has no sharp points, edges, or self-intersections, and
+      \item it makes sense to speak of a tangent plane at points of the figure.
+    \end{itemize} 
+
+    \item The set of points consisting of a regular surface is, in a sense, two-dimensional and smooth enough that the usual notion of calculus can be extended to it.
+
+    \item \begin{definition} \label{regular-surface}
+      A subset $S \sseq \Real^3$ is a {\bf regular surface} if, for each $p \in S$, there exists a neighborhood $V \sseq \Real^3$ and a map $\ve{x} : U \ra V \cap S$ of an open set $U \in \Real^2$ onto $V \cap S \sseq \Real^3$ such that
+      \begin{enumerate}
+        \item $\ve{x}$ is differentiable. This means that if we write
+        \begin{align*}
+          \ve{x}(u,v) = (x(u,v), y(u,v), z(u,v)), & & (u,v) \in U,
+        \end{align*}
+        the functions $x(u,v)$, $y(u,v)$, $z(u,v)$ have continuous partial derivatives of all orders in $U$.
+
+        \item $\ve{x}$ is a homeomorphism. This means that $\ve{x}$ has an inverse $\ve{x}^{-1}: V \cap S \ra U$, which is continuous. In other words, $\ve{x}^{-1}$ is a restriction of a continuous map $F: W \sseq \Real^3 \ra \Real^2$ defined on an open set $W$ containing $V \cap S$.
+
+        \item (The regularity condition.) For each $q \in U$, the differential $\dee \ve{x}_q : \Real^2 \ra \Real^3$ is one-to-one.
+      \end{enumerate}
+    \end{definition}
+
+    The mapping $\ve{x}$ is called a {\bf parametermization} or a {\bf system of (local) coordinates} in a neighborhood of $p$.
+
+    The neighborhood $V \cap S$ is called a {\bf coordinate neighborhood}.
+
+    \item As the differential $\dee \ve{x}_q$ can be written as:
+    \begin{align*}
+      \dee \ve{x}_q
+      = \displaystyle \begin{bmatrix}
+        \frac{\partial x}{\partial u} & \frac{\partial x}{\partial v}\\
+        \frac{\partial y}{\partial u} & \frac{\partial y}{\partial v}\\
+        \frac{\partial z}{\partial u} & \frac{\partial z}{\partial v}\\
+      \end{bmatrix},
+    \end{align*}
+    the third condition in Definition~\ref{regular-surface} says that the columns of the two matrices should be linearly independent. Equivalently, the vector product $(\partial \ve{x} / \partial u) \wedge (\partial \ve{x} / \partial v)$ should not be zero where
+    \begin{align*}
+      \frac{\partial \ve{x}}{\partial u} = \begin{bmatrix}
+        \frac{\partial x}{\partial u}\\
+        \frac{\partial y}{\partial u}\\
+        \frac{\partial z}{\partial u}
+      \end{bmatrix}
+      \qquad\mbox{ and }\qquad
+      \frac{\partial \ve{x}}{\partial v} = \begin{bmatrix}
+        \frac{\partial x}{\partial v}\\
+        \frac{\partial y}{\partial v}\\
+        \frac{\partial z}{\partial v}
+      \end{bmatrix}.
+    \end{align*}
+    Equivalently still, we may also say that at least one of the Jacobian determinants
+    \begin{align*}
+      \frac{\partial(x,y)}{\partial(u,v)} = \begin{vmatrix}
+        \frac{\partial x}{\partial u} & \frac{\partial x}{\partial v}\\
+        \frac{\partial y}{\partial u} & \frac{\partial y}{\partial v}\\
+      \end{vmatrix},
+      \qquad
+      \frac{\partial(y,z)}{\partial(u,v)},
+      \qquad
+      \frac{\partial(z,x)}{\partial(u,v)}
+    \end{align*}
+    be different from zero at $q$.
+  \end{itemize}
+
+  \section{The Sphere}
+  \begin{itemize}
+    \item Let us show that the unit sphere $S^2 = \{(x,y,z) \in \Real^3 : x^2 + y^2 + z^2 = 1\}$ is a regular surface.
+
+    Define the map
+    \begin{align*}
+      \ve{x}_1(x,y) = (x, y, \sqrt{1 - (x^2 + y^2)} )
+    \end{align*}
+    where $(x,y) \in U = \{ (x,y) \in \Real^2 : x^2 + y^2 < 1\}$. This basically maps the open unit circle in $\Real^3$ to the open hemisphere above the $xy$-plane.
+
+    Since $x^2 + y^2 < 1$, the function $\sqrt{1 - (x^2 + y^2)}$ has continuous partial derivatives of all orders. So, $\ve{x}_1$ is differential and Condntion 1 in the definition holds. It is easy to see that $\ve{x}_1$ is one-to-one, and $\ve{x}^{-1}$ is the project to the $xy$-plane. So, $\ve{x}^{-1}$ is continous in $\ve{x}(U)$.
+
+    Condition 3 is easily verified since
+    \begin{align*}
+      \frac{\partial(x,y)}{\partial(x,y)} = 1.
+    \end{align*}
+
+    We can now cover the whole sphere with maps similar to $\ve{x}_1$. For example, the hemisphere below the $xy$-plane can be covered by the map
+    \begin{align*}
+      \ve{x}_2 = (x, y, -\sqrt{1 - (x^2 + y^2)}).
+    \end{align*}
+    Then, we can do the same with the $xz$-plane and the $yz$-plane to cover the whole sphere.
+
+    \item Here's another parameterization of $S^2$. Let $V = \{ (\theta, \varphi) : 0 < \theta < \pi, 0 < \varphi < 2\pi \}$, and let $\ve{x} : V \ra \Real^3$ be given by:
+    \begin{align*}
+      \ve{x}(\theta,\varphi) = (\sin \theta \cos \varphi, \sin\theta \sin \varphi, \cos\theta).
+    \end{align*}
+    The angle $\theta$ is called the {\bf colatitude} (the complement of the latitude), and the angle $\varphi$ the {\bf longitude}.
+
+    It is clear that $\ve{x}$ has continuous partial derivatives of all orders, so $\ve{x}$ is differentiable. The Jacobian determinants are given by:
+    \begin{align*}
+      \frac{\partial(x,y)}{\partial(\theta, \varphi)} &= \cos \theta \sin \theta,\\
+      \frac{\partial(y,z)}{\partial(\theta, \varphi)} &= \sin^2 \theta \cos \varphi,\mbox{ and}\\
+      \frac{\partial(x,z)}{\partial(\theta, \varphi)} &= \sin^2 \theta \sin \varphi.\\
+    \end{align*}
+    If these three determinants vanish simulteneously, we have that
+    \begin{align*}
+      \cos^2 \theta \sin^2 \theta + \sin^4 \theta \cos^2 \varphi + \sin^4 \theta \sin^2 \varphi &= 0\\
+      \cos^2 \theta \sin^2 \theta + \sin^4 \theta (\cos^2 \varphi + \sin^2 \varphi) &= 0\\
+      \cos^2 \theta \sin^2 \theta + \sin^4 \theta &= 0\\
+      \sin^2 \theta(\cos^2 \theta + \sin^2 \theta) &= 0\\
+      \sin^2 \theta &= 0.
+    \end{align*}
+    However, since $\theta \in (0, \pi)$, we have that $\sin^2 \theta \neq 0$. Therefore, Condition 3 is satisfied.
+
+    Next, observe that $\ve{x}(V) = S^2 - C$ where $C$ is the semicircle
+    \begin{align*}
+      C = \{ (x,y,z) \in S^2 : y = 0, x \geq 0 \}.
+    \end{align*}
+    For each point in $S-C$, we have that $z$ is uniquely determined by $\cos^{-1} z$. After knowing $\theta$, we can find $\sin \varphi$ and $\cos \varphi$ from $x$ and $y$. Then, we can uniquely determine $\varphi$ from them. If follows that $\ve{x}$ has an inverse $\ve{x}^{-1}$.
+
+    To complete the verification of Condition 2, we must show that $\ve{x}^{-1}$ is continuous. However, we shall soon prove that this verification is not necessary provided that we already know that the set $S^2$ is a regular surface. So, we will not do it here.  
+  \end{itemize}  
+  % section regular_surfaces (end)  
+
+  \section{Some Types of Regular Surfaces} % (fold)
+  \label{sec:some_types_of_regular_surfaces}
+  
+  \begin{itemize}
+    \item From the sphere example, proving that a set is a regular surface can be quite tiresome. In this section, we give propositions that show that some types of sets are regular surfaces. These propositions should be useful in identifying regular surfaces.
+
+    \item \begin{proposition}[Graph of differentiable functions are regular surface.] \label{graph-is-regular-surface}
+      If $f:U \ra \Real$ is a differentiable function in an open set $U \sseq \Real^2$, then the graph of $f$ is a regular surface. Here, the graph of $f$ is the subset of $\Real^3$ given by $(x,y,f(x,y))$ for $(x,y) \in U$.
+    \end{proposition}
+    The proof should be the same as the argument we gave for the map $\ve{x}_1$ in the sphere example.
+
+    \item \begin{definition}
+      Let $F: U \sseq \Real^n \ra \Real^m$ be a differentiable map defined in an open set $U$ of $\Real^n$.
+
+      We say that $p \in U$ is a {\bf critical point} of $F$ if the differentiable $\dee F_p : \Real^n \ra \Real^m$ is not a surjective (or onto) mapping 
+
+      The image $F(p) \in \Real^m$ of a critical point is called a {\bf critical value}. 
+
+      A point of $\ve{R}^m$ which is not a critical value is called a {\bf regular value} of $F$.
+    \end{definition}
+
+    \item For one-dimensional function $f: U \sseq \Real \ra \Real$, a point $x_0$ is critical if $f'(x_0) = 0$. Here, the differential $\dee f_{x_0}$ takes every real number of the number $0$.
+
+    \item If $f : U \sseq \Real^3 \ra \Real$ is a differentiable function, then
+    \begin{align*}
+      \dee f_p = \begin{bmatrix}
+        \frac{\partial f}{\partial x}\big|_p & \frac{\partial f}{\partial y}\big|_p & \frac{\partial f}{\partial z}\big|_p 
+      \end{bmatrix}
+      = (f_x(p), f_y(p), f_z(p)).
+    \end{align*}
+    To say that $\dee f_p$ is not surjective is to say that $f_x(p) = f_y(p) = f_z(p) = 0$. Hence, $a \in f(U)$ is a regular value of $f$ if and only if $f_x$, $f_y$, and $f_z$ do not vanish simulteneously at any point in the inverse image:
+    \begin{align*}
+      f^{-1}(a) = \{ (x,y,z) \in U : f(x,y,z) = a\}.
+    \end{align*}
+
+    \item \begin{proposition}[Isosurfaces of non-critical values are regular surfaces.] \label{isosurface-is-regular}
+          If $f : U \sseq \Real^3 \ra \Real$ is a differentiable function and $a \in f(u)$ is a regular value of $f$, then $f^{-1}(a)$ is a regular surface in $\Real^3$.
+    \end{proposition}
+    \begin{proof}
+      Let $p = (x_0, y_0, z_0)$ be a point of $f^{-1}(a)$. Since $a$ is a regular value of $f$, it is possible to assume, by renaming the axis if necessary, that $f_z \neq 0$ at $p$. Define a mapping $F: U \sseq \Real^3 \ra \Real^3$ by
+      \begin{align*}
+        F(x,y,z) = (x, y, f(x,y,z)).
+      \end{align*}
+      Let us use the variables $u, v, $ and $t$ to denote the coordinates of the values of $F$. That is, $F(x,y,z) = (u,v,t).$ The differential of $F$ at $p$ is given by:
+      \begin{align*}
+        \dee F_p =
+        \begin{bmatrix}
+          1 & 0 & 0\\
+          0 & 1 & 0\\
+          f_x & f_y & f_z
+        \end{bmatrix},
+      \end{align*}
+      and $\det(\dee F_p) = f_z \neq 0$.
+
+      Now, we apply the inverse function theorem, which gaurantees that there's a neighborhood $V$ of $p$ and $W$ of $F(p)$ such that $F: V \ra W$ is invertible and the inverse $F^{-1}: W \ra V$ is differentiable. It follows that the coordinate functions of $F^{-1}$:
+      \begin{align*}
+        x = u, & & y = v, & & z = g(u,v,t)
+      \end{align*}
+      are differentiable. In particular, $z = g(u,v,a) = h(x,y)$ is a differentiable function defined in the projection of $V$ onto the $xy$-plane.
+
+      Since
+      \begin{align*}
+        F(f^{-1}(a) \cap V) = W \cap \{(u,v,t) : t = a \},
+      \end{align*}
+      we conclude that the graph of $h$ is $f^{-1}(a) \cap V$. By Proposition~\ref{graph-is-regular-surface}, $f^{-1}(a) \cap V$ is a coordinate neighborhood of $p$. Therefore, every $p \in f^{-1}(a)$ can be covered by a coordinate neighborhood, and so $f^{-1}(a)$ is a regular surface.
+    \end{proof}
+
+    Basically, the prove says that, if $f_z \neq 0$ at $p$, we can ``solve for $z$'' in $f(x,y,z) = a$ in the neighborhood of $a$. 
+  \end{itemize}
+
+  \section{Some Familar Surfaces}
+  \begin{itemize}
+    \item The {\bf ellipsoid}
+    \begin{align*}
+      \frac{x^2}{a^2}  + \frac{y^2}{b^2} + \frac{z^2}{c^2}  = 1
+    \end{align*}
+    is a regular surface. This is because we can define $f(x,y,z) = x^2/a^2 + y^2/b^2 + z^2/c^2$ and the ellipsoid is the set $f^{-1}(1)$.
+    Now, we have that $f_x = 2x/a^2$, $f_y = 2y/b^2$, and $f_z = 2z/c^2$. The partial derivatives vanish simultaneously only when $(x,y,z) = (0,0,0)$. However, $f(0,0,0) = 0$, so $1$ is a regular value. Thus, the ellipsoid is a regular surface.
+
+    \item The {\bf hyperboloid of two sheets} $-x^2 -y^2 + z^2 = 1$ is a regular surface because it is given by $f^{-1}(0)$ where $f(x,y,z) = -x^2 - y^2 + z^2 -1$ and $0$ is a regular value of $f$.
+
+    \item The hyperboloid is an example of a regular surface that is not {\bf connected}. 
+
+    A subset of $\Real^3$ is connected if any two points in it can be connected by a continuous curve in $\Real^3$.
+
+    \item \begin{proposition}
+      If $f$ is a non-zero continuous function defined on a connected surface $f:S \sseq \Real^3 \ra \Real$, then $f$ does not change sign on $S$.      
+    \end{proposition}
+    \begin{proof}
+      Assume $f(p) > 0$ and $f(q) < 0$. Use the intermediate value theorem on the curve connecting $p$ and $q$.
+    \end{proof}
+
+    \item The {\bf torus} $T$ is a surface generated by rotation a circle $S^1$ of radius $r$ about a straight line belonging to the plane of the circle and at a distance $a > r$ away from the center of the circle.
+
+    \item Let $S^1$ be the circle in the $yz$-plane with its center at the point $(0,a,0)$. The $S^1$ is given by the equation
+    \begin{align*}
+      (y - a)^2 + z^2 = r^2.
+    \end{align*}
+    The points obtained by rotating the circle around the $z$ axis satisfies the equation:
+    \begin{align*}
+      z^2 = r^2 - (\sqrt{x^2 + y^2} - a)^2.
+    \end{align*}
+    Thus, it is the inverse image of $r^2$ for the function
+    \begin{align*}
+      f(x,y,z) = z^2 + (\sqrt{x^2 + y^2} - a)^2.
+    \end{align*}
+    We also have that
+    \begin{align*}
+      \frac{\partial f}{\partial z} = 2z,
+      & & \frac{\partial f}{\partial x} = \frac{2y\sqrt{x^2+y^2}-a}{\sqrt{x^2+y^2}},
+      & & \frac{\partial f}{\partial y} = \frac{2x\sqrt{x^2+y^2}-a}{\sqrt{x^2+y^2}}.
+    \end{align*}
+    So, $r^2$ is a regular value of $f$. Hence, the torus is a regular surface.
+  \end{itemize}  
+  % section some_types_of_regular_surfaces (end)
+
+  \section{Regular Surfaces as Graphs of Some Differentiable Functions}
+
+  \begin{itemize}
+    \item The proof technique we used in Proposition~\ref{isosurface-is-regular} can be used to establish a ``local'' converse of Proposition~\ref{graph-is-regular-surface}.
+
+    \item \begin{proposition} \label{regular-surface-is-graph}
+      Let $S \sseq \Real^3$ be a regular surface and $p \in S$. Then, there exists a neighborhood $V$ of $p$ in $S$ such that $V$ is the graph of a differentiable function which has one of the following form: $z = f(x,y)$, $y = g(x,z)$, and $x = h(y,z)$.      
+    \end{proposition}
+
+    \begin{proof}
+      Let $\ve{x} : U \sseq \Real^2 \ra S$ be a parameterization of $f$ around $p$. We write
+      \begin{align*}
+        \ve{x}(u,v) = (x(u,v), y(u,v), z(u,v)).
+      \end{align*}
+      By Condition 3 of Definition~\ref{regular-surface}, we have that one of the Jacobian determinants
+      \begin{align*}
+        \frac{\partial(x,y)}{\partial(u,v)}, \qquad \frac{\partial(y,z)}{\partial(u,v)}, \qquad \frac{\partial(x,z)}{\partial(u,v)}
+      \end{align*}
+      is not zero at $\ve{x}^{-1}(p) = q$.
+
+      Suppose first that $\partial(x,y)/\partial(u,v) \neq 0$. Consider the map $\pi \circ \ve{x} : U \ra \Real^2$, where $\pi$ is the projection $\pi(x,y,z) = (x,y)$. Then, $\pi \circ \ve{x}(u,v) = (x(u,v), y(u,v)).$ Since $\partial(x,y)/\partial(u,v) \neq 0$, we can apply the inverse function theorem. The inverse function theorem gives a neighborhood $V_1 \sseq \Real^2$ of $q$ and $V_2 \sseq \Real^2$ of $\pi(p)$ such that $\pi \circ \ve{x}$ maps $V_1$ diffeomorphically onto $V_2$, and there is a differentiable inverse $(\pi \circ \ve{x})^{-1} : V_2 \ra V_1$.
+      
+      Define $f : V_2 \ra S$ as $f(x,y) = z((\pi \circ \ve{x})^{-1}(x,y))$. We have that $f$ is differentiable because it is a composition of differentiable functions.
+
+      Let $V = \ve{x}(V_1)$. We have that $V$ is a neighborhood of $p$ because $V_1$ is a neighborhood of $q$ and $\ve{x}$ is continuous. Let $(\bar x, \bar y, \bar z) \in V$. Moreover, $\pi$, when viewed as a function from $V$ to $V_2$, is a bijection. Then, it must be the case that $(\bar x, \bar y) = \pi(\bar x, \bar y, \bar z) \in V_2$. Because the inverse $(\pi \circ \ve{x})^{-1}$ exists, there exists a unique point $(\bar u, \bar v)$ such that $\pi(\ve{x}(\bar u, \bar v)) = (\bar {x}, \bar {y})$. It follows that $\ve{x}(\bar u, \bar v) = (\bar x, \bar y, \bar z)$ because $\pi$ is a bijection on $V$. As a result, $\bar z = z(\bar u, \bar v) = z((\pi \circ \ve{x})^{-1}(\bar x, \bar y)) = f(\bar x, \bar y)$. Thus, $V$ is a graph of $f$ as desired.
+
+      The remaining cases other determinants are not zero are treated in the same way. These cases yield $x = h(y,z)$ and $y = g(x,z)$.
+    \end{proof}
+
+    \item \begin{proposition} \label{no-need-to-check-inverse-continuity}
+      Let $p \in S$  be a point of a regular surface $S$, and let $\ve{x} : U \sseq \Real^2 \ra S$ be a map with $p \in \ve{x}(U) \sseq S$ such that Condition 1 and 3 of Definition~\ref{regular-surface} hold. If $\ve{x}$ is one-to-one, then $\ve{x}^{-1}$ is continuous.    
+    \end{proposition}
+
+    \begin{proof}
+      Let $q \in \ve{x}(U)$. Because $S$ is a regular surface. There exists a neighborhood $W \sseq S$ of $q$ such that $W$ is the graph of a differentiable function over, say, an open set $V$ of the $xy$-plane. 
+
+      Let $N = \ve{x}^{-1}(W) \sseq U$. Let $h = \pi \circ \ve{x}: N \ra V$, where $\pi(x,y,z) = (x,y)$. Let $r = \ve{x}^{-1}(q)$. The, $\dee h_r = \pi \circ \dee \ve{x}_r$ is non-singular because $\dee \ve{x}_r$ is non-singular because $\ve{x}$ satisfies Condition 3. By the inverse function theorem, there exists a neighborhood $\Omega \sseq N$ such that $h: \Omega \ra h(\Omega)$ is a diffeomorphism.
+
+      Notice that $\ve{x}(\Omega)$ is an open set in $S$. Moreover, when restricted to $\ve{x}(\Omega)$, we have that $\ve{x}^{-1} = h^{-1} \circ \pi$, which is a composition of continuous functions. Thus, $\ve{x}^{-1}$ is continuous at $q$. Since $q$ is arbitrary, we have that $\ve{x}^{-1}$ is continuous in its domain $\ve{x}(U)$.
+    \end{proof}
+
+    \item The one-sheeted cone $C$, given by
+    \begin{align*}
+      z = + \sqrt{x^2 + y^2}
+    \end{align*}
+    where $(x,y) \in \Real^2$, is not a regular surface. We cannot conclude that it is not by noting that the ``natural'' parameterization $(x,y) \mapsto (x,y,+\sqrt{x^2 + y^2})$ is not differentiable. There can be another parameterization which works.
+
+    To show that this is not the case, we use Proposition~\ref{regular-surface-is-graph}. If $C$ were a regular surface, it would be, in a neighborhood of $(0,0,0) \in C$, the graph of a differentiable function having one of the three forms: $y = h(x,z)$, $x = g(y,z)$, and $z = f(x,y)$. The two first forms can be discarded by the simple fact that the projections of $C$ over the $xy$- and $yz$-plane are not one-to-one. The last form would have to agree, in a neighborhood of $(0,0,0)$, with $z = + \sqrt{x^2 + y^2}$. However, the function is not differentiable at $(0,0)$. So, this is impossible.
+
+    \item A parameterization of the torus $T$ can be given by:
+    \begin{align*}
+      x(u,v) = ((r \cos u + a) \cos v, (r \cos u + a) \sin v, r \sin u)
+    \end{align*}
+    where $0 < u < 2\pi$, $0 < v < 2\pi$.
+
+    Condition 1 is easily checked. Condition 3 can also be checked by computation. Proposition~\ref{no-need-to-check-inverse-continuity} tells us that we only have to check that $\ve{x}$ is one-to-one to make sure that it is a valid parameterization.
+
+    To show that $\ve{x}$ is one-to-one, we observe that $\sin u = z/r$. However, $u$ cannot be determined uniquely from $z$ by only this equation. Observe again though that
+    \begin{align*}
+      x^2 + y^2 = (r \cos u + a)^2 \cos^2 v + (r \cos u + a)^2 \sin^2 v = (r \cos u + a)^2.
+    \end{align*}
+    So, $\sqrt{x^2 + y^2} = r\cos u + a$. So, if $\sqrt{x^2 + y^2} \neq a$, it means that $\cos u \leq 0$ and $\pi/2 \leq u \leq 3\pi/2$. On the other hand, if $\sqrt{x^2 + y^2} > a$, then $\cos u > 0$, which means that either $0 < u < \pi/2$ or $3\pi/2 < u < 2\pi$. So, looking all of $(x,y,z)$, we can uniquely determine $u$. After we have determined $u$, it is easy to uniquely detemine $v$. Hence, $\ve{x}$ is one-to-one, and so its inverse is continuous.
+  \end{itemize}
+  
+\end{document}

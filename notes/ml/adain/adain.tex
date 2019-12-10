@@ -1,0 +1,247 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+\usepackage{verbatim}
+\usepackage{hyperref}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\Dee}{\mathrm{D}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\Var}{\mathrm{Var}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+\newcommand{\ov}[1]{\overline{#1}}
+
+\title{Adaptive Instance Normalization for Style Transfer}
+
+\begin{document}
+  \maketitle
+
+  This document is written as I read ``Arbitrary Style Transfer in Real-time with Adaptive Instance Normalization'' by Huang and Belongie \cite{Huang:2017}.
+
+  \section{Introduction}
+
+  \begin{itemize}
+  	\item The original style transfer paper \cite{Gatys:2016} relies on a slow optimization process to do its job.
+
+  	\item There are attempts to make it faster by creating feed-forward networks for the task. However, each of these networks is specialized to a single style. A prior work that does arbitrary styles exist, but it is slower than single-style methods.
+
+  	\item The paper presents a method that can do arbitrary style transfer in real-time.
+
+  	\item The method is inspired by the the \emph{instance normalization} (IN) layer \cite{Dumoulin:2016, Ulyanov:2017}.
+
+  	\item The paper proposes an extension called \emph{adaptive instance normalization} (AdaIN).
+
+  	\begin{itemize}
+  		\item Given a content input and a style input, AdaIN adjusts the mean and variance of the content input to match those of the style input.
+
+  		\item Output of AdaIN is fed to a decoder network to generate the final stylelized image.
+  	\end{itemize}  	
+  \end{itemize}
+
+  \section{Background}
+
+  \subsection{General Architecture for Style Transfer}
+
+  \begin{itemize}  	
+  	\item To perform style transfer with a feed-forward network, the batch of content image $c$ is encoded into a high-level ``feature map'' $x = f(c)$ by a neural network $\phi$. This is typically the first few layers of VGG-19 \cite{Simonyan:2014}.
+
+  	\item The feature map $x$ is then transformed in some way to get a ``target'' feature map $t$.
+
+  	\item The target feature map is then decoded by a network $g$ to g4t the final image $g(t)$.
+  \end{itemize}
+
+  \subsection{Batch Normalization}
+
+  \begin{itemize}
+  	\item The batch normalization (BN) layer normalizes the feature statistics of each batch to speedup feed-forward network training \cite{Ioffe:2015}.
+
+  	\item Radford \etal\ uses batch normalization heavily in their DCGAN paper \cite{Radford:2016}, proving that it is effective in generating images.
+
+  	\item Given an input patch $x \in \mathbb{R}^{N \times C \times H \times W}$, BN transforms the input as follows:
+  	\begin{align*}
+  		\mathrm{BN}(x) = \gamma \bigg( \frac{x - \mu(x)}{\sigma(x)} \bigg) + \beta
+  	\end{align*}
+  	where
+  	\begin{itemize}
+  		\item  $\mu(x), \sigma(x) \in \mathbb{R}^C$ are the mean and standard deviation, computed across batch size and spatial dimensions independently for each feature channel:
+  		\begin{align*}
+  			\mu_c(x) 
+  			&= \frac{1}{NHW} \sum_{n=1}^N \sum_{h=1}^H \sum_{w=1}^W x_{nchw}\\
+  			\sigma_c(x)
+  			&= \sqrt{\epsilon + \frac{1}{NHW} \sum_{n=1}^N \sum_{h=1}^H \sum_{w=1}^W (x_{nchw} - \mu_c(x))^2 }
+  		\end{align*}
+  		where $\epsilon$ is a small constant.
+
+  		\item $\gamma, \beta \in \mathbb{R}^C$ are parameters learned from data.
+  	\end{itemize}
+
+  	\item Note that $\mu(x)$ and $\sigma(x)$ are not defined at test time because the concept of mini-batch does not apply here. So, at test time, the two values are replaced by similar statistics computed from the dataset (or online while training).
+  \end{itemize}
+
+  \subsection{Instance Normalization}
+
+  \begin{itemize}
+  	\item Ulyanov \etal\ proposes a feed-forward network for style transfer in 2016 \cite{Ulyanov:2016}, which contains a BN layer after each convolutional layer.
+
+  	\item Surprisingly, they later found that significant improvement can be achieved by simply replacing BN layers with IN layers:
+  	\begin{align*}
+  		\mathrm{IN}(x) = \gamma \bigg( \frac{x - \mu(x)}{\sigma(x)} \bigg) + \beta
+  	\end{align*}
+  	The difference between IN and BN is that, now, $\mu(x)$ and $\sigma(x)$ are computed independenty for each channel and \emph{sample}. In other words, $\mu(x)$ and $\sigma(x)$ are now elements of $\mathbb{R}^{N \times C}$, and:
+  	\begin{align*}
+  		\mu_{nc}(x) &= \frac{1}{HC} \sum_{h=1}^H \sum_{w=1}^W x_{nchw} \\
+  		\sigma_{nc}(x)
+  			&= \sqrt{\epsilon + \frac{1}{HW} \sum_{h=1}^H \sum_{w=1}^W (x_{nchw} - \mu_c(x))^2 }
+  	\end{align*}
+  	Since the statistics are computed without relying on the existence of mini-batches, the IN layer remains the same at test time.  	
+  \end{itemize}
+
+  \subsection{Conditional Instance Normalization}
+
+  \begin{itemize}
+  	\item The parameters $\gamma$ and $\beta$ above is learned one per a training dataset. Dumoulin \etal\ proposed a \emph{conditional instance normalization} (CIN) layer that learns a different set of parameters $\gamma^s$ and $\beta^s$ for each style $s$:
+  	\begin{align*}
+  		\mathrm{CIN}(x;s) = \gamma^s \bigg( \frac{x - \mu(x)}{\sigma(x)} \bigg) + \beta^s.
+  	\end{align*}
+
+  	\item During training, a style image together with its index $s$ are randomly chosen from a fixed set of styles $s \in \{ 1,2,\dotsc,S\}$. The content image is processed with the same backbone network, using the corresponding $\gamma^s$ and $\beta^s$ in the CIN layers.
+
+  	\item CIN layers requires $2FS$ additional parameters, where $F$ is the size of the feature map $x$. So, it can only deal with a finite number of styles.
+  \end{itemize}
+
+  \section{Interpreting Instance Normalization}
+
+  \begin{itemize}
+  	\item Statistics of the feature map $x = f(t)$ can capture style information.
+
+  	\item The original paper \cite{Gatys:2016}\ uses the second-order statistics. However, Li \etal\ \cite{Li:2017} showed that matching statistics, such as channel-wise mean and variance, can also do style transfer.
+
+  	\item It is not well understood, though, why IN is effective.
+  	\begin{itemize}
+  		\item Ulyanov \etal\ argues that this is because IN is invariant to constrast of the content image.
+  	\end{itemize}
+
+  	\item The authors of the present paper argue Ulyanov \etal\ is wrong. The real reason is that IN performs some kind of \emph{style normalization}. The evidences they provide are:
+  	\begin{itemize}
+  		\item For the improved texture networks \cite{Ulyanov:2017}, IN performs better than BN.
+
+  		\item If all training images are normalized to the same contrast, IN remains as more effective as BN in reducing style loss. This means Ulyanov \etal's explanation does not hold. (If it were so, the difference should shrink.)
+
+  		\item If all training images are normalized to the same style, then the difference between effectiveness of BN to IN shrinks. This means that IN performs some kind of style normalization.
+  	\end{itemize}
+
+  	\item BN normalizes the statistics of the samples in a batch. This means that it tries to normalize all the images in the batch to the same style. However, each image has its own style, so it is not a good idea to normalize this with other images. While this effect can be fixed by the decoder, it makes training harder.
+
+  	\item IN, on the other hand, normalizes each image independenty; thereby allowing the training of decoder to focus on manipulating content directly.
+  \end{itemize}
+
+  \section{Adaptive Instance Normalization}
+
+  \begin{itemize}
+  	\item The paper proposes a new layer called \emph{adaptive instance normalization} (AdaIN). It takes two inputs:
+  	\begin{itemize}
+  		\item $x$ is the feature map of the content image $c$.
+  		\item $y$ is the feature map of the style image $s$.
+  	\end{itemize}
+  	AdaIN produces the target feature map as follows:
+  	\begin{align*}
+  		\mathrm{AdaIN}(x,y) = \sigma(y) \bigg( \frac{x - \mu(x)}{\sigma(x)} \bigg) + \mu(y)
+  	\end{align*}
+  	where $\mu(y)$ and $\sigma(y)$ are the mean and standard deviation of $y$ computed independently between channels. In words, AdaIN simply matches the per-channel mean and variance of $x$ to those of $y$.  	
+  \end{itemize}
+
+  \section{Experimental Setup}
+
+  \subsection{Network Architecture}
+
+  \begin{itemize}
+  	\item The network takes two inputs: the content image $c$ and the style image $S$.
+
+  	\item It produces an image whose content matches that of $x$ and whose style matches that of $s$.
+
+  	\item The encoder network $f$ is the first few layers of VGG-19. The paper uses up to \texttt{relu4\_1}. This network is fixed; it is not changed by training.
+
+  	\item The network first computes $f(c)$ and $f(s)$.
+
+  	\item Then, it computes the target feature map $t = \mathrm{AdaIN}(f(c), f(s))$.
+
+  	\item The part of the network that needs to be train is the decoder $g$ that sends the feature map back to the normal image space. The generated stylized image is:
+  	\begin{align*}
+  		T(c,s) = g(t).
+  	\end{align*}
+
+  	\item The coder mirrors the encoder, with the exception that the pooling layers are replaced by nearest up-sampling.
+
+  	\item Minor details:
+  	\begin{itemize}
+  		\item Reflection padding is used in both $f$ and $g$ to avoid border artifacts.
+
+  		\item There are no normalization layers in the decoder because these would interfere with IN's operation.
+  	\end{itemize}
+  \end{itemize}
+
+  \subsection{Training}
+
+  \begin{itemize}
+  	\item Content images come from MS-COCO. Style images come from WikiArt data set in Kaggle.
+
+  	\item For each pair of image, resize the smallest dimension of both images to 512 while preserving the aspect ratio. Then, the resized image is randomly cropped to get regionds of size $256 \times 256$. 
+
+  	\item The network was optimized by Adam with batch size of 8.
+
+  	\item The loss function is a weighted combination of the content loss and style loss:
+  	\begin{align*}
+  		\mathcal{L} = \mathcal{L}_c + \lambda \mathcal{L}_s.
+  	\end{align*}
+  	
+  	\item The content loss is the Euclidean distance betwen the target feature map and that of the output image:
+  	\begin{align*}
+  		\mathcal{L}_c = \| f(g(t)) - t \|_2.
+  	\end{align*}
+
+  	\item The style loss matches the statistics of various feature maps of the generated image with those of the style image:
+  	\begin{align*}
+  		\mathcal{L}_s = \sum_{i=1}^L \| \mu(\phi_i(g(t))) - \mu(\phi_i(s)) \|_2 + \sum_{i=1}^L \| \sigma(\phi_i(g(t))) - \sigma(\phi_i(s)) \|_2.
+  	\end{align*}
+  	where $\phi_i$ denotes a layer in VGG-9. The paper uses 4 layers: \texttt{relu1\_1}, \texttt{relu2\_1}, \texttt{relu3\_1}, and \texttt{relu4\_1}.
+  \end{itemize}
+
+  \bibliographystyle{acm}
+  \bibliography{adain}  
+\end{document}

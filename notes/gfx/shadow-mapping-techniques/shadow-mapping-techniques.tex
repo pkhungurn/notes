@@ -1,0 +1,316 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{mathrsfs}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+\usepackage{verbatim}
+\usepackage{hyperref}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\Dee}{\mathrm{D}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\Var}{\mathrm{Var}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\avg}{\mathrm{avg}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+\newcommand{\ov}[1]{\overline{#1}}
+
+\title{Shadow Mapping Techniques}
+\author{Pramook Khungurn}
+
+\begin{document}
+  \maketitle
+
+  This document is written as I read a series of papers on recent shadow mapping techniques.  
+
+  \section{A Brief History of Shadow Mapping}
+
+  \begin{itemize}
+  	\item Shadow mapping was first introduced in 1978 \cite{Williams:1978}.  Of course, it comes with aliasing problems, which needs to be solved in screen space.
+
+  	\item Reeves \etal\ introduced \emph{percentage closer filtering} (PCF) in 1987 \cite{Reeves:1987}.  The algorithm filters shadow testing results and so first achieves screen-space anti-aliasing.  However, it does not supports \emph{prefiltering} of shadow maps so is limitted to small kernels.
+
+  	\item Fernando introduced \emph{percentage closer soft shadows} (PCSS) in 2005 \cite{Fernando:2005}.  The algorithm renders plausible soft shadows caused by planar area lights by first approximating the average blocker depth and then use the blocker depth to determine the size of PCF kernel.
+
+  	\item By the way, these algorithms have been included as assignments in the 2016 version of CS 5625.
+  \end{itemize}
+
+  \section{Variance Shadow Maps}
+
+  \begin{itemize}
+  	\item This is from the 2006 paper by Donnelly and Lauritzen \cite{Donnelly:2006}.  The paper attempts to make shadow map filtering faster. 
+
+  	\item Main idea:
+  	\begin{itemize}
+  		\item Instead of storing a single depth value in a shadow map pixel, the paper stores a representation of the distribution of depths at that pixel.  
+
+  		\item The paper represents a distribution by its first and second moments, i.e. the mean depth and the mean squared depth.
+
+  		\item Two depth distributions can be average by averaging their moments.  As such, prefiltering techniques such as mipmapping or anisotropic filtering can be applied.
+
+  		\item From the first two moments, the bound on the fraction of depths that are more distant than the surface being shaded can be estimated.  The paper uses this bound as the fraction of light that reaches the surface.
+  	\end{itemize}
+
+  	\item Shadow map generation:
+  	\begin{itemize}
+  		\item The shadow map has two channels.  One channel stores the depth.  The other stores the square of the depth.
+
+  		\item After the shadow map is rendered, we can do filtering operations such as generating mipmaps or sum area table.
+
+  		\item From the filtered depths and the filtered squared depths, we can compute the mean ($\mu$) and the variance $(\sigma^2)$ of each region on the shadow map.
+  	\end{itemize}
+
+  	\item The paper makes use of the following inequality.
+
+  	\begin{theorem}[Cantelli's inequality]
+  		Let $X$ be a real random variable whose distribution has mean $\mu$ and variance $\sigma^2$.  We have that:
+  		\begin{align*}
+  			\Pr(X-\mu \geq \lambda) \leq \frac{\sigma^2}{\sigma^2 + \lambda^2}.
+  		\end{align*}
+  		for $\lambda > 0$.
+  	\end{theorem}
+
+  	Consequently, let $t = \lambda + \mu$, we have that:
+  	\begin{align}
+  		\Pr(X \geq t) &\leq \frac{\sigma^2}{\sigma^2 + (t - \sigma)^2}. \label{vsm-value}
+  	\end{align}
+  	Note though, that the inequality only works with $t > \mu$.
+
+  	\item When doing shadow map lookup, we are given a depth value $t$.  The paper approximates the fraction of light reaching the shaded point with the RHS of \eqref{vsm-value}.  (For $t < \mu$, I think the paper simply returns $0$.)
+
+  	\item The paper shows that \eqref{vsm-value} gives exact solution in the case where there is a single planar occluder casting shadow onto another planar occluder.
+
+  	\item Light bleeding artifacts can arise when $\sigma^2$ is large.  This is a problem for scenes with high depth compleixity when viewed from the light.
+  \end{itemize}
+
+  \section{Convolution Shadow Maps}
+
+  \begin{itemize}
+  	\item This is from the 2007 paper by Annen \etal\ \cite{Annen:2007}.
+
+	\item Let $\ve{x} \in \Real^3$ be the world-space position of a pixel.  Let $\ve{p} \in \Real^2$ denote a position of a shadow map pixel.  It is obtained by a surfective mapping $T: \Real^3 \ra \Real^2$ between world-space and shadow map space: $T(\ve{x}) = \ve{p}.$
+
+	\item The shadow map econdes a function $z(\ve{p})$ that represents the depth of the blocker that is closest to the light source for each $\ve{p}$.
+
+	\item A pixel with world-space position $\ve{x}$ is considered in shadow when $d(\ve{x}) > z(\ve{p})$ where $d(\ve{x})$ is the depth of $\ve{x}$ with respect to the light source.
+	
+	\item The shadow function $s$ is given by:
+	\begin{align*}
+		s(\ve{x}) := f(d(\ve{x}), z(\ve{p})) = f(d(\ve{x}), z(T(\ve{x})))
+	\end{align*}
+	where $f(d,z) = 1$ if $d \leq z$ and $f(d,z) = 0$ otherwise.  	
+
+  	\item A convolution on a function $g$ with kernel $w$, supported over a neighborhood $\mathcal{N}$, is defined as:
+  	\begin{align*}
+  		[w * g](\ve{p}) := \sum_{\ve{q} \in \mathcal{N}} w(\ve{q})g(\ve{p} - \ve{q}).
+  	\end{align*}
+
+  	\item The convolution of the shadow function $s$ with $w$ is more complicated.  It is formulated as follows:
+  	\begin{align*}
+  		s_{w*f}(\ve{x}) = \sum_{\ve{q} \in \mathcal{N}} w(\ve{q}) f(d(\ve{y}), z(\ve{p} - \ve{q})).
+  	\end{align*}
+  	Notice that the actual convolution happens in the shadow map space because it doesn't make sense to talk about 2D convolution in 3D.  The definition also contain a new variable $\ve{y}$, informally defined as the point that lies near $\ve{x}$ such that $T(\ve{y}) = T^{-1}(\ve{p} - \ve{q})$.  However, there is no unique $\ve{y}$ because $T$ is not invertible.  Hence, the above definition does not quite work.
+
+  	In order to get a sound mathematical definition, we make the assumption that $d(\ve{y}) = d(\ve{x})$.  This says that $d(\ve{x})$ is the representative depth for the neighborhood $\mathcal{N}$.  This is only correct for a planar receiver parallel to the shadow map plane, but it is quite reasonable and has been used in PCF \cite{Reeves:1987}.  So, now the definition of shadow map convolution becomes:
+  	\begin{align*}
+  		s_{w*f}(\ve{x}) 
+  		= \sum_{\ve{q} \in \mathcal{N}} w(\ve{q}) f(d(\ve{x}), z(\ve{p} - \ve{q}))
+  		= [w * f(d(\ve{x}),z)](\ve{p}).
+  	\end{align*}
+
+  	\item Note that filtering cannot be applied directly to the shadow map values:
+  	\begin{align*}
+  		[w * f(d(\ve{x}),z)](\ve{p}) \neq f(d(\ve{x}),[w*z](\ve{p})).
+  	\end{align*}
+  	The goal of the paper is to circumvent this limitation.
+
+  	\item The paper achieves the goal by expanding $f(d,z)$ as follows:
+  	\begin{align*}
+  		f(d,z) = \sum_{i=1}^\infty a_i(d) B_i(z).
+  	\end{align*}
+  	The expansion has to be truncated to some truncation order $N$.  So, the shadow map function can be written as:
+  	\begin{align*}
+  		s(\ve{x}) = \sum_{i=1}^N a_i(d(\ve{x}))B_i(z(\ve{p})).
+  	\end{align*}
+  	We will choose the functions $B_1, B_2, \dotsc, B_N$ and $a_1, a_2, \dotsc, a_N$ later.
+
+  	\item The expansion is useful because we can now apply filtering on the basis function values of the shadow map pixels:
+  	\begin{align*}
+  		s_{w * f}(\ve{x}) 
+  		&= [w*f(d(\ve{x}),z)](\ve{p}) 
+  		= \bigg[ w * \sum_{i=1}^N a_i(d(\ve{x})) B_i \bigg](\ve{p}) 
+  		= \sum_{i=1}^N a_i(d(\ve{x})) [w*B_i](\ve{p}).  		
+  	\end{align*}
+  	In other words, \emph{any convolution on the shadow function is equivalent to convolving the individual basis images $B_i(z(\ve{p}))$}.
+
+  	\item It is time to choose the basis functions.  The paper uses \emph{Fourier expansion}.
+
+  	\item Any periodic function $g(t)$ can be represented as an infinite sum of sinusoids:
+  	\begin{align*}
+  		g(t) = \frac{1}{2} a_0 + \sum_{n=1}^\infty \bigg[ a_n \cos\bigg( \frac{2\pi n}{T} t \bigg) + b_n \sin\bigg(\frac{2\pi n}{T} t \bigg)  \bigg]
+  	\end{align*}
+  	where
+  	\begin{align*}
+  		a_0 &= \int_{0}^T g(t)\ \dee t, &
+  		a_n &= \int_{0}^T \cos\bigg( \frac{2\pi n}{T} t \bigg) g(t)\ \dee t, &
+  		b_n &= \int_{0}^T \sin\bigg( \frac{2\pi n}{T} t \bigg) g(t)\ \dee t.
+  	\end{align*}
+
+  	\item The shadow test function $f$ is a 2D function, but it can be represented as the Heaviside step function as follows:
+  	\begin{align*}
+  		f(d,z) = H(z-d)
+  	\end{align*}
+  	where
+  	\begin{align*}
+  		H(t) = \begin{cases}
+  			1, & t > 0 \\
+  			1/2, & t = 0 \\
+  			0, & t < 0
+  		\end{cases}.
+  	\end{align*}
+
+  	\item Let $S(t)$ be the square wave function with period $2$ and amplite $1$.  We have that, when $t \in (-1,1)$, we have that $H(t) = 1/2 + S(t)/2$.  The Fourier series for $S(t)$ is given by:
+  	\begin{align*}
+  		S(t) = \frac{4}{\pi} \sum_{n=1}^\infty \frac{\sin((2k-1)\pi t)}{2k-1} .
+  	\end{align*}
+  	As a result,
+  	\begin{align*}
+  		f(d,z) = H(z-d) = \frac{1}{2} + 2 \sum_{k=1}^\infty \frac{\sin(c_k (z-d))}{c_k} .
+  	\end{align*}
+  	where $c_k = (2k-1)\pi$.  Now
+  	\begin{align*}
+  		\sin(c_k(z-d)) = \sin(c_k z - c_k d) = \sin(c_k z) \cos(c_k d) - \cos(c_k z) \sin(c_k d).
+  	\end{align*}
+  	We have that:
+  	\begin{align*}
+  		f(d,z) = \frac{1}{2} + 2\sum_{k=1}^\infty \frac{\sin(c_k z) \cos(c_k d)}{c_k} - 2\sum_{k=1}^\infty \frac{\cos(c_k z) \sin(c_k d)}{c_k}
+  	\end{align*}
+  	As a result, we may pick the basis functions $a_i$, $B_i$ as follows:
+  	\begin{align*}
+  		a_{2k-1}(d) &= \frac{2\cos(c_k d)}{c_k}, &
+  		B_{2k-1}(z) &= \sin(c_k z), \\
+  		a_{2k}(d) &= -\frac{2\sin(c_k d)}{c_k}, &
+  		B_{2k}(z) &= \cos(c_k z)
+  	\end{align*}
+  	where $k = 1, 2, \dotsc, M=N/2$.  DON'T FORGET TO ADD $1/2$.
+
+  	\item Pros of Fourier expansion:
+  	\begin{itemize}
+  		\item It is shift-invariant with respect to $d$ and $z$.  This allows the paper to move the Heaviside function without affecting the truncation error.  (More on this later.)
+  		\item The basis functions are bounded to $[-1,1]$, which allows the paper to used fixed point representation.
+  	\end{itemize}
+
+  	\item Cons of Fourier expansion:
+  	\begin{itemize}
+  		\item Rigging.
+  		\item The Heaviside step function is smoothed, which can cause incorrect shadowing if not handled.
+  	\end{itemize}
+
+  	\item The paper reduces ringing by attentuating the $(2k-1)$th and $(2k)$th terms by $\exp(-\alpha(k/M)^2)$ where the parameter $\alpha$ controls the attenuation strength.  This introduces the trade-off where, the more ringing is reduced, the less steep the step function becomes.
+
+  	\item Approximating the shadow test with a low order Fourier expansion results in a smooth transition between shadowed and unshadowed region.  This means that, when $z-d \approx 0$, the shadow function evaluates fo $0.5$ which is not desirable.  The paper solves this problem by:
+  	\begin{enumerate}  	 
+  		\item Subtracting an offset from $d$ to shift the shadow boundary.  This does not affect the approximation error incurred by the Fourier expansion because it is shift-invariant.
+  		\item Scaling the output of the shadow up to make the function steeper and the transition area narrower.  This might introduce aliasing though.
+  	\end{enumerate}  	 
+  \end{itemize}
+
+  \section{Soft Shadows with Convolution Shadow Maps}
+
+  \begin{itemize}
+  	\item This is from the paper \cite{Annen:2008}.  It extends convolution shadow maps (CSM) by proposing how to efficiently compute the average blocker depth, which is then used in the same manner as PCSS.
+
+  	\item The average blocker depth $z_{\avg}(\ve{x})$ of a world-space point $\ve{x}$ is the average of depths values of points \emph{above} $\ve{x}$ around $T(\ve{x})$.  To formulate this function mathematically, let us introduce the ``complementary'' shadow test $\bar{f}$:
+  	\begin{align*}
+  		\bar{f}(d(\ve{x}), z(\ve{p})) = \begin{cases}
+  			1, & d(\ve{x}) > z(\ve{p}) \\
+  			0, & d(\ve{x}) \leq z(\ve{p})
+  		\end{cases}.
+  	\end{align*}
+  	We can use the shadow test to define the average blocker depth as follows:
+  	\begin{align*}
+  		z_{\avg}(\ve{x}) = \frac{[w_{\avg} * (\bar{f}(d(\ve{x}),z)\times z)](\ve{p})}{[w_{\avg} * \bar{f}(d(\ve{x}),z)](\ve{p})}
+  	\end{align*}
+  	where $w_{\avg}$ is an averaging kernel.  The denominator is just $1 - s_{w_{\avg} * f}(\ve{x})$.  For the nominator, we can approximate it with the same trick in CSM.  That is, we expand $\bar{f}$ as a sum of products of functions of $d$ and $z$ so that we have:
+  	\begin{align*}
+  		\bar{f}(d(\ve{x}),z) = \sum_{i=1}^N \bar{a}_i(d(\ve{x})) \bar{B}_i(z(\ve{p})) z(\ve{p}).
+  	\end{align*}
+  	As a result,
+  	\begin{align*}
+  		z_{\avg}(\ve{x}) \sum_{i=1}^N \bar{a}_i(d(\ve{x})) [ w_{\avg} * \bar{B}_i(z) z] (\ve{p}),
+  	\end{align*}
+  	so we will need to compute new basis images $\bar{B}_i(z(\ve{p})) z(\ve{p})$ along with the regular CSM basis images.  This approach of computing the average blocker depth is called CSM-Z.
+
+  	\item The paper also proposes improvements on the Heaviside function's expansion.
+  	\begin{itemize}
+  		\item With appropriate scaling, shifting, and subsequent clamping, ringing can be avoid completely.  This can be done by shifting and scaling the response so that ringing occurs when the response is above $1$ or below $0$.  If we clamp the response to $[0,1]$, then ringing is avoided completely.
+
+  		\item There's also the problem that the slope of the shadow test function is not sharp enough around $z-d \approx 0$.  The paper applies a non-linear transformation $G(v) = v^p$ to the filtered shadow value $s_{w*f}(\ve{x})$ with $p \geq 1$.  (If $p = 1$, then nothing changes.)  
+
+  		However, this might remove smooth transitions from penumbra regions, so it selectively applies the transformation.  When $d(\ve{x}) - z_{\avg}(\ve{p})$ is small, we know that $\ve{x}$ is near a contact point where light leaking will likely occur and penumbra is likely to be sharp.  So, the paper chooses the exponent $p$ as follows:
+  		\begin{align*}
+  			p = 1 + A \exp(-B(d(\ve{x}) - z_{\avg}(\ve{p}))).
+  		\end{align*}
+  		Here, the parameter $A$ contains the strength of darkening, and $B$ determines how fast darkening effect fades away as $d(\ve{x}) - z_{\avg}(\ve{p})$ increases.
+  	\end{itemize}
+
+  	\item The rendering algorithm:
+  	\begin{itemize}
+  		\item The scene is rendered from the center of the area light source, and the $z$-value is written to the shadow map.
+
+  		\item From the depth map, the following images are produced: the Fourier series basis and its complementary basis images multiplied by the shadow map $z$-values.
+
+  		\item Mipmaps or sum-area-table of the above generate images are computed.
+
+  		\item For each camera pixel, the following process is carried out:
+  		\begin{itemize}
+  			\item The initial filter size is determined according to the cone defined by the intersection of the cone defined by the intersection of the area light source and the shadow map plane.
+
+  			\item The average block depth is determined on the window defined by the initial filter size.
+
+  			\item The final filter width is determined using the same algorithm employed by PCSS.
+
+  			\item Then, the filtered shadow value is determined with CSM using the final filter width.
+  		\end{itemize}
+  	\end{itemize}
+
+  	\item The paper also proposes a greedy algorithm to decompose an environment map into a number of area light sources.  Since this is not directly related to shadow mapping, we skip its discussion here.
+  \end{itemize}
+
+  \bibliographystyle{apalike}
+  \bibliography{shadow-mapping-techniques}    	
+\end{document}

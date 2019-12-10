@@ -1,0 +1,432 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{epstopdf}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+\usepackage{upgreek}
+\usepackage{hyperref}
+
+\newtheorem{lemma}{Lemma}[section]
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\Dee}{\mathrm{D}}
+\newcommand{\In}{\mathrm{i}}
+\newcommand{\Out}{\mathrm{o}}
+\newcommand{\pdf}{\mathrm{pdf}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\likelihood}{\mathcal{L}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\new}{\mathrm{new}}
+\newcommand{\Arg}{\mathrm{Arg\,}}
+\newcommand{\Log}{\mathrm{Log\,}}
+\newcommand{\RE}{\mathrm{Re\,}}
+\newcommand{\IM}{\mathrm{Im\,}}
+\newcommand{\Res}{\mathrm{Res}}
+\newcommand{\pv}{\mathrm{p.v.}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+\newcommand{\II}{\mathrm{II}}
+\DeclareMathOperator{\Bd}{Bd}
+\newcommand{\ov}[1]{\overline{#1}}
+\newcommand{\metre}{\mathrm{m}}
+\newcommand{\second}{\mathrm{s}}
+\newcommand{\sterad}{\mathrm{sr}}
+\newcommand{\kg}{\mathrm{kg}}
+\newcommand{\Watt}{\mathrm{W}}
+\newcommand{\group}{\mathrm{gr}}
+
+\title{Dual Scattering}
+\author{}
+
+\begin{document}
+  \maketitle
+
+  This document is written as I read the paper ``Dual Scattering Approximation for Fast Multiple Scattering in Hair'' by Zinke \etal\ \cite{Zinke:2008}
+
+  \section{Dual Scattering} % (fold)
+  \label{sec:dual_scattering}
+
+  \begin{itemize}
+    \item We start with the standard rendering equation for fibers:
+    \begin{align*}
+      L_\Out(x,\omega_\Out) = \int_{S^2} f_s(\omega_\In, \omega_\Out) L_\In(x,\omega_\In) \cos \theta_\In\, \dee \omega_\In
+    \end{align*}
+    where $f_s$ is the BCSDF.
+
+    \item The incident radiance function $L_i(\omega_\In)$ includes all light paths scattered inside the hair volume. In other words,
+    \begin{align*}
+      L_\In(x,\omega_\In) = \int_{S^2} L_\dee(x,\omega_\dee) \Psi(x,\omega_\dee, \omega_\In)\, \dee \omega_\dee
+    \end{align*}
+    where
+    \begin{itemize}
+      \item $L_\dee(x,\omega_\dee)$ is the incoming radiance from outside the hair (assuming distant illumination), and
+      \item $\Psi(x,\omega_\dee, \omega_\In)$ is the \textbf{multiple scattering function}, denoting the fraction of light entering the hair volume from direction $\omega_\dee$ that is scattered inside the hair volume and finally arriving at direction $\omega_\In$ at point $x$.
+    \end{itemize}
+
+    \item The multiple scattering function is approximated as a combination of two components: {\bf global multiple scattering} and {\bf local multiple scattering}:
+    \begin{align*}
+      \Psi(x,\omega_\dee, \omega_\In) = \Psi^G(x, \omega_\dee, \omega_\In) ( 1 + \Psi^L(x, \omega_\dee, \omega_\In)).
+    \end{align*}
+    The global component $\Psi^G$ computes the irradiance arriving at the neighborhood of $x$. The local component $\Psi^L$ computes the multiple scattering of this irradiance within the local neighborhood of $x$.      
+  \end{itemize}
+  % section introduction (end)  
+
+  \section{Global Multiple Scattering} % (fold)
+  \label{sub:global_multiple_scattering}
+  \begin{itemize}
+    \item Global multiple scattering is approximated using only one path, the shadow path in the directon $\omega_\dee$.
+
+    \item On the shadow path, we identify all scattering events.  For each scattering event, we classify all possible scattering directions into two groups: \emph{forward scattering} and \emph{backward scattering}.  These are determined based on whether the direction is in the front half or the back half of the scattering cone relative to the light source.
+
+    \item The global multiple scattering term only uses forward scattered radiance.
+
+    \begin{itemize}
+      \item The TT component is in the front half-cone.  So, for light colored hair, forward scattering is much stronger than backward scattering.
+
+      \item Light that scatters backwards one time before reading the neighborhood of $x$ needs another backward scattering event.  Thus, for light colored hair, this portion of light is very small.  As a result, we ignore this double back scattering path.
+
+      \item However, noted that the backward scattered radiance is only ignored in the global multiple scattering term.  It will be used again in the local multiple scattering term.      
+    \end{itemize}
+
+    \item The global multiple scattering term is given by:
+    \begin{align*}
+      \Psi^G(x, \omega_d, \omega_i) \approx T_f(x, \omega_d) S_f(x, \omega_d, \omega_i)
+    \end{align*}
+    where
+    \begin{itemize}
+      \item $T_f(x, \omega_d)$ is the total transmittance, and
+      \item $S_F(x, \omega_d, \omega_i)$ accounts for the spread of global multiple scattering into different directions.
+    \end{itemize}
+  \end{itemize}
+  % subsection global_multiple_scattering (end)
+
+  \subsection{Forward Scattering Transmittance}
+  \begin{itemize}
+    \item The transmittance function $T_f(x, \omega_d)$ gives the total attenuation of a front scatterd light path arriving at point $x$.
+
+    \item The function depends on the following quantities:
+    \begin{itemize}
+      \item $n = $ the number of scattering events along the path,      
+      \item $\bar{a}_f(\theta_d^k) = $ the average attenuation caused by the $k$th forward scattering event (here, $\theta^k$ is the longitudinal inclination at the $k$th event), and
+      \item $d_f(x, \omega_d) = $ the density factor.
+    \end{itemize}
+
+    \item The function is given by:
+    \begin{align*}
+      T_f(x, \omega_d) = d_f(x,\omega_d) \prod_{k=1}^n \bar{a}_f(\theta^k_d).
+    \end{align*}
+
+    \item If $n=0$, then the point $x$ is illuminated directly by the light source, and the transmittance function is set to $1$.
+
+    \item The density factor should account for the fact that some points are located in a dense cluster and some are not.  However, in practice, the paper uses a constant between $0$ and $1$, which is determined based on the overall hair density.  In general, the value should be between $0.6$ and $0.8$.  The paper uses $0.7$ for all the examples in the paper.
+
+    \item The average attenuation $\bar{a}_f(\theta_d)$ is computed from the scattering function $f_s$.  It is defined as the total radiance on the front hemisphere due to isotropic irrance along the specular cone:
+    \begin{align*}
+      \bar{a}_f(\theta_d) = \frac{1}{\pi} \int_{\Omega_f} \int_{-\pi/2}^{\pi/2} f_s((\theta_d, \phi),\omega) \cos \theta_d\ \dee\phi \dee \omega.
+    \end{align*}
+    where $\Omega_f$ is all directions over the front hemisphere.
+  \end{itemize}
+
+  \subsection{Forward Scattering Spread}
+  \begin{itemize}
+    \item The spread function $S_f(x, \omega_d, \omega_i)$ approximates probability of light coming to point $x$ from direction $\omega_i$ given the light coming from the shadow path whose direction is $\omega_d$.
+
+    \item The paper represents $S_f$ with two terms.  One for the azimuthal spread and the other for the longitudinal spread.
+    \begin{itemize}
+      \item The paper assumes that the hair fiber has wide azimuthal scattering property.  (This is actually okay.  In my cloth paper, $\gamma_{TT}$ is actually quite large.)  As a result, after a number of scattering event, the front scatterd radiance quickly becomes isotropic (only in the front cone) in the azimuthal directions.  This is modeled by the term
+      \begin{align*}
+        \tilde{s}_f(\phi_d, \phi_i) = \begin{cases}
+          1/\pi, & \phi_d + \pi/2 \leq \phi_i \leq \phi_d + 3\pi/2 \\
+          0, & \mathrm{otherwise}.
+        \end{cases}
+      \end{align*}
+      In other words, the term is constant in the forward scattering directions and $0$ otherwise.
+
+      \item In the longitudinal direction, it is still quite concentrated.  (This might not actually be true.  Our model restricts $\beta_{TT}$ to be at least $10^\circ$, so after $5$ or so event, it might spread very widely.)  This is modeled by a Gaussian on $\theta_i$ whose peak is at $-\theta_d$:
+      \begin{align*}
+        g(\theta_d + \theta_i, \bar{\sigma}^2_f(x, \omega_d)).
+      \end{align*}
+      The variance $\bar{\sigma}^2_f(x, \omega_d)$ is computed by the sum of all variances of all scattering events along the shadow path:
+      \begin{align*}
+        \bar{\sigma}^2_f(x, \omega_d) = \sum_{k=1}^n \bar{\beta}_f^2(\theta_d^k)
+      \end{align*}
+      where $\bar{\beta}_f^2(\theta_d^k)$ is the average longitudinal forward scattering variance of the $k$th scattering event, taken directly from the BCSDF of the hair fiber.
+
+      In my model, we would have that $\bar{\beta}_f^2(\theta_d^k) = \beta^2_{TT}$.      
+    \end{itemize}
+
+    \item The expression for the spread term is given by:
+    \begin{align*}
+      S_f(x, \omega_d, \omega_i) = \frac{\tilde{s}_f(\phi_d, \phi_i)}{\cos \theta_d} g(\theta_d + \theta_i, \bar{\sigma}(x, \omega_d)).
+    \end{align*}
+  \end{itemize}
+
+  \section{Local Multiple Scattering}
+  \begin{itemize}
+    \item The local multiple scattering function accounts for the multiple scattering events withing the neighborhood of the point $x$.  This function must include at least one backward scattering because this was ignored in the forward multiple scattering term.    
+
+    \item In the implementation, the local multiple scattering is used together as a product with the BCSDF.  The product has two terms:
+    \begin{align*}
+      \Psi^L(x, \omega_d, \omega_i) f_s(\omega_i, \omega_o) = d_b(x, \omega_d) f_{\mathrm{back}}(\omega_i, \omega_o).
+    \end{align*}
+    where
+    \begin{itemize}
+      \item $d_b(x, \omega_d)$ is the density term, which accounts for the hair density around point $x$, and
+      \item $f_{\mathrm{back}}(\omega_i, \omega_o)$ is a function that accounts for backward scattering.
+    \end{itemize}
+
+    \item $d_b$ is set to a constant in the same way as $d_f$ in the previous section.  In the paper, it is set fo $0.7$.
+
+    \item The $f_{\mathrm{back}}$ function is not a function of $x$, which means that it is modeled as a material property.  It is given by:
+    \begin{align*}
+      f_{\mathrm{back}}(\omega_i, \omega_o) = \frac{2}{\cos \theta}  \bar{A}_b(\theta) \bar{S}_b(\omega_i,\omega_o)
+    \end{align*}
+    where
+    \begin{itemize}
+      \item $\theta = (\theta_o - \theta_i)/2$ is the (signed) half angle between the incoming and outgoing inclination angles,
+      \item $\bar{A}_b(\theta)$ is the average backscattering attenuation, and
+      \item $\bar{S}_b(\omega_i, \omega_o)$ is the average backscattering spread.
+    \end{itemize}
+    The $\cos\theta$ factor accounts for the fact that light is roughly scatterd to a cone. (Huh?  The paper says this comes from the Marschner paper \cite{Marschner:2003}, but the paper does not have anything like that.)
+
+    \item Note that $f_{\mathrm{back}}$ has the same type as the BCSDF.
+
+    \item Before getting to the details of the terms, let us recap the computation again:
+    \begin{align*}
+      L_o(x,\omega_o) 
+      &= \int_{\Omega} L(x, \omega_i) f_s(\omega_i, \omega_o) \cos \theta_i\ \dee \omega_i \\
+      &= \int_{\Omega} \bigg( \int_{\Omega} L_d(\omega_d) \Psi(x, \omega_d, \omega_i) \ \dee \omega_d \bigg) f_s(\omega_i, \omega_o) \cos \theta_i\ \dee \omega_i \\
+      &= \int_{\Omega} \bigg( \int_{\Omega} L_d(\omega_d) ( \Psi^G(x, \omega_d, \omega_i)(1 + \Psi^L(x, \omega_d, \omega_i)) )  \ \dee \omega_d \bigg) f_s(\omega_i, \omega_o) \cos \theta_i\ \dee \omega_i \\
+      &= \int_{\Omega} \int_{\Omega} L_d(\omega_d) \Psi^G(x, \omega_d, \omega_i) f_s(\omega_i, \omega_o) \cos \theta_i\ \dee \omega_d \dee \omega_i\\
+      &\phantom{\ =\ } + \int_{\Omega} \int_{\Omega} L_d(\omega_d) \Psi^G(x, \omega_d, \omega_i) \Psi^L(x, \omega_d, \omega_i) f_s(\omega_i, \omega_o) \cos \theta_i\ \dee \omega_d \dee \omega_i \\
+      &= \int_{\Omega} \int_{\Omega} L_d(\omega_d) \Psi^G(x, \omega_d, \omega_i) f_s(\omega_i, \omega_o) \cos \theta_i\ \dee \omega_d \dee \omega_i\\
+      &\phantom{\ =\ } + \int_{\Omega} \int_{\Omega} L_d(\omega_d) \Psi^G(x, \omega_d, \omega_i) d_b(x,\omega_d) f_{\mathrm{back}}(\omega_i,\omega_o) \cos \theta_i\ \dee \omega_d \dee \omega_i.      
+    \end{align*} 
+    If $d_b$ has no dependence on $\omega_d$ and $x$, we have that
+    \begin{align*}
+      L_o(x,\omega_o) 
+      &= \int_{\Omega} \bigg( \int_{\Omega} L_d(\omega_d) \Psi^G(x, \omega_d, \omega_i)\ \dee \omega_d \bigg) (f_s(\omega_i, \omega_o) + d_b f_{\mathrm{back}}(\omega_i, \omega_o)) \cos \theta_i\ \dee \omega_i \\
+      &= \int_{\Omega} \bigg( \int_{\Omega} L_d(\omega_d) \Psi^G(x, \omega_d, \omega_i)\ \dee \omega_d \bigg) f(\omega_i, \omega_o) \cos \theta_i\ \dee \omega_i
+    \end{align*}  
+    where
+    \begin{align*}
+      f(\omega_i, \omega_o) = f_s(\omega_i, \omega_o) + d_b f_{\mathrm{back}}(\omega_i, \omega_o).
+    \end{align*}
+  \end{itemize}
+
+  \subsection{Average Backscattering Attenuation}
+  \begin{itemize}
+    \item We assume that, around point $x$, the hair fibers are \emph{disciplined}, which basically means that the fibers in the cluster around $x$ have the same tangents.
+
+    \item We also assume that the longitudinal inclination $|\theta|$ is the same for all fibers in the cluster at all events despite the fact that backward scattering might have occured.
+
+    \item To compute the attenuation, we consider the paths where there is an odd number of backward scattering event.  In case of $1$ backward scattering event, the average attenuation is given by:
+    \begin{align*}
+      \bar{A}_1(\theta) = \bar{a}_b \sum_{i=1}^\infty \bar{a}_f^{2i} = \frac{\bar{a}_b \bar{a}_f^2}{1 - \bar{a}_f^2}
+    \end{align*}
+    where $\bar{a}_f(\theta)$ is the average forward scattering attenuation (given in the last section), and $\bar{a}_b(\theta)$ is the average backward scattering attenuation, given by:
+    \begin{align*}
+      \bar{a}_b(\theta) 
+      &= \frac{1}{\pi} \int_{\Omega_b} \int_{-\pi/2}^{\pi/2} f_s((\theta_d. \phi), \omega) \cos \theta\ \dee\phi \dee\omega
+    \end{align*}
+    where $\Omega_b$ is the set of all directions over the back hemisphere.  
+
+    Note that the expression for $\bar{A}_1(\theta)$ covers the case where light forward scatterings through $i$ fibers, backward scatters $1$ time, and then forwards scatters back through the same $i$ fibers before reaching point $x$.
+
+    Note that the case where there is no forward scattering $(i=0)$ is not included because it is handled within the single scattering computation.
+
+    \item In the case of $3$ backward scattering events, we need a more careful consideration.  Suppose we number the fibers from top to bottom starting from $0$ at the top.  Consider the case where:
+    \begin{itemize}
+      \item Light strikes the top Fiber $0$.
+      \item It then forward scatters down to Fiber $i$ where $i > 0$.
+      \item It backward scatters one time and travels to Fiber $i-1$.
+      \item It forward scatters $j$ times and travels to Fiber $i-1-j$ where $0 \leq j \leq i-1$.
+      \item It backward scatters one time and travels to Fiber $i-j$.
+      \item It forward scatters $k$ times and tervales to Fiber $i-j+k$.
+      \item It backward scatters one time and travels to Fiber $i-j+k-1$.
+      \item Lasly, it forward scatters $i-j+k$ times and escapes the fiber cluster.
+    \end{itemize}
+    According to the above process, the attenuation factor is given by:
+    \begin{align*}
+      \bar{a}_f^{i}\ \bar{a}_b\ \bar{a}_f^{j}\ \bar{a}_b\ \bar{a}_f^{k}\ \bar{a}_b\ \bar{a}_f^{(i-j+k)}
+      = \bar{a}_b^3 \bar{a}_f^{2i + 2k}
+    \end{align*}
+    So,
+    \begin{align*}
+      \bar{A}_3(\theta) 
+      &= \sum_{i=1}^\infty \sum_{j=0}^{i-1} \sum_{k=0}^\infty \bar{a}_b^3 \bar{a}_f^{2i + 2k}
+      = \bar{a}_b^3 \sum_{i=1}^\infty i \sum_{k=0}^\infty \bar{a}_f^{2i + 2k}
+      = \bar{a}_b^3 \sum_{i=1}^\infty i \bar{a}_f^{2i} \sum_{k=0}^\infty \bar{a}_f^{2k}
+      = \frac{\bar{a}_b^3}{1 - \bar{a}_f^2} \sum_{i=1}^\infty i \bar{a}_f^{2i} \\
+      &= \frac{\bar{a}_b^3}{1 - \bar{a}_f^2} \frac{\bar{a}_f^2}{(1-\bar{a}_f^2)^2}
+      = \frac{\bar{a}_b^3 \bar{a}_f^2}{(1 - \bar{a}_f^2)^3}    
+    \end{align*}    
+
+    \item The paper disregard paths with more than $3$ backward scattering events.  So,
+    \begin{align*}
+      \bar{A}_b(\theta) = \bar{A}_1(\theta) + \bar{A}_3(\theta).
+    \end{align*}
+  \end{itemize}
+
+  \subsection{Average Backscattering Spread}
+  \begin{itemize}
+    \item The backward scattering spread is modeled with a constant azimuthal term $\tilde{s}_b$ and a Gaussian in the longitudinal direction:
+    \begin{align*}
+      \bar{S}_b(\omega_i, \omega_o) = \frac{\tilde{s}_b(\phi_i, \phi_o)}{\cos \theta} g(\theta_o + \theta_i - \bar{\Delta}_b(\theta), \bar{\sigma}_b^2(\theta))
+    \end{align*}
+    where
+    \begin{itemize}
+      \item $\theta = (\theta_o - \theta_i)/2$,
+      \item $\tilde{s}_b$ is defined in the same way as $\tilde{s}_f$ in the last section,
+      \item $\bar{\Delta}_b(\theta)$ is the average longitudinal shift caused by the scattering events (because of the scales?), and
+      \item $\bar{\sigma}_b^2(\theta)$ is the average longitudinal variance for backscattering.
+    \end{itemize}
+    
+    \item The average longitudinal shift is computed as the weighted average of longitudinal shifts of different paths with back scatterings.  Basically, if the attenuation factor of a path is $a$ and the shift is $\alpha$, then the contribution of this path is $a\alpha$.  
+
+    The BCSDF should provide us with two shifts $\bar{\alpha}_b(\theta)$ and $\bar{\alpha}_f(\theta)$ for backward and forward scattering, respectively.  In the Marschner model, the shift should be constant.  In my cloth fiber model, the shifts should be zero.  In any case, there shouldn't be any dependence on $\theta$.
+
+    Let us start with the paths with only $1$ backscattering event.  We have that the paths are characterized by an integer $i \geq 1$, which is the number of fibers the light forward scatter throughs.  The Path $i$ has attenuation factor $\bar{a}_b \bar{a}_f^{2i}$ and shift $\bar{\alpha}_b + 2i\bar{\alpha}_f$.  Therefore, the contribution of all paths is given by:
+    \begin{align*}
+      \bar{a}_b \sum_{i=1}^\infty \bar{a}_f^{2i}( \bar{\alpha}_b + 2i\bar{\alpha_f})
+    \end{align*}
+
+    For the paths with $3$ backward scattering events, a path is characterized by three integers $(i,j,k)$ with $i \geq 1$, $0 \leq j \leq i-1$, and $k \geq 0$.  For the $(i,j,k)$-path, the attanuation is $\bar{a}_b^3 \bar{a}_f^{2i + 2k - 1}$ and the shift is $3 \bar{\alpha}_b + (2i+2k-1) \bar{\alpha}_f$.  So, the contribution is:
+    \begin{align*}
+      \bar{a}_b^3 \sum_{i=1}^\infty \sum_{j=0}^{i-1} \sum_{k=0}^\infty \bar{a}_f^{2i + 2k - 1} (3 \bar{\alpha}_b + (2i+2k-1) \bar{\alpha}_f).
+    \end{align*}
+
+    All in all, the shift is given by:
+    \begin{align*}
+      \bar{\Delta}_b = \frac{1}{\bar{A}_b} \bigg( \bar{a}_b \sum_{i=1}^\infty \bar{a}_f^{2i}( \bar{\alpha}_b + 2i\bar{\alpha_f}) + \bar{a}_b^3 \sum_{i=1}^\infty \sum_{j=0}^{i-1} \sum_{k=0}^\infty \bar{a}_f^{2i + 2k - 1} (3 \bar{\alpha}_b + (2i+2k-1) \bar{\alpha}_f) \bigg).
+    \end{align*}
+
+    \item The backward scattering variance $\bar{\sigma}_b(\theta)$ is computed in the same way as the shift.  That is:
+    \begin{align*}
+       \bar{\sigma}_b = \frac{1}{\bar{A}_b} \bigg( 
+       \bar{a}_b \sum_{i=1}^\infty \bar{a}_f^{2i} \sqrt{\bar{\beta}_b^2 + 2i \bar{\beta}_f^2} + 
+       \bar{a}_b^3 \sum_{i=1}^\infty \sum_{j=0}^{i-1} \sum_{k=0}^\infty \bar{a}_f^{2i + 2k - 1} \sqrt{3 \bar{\beta}_b^2 + (2i+2k-1) \bar{\beta}_f^2} \bigg).
+    \end{align*} 
+
+    \item The paper uses the following approximations for the shift and the variance:
+    \begin{align*}
+      \bar{\Delta}_b 
+      &\approx \bar{\alpha}_b \bigg( 1 - \frac{2\bar{a}_b^2}{(1-\bar{\alpha}_f)^2} \bigg)
+      + \bar{\alpha}_f \bigg( \frac{2(1-\bar{a}_f^2)^2 + 4\bar{a}_f^2 \bar{a}_b^2}{(1-\bar{\alpha}_f)^3} \bigg)\\
+      \bar{\sigma}_b
+      &\approx (1 + 0.7 \bar{a}_f^2) \frac{\bar{a}_b \sqrt{2 \bar{\beta}_f^2 + \bar{\beta}_b^2} + \bar{a}_b^3 \sqrt{2\bar{\beta}_f^2 + 3\bar{\beta}_b^2} }{\bar{a}_b + \bar{a}_b^3(2\bar{\beta}_f + 3\bar{\beta}_b)}
+    \end{align*} 
+    These approximations are numerical fits based on a power series expansion with respect to $\bar{a}_b$ up to an order of three.
+  \end{itemize}  
+
+  \section{Implementation}
+  \begin{itemize}
+    \item For efficient implementation, the rendering equation is rewritten:
+    \begin{align*}
+      L_o(x, \omega_o)
+      &= \int_{\Omega} \bigg( \int_{\Omega} L_d(x, \omega_d) \Psi^G(x, \omega_d, \omega_i)\ \dee \omega_d \bigg) f(\omega_i, \omega_o) \cos \theta_i\ \dee \omega_i \\
+      &= \int_{\Omega} \int_{\Omega} L_d(x, \omega_d) \Psi^G(x, \omega_d, \omega_i) f(\omega_i, \omega_o) \cos \theta_i\ \dee \omega_d \dee \omega_i \\
+      &= \int_{\Omega} \bigg( \int_{\Omega} \Psi^G(x, \omega_d, \omega_i) f(\omega_i, \omega_o) \cos \theta_i\ \dee\omega_i \bigg) L_d(x, \omega_d)\ \dee \omega_d \\
+      &= \int_{\Omega} F(x,\omega_d,\omega_o) L_d(x, \omega_d)\ \dee \omega_d \\
+    \end{align*}
+    where
+    \begin{align} \label{F-integral}
+      F(x,\omega_d,\omega_o) = \int_{\Omega} \Psi^G(x, \omega_d, \omega_i) f(\omega_i, \omega_o) \cos \theta_i\ \dee\omega_i. 
+    \end{align}
+    As a result, we only need to compute the function $F(x,\omega_d, \omega_o)$ and use it as the scattering function.
+
+    \item To compute $F(x,\omega_d,\omega_o)$, there are two steps:
+    \begin{itemize}
+      \item Gather information to compute $\Psi^G(x, \omega_d, \omega_i)$.
+      \item Compute the integral \eqref{F-integral}.
+    \end{itemize}
+  \end{itemize}
+
+  \subsection{Computing Global Multiple Scattering}
+  \begin{itemize}
+    \item Given $\omega_d$, we wish to compute $\Psi^G(x, \omega_d, \omega_i)$.  This means we need to compute the transmittance $T_f(x, \omega_d)$ and the front scattering variance $\bar{\sigma}_f(x, \omega_d)$.
+
+    \item This basically entails shooting a ray from point $x$ along the direction $\omega_d$. We then record all the fibers that intersect the rays and compute $T_f(x, \omega_d)$ and $\bar{\sigma}_f(x, \omega_d)$ accordingly.  Note that, if the ray does not intersect any fiber, we simply set $\Psi^G$ to $1$ as discussed earlier.
+
+    \item The paper precomputes $T_f$ and $\bar{\sigma}_f^2$ and stores them in a voxel grid containing the hair geometry.  Basically, the system traces rays from each light source to towards the grid and computes the two values along the ray.  The values of each voxel are determined by the average of the values along the rays that intersect the voxel.  Then, when the system wants to use the stored value, it performs linear interpolation from the voxel grid.  The grid resolution used is $0.5$cm.
+
+    \item For GPU implementation, they use the deep opacity map method \cite{Yuksel:2008} and store $T_f$, $\bar{\sigma})f$ in the map.  The paper says $4$ layers are enough.
+  \end{itemize}
+
+  \subsection{Shading Computation}
+  \begin{itemize}
+    \item The shading proceeds differently depending on whether the shaded point is shadowed by other hair fibers.
+
+    \item If the shaded point is not shadowed, we have that $\Psi^G(x, \omega_d, \omega_i) = \delta(\omega_d, \omega_i)$ where $\delta$ is the Dirac delta function.  Then, $F(x, \omega_d, \omega_o)$ reduces to $f(\omega_d, \omega_o) \cos \theta_d$.  We then multiply this with $L_d(x,\omega_d)$ to get $L_o(x,\omega_o)$.
+
+    \item When $x$ is blocked by other hair strands, $\Psi^G(x, \omega_d, \omega_i)$ takes the form discussed in Section~\ref{sub:global_multiple_scattering}.  We now need to compute the integral \eqref{F-integral}.  Instead of using numerical integration, the paper approximates the function using the form of the function itself.
+
+    Recall that $f(\omega_i, \omega_o) = f_s(\omega_i, \omega_o) + d_b f_{\mathrm{back}}(\omega_i, \omega_o)$.  Let us work first with the $f_{\mathrm{back}}(\omega_i, \omega_o)$.  We have that
+    \begin{align*}
+      & \int_\Omega \Psi^G(x, \omega_d, \omega_i) f_{\mathrm{back}}(\omega_i, \omega_o) \cos \theta_i\ \dee \omega_i \\
+      &= \int_\Omega T_f(x, \omega_d) \frac{\tilde{s}_f(\phi_d, \phi_i)}{\cos \theta_d} g(\theta_d + \theta_i, \bar{\sigma}_f^2(x, \omega_d)) \frac{2}{\cos \theta} \bar{A}_b(\theta) \frac{\tilde{s}_b(\phi_i, \phi_o)}{\cos \theta}g(\theta_o + \theta_i - \bar{\Delta}_b(\theta), \bar{\sigma}_b^2(\theta)) \cos \theta_i\ \dee \omega_i \\
+      &= \frac{2T_f(x, \omega_d)}{\cos\theta_d} \int_\Omega \tilde{s}_f(\phi_d, \phi_i) \tilde{s}_b(\phi_i, \phi_o) g(\theta_d + \theta_i, \bar{\sigma}_f^2(x, \omega_d)) g(\theta_o + \theta_i - \bar{\Delta}_b(\theta), \bar{\sigma}_b^2(\theta))\bar{A}_b(\theta) \frac{\cos \theta_i}{\cos^2 \theta}\ \dee \omega_i \\
+      &= \frac{T_f(x, \omega_d)}{\cos\theta_d} \int_{-\pi/2}^{\pi/2} \int_{0}^{2\pi} \tilde{s}_f(\phi_d, \phi_i) \tilde{s}_b(\phi_i, \phi_o) g(\theta_d + \theta_i, \bar{\sigma}_f^2(x, \omega_d)) g(\theta_o + \theta_i - \bar{\Delta}_b(\theta), \bar{\sigma}_b^2(\theta)) \bar{A}_b(\theta) \frac{\cos^2 \theta_i}{\cos^2 \theta}\ \dee \phi_i \dee \theta_i \\
+      &= \frac{T_f(x, \omega_d)}{\cos\theta_d} \bigg( \int_{-\pi/2}^{\pi/2} g(\theta_d + \theta_i, \bar{\sigma}_f^2(x, \omega_d)) g(\theta_o + \theta_i - \bar{\Delta}_b(\theta), \bar{\sigma}_b^2(\theta)) \bar{A}_b(\theta) \frac{\cos^2 \theta_i}{\cos^2 \theta} \ \dee \theta_i \bigg) \bigg( \int_{0}^{2\pi} \tilde{s}_f(\phi_d, \phi_i) \tilde{s}_b(\phi_i, \phi_o) \ \dee \phi_i \bigg).
+    \end{align*}
+    (The paper define things in terms of $\theta$ instead of $\theta_i$, following the Marschner paper.  However, if things were defined in terms of $\theta_i$, it would cancel nicely otherwise.)
+
+    Suppose $f_{\mathrm{back}}(\omega_i,\omega_o)$ was defined with $\theta_i$ instead of $\theta$. We have that:
+    \begin{align*}
+      & \int_\Omega \Psi^G(x, \omega_d, \omega_i) f_{\mathrm{back}}(\omega_i, \omega_o) \cos \theta_i\ \dee \omega_i \\
+      &= \frac{T_f(x, \omega_d)}{\cos\theta_d} \bigg( \int_{-\pi/2}^{\pi/2} g(\theta_d + \theta_i, \bar{\sigma}_f^2(x, \omega_d)) g(\theta_o + \theta_i - \bar{\Delta}_b(\theta_i), \bar{\sigma}_b^2(\theta_i)) \bar{A}_b(\theta_i) \ \dee \theta_i \bigg) \bigg( \int_{0}^{2\pi} \tilde{s}_f(\phi_d, \phi_i) \tilde{s}_b(\phi_i, \phi_o) \ \dee \phi_i \bigg).
+    \end{align*}
+    The right integral should evaluate to a constant, which should be easy to compute.  For the left integral, notice that:
+    \begin{align*}
+      g(\theta_d + \theta_i, \bar{\sigma}_f^2(x, \omega_d)) g(\theta_o + \theta_i - \bar{\Delta}_b(\theta_i), \bar{\sigma}_b^2(\theta_i))
+      &= g(\theta_i; -\theta_d, \bar{\sigma}_f^2(x, \omega_d)) g(\theta_i; -\theta_o + \bar{\Delta}_b(\theta_i), \bar{\sigma}_b^2(\theta_i)).
+    \end{align*}
+    This is a Gaussian in $\theta_i$.  Let us say that the Gaussian is given by $g(\theta_i; \underline{\mu}, \underline{\sigma}^2)$.  So, the left integral reduces to:
+    \begin{align*}
+      \int_{-\pi/2}^{\pi/2} g(\theta_i; \underline{\mu}, \underline{\sigma}^2) \bar{A}_b(\theta_i)\ \dee \theta_i
+    \end{align*}
+    which is the convolution of a Gaussian with the back scattering attenuation function.  In practice, we tabulate $\bar{A}_b(\theta_i)$, and the integral can be evaluated by the Gauss--Hermite quadrature.
+
+    \item Now, let us work on $f_s(\omega_i, \omega_o)$.  Assume first that the function has only one mode, say $p$.  Then, $f_s(\omega_i, \omega_o) = M_p(\theta_i, \theta_o) N_p(\theta_i, \phi_i, \phi_o) / \cos^2 \theta_i$.  (I have taken the liberty of defining things in terms of $\theta_i$ instead of $\theta$.)  Now, $M_p$ is usually given as a Gaussian $M_p(\theta_i, \theta_o) = g(\theta_i; -\theta_o, \beta_p^2)$.  So, we have:
+    \begin{align*}
+      & \int_\Omega \Psi^G(x, \omega_d, \omega_i) f_s(\omega_i, \omega_o) \cos \theta_i\ \dee \omega_i \\
+      &= \int_\Omega T_f(x, \omega_d) \frac{\tilde{s}_f(\phi_d, \phi_i)}{\cos \theta_d} g(\theta_i; -\theta_d, \bar{\sigma}_f^2(x, \omega_d)) g(\theta_i; -\theta_o, \beta_p^2) N_p(\theta_i, \phi_i, \phi_o) \frac{\cos \theta_i}{\cos^2 \theta_i}\ \dee \omega_i \\
+      &= \frac{T_f(x, \omega_d)}{\cos \theta_d} \int_{-\pi/2}^{\pi/2} \bigg( \int_{0}^{2\pi} \tilde{s}_f(\phi_d, \phi_i) N_p(\theta_i, \phi_i, \phi_o) \ \dee\phi_i\bigg) g(\theta_i; -\theta_d, \bar{\sigma}_f^2(x, \omega_d)) g(\theta_i; -\theta_o, \beta_p^2)\ \dee\theta_i.
+    \end{align*}
+    Note that the term $g(\theta_i; -\theta_d, \bar{\sigma}_f^2(x, \omega_d)) g(\theta_i; -\theta_o, \beta_p^2)$ is a Gaussian.  What remains is the integral 
+    \begin{align*}
+      N^G(\theta_i, \phi_d, \phi_o) := \int_{0}^{2\pi} \tilde{s}_f(\phi_d, \phi_i) N_p(\theta_i, \phi_i, \phi_o) \ \dee\phi_i
+    \end{align*}
+    which the paper says has to be tabulated.  On the first glance, this is a 3D function.  However, the only thing that matters is the difference between $\phi_d$ and $\phi_o$. So, this is actually a 2D function.
+  \end{itemize}
+
+  \bibliographystyle{plain}
+  \bibliography{dual-scattering}  
+\end{document}

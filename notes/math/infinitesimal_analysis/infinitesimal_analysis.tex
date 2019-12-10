@@ -1,0 +1,417 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{epstopdf}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+
+\newtheorem{lemma}{Lemma}[section]
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\likelihood}{\mathcal{L}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\new}{\mathrm{new}}
+\newcommand{\Arg}{\mathrm{Arg\,}}
+\newcommand{\Log}{\mathrm{Log\,}}
+\newcommand{\RE}{\mathrm{Re\,}}
+\newcommand{\IM}{\mathrm{Im\,}}
+\newcommand{\Res}{\mathrm{Res}}
+\newcommand{\pv}{\mathrm{p.v.}}
+
+\title{Infinitesimal Analysis}
+\author{Pramook Khungurn}
+
+\begin{document}
+	\maketitle
+
+  This document is written as I read ``A Primer to Infiniestimal Analysis'' by John L. Bell \cite{Bell}.
+
+  \section{The Infinitesimal} % (fold)
+  \label{sec:the_infinitesimal}
+
+  \begin{itemize}
+  	\item Consider the real line. Is it really consist of points? A point is \emph{indivisible}. However, the real line is a \emph{continuum}: it is supposed to be indefinitely divisible. So, no continuum can be composed of an indivisible, right?
+
+  	\item Yet, the set-theoretical formulation of mathematics requires that all entities in mathematics be created from a discrete entity. The continuous nature of the real line comes from the properties of additional structures imposed on the sets of discrete things. Continuity in real analysis does not mean anything if you do not have a metric. This is a rather sneaky way of settling the philosophical question above.
+
+  	\item When a continuum is subdivided further and further indefinitely, you get the \emph{infinitesimal}. It's the ``ultimate part'' of a continuum in the same sense that we say that the ultimate part of a curve is an infinitesimal stragith line.
+
+  	\item Here are some practical interpretation of the infinitesimal:
+  		\begin{itemize}
+  			\item An infinitesimal quantity is not necessarily coincide with zero, but is smaller than any finite value.
+
+  			\item An infinitesimal quantity is a quantity so small that its square and all higher powers can be set to zero. (Such a quantity is called a \emph{nilsquare infinitesimal}.)
+  		\end{itemize}
+
+  	\item A true continuum is indefinitely divisible, so any part of it must also be divisible. So, an infinitesimal must also be divisible. We call an infinitesimal with this property a \emph{nonpunctiform infinitesimal}.
+
+  	\item The infinitesmal played a great role in mathematics and physics before the later half of the nineteenth century. From that point, it has been supplanted by the concept of limits and is treated as non-rigorous.
+
+  	\item However, scientists, engineers, and even differential geometers still use them to solve and reason about problems correctly.
+  \end{itemize}
+  % section the_infinitesimal (end)
+
+  \section{Smooth Infinitesimal Analysis} % (fold)
+  
+  \begin{itemize}
+  	\item Nowadays, however, the infinitesimals have been given rigourous basis by mathematical logic.
+  	\begin{itemize}
+  		\item In the 1960s, Abraham Robinson added the infinitesimal to the real number system and used it to form the basis of calculus.
+
+  		\item In the 1970s, advances in category theory leads to the formation of \emph{smooth infinitesimal analysis} (SIA), which is a rigorous axiomatic theory of the infinitesimals. It can be used to construct calculus and differential geometry.
+  	\end{itemize}
+
+  	\item To show that the axioms of SIA is consistent, you have to construct a \emph{model} for it.
+
+  	\item A \emph{model} is a mathematical structure containing geometric objects like the real line and the Euclidean spaces, together with transformations between them.
+
+  	\item In models of SIA, all maps between objects are \emph{smooth}. That is, it must be differentiable arbitrary many times. Smoothness implies that the maps are continuous by nature.
+
+  	\item As a result, we call a model of SIA a \emph{smooth world}.\\
+  	We let $\mathbb{S}$ denote an arbitrary smooth world.
+
+  	\item In a smooth world, however, \emph{the law of excluded middle} is not true in a smooth world.\\
+  	The law of excluded middle says that every statement is either definitely true of definitely false.\\
+  	Then, if something is not false, it is not true. If something is not true, it is not false.
+
+  	\item The law of excluded middle cannot hold in any $\mathbb{S}$ because it allows us to construct a discontinuous function in $\mathbb{S}$.
+
+  	The construction is very simple. If we assume the law of excluded middle, then each real number is either equal to $0$ or not equal to $0$. Then, we can define
+  	\begin{align*}
+  		f(x) = \begin{cases}
+  			1, & x = 0\\
+  			0, & x \neq 0,
+  		\end{cases}
+  	\end{align*}
+  	which is outright discontinuous.
+
+  	More precisely, the construction shows that the following statement is false in $\mathbb{S}$:
+  	\begin{quote}
+  		for any real number $x$, either $x = 0$ or \emph{not} $x = 0$.
+  	\end{quote}
+
+  	\item Here's another way to show that a statement in $\mathbb{S}$ cannot be regarded as possessing one of just two `truth value' $T$ or $F$.
+
+  	Let $\Omega$ be the set of truth values in $\mathbb{S}$. We assume that $T$ and $F$ are members of this set.
+
+  	 Consider any object $X$ in $\mathbb{S}$. A map of $X$ to $\Omega$ in $\mathbb{S}$ partitions $X$ into parts. A non-constant function splits $X$ into proper non-empty parts. However, there is no non-constant continuous function from $X$ to a two-valued set $\{ T, F\}$. Therefore, the set of truth values cannot be reduced to just a set of two elements.
+
+  	 As such, the logic in a smooth world is \emph{many-valued} or \emph{polyvalent} (as opposed to standard logic, which is \emph{bivalent}).
+
+  	 \item We say that a part $U$ of an object $X$ is \emph{detachable} if there is a complementary part $V$ such that
+  	 \begin{itemize}
+  	 	\item $U$ and $V$ are disjoint, and
+  	 	\item $U$ and $V$ together cover $X$.
+  	 \end{itemize}
+
+  	 \item In a smooth world, the only detachable parts of any object $X$ is $X$ itself and the empty part.\\
+  	 If this is not true, then there's a function from $X$ to $\{ T, F\}$.
+
+  	 \item The absence of the law of excluded middle allows the infinitesimals to exist because it creates a sweet spot between zero and things that are not zero.
+
+  	 \item More precisely, if the law of excluded middle is false, then the \emph{law of double negation} ($\neg \neg A \ra A$) is also false.
+
+  	 So, we say that point $a$ and $b$ are \emph{distinguishable} or \emph{distinct} if \emph{not} $a = b$, and we shall denote this by $a \neq b$.
+
+  	 Now, if \emph{not} $a \neq b$, then it does not mean that $a = b$.
+
+  	 \item So, let $I$ be the set of points \emph{indistinguishable from} $0$. That is, $I = \{ x : \neg(x \neq 0) \}$. Now, $I$ is nonpunctiform in the sense that it does not reduce to $\{0\}$. That is,
+  	 \begin{quote}
+  	 	it is not the case that $0$ is the sole member of $I$.
+  	 \end{quote}
+  	 If we call the members of $I$ the infinitesimals, then this statement must be rephrased as:
+  	 \begin{quote}
+  	 	it is not the case that all infinitesimals coincide with $0$.
+  	 \end{quote}
+  	 On the other hand, we cannot state that
+  	 \begin{quote}
+  	 	there exists an infinitesimal which is $\neq 0$.
+  	 \end{quote}
+  	 Otherwise, we have something that is distinguishable from $0$ while being not dinstinguishable from it, which is a contradiction.
+
+  	 \item A fine point to take from the above discussion is that the \emph{law of non-contradiction} and the \emph{law of excluded middle} are not the same. They are:
+  	 \begin{itemize}
+  	 	\item {\bf Non-contradiction}: a statement and its negation cannot both be true.
+  	 	\item {\bf Excluded middle}: a statement must either be true or false.
+  	 \end{itemize}
+  	 The law of non-contradiction continues to hold in $\mathbb{S}$ as it allows a statement to be some other thing which is not both true and false.
+
+  	 \item This implies that infinitesimals can only exist ``virtually.'' We can say that not all infinitesimals are zero, but we would not be able to pinpoint any infinitestimal that is not zero.
+  \end{itemize}
+   
+  \section{Two Concepts of Nonpunctiform Infinitesimals} % (fold)
+  \label{sec:two_concepts_of_nonpunctiform_infinitesimals}
+
+  \begin{itemize}
+  	\item There are two concepts of nonpunctiform infinitesimals in tradional mathematics:
+  	\begin{itemize}
+  		\item {\bf Linear infinitesimals:} any curve can be represented as the `sum' of an (infinite) discrete collection of infinitesimally short linear segments.
+
+  		\item {\bf Indivisibles:} a continuous surface or volume can be conceived as the sum of an indefinitely large, but discrete assemblage of lines or planes.
+  	\end{itemize}
+
+  	\item These two concepts are related and both give rise to the notion of nilsquare infinitesimal. 
+
+  	\item To see this connection, consider the situation where we want to find the area under the curve $AB$ in Figure~\ref{intro-area-under-curve}. We want to compute it as sum of thin rectangles $XYRS$.
+
+  	\begin{figure}[t]
+  		\centering
+  		\begin{tikzpicture}
+  			\draw (-3,0) -- (3.5,0);
+  			\draw (-2,-1) -- (-2,4);
+  			\draw[thick] (-3,3) parabola bend (-0.5,2) (3,4);
+  			\draw (3,4) node[anchor=south west] {\small $B$};
+  			\draw (3,0) node[anchor=north] {\small $C$} -- (3,4);
+  			\draw (2,0) node[anchor=north] {\small $S$} -- (2,3) node[anchor=south] {\small $Z$};
+  			\draw (1,0) node[anchor=north] {\small $X$} -- (1,2.35) node[anchor=south] {\small $Y$};
+  			\draw (1,2.35) -- (2,2.35) node[anchor=west] {\small $R$};
+  			\filldraw (1.5,2.65) node[anchor=south] {\small $P$} circle (0.075cm);
+  			\draw (1.8, 2.55) node {$\nabla$};
+  			\draw (-2,0) node[anchor=north east] {\small $O$};
+  			\draw (-2,2.3) node[anchor=south west] {\small $A$};
+  		\end{tikzpicture}
+  		\caption{Finding the area under the curve.}
+  		\label{intro-area-under-curve}
+  	\end{figure}
+
+  	\item If $X$ and $S$ are distinguishable, then $Y$ and $R$ are so distinguishable. As a result, the `area defect' $\nabla$ under the curve is not zero. As such, the area of $ABCO$ cannot be regarded as the sum of area of rectangles such as $XYRS$.
+
+  	On the other hand, if $X$ and $S$ coincide, then $\nabla$ is zero, but $XYRS$ collapses to a straight line and cannot contribute to any area.
+
+  	\item So, in order to have the area of $ABCO$ be a sum of rectangles like $XYRS$, we require that:
+  	\begin{itemize}
+  		\item $X$ and $S$ be indistinguishable, but not coinciding, and 
+  		\item the area defect $\nabla$ is zero.
+  	\end{itemize}
+
+  	\item The first requirement in the above list necessitates the segment $XS$ to be a a linear infinitesimal that is not identical with a single point (aka \emph{non-degenerate}). Isaac Barrow called this a \emph{linelet}.
+
+  	\item The second requirement can be satisfied by two conditions:
+  	\begin{itemize}
+  		\item The segment $YZ$ around point $P$ is actually straight and non-generate. (That is, it does not reduces to $P$.)
+
+  		\item $XS$ has non-degenerate length $\varepsilon$ with $\varepsilon^2 = 0$. (That is, the length is a nilsquare infinitesimal.)
+  	\end{itemize}
+
+  	With these two conditions, we have that the area deficit $\nabla$ is $\frac{1}{2}(\varepsilon) \cdot (m\varepsilon) = \frac{1}{2} m \varepsilon^2 = 0.$
+
+  	Now, the rectangle $XYRS$ can be regarded as an indivisible whose sum exhaust the whole area of $ABCO$.
+
+  	\item From the above result, we may conclude that \emph{an indivisible is a rectangle whose base is a linelet}, and \emph{a linelet's length is nilsquare}.
+
+  	\item Let us generalize the two conditions above to arbitrary curves and give them names:
+  	\begin{itemize}
+  		\item {\bf Principle of microstraightness:} For any smooth curve $C$ and any point $P$ on the curve, there is a small, non-degenerate segment of $C$ around $P$ that is straight. We call this segment a \emph{microsegment}, and we say that $C$ is \emph{microstraight} around $P$.
+
+  		\item {\bf Existence of nilsquare infinitesimals:} The set $\Delta$ of magnitudes $\varepsilon$ such that $\varepsilon^2 = 0$ does not reduces to $\{ 0 \}$.
+  	\end{itemize}
+
+  	\item We can see that the existence of nilsquare infinitesimals is a direct consequence of the principle of microstraightness.
+
+  	To see this, consider the curve $y = x^2$. Let $U$ be the microsegment of the curve around the point $(0,0)$. This microsegment is the intersection between the curve $y = x^2$ and the line $y = 0$. Note that, for any point $x$ that is in $U$, we have that $x^2 = 0$, so $x \in \Delta$. However, since we asserted that $U$ is non-degenerate, we have that $\Delta$ must also be non-degenerate.
+
+  	\item The principle of microstraightness is releated to two other principles:
+  	\begin{itemize}
+  		\item {\bf Leibniz's principle of continuity:} Processes in nature occur continuously.
+  		\item {\bf Principle of microuniformity:} Processes in nature can be consider to occur at a constant rate over any sufficiently small period of time (a \emph{timelet}).
+  	\end{itemize}
+
+  	For example, movement over a short enough period of time can be said to have constant speed.
+
+  	\item Principle of continuity is a consequence of principle of microuniformity. (Proof is not given in the book.)
+
+  	\item Principle of microuniformity, when applied to the movement of a particle along a curve, becomes the principle of microstraightness.
+
+  	\item The principle of microstraightness solves Zeno's paradox of arrow. It says that the smallest unit of movement is not a point in time where things are steady, but rather a very small movement over a very short, undetectable time, but the time is long enough to render some undetectable change into the position.
+
+  	\item In other words, a curve can be thought of consisting of short rigid rods that is so short it cannot said to have finite, non-zero length. The segment is long enough to have some direction to indicate some motion, but not long enough to bend.
+
+  	\item The principle of microstraightness assigns a quantitative meaning to the \emph{instataneous rate of change:} it is just the slope of the microsegment around a point.
+  \end{itemize}  
+  % section two_concepts_of_nonpunctiform_infinitesimals (end)
+
+  \section{Properties of Smooth Worlds} % (fold)
+  \label{sec:properties_of_a_smooth_world}
+  
+  \subsection{The Real Line} % (fold)
+  \label{sub:the_real_line}
+	\begin{itemize}
+		\item A fundamental object in a smooth world $\mathbb{S}$ is a straight, indefinitely divisible line $R$. This is called the \emph{smooth line}, the \emph{affine line}, or the \emph{real line}.
+
+		\item There is a set of locations on $R$. The location comes with a relation $=$, which denotes \emph{coincidence} or \emph{identify} of locations.
+
+		We write $a \neq b$ for \emph{not} $a = b$. This is read as $a$ is \emph{distinct} or \emph{distinguishable} from $b$.
+
+		We do not assume that the $=$ relation is decidable: it is not true that, for any two locations $a$ and $b$, either $a = b$ or $a \neq b$.
+
+		\item There are two distinct points on $R$, which we call $0$ and $1$. They are called \emph{zero} and \emph{unit}, respectively.
+	\end{itemize}   	
+  % subsection the_real_line (end)
+
+  \subsection{Addition} % (fold)
+  \label{sub:addition}
+
+  \begin{itemize}
+
+  	\item There's a unary operator $-$ such that, for each location $a$, it assigns a point $-a$ to $a$ where $-a$ is the mirror image of $a$ around $0$.
+
+  	We require that the $-$ operator satisfies the following properties:
+  	\begin{itemize}
+  		\item $-0 = 0$, and
+  		\item for all $a$, $-(-a) = a$. 
+  	\end{itemize}
+
+  	\item For each pair of points $a$ and $b$, let $a\hat{\ }b$ denoted the \emph{oriented} line segment from $a$ to $b$.
+
+  	We say that $a\hat{\ }b = c\hat{\ }d$ if $a = b$ and $c = d$.
+
+  	\item We denote the segment $0\hat{\ }a$ as $a^*$. We call $a^*$ the \emph{segment of length $a$}.
+
+  	The function $a \mapsto a^*$ is a bijection.
+
+  	A segment of length $a$ can be thought of as ``oriented magnitude'' because $(-a)^*$ has the same length as $a^*$ but points in the opposite direction.
+
+  	\item Given two segments $a^*$ and $b^*$, we let $a^* : b^*$ to be the segment obtained by juxtaposing $a^*$ and $b^*$ in that order.
+
+  	\item If $a^*:b^*$ is of the form $c^*$ for a unique point $c$, then we call $c$ the \emph{sum} of $a$ and $b$, and we denote $c$ as $a + b$.
+
+  	We assume that the sum forms an Abelian group structure on the positions with $0$ being the identitfy element, and $-a$ acting as $a$'s inverse. That is, it follows the following rules:
+  	\begin{itemize}
+  		\item $0 + a = a$,
+  		\item $a + (-a) = 0$,
+  		\item $a + b = b + a$, and
+  		\item $a + (b + c) = (a + b) + c$.
+  	\end{itemize}
+
+  	\item For brevity, we let $a - b$ denote $a + (-b)$.
+  \end{itemize}  
+  % subsection addition (end)
+
+  \subsection{Multiplication} % (fold)
+  \label{sub:multiplication}
+
+  \begin{itemize}
+  	\item We assume that we can form Cartesian product $R \times R$, and also Cartesian powers $R^n = R \times R \times \dotsb \times R$.
+
+  	\item Each point in $R^n$  is an $n$-tuple $(a_1, a_2, \dotsc, a_n)$ where each $a_i$ is a point in $R$.
+
+  	\item We say that two points $\ve{a} = (a_1, a_2, \dotsc, a_n)$ and $\ve{b} = (b_1, b_2, \dotsc, b_n)$ are \emph{distinct}, and write $\ve{a} \neq \ve{b}$, if $a_i \neq b_i$ for some $i$.
+
+  	\item A product of two points $a$ and $b$, denoted $a.b$, can be constructed geometrically in $R \times R$ as follows.
+
+  	Given two magnitude $a$ and $b$, construct three points on the plane $R \times R$:
+  	\begin{itemize}
+  		\item $I = (1, 0)$,
+  		\item $B = (0, b)$, and
+  		\item $A = (a, 0)$.
+  	\end{itemize}
+  	Because $I$ and $B$ are distinct points, they determine a unique line $IB$. The line through $A$ that is parallel to $IB$ intersects the $y$-axis at a point $C$. The $y$-coordinate of this point is defined to be the product $a.b$. The situation is depicted in the following figure.
+
+  	\begin{figure}[h]
+  		\centering
+  		\begin{tikzpicture}
+  			\draw[->] (-1,0) -- (7,0) node[anchor=west] {$x$};
+  			\draw[->] (0,-0.5) -- (0,5) node[anchor=south] {$y$};
+  			
+  			\coordinate (I) at (3,0);
+  			\draw (I) node [anchor=north] {$I$};
+  			\draw (I) node [anchor=south west] {\small $(1,0)$};
+  			\coordinate (B) at (0,2);
+  			\draw (I) -- (B) node[anchor=east] {$B$};  		
+  			\draw (B) node[anchor=south west]	{\small $(0,b)$};
+
+  			\coordinate (A) at (6,0);
+  			\draw (A) node[anchor=north] {$A$};
+  			\draw (A) node[anchor=south west] {\small $(a,0)$};
+  			\coordinate (C) at (0,4);
+  			\draw (A) -- (C);
+  			\draw (C) node[anchor=east] {$C$};
+  			\draw (C) node[anchor=south west] {\small $(0,a.b)$};
+  		\end{tikzpicture}
+  		\caption{Geometric definition of the product of two real numbers.}	
+  	\end{figure}
+
+  	\item In a smooth world, we do not assume that, if $ab = 0$, then either $a = 0$ or $b = 0$. The reason is that we do not want to exclude the possibility that $\varepsilon^2 = 0$ while it is not true that $\varepsilon = 0$.
+
+  	\item Given $a \neq 0$, we can construct the multiplicative inverse $a^{-1}$ of $a$ geometrically as follows. We construct 3 points on the plane:
+  	\begin{itemize}
+  	  \item $A = (a,0)$,
+  	  \item $B = (0,1)$, and
+  	  \item $I = (1,0)$,
+  	\end{itemize}
+  	Since point $A$ and $B$ are distinct, they determine a unique line segment $AB$. Construct a line segment passing through $I$, and let the line segment intersect the $y$-axis at point $C$. The $y$-coordinate of $C$ is defined to be the multiplicative inverse of $a$. The situation is depicted in the figure below.
+
+  	\begin{figure}[h]
+  		\centering
+  		\begin{tikzpicture}
+  			\draw[->] (-1,0) -- (7,0) node[anchor=west] {$x$};
+  			\draw[->] (0,-0.5) -- (0,5) node[anchor=south] {$y$};
+  			
+  			\coordinate (I) at (3,0);
+  			\draw (I) node [anchor=north] {$I$};
+  			\draw (I) node [anchor=south west] {\small $(1,0)$};
+  			\coordinate (B) at (0,2);
+  			\draw (I) -- (B) node[anchor=east] {$C$};  		
+  			\draw (B) node[anchor=south west]	{\small $(0,a^{-1})$};
+
+  			\coordinate (A) at (6,0);
+  			\draw (A) node[anchor=north] {$A$};
+  			\draw (A) node[anchor=south west] {\small $(a,0)$};
+  			\coordinate (C) at (0,4);
+  			\draw (A) -- (C);
+  			\draw (C) node[anchor=east] {$B$};
+  			\draw (C) node[anchor=south west] {\small $(0,1)$};
+  		\end{tikzpicture}
+  		\caption{Geometric definition of the multiplicative inverse of a non-zero real number.}	
+  	\end{figure}
+
+  	\item We assume that the product and the multiplicatives inverses satisfy the following rules:
+  	\begin{itemize}
+  		\item $0.a = 0$,
+  		\item $1.a = a$,
+  		\item $a.b = b.a$,
+  		\item $a.(b.c) = (a.b).c$,
+  		\item $a.(b+c) = a.b + a.c$, and
+  		\item $a \neq 0$ implies $a/a = 1$.
+  	\end{itemize}
+
+  	\item That is, the operator $+$ and $.$ form a field on the set of points in $R$.
+  \end{itemize}
+  
+  % section multiplication (end)
+
+  % section properties_of_a_smooth_world (end)
+	
+  \bibliographystyle{plain}
+  \bibliography{infinitesimal_analysis}   
+\end{document}

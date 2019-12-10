@@ -1,0 +1,175 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{epstopdf}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{url}
+
+\newtheorem{lemma}{Lemma}[section]
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\likelihood}{\mathcal{L}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\new}{\mathrm{new}}
+\newcommand{\erf}{\mathrm{erf}}
+
+\title{Evaluating Error Function on Complex Numbers}
+\author{Pramook Khungurn}
+
+\begin{document}
+	\maketitle
+	
+	This document outlines an algorithm for computing the error function $\erf(z)$ where $z$ is a complex number. We assume that we can already evaluate $\erf(x)$ for any real number $x$. The algorithm comes from the note ``Error function of complex numbers'' by Marcel Leutenegger \cite{leutenegger}, and it is based on the series expansion given in Abramowitz and Stegun \cite{abramowitz-stegun}. This document is a rewrite of \cite{leutenegger}, and I wrote it because I think Leutenegger did a very bad job explaining things.
+	
+	\section{Introduction}\label{sec:introduction} % (fold)
+	\begin{itemize}
+	  \item The \emph{error function} is given by:
+	  \begin{align*}
+	    \erf(z) = \frac{2}{\sqrt{\pi}} \int_{0}^z e^{-t^2}\ \dee t
+	  \end{align*}
+	  Note that it is a definite integral of the Gaussian distribution wit mean $0$ and standard deviation $1$. The integral is scaled so that $\erf(+\infty) = 1$.
+	  
+	  \item For all $z \in \mathbb{C}$, we have that
+	  \begin{itemize}
+	    \item $\erf(-z) = -\erf(z)$, and
+	    \item $\erf(z^*) = \erf(z)^*$ where $z^*$ is the complex conjugate of $z$.
+	  \end{itemize}
+	  
+	  \item The Taylor series expansion of the error function can be derived from the Taylor series of $e^{-z^2}$:
+	  \begin{align*}
+	    e^{-z^2} = 1 + \sum_{n=1}^\infty \frac{(-1)^n}{n!}z^{2n}.
+	  \end{align*}
+	  This yields:
+	  \begin{align} \label{erf-taylor-series}
+	    \erf(z) = \frac{2z}{\sqrt{\pi}}\bigg( 1 + \sum_{n=1}^\infty \frac{(-1)^n z^{2n}}{n!(2n+1)}\bigg).
+	  \end{align}
+	\end{itemize}
+  % section section_name (end)
+  
+  \section{Numerical Evaluation}\label{sec:numerical_evaluation} % (fold)
+  \begin{itemize}
+    \item One can evaluate $\erf(z)$ upto precision $\varepsilon$ by first finding an integer $n_c$ where
+    \begin{align*}
+      \frac{|z|^{2n_c}}{n_c!(2n_c+1)} \leq \varepsilon.
+    \end{align*}
+    and then add up the first $n_c$ terms of \eqref{erf-taylor-series}. However, $n_c$ depends on the magnitude of $z$, and this is not good for big $|z|$.
+    
+    \item Abramowitz and Stegun gives a series expansion whose accuracy does not depend on $|z|$:
+    \begin{align}
+      \erf(x+iy)
+      &= \erf(x) + \frac{e^{-x^2}(1 - e^{-2ixy})}{2\pi x} \notag\\
+      &\phantom{\ = \ }+ \frac{e^{-x^2}}{2\pi} \sum_{n=1}^\infty \frac{e^{-n^2/4}}{n^2/4 + x^2} [2x - e^{-2ixy}(2x \cosh(ny) - in \sinh(ny))] + \epsilon(x,y) \label{erf-as}
+    \end{align}
+    where $|\epsilon(x,y)| \approx 10^{-16} |\erf(x+iy)|$.
+    
+    \item Leutenegger proposes breaking \eqref{erf-as} --- without the $\epsilon(x,y)$ term --- into 5 constituent functions:
+    \begin{align*}
+      \erf(x+iy) \approx \erf(x) + E(x,y) + F(x,y) - e^{-2ixy}(G(x,y) + H(x,y))
+    \end{align*}
+    where
+    \begin{align*}
+      E(x,y) &= \frac{e^{x^2}(1 - e^{-2ixy})}{2\pi x}\\
+      F(x,y) &= \frac{x e^{-x^2}}{\pi} \sum_{n=1}^\infty \frac{e^{-n^2/4}}{n^2/4 + x^2}.
+    \end{align*}
+    The last two functions come from the derivation:
+    \begin{align*}
+      &\frac{e^{-x^2}}{2\pi}\sum_{n=1}^\infty \frac{e^{-n^2/4}}{n^2/4 + x^2} [-e^{-2ixy}(2x \cosh(ny) - in \sinh(ny))]\\
+      &= -e^{-2ixy}\Bigg( \frac{e^{-x^2}}{2\pi} \sum_{n=1}^\infty \frac{e^{-n^2/4}}{n^2/4 + x^2} \bigg(2x \frac{e^{ny} + e^{-ny}}{2} - in \frac{e^{ny} - e^{-ny}}{2} \bigg)\Bigg)\\
+      &= -e^{-2ixy}\Bigg( \frac{e^{-x^2}}{2\pi} \sum_{n=1}^\infty \frac{e^{-n^2/4}}{n^2/4 + x^2} \big(e^{ny} (x - in/2) + e^{-ny}(x + in/2) \big) \Bigg)\\
+      &= -e^{-2ixy}\Bigg( \frac{e^{-x^2}}{2\pi} \sum_{n=1}^\infty \frac{e^{ny-n^2/4}}{n^2/4 + x^2} (x - in/2) + \frac{e^{-x^2}}{2\pi} \sum_{n=1}^\infty \frac{e^{-ny-n^2/4}}{n^2/4 + x^2}(x + in/2) \big) \Bigg).
+    \end{align*}
+    So, we set
+    \begin{align*}
+      G(x,y) &= \frac{e^{-x^2}}{2\pi} \sum_{n=1}^\infty \frac{e^{ny-n^2/4}}{n^2/4 + x^2} (x - in/2),\mbox{ and}\\
+      H(x,y) &= \frac{e^{-x^2}}{2\pi} \sum_{n=1}^\infty \frac{e^{-ny-n^2/4}}{n^2/4 + x^2}(x + in/2).
+    \end{align*}
+        
+    \item We now seek to evaluate $E(x,y)$, $F(x,y)$, $G(x,y)$, and $H(x,y)$ as accurately as possible relative to a floating point number representation. We make the following assumption about it:
+    \begin{itemize}
+      \item Let $\varepsilon$ be the \emph{unit in the last place} (ulp) of the system.
+      \item Let $\xi$ be a positive number such that, if $|x| < \xi$, then $x$ underflows to 0.
+      \item Let $\Xi$ be a positive number such that, if $|x| > \Xi$, then $x$ overflows to $\pm \infty$
+    \end{itemize}
+    
+    \item $E(x,y)$ will underflow if $|x| \geq \sqrt{-\ln(\pi\xi)}$, so there's no need to evaluate it in this case.
+    
+    \item For $F(x,y)$, Leutenegger proposes the following criteria:
+    \begin{itemize}
+      \item Skip the evaluation if $|x| \geq \sqrt{-\ln(\pi\xi) - 1/4}$ because the term will underflow.
+      \item Otherwise, evaluate the sum up to $n \approx \sqrt{1 - 4\ln \varepsilon}$.      
+    \end{itemize}
+    
+    \item Let us define the number of terms we need to evaluate the sum as $N(\varepsilon) = \sqrt{1-4\ln \varepsilon}$.
+    
+    \item For $G(x,y)$ and $H(x,y)$, we now assume that $y > 0$ as we can use the rule $\erf(z^*) = \erf(z)^*$ otherwise.
+    
+    \item Given that $y > 0$, here are the criteria for evaluating $H(x,y)$:
+    \begin{itemize}
+      \item Skip the evaluation if $|y| \geq \sqrt{-\ln \varepsilon}$ because $\varepsilon|G(x,y)| \geq |H(x,y)|$.
+      \item Otherwise, evaluate the sum up to $n \approx N(\varepsilon)$.
+    \end{itemize}
+        
+    
+    \item Finally, here are the criteria for evaluting $G(x,y)$ given that $y > 0$:
+    \begin{itemize}
+      \item Evaluate the sum only if 
+      \begin{align*}
+        \ln \xi \leq y^2 - x^2 - \frac{1}{2}\ln(y^2 + x^2) - \ln(2\pi) \leq \ln \Xi.
+      \end{align*}
+      
+      IF the lower equality is violated, then $G(x,y)$ underflows and we can skip the evaluation. 
+      
+      If the upper inequality is violated, then $G(x,y)$ will overflow, and we can set the whole function equal to $\infty - i\infty$
+      
+      \item Otherwise, evaluate the sum from $n = \max\{1, \lfloor 2y - N(\varepsilon) \rfloor\}$ to $n = \lceil 2y + N(\varepsilon) \rceil$.             
+    \end{itemize}
+    
+    \item If the evaluation is done with the IEEE \texttt{double}, we have thta $\varepsilon = 2^{-53}$, $\xi = 2^{-1022}$, and $\Xi = (1- \varepsilon)2^{1024}$. We also have that:
+    \begin{itemize}
+      \item $N(\varepsilon) \leq 12.2$. 
+      \item As a result, no more than 13 terms are sufficient to evaluate $F(x,y)$ and $H(x,y)$.
+      \item Also, no more than 27 terms are sufficient to evaluate $G(x,y)$ if $|y| < |x|$.
+      \item If $|y| < |x|$, the constituent functions underflow to zero if $|x| > 26.6$.
+      \item We have that, if $|y| > |x|$ and
+      \begin{align*}
+        |y| > \sqrt{\ln \Xi + \log(2\pi) + x^2 + \frac{1}{2}\log(2x^2)} \approx \sqrt{712 + x^2 + \ln x},
+      \end{align*}
+      then there's a good chance that $G(x,y)$ overflows.
+    \end{itemize}
+  \end{itemize}
+      
+  % section section_name (end)
+		
+\bibliographystyle{plain}
+\bibliography{erfz}	
+
+\end{document}

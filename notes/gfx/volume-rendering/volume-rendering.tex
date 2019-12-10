@@ -1,0 +1,423 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+
+\newtheorem{lemma}{Lemma}[section]
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{claim}[lemma]{Claim}
+
+\newcommand{\dee}{\mathrm{d}}
+
+\title{Volume Rendering}
+\author{Pramook Khungurn}
+
+\begin{document}
+	\maketitle
+	
+	\section{The Equation of Transfer} % (fold)
+	\label{sec:the_equation_of_transfer}
+	
+	\begin{itemize}
+		\item When light travels in a participating medium, there are three processes which can change the radiance.
+			
+			\begin{itemize}
+				\item \emph{Absorption} -- light collides with particles and is converted to other types of energy.
+				\item \emph{Emission} -- the material itself adds light to the environment.
+				\item \emph{Scattering} -- light collides with particles and changes direction.
+			\end{itemize}
+		
+		\item The \emph{equation of transfer} is an integro-differential equation that describes the change of 
+			radiance as light travels through participating media. From 10 miles above, the equation looks like:			
+			\begin{align}
+				\mbox{change of radiance} = \mbox{absorption term } + \mbox{ emission term } + \mbox{ scattering term}.
+			\end{align}
+			We will discuss each of the terms in turn.
+		
+		\item The ``change of radiance'' term is modeled as the directional derivative of the radiance function
+			$L(x, \omega)$. 
+			\begin{align*}
+				\mbox{change of radiance} = \omega \cdot \nabla L(x, \omega).
+			\end{align*}
+			Here, $x$ is a position in 3D, and $\omega$ is a direction, i.e.~a unit vector.
+			This directional derivative can be thought of as differentiation with respect to 
+			distance along direction $\omega$. That is,
+			$$\omega \cdot \nabla L(x,\omega) = \frac{\dee L(x + s\omega,\omega)}{\dee s},$$
+			where $s$ denotes distance along the $\omega$ direction.
+			
+		\item The ``absorption term'' seeks to model the absorption process as a Poisson process.
+
+			The probability of an absorption event occurring while the light travels an infinitesimal distance
+			$ds$ around $x$ in direction $\omega$ is given by $\sigma_a(x, \omega) ds$, 
+			where $\sigma_a(x, \omega)$ is the \emph{absorption cross section}.
+			
+			When an absorption event occur, all the radiance is taken away. Thus, we have that
+			\begin{align*}
+				\dee L(x + s\omega, \omega) &= -(\sigma_a(x, \omega) \dee s) L(x,\omega) \\
+				\frac{\dee L(x + s\omega, \omega)}{\dee s} &=  -\sigma_a(x,\omega) L(x,\omega)
+			\end{align*}
+			Thus, we have that
+			\begin{align*}
+				\mbox{absorption term} = - \sigma_a(x, \omega) L(x, \omega) .
+			\end{align*}
+
+			Note that as the absorption cross section gives the probability that absorption occurs per unit distance. 
+			Hence, its unit is $\mathrm{m}^{-1}$.
+						
+		\item The ``emission term'' is modeled by a function $Q(x, \omega)$:
+			\begin{align*}
+				\mbox{emission term} = Q(x,\omega).
+			\end{align*}
+			The function $Q$ gives additional radiance per unit distance. Therefore, its unit is
+			$\mathrm{W}\ \mathrm{m}^{-3}\ \mathrm{sr}^{-1}$, which is basically the unit of radiance divided by distance.
+			
+		\item The ``scattering term'' is the most complicated. There are two components: the \emph{out-scattering}
+			and \emph{in-scattering}.
+			\begin{align*}
+				\mbox{scattering term} = \mbox{out-scattering term } + \mbox{ in-scattering term}
+			\end{align*}
+			\begin{itemize}
+				\item Scattering is, again, modeled as a Poisson process. When a scattering event occurs,
+				both out-scattering and in-scattering occur at the same time.
+				The \emph{scattering coefficient} $\sigma_s(x,\omega)$ gives the probability that a scattering 
+				event occurs per unit length. (So, the unit is $\mathrm{m}^{-1}$.)
+				
+				\item The out-scattering term accounts for the event that light traveling along direction $\omega$
+				change its direction to another direction. The event removes all the radiance and thus looks pretty much 
+				like the absorption term.
+				\begin{align*}
+					\mbox{out-scattering term} = -\sigma_s(x,\omega) L(x,\omega).
+				\end{align*}
+				
+				\item The in-scattering term accumulates light that changes direction from other direction
+				to $\omega$. The probability that light from direction $\omega'$ change its direction
+				to $\omega$ is accounted by the \emph{phase function} $p(x, \omega' \rightarrow \omega).$
+				So,
+				\begin{align*}
+					\mbox{in-scattering term} = \sigma_s(x, \omega) \int_{S^2} p(x, \omega' \rightarrow \omega) L(x, \omega')\ d\omega'
+				\end{align*}
+				Here, $S^2$ is the unit sphere in 3D. The unit of the phase function is $\mathrm{sr}^{-1}$.
+			\end{itemize}
+			In conclusion,
+			\begin{align*}
+				\mbox{scattering term} = -\sigma_s(x, \omega) L(x, \omega) + \int_{S^2} p(x, \omega' \rightarrow \omega) L(x, \omega')\ d\omega'
+			\end{align*}
+		
+		\item Writing the transfer equation in full, we have
+			\begin{align*}
+				\omega \cdot \nabla L(x,\omega) = -(\sigma_a(x, \omega) + \sigma_s(x, \omega)) L(x,\omega) + Q(x,\omega) + \int_{S^2} p(x, \omega' \rightarrow \omega) L(x,\omega)\ d\omega'.
+			\end{align*}
+			We usually combine the absorption cross section and the scattering coefficient to one \emph{extinction coefficient}:
+			$$\sigma_t(x,\omega) = \sigma_a(x, \omega) + \sigma_s(x,\omega).$$ So, the widely used form of the transfer 
+			equation is
+			\begin{align*}
+				\omega \cdot \nabla L(x,\omega) = -\sigma_t(x, \omega) L(x,\omega) + Q(x,\omega) + \int_{S^2} p(x, \omega' \rightarrow \omega) L(x,\omega)\ d\omega'.
+			\end{align*}
+	\end{itemize}
+	% section the_equation_of_transfer (end)
+	
+	\section{Solutions to Some Special Cases} % (fold)
+	\label{sec:solutions_to_some_special_cases}
+
+	\subsection{Extinction Only} % (fold)
+	\label{sub:extinction_only}
+	
+		\begin{itemize}
+			\item {\bf Extinction only:} In this case, only the extinction (absorption and out-scattering) term has effect.
+			
+			\item Let $x_0$ and $x_1$ be points in space, surrounded by a medium. We shall find the radiance traveling along
+				direction $\omega$, starting from $x_0$.
+				
+				Let $s$ denote the distance along $\omega$. We can think of $L$ and $\sigma_a$ as functions
+				of $s$. That is, we can write $L(x,\omega)$ as $L(x_0 + s\omega, \omega)$ or simply
+				$L(s)$ or L. In the same way, $\sigma_t(x, \omega)$ becomes $\sigma(x_0 + s\omega, \omega)$
+				or $\sigma_t(s)$. So, the transfer equation becomes
+				\begin{align*}
+					\frac{dL}{ds} &= -\sigma_t(s) L \\
+					\frac{1}{L}\ dL &= -\sigma_t(s)\ ds \\
+					\int \frac{1}{L}\ dL &= -\int \sigma_t(s)\ ds \\
+					\log L &= -\int \sigma_t(s) ds + C \\
+					L &= A e^{-\int \sigma_t(s) ds}.
+				\end{align*}
+				Bringing back $x_0$ and $\omega$, we have
+				$$L(x_0 + r \omega, \omega) = A e^{-\int_0^{r} \sigma_t(x_0 + s\omega, \omega) ds}.$$
+				Substituting $d = 0$, we have that $A = L(x_0, \omega).$
+				Hence, $$L(x_0 + r\omega, \omega) = L(x_0, \omega) e^{-\int_0^{r} \sigma_t(x_0 + s\omega, \omega) ds}.$$
+			
+			\item Let $x_1 = x_0 + r\omega$. The integral $\int_0^{r}\sigma_t(x_0 + s\omega, \omega)\ ds$ is called
+				the \emph{optical thickness} and is denoted $\tau(x_0 \rightarrow x_1).$
+				
+			\item The quantity $e^{\int_0^r\sigma_t(x_0 + s\omega, \omega) ds}$ is called the \emph{beam transmittance}
+				and is denoted by $T_r(x_0 \rightarrow x_1).$
+				
+			\item Below are some properties of the optical thickness and the beam transmittance.
+			\begin{align*}
+				L(x_1, \omega) &= L(x_0, \omega) T_r(x_0 \rightarrow x_1) = L(x_0,\omega) e^{-\tau(x_0 \rightarrow x_1)}\\
+				T_r(x_0 \rightarrow x_2) &= T_r(x_0 \rightarrow x_1) T_r(x_1 \rightarrow x_2) \\  
+				\tau(x_0 \rightarrow x_2) &= \tau(x_0 \rightarrow x_1) + \tau(x_1 \rightarrow x_2)
+			\end{align*}
+			given that $x_0$, $x_1$, $x_2$ lie in this order along the line whose direction is $\omega$.
+			
+			\item If $\sigma_t(x,\omega)$ is constant, we say that the material is \emph{homogeneous}. In this case,
+				we have that $$\tau (x_0 \rightarrow x_1) = \sigma_t \| x_1 - x_0\|.$$ 
+				Hence, $$T_r(x_0 \rightarrow x_1) = e^{-\sigma_t \| x_1 - x_0 \|}.$$
+				The above equation is called \emph{Beer's law}.
+		\end{itemize}
+	
+	\subsection{Extinction and Emission Only} % (fold)
+	\label{sub:extinction_and_emission_only}
+	
+		\begin{itemize}
+			\item In this case, the transfer equation becomes
+			\begin{align*}
+				\frac{dL}{ds} &= -\sigma_t(s) L + Q(s) \\
+				\frac{dL}{ds} + \sigma_t(s)L &=  Q(s),
+			\end{align*}
+			which is a first order linear ODE. To solve it, we multiply both sides by $I(s) = e^{\int_0^s \sigma(v) dv}$.
+			\begin{align*}
+				I(s) \frac{dL}{ds} + I(s) \sigma_t(s) L &= I(s) Q(s) \\
+				\frac{d}{ds}\Big\{ I(s) L\Big\} &= I(s) Q(s) \\
+				I(s) L &= \int_0^s I(u) Q(u)\ du + C \\
+				L &= \frac{\int_0^s I(u) Q(u)\ du + C}{I(s)} \\
+				L &= e^{-\int_0^s \sigma(v) dv} \Big[ \int_0^s e^{\int_0^u \sigma(v) dv} Q(u)\ du + C \Big] \\
+				L &= \int_0^s e^{\int_0^u \sigma(v) dv - \int_0^s \sigma(v) dv} Q(u)\ du + C e^{-\int_0^s \sigma(v) dv} \\
+				L &= \int_0^s e^{-\int_u^0 \sigma(v) dv - \int_0^s \sigma(v) dv} Q(u)\ du + C e^{-\int_0^s \sigma(v) dv} \\
+				L &= \int_0^s e^{-\int_u^s \sigma(v) dv} Q(u)\ du + C e^{-\int_0^s \sigma(v) dv} \\
+				L(x_0 + s\omega, \omega) &= \int_0^s T_r(x_0 + u\omega \rightarrow x_0 + s\omega) Q(x+u\omega, \omega)\ du + C T_r(x_0 \rightarrow x_0 + s\omega) \\
+			\end{align*}
+			Substituting $s = 0$ yields $C = L(x_0, \omega).$ The solution, in full, is then
+			\begin{align*}
+				L(x_0 + s\omega, \omega) &= \int_0^s T_r(x_0 + u\omega \rightarrow x_0 + s\omega) Q(x+u\omega, \omega)\ du + L(x_0, \omega) T_r(x_0 \rightarrow x_0 + s\omega).
+			\end{align*}
+			Simplifying the notation by letting $x_1 = x_0 + s\omega$ and integrating points on the line between $x_0$ and $x_1$, we have
+			\begin{align*}
+				L(x_1, \omega) &= T_r(x_0 \rightarrow x_1) L(x_0, \omega) + \int_{x_0}^{x_1} T_r(x \rightarrow x_1) Q(x, \omega)\ dx.
+			\end{align*}
+			The above equation has a very nice interpretation. To compute radiance at $x_1$, we need to sum all contribution from emission
+			from every point $x$ along the line from $x_0$ to $x_1$. The emission $Q(x,\omega)$ at $x$ gets attenuated by a factor
+			of $T_r(x \rightarrow x_1)$, so its contribution is $T_r(x \rightarrow x_1) Q(x,\omega) dx$. Lastly, the outgoing
+			radiance from $x_0$ gets attenuated by a factor of $T_r(x_0 \rightarrow x_1)$ before it reaches $x_1$.
+ 		\end{itemize}
+	% subsection extinction_and_emission_only (end)
+	
+	\subsection{Single Scattering} % (fold)
+	\label{sub:single_scattering}
+	
+		\begin{itemize}
+			\item In this case, we assume there is a point light source at position $x_L$ whose intensity is given by $I_L(x_L, \omega)$.
+			
+			\item Again, we are interested in finding the radiance $L(x_1, \omega)$ in terms of
+				radiance $L(x_0, \omega)$ where $\omega$ is the unit vector pointing from $x_0$
+				to $x_1$.
+				
+			\item However, we assume that light from the light source scatters once into
+				the direction $\omega$. That is, for any point $x$ along the segment
+				from $x_0$ to $x_1$, light travels from $x_L$ to $x$, being attenuated
+				along the way, and then scatters into direction $\omega$. 
+				
+				Let $\omega_L$ be the direction from $x_L$ to $x$, we have that incoming radiance
+				due to the light source is $L(x, \omega') = V(x_L, x) T_r(x_L \rightarrow x) I_L(x_L, \omega_L) \delta(x_L, \omega)$
+				where $V(x_L,x)$ is the visibility between $x_L$ and $x$, and $\delta$ is the Dirac delta function.
+				
+				As such, the scattering integral simplifies to
+				$$\int_{S^2} p(\omega' \rightarrow \omega) L(x, \omega') d\omega' = p(\omega_L \rightarrow \omega) V(x_L, x) T_r(x_L \rightarrow x) I_L(x_L, \omega_L),$$
+				and the transfer equation becomes
+				$$\omega \cdot \nabla L(x,\omega) = -\sigma_t(x,\omega) L(x, \omega) + Q(x,\omega) + \sigma_s(x,\omega) p(\omega_L \rightarrow \omega) V(x_L, x) T_r(x_L \rightarrow x) I_L(x_L, \omega_L).$$
+				Notice that the scattering term can be written as a function of $s$.
+				So, the equation is a first-order ODE, which can be solved in the same way
+				as the last case. Hence, the solution is
+				$$L(x_1, \omega) = T_r(x_0 \rightarrow x_1) L(x_0,\omega) + \int_{x_0}^{x_1} T_r(x \rightarrow x_1)\Big( Q(x, \omega) + p(\omega_L \rightarrow \omega) V(x_L, x) T_r(\omega_L \rightarrow \omega) I_L(x_L, \omega_L) \Big)\ dx.$$
+		\end{itemize}
+	% subsection single_scattering (end)
+	% section solutions_to_some_special_cases (end)
+	
+	\section{Diffusion Approximation} % (fold)
+	\label{sec:diffusion_approximation}
+	
+		\begin{itemize}
+			\item The diffusion approximation gives a low-frequency approximation of the
+				radiance field. The approximation works in practice because, in highly
+				scattering media, light distribution becomes blurred very quickly.
+				
+			\item The radiance field is approximated as follows:
+				\begin{align*}
+					L(x,\omega) = \frac{1}{4\pi} \phi(x) + \frac{3}{4\pi} \omega \cdot E(x)
+				\end{align*}
+				where
+				\begin{itemize}
+					\item $\phi(x) = \mu_0[L] = \int_{S^2} L(x,\omega)\ d\omega $ is the \emph{fluence}, and
+					\item $E(x) = \mu_1[L] = \int_{S^2} L(x,\omega) \omega\ d\omega $ is the \emph{vector irradiance}.
+				\end{itemize}
+				See the ``Angular Moments'' note for more details.
+				
+			\item Substituting the approximation into the transfer equation we have:
+				\begin{align} \label{diffusion-transfer}
+					&\omega \cdot \nabla \bigg[ \frac{1}{4\pi} \phi(x) + \frac{3}{4\pi} \omega \cdot E(x) \bigg] +
+					\sigma_t(x,\omega) \bigg[ \frac{1}{4\pi} \phi(x) + \frac{3}{4\pi} \omega \cdot E(x) \bigg] \notag \\
+					& \quad =  Q(x,\omega)
+					+ \sigma_s(x,\omega) \int_{S^2} p(\omega' \rightarrow \omega) \bigg[ \frac{1}{4\pi} \phi(x) + \frac{3}{4\pi} \omega' \cdot E(x) \bigg]\ d \omega'
+				\end{align}					
+		\end{itemize}
+		
+	\subsection{Isotropic Homogeneous Material} % (fold)
+	\label{sub:homogeneous_material}
+	
+		\begin{itemize}
+			\item In this section, we assume that the material is homogeneous. That is, $\sigma_t(x,\omega)$ and $\sigma_s(x,\omega)$ are constant
+				for all $x$ and $\omega$. 
+				
+			\item We also assume that the material is isotropic. That is, $p(\omega' \rightarrow \omega)$ only depends on the 
+				angle between $\omega'$ and $\omega.$ In other words, $p(\omega' \rightarrow \omega) = p(\omega' \cdot \omega).$
+				
+			\item With these assumptions, equation~\ref{diffusion-transfer} becomes
+				\begin{align} \label{diffusion-transfer-hom}
+					&\omega \cdot \nabla \bigg[ \frac{1}{4\pi} \phi(x) + \frac{3}{4\pi} \omega \cdot E(x) \bigg] +
+					\sigma_t \bigg[ \frac{1}{4\pi} \phi(x) + \frac{3}{4\pi} \omega \cdot E(x) \bigg] \notag \\
+					& \quad =  Q(x,\omega)
+					+ \sigma_s \int_{S^2} p(\omega' \rightarrow \omega) \bigg[ \frac{1}{4\pi} \phi(x) + \frac{3}{4\pi} \omega' \cdot E(x) \bigg]\ d \omega' \notag \\
+					&\frac{1}{4\pi} \omega \cdot \nabla \phi(x) + \frac{3}{4\pi} \omega \cdot \nabla (\omega \cdot E(x)) +
+					 \frac{\sigma_t}{4\pi} \phi(x) + \frac{3\sigma_t}{4\pi} \omega \cdot E(x) \notag \\
+					& \quad =  Q(x,\omega)
+					+ \frac{\sigma_s }{4\pi} \phi(x) \int_{S^2} p(\omega' \cdot \omega)\ d\omega'   + \frac{3 \sigma_s}{4\pi} \int_{S^2} p(\omega' \cdot \omega) \omega' \cdot E(x) \ d \omega'
+				\end{align}
+			
+			\item Equation~\ref{diffusion-transfer-hom} can be simplified in a number of ways. First, notice that since $p$, the
+			  phase function, is a probability distribution on both $\omega$ and $\omega'$. We have that
+			  $\int_{S^2} p(\omega' \cdot \omega)\ d\omega' = 1$ for all $\omega$. 				
+			
+			\item Second, consider the term $\omega \cdot \nabla (\omega \cdot E(x))$. We have that
+				\begin{align*}
+					\omega \cdot \nabla(\omega \cdot E(x))
+					&= \omega^T \nabla(\omega \cdot E(x))
+					= \omega^T \nabla (E(x))^T \omega
+					= \omega^T (E(x) \nabla^T)^T \omega.
+				\end{align*}
+				Now, $E(x) \nabla^T$ is just the Jacobian $J_E(x)$. Hence, $\omega \cdot \nabla(\omega \cdot E) = \omega^T (J_E(x))^T \omega$.
+				
+			\item With the above simplifications, Equation~\ref{diffusion-transfer-hom} becomes
+				\begin{align} \label{diffusion-transfer-hom-simplified}
+					&\frac{1}{4\pi} \omega \cdot \nabla \phi(x) + \frac{3}{4\pi} \omega^T (J_E(x))^T \omega +
+					 \frac{\sigma_t}{4\pi} \phi(x) + \frac{3\sigma_t}{4\pi} \omega \cdot E(x) \notag \\
+					& \quad =  Q(x,\omega)
+					+ \frac{\sigma_s}{4\pi} \phi(x) + \frac{3 \sigma_s}{4\pi} \int_{S^2} p(\omega' \cdot \omega) \omega' \cdot E(x) \ d \omega'
+				\end{align}
+			
+			\item In order to get a solvable equation, we will take the $0$th moment of both sides of the above equation.
+				
+				Let us do it term by term.
+				\begin{itemize}
+				  \item First term of LHS:
+  				  \begin{flalign*}
+  				    \mu_0\bigg[ \frac{1}{4\pi} \omega \cdot \nabla \phi(x) \bigg] &= \frac{1}{4\pi} \mu_0 [\omega \cdot \nabla \phi(x)] = 0
+  				    & \mbox{(Lemma 3.4 of Angular Moments note)}
+  				  \end{flalign*}
+  				
+  				\item Second term of LHS:
+  				  \begin{flalign*}
+  				    \mu_0\bigg[ \frac{3}{4\pi} \omega^T (J_E(x))^T \omega \bigg]
+  				    &= \frac{3}{4\pi} \mu_0\bigg[ \omega^T (J_E(x))^T \omega \bigg]\\
+  				    &= \frac{3}{4\pi} \cdot \frac{4\pi}{3} \mathrm{tr}(J_E(x)^T) & \mbox{(Lemma 3.6 of Angular Moments note)}\\
+  				    &= \frac{\dee E_1(x)}{\dee x_1}  + \frac{\dee E_2(x)}{\dee x_2}  + \frac{\dee E_3(x)}{\dee x_3}\\
+  				    &= \nabla \cdot E(x).
+  				  \end{flalign*}
+  				
+  				\item Third term of LHS:
+  				  \begin{flalign*}
+  				    \mu_0\bigg[\frac{\sigma_t}{4\pi} \phi(x)\bigg] &= \frac{\sigma_t}{4\pi} \phi(x) \mu_0[1] = \sigma_t \phi(x). &
+  				  \end{flalign*}
+  				
+  				\item Fourth term of LHS:
+  				  \begin{flalign*}
+  				    \mu_0\bigg[ \frac{3 \sigma_t}{ 4\pi } \omega \cdot E(x) \bigg] & = \frac{3 \sigma_t}{ 4\pi } \mu_0 [ \omega \cdot E(x) ] = 0
+  				    & \mbox{(Lemma 3.4 of Angular Moments note)}.
+  				  \end{flalign*}  				  
+				\end{itemize}
+				So, the LHS becomes $\nabla \cdot E(x) + \sigma_t \phi(x).$ However, we still have the RHS to work on.
+				\begin{itemize}
+				  \item First term of RHS: We have $\mu_0[Q(x,\omega)]$, which we shall abbreviate as $Q_0(x)$.
+				  
+				  \item Second term of RHS:
+				  \begin{flalign*}
+  				  \mu_0\bigg[\frac{\sigma_s}{4\pi} \phi(x)\bigg] &= \frac{\sigma_s}{4\pi} \phi(x) \mu_0[1] = \sigma_s \phi(x). &
+  				\end{flalign*}
+  				
+  				\item Third term of RHS:
+  				\begin{align*}
+  				  \mu_0 \bigg[ \frac{3\sigma_s}{4\pi} \int_{S^2} p(\omega' \cdot \omega) (\omega' \cdot E(x))\ \dee \omega' \bigg] 
+  				  &= \frac{3\sigma_s}{4\pi} \int_{S^2} \int_{S^2} p(\omega' \cdot \omega) (\omega' \cdot E(x))\ \dee \omega' \dee \omega\\
+  				  &= \frac{3\sigma_s}{4\pi} \int_{S^2} (\omega' \cdot E(x)) \bigg( \int_{S^2} p(\omega' \cdot \omega)\ \dee \omega\bigg) \ \dee \omega'\\
+  				  &= \frac{3\sigma_s}{4\pi} \int_{S^2} (\omega' \cdot E(x)) \ \dee \omega'\\
+  				  &= 0.
+  				\end{align*}
+  				The reason we could remove $\int_{S^2} p(\omega' \cdot \omega)\ \dee \omega$ was because $p$ is a probability distribution over $\omega$.
+  				Also, notice that we applied Lemma 3.4 of the Angular Moments note.  			  				
+				\end{itemize}				
+			  Hence, the RHS becomes $Q_0(x) + \sigma_s \phi(x).$ Hence, the equation becomes
+  			\begin{align*}
+  			  \nabla \cdot E(x) + \sigma_t \phi(x) &= Q_0(x) + \sigma_s \phi(x),\mbox{ or}\\
+  			  \nabla \cdot E(x) &= Q_0(x) - \sigma_a \phi(x).
+  			\end{align*}
+
+      \item We will also take the $1$st moment of both sides. We'll do it term by term again.
+        \begin{itemize}
+          \item First term of LHS:
+  				  \begin{flalign*}
+  				    \mu_1\bigg[ \frac{1}{4\pi} \omega \cdot \nabla \phi(x) \bigg] 
+  				    &= \frac{1}{4\pi} \mu_1 [\omega \cdot \nabla \phi(x)]\\
+  				    &= \frac{1}{4\pi} \cdot \frac{4\pi}{3} \nabla \phi(x) & \mbox{(Lemma 3.8 of Angular Moments note)}\\
+  				    &= \frac{1}{3} \nabla \phi(x)  				    
+  				  \end{flalign*}
+  				
+  				\item Second term of LHS:
+  				  \begin{flalign*}
+  				    \mu_1\bigg[ \frac{3}{4\pi} \omega^T (J_E(x))^T \omega \bigg]
+  				    &= \frac{3}{4\pi} \mu_1\bigg[ \omega^T (J_E(x))^T \omega \bigg]\\
+  				    &= 0 & \mbox{(Lemma 3.10 of Angular Moments note)}  				    
+  				  \end{flalign*}
+  				
+  				\item Third term of LHS:
+  				  \begin{flalign*}
+  				    \mu_0\bigg[\frac{\sigma_t}{4\pi} \phi(x)\bigg] &= \frac{\sigma_t}{4\pi} \phi(x) \mu_1[1] = 0. &
+  				     \mbox{(Lemma 3.7 of Angular Moments note)}\\
+  				  \end{flalign*}
+  				
+  				\item Fourth term of LHS:
+  				  \begin{flalign*}
+  				    \mu_1\bigg[ \frac{3 \sigma_t}{ 4\pi } \omega \cdot E(x) \bigg] & = \frac{3 \sigma_t}{ 4\pi } \mu_1 [ \omega \cdot E(x) ]
+  				    = \frac{3 \sigma_t}{ 4\pi } \cdot \frac{4 \pi}{ 3 } E(x) & \mbox{(Lemma 3.8 of Angular Moments note)}\\
+  				    &= \sigma_t E(x).
+  				  \end{flalign*}
+				\end{itemize}
+				
+				So, the LHS becomes $\frac{1}{3} \nabla \phi(x) + \sigma_t E(x).$ We work on RHS next.
+				
+				\begin{itemize}
+				  \item First term of RHS: We have $\mu_1[Q(x,\omega)]$, which we shall abbreviate as $Q_1(x)$.
+				  
+				  \item Second term of RHS:
+				  \begin{flalign*}
+  				  \mu_1\bigg[\frac{\sigma_s}{4\pi} \phi(x)\bigg] &= \frac{\sigma_s}{4\pi} \phi(x) \mu_1[1] = 0. &
+  				  \mbox{(Lemma 3.7 of Angular Moments note)}
+  				\end{flalign*}
+  				
+  				\item Third term of RHS:
+  				\begin{align*}
+  				  \mu_1 \bigg[ \frac{3\sigma_s}{4\pi} \int_{S^2} p(\omega' \cdot \omega) (\omega' \cdot E(x))\ \dee \omega' \bigg] 
+  				  &= \frac{3\sigma_s}{4\pi} \int_{S^2} \omega \int_{S^2} p(\omega' \cdot \omega) (\omega' \cdot E(x))\ \dee \omega' \dee \omega\\
+  				  &= \frac{3\sigma_s}{4\pi} \int_{S^2} (\omega' \cdot E(x)) \bigg( \int_{S^2} p(\omega' \cdot \omega)\ \dee \omega\bigg) \ \dee \omega'\\
+  				  &= \frac{3\sigma_s}{4\pi} \int_{S^2} (\omega' \cdot E(x)) \ \dee \omega'\\
+  				  &= 0.
+  				\end{align*}
+  				The reason we could remove $\int_{S^2} p(\omega' \cdot \omega)\ \dee \omega$ was because $p$ is a probability distribution over $\omega$.
+  				Also, notice that we applied Lemma 3.4 of the Angular Moments note.
+				\end{itemize}	
+        
+		\end{itemize}
+ 	
+	% subsection homogeneous_material (end)
+	
+	% section diffusion_approximation (end)
+\end{document}

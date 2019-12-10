@@ -1,0 +1,374 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+\usepackage{verbatim}
+\usepackage{hyperref}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\Dee}{\mathrm{D}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\Var}{\mathrm{Var}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+\newcommand{\ov}[1]{\overline{#1}}
+\DeclareMathOperator*{\argmin}{argmin}
+
+\title{Bias-Variance Decomposition}
+\author{Pramook Khungurn}
+
+\begin{document}
+  \maketitle
+
+  Decomposing the expected error of a machine learning model into bias, variance, and noise terms is an important tool for understanding and designing machine learning models. I learned about the decomposition when I took a machine learning class at Cornell. However, the class only teaches the decomposition as it applies to regression and the squared loss. It was unclear to me how the same concept would apply to classification and other loss functions.
+
+  To fill this gap of understanding, this document will address two papers that deal with this question. The first is the 2000 paper by Pedro Domingos \cite{Domingos:2000}, and the second by is the 2003 paper by James \cite{James:2003}.
+
+  \section{Domingos 2000}
+
+  \subsection{Settings and Notations}
+
+  \begin{itemize}
+  	\item Let the training set be denoted by $D = \{(x_1, t_1), (x_2, t_2), \dotsc, (x_n, t_n)\}.$ 
+  	\item Let $f$ be the model produced by training on $D$. Note that $f$ is a function of $D$.
+  	\item Let $y = f(x)$ denote the prodiction made by the model on input $x$.
+  	\item Let $t$ denote the true value of the prediction of $x$. 
+  	\begin{itemize}
+  	  \item In general, $t$ is a non-deterministic function of $x$.
+  	  \item In other words, there is a probability distribution of $(x,t)$ pairs where there are pairs with the same value of $x$ but different values of $t$.
+  	\end{itemize}  	
+  	\item Let $L(t,y)$ denote the loss function that measures the cost of predicting $y$ while the true value is $t$.
+  	\item Some commonly used loss functions are:
+  	\begin{itemize}
+  	  \item {\bf Squared loss:} $L(t,y) = (t-y)^2$.
+  	  \item {\bf Absolute loss:} $L(t,y) = |t-y|$.
+  	  \item {\bf Zero-one loss:} $L(t,y) = \begin{cases} 0, & t = y \\ 1, & t \neq y \end{cases}.$
+  	\end{itemize}
+  	\item The \emph{optimal prediction} $y_*$ for an input $x$ is the prediction that minimizes $E_t[L(t, y_*)]$.
+  	\item The \emph{optimal model} is the model such that $f(x) = y_*$ for al $x$.
+  	\begin{itemize}
+  	  \item In case of classification, the optimal model is called the \emph{Bayes classifier}.
+  	  \item The expected loss of the Bayes classifier is called the \emph{Bayes rate}.  	  
+  	\end{itemize}
+  	\item The model $f$ produced depends on the training set $D$. As a result, $L(t,y)$ is a function of $D$. To get a big picture of the loss, though, we should eliminate the dependence on $D$. We do this by averaging out the loss over all the possible training sets. As a result, we are interested in the \emph{expected loss:}
+  	\begin{align*}
+  	  E_{D,t}[L(t,y)]
+  	\end{align*}
+    Here, the expectation is taken with respect to the training set $D$ and the true value $t$. Note that this is a function of $x$, so $t$ is conditioned on $x$.
+    \item The bias-variance decomposition splits the expected loss into three different terms: \emph{the bias}, \emph{the variance}, and \emph{the noise}.    
+  \end{itemize}
+
+  \subsection{Main Definitions}
+
+  \begin{itemize}
+    \item \begin{definition}
+      The \emph{main prediction} for a particular input value $x$ is:
+      \begin{align*}
+        y_m = \argmin_{y'} E_D[L(y,y')].
+      \end{align*}      
+    \end{definition}
+    In other words, the main prediction is the prediction $y'$ whose average loss over all possible predictions is minimal. In other words,
+    \begin{itemize}
+      \item The main prediction under the square loss is the mean of all possible predictions.
+      \item The main prediction under the absolute loss is the median of all possible predictions.
+      \item The main prediction under the zero-one loss is the mode of all possible predictions.
+    \end{itemize}
+
+    \item \begin{definition}
+      The \emph{bias} of the learning algorithm on a particular example $x$ is: $$B(x) = L(y_*, y_m).$$
+    \end{definition}
+    In other words, it is the loss incurred by the main prediction relative to the optimal prediction.
+
+    \item \begin{definition}
+      The \emph{variance} of the learning algorithm on a particular example $x$ is:
+      $$ V(x) = E_D[L(y_m, y)].$$
+    \end{definition}    
+    That is, is the average loss incurrred by all predictions relative to the main prediction.
+
+    \item Bias and variance may be averaged over all possible input data. The averages are called the \emph{expected bias} $E_x[B(x)]$ and the \emph{expected variance} $E_x[V(x)]$, respectively.
+
+    \item \begin{definition}
+      The \emph{noise} of a particular example $x$ is given by:
+      $$ N(x) = E_t[L(t,y_*)]. $$
+    \end{definition}
+    Note that the definition of the noise does not contain any terms that rely on the training set. Hence, it is a feature of the dataset and is independent of the learning algorithm used.
+
+    \item Nice properties of the above definitions:
+    \begin{itemize}
+      \item The main prediction $y_m$ defines the ``center'' of the possible predictions.
+      \item The bias measures how the center is off from the optimal prediction. Hence it measure the systematic (deterministic) loss of the learning algorithm.
+      \item The variance measures how the possible predictions are scattered around the center of prediction. Hence, it measures the stochastic component of the expected loss.
+      \item If the loss function is non-negative, then all the three terms are non-negative.
+      \item The bias is independent of the training set and is zero if the learner always output the optimal prediction.
+      \item The variance is independent of the true prediction value and is zero for the learner that always output the same prediction regardless of the training set.
+      \item All the terms only requires that the expectation be computable to be well defined.      
+    \end{itemize}        
+  \end{itemize}
+
+  \subsection{The Main Result}
+
+  \begin{itemize}
+    \item It is not true, however, that the expected loss can be written as the sum of the three terms for all loss function $L$.
+
+    \item The following, though, is true:
+    \begin{claim} \label{bv-decomp}
+      For certain loss functions $L$, we have:
+      \begin{align}
+        E_{D,t}[L(y,t)] = c_1 N(x) + B(x) + c_2 V(x) \label{bias-variance-decomp}
+      \end{align}
+      where $c_1$ and $c_2$ are multiplicative factors that will take on different values for different loss functions.
+    \end{claim}
+
+    \item For the squared loss, $c_1 = c_2 = 1$.
+
+    \item \begin{theorem} \label{two-class-decomp}
+      In two-class problems, Claim~\ref{bv-decomp} is valid for any real-valued loss function $L$ for which:
+      \begin{enumerate}
+        \item $L(y,y) = 0$ for all $y$.
+        \item $L(y_1, y_2) \neq 0$ for all $y_1 \neq y_2$.        
+      \end{enumerate}
+      For such a function, it is true that:
+      \begin{align*}
+        c_1 = P_D(y = y_*) - \frac{L(y_*, y)}{L(y,y_*)} P_D(y \neq y_*).
+      \end{align*}
+      Moreover,
+      \begin{align*}
+        c_2 = \begin{cases}
+          1, & y_* = y_m \\
+          -L(y_*, y_m) / L(y_m, y_*) & y_* \neq y_m
+        \end{cases}.
+      \end{align*}
+    \end{theorem}
+
+    \begin{proof}
+      We first show that:
+      \begin{align} 
+        L(t,y) = L(y_*, y) + c_0 L(t,y_*) \label{lty-c0}
+      \end{align}
+      where
+      \begin{align*}
+        c_0 = \begin{cases}
+          1, & y=y_* \\
+          -L(y_*,y)/L(y,y*), & y \neq y_*
+        \end{cases}.
+      \end{align*}
+      To see that \eqref{lty-c0} is true, we consider the two cases where $y = y_*$ and where $y \neq y_*$. The first case is obvious. For the second case, we have that either $t = y$ or $t = y*$ because we have a two-class problem. If $t = y$, then
+      \begin{align*}
+        0 = L(t,y) = L(y_*, y) - \frac{L(y_*,y)}{L(y,y*)} L(y,y_*),
+      \end{align*}
+      which confirms that \eqref{lty-c0} is true. If $t = y*$, then
+      \begin{align*}
+        L(t,y) = L(y*,y) = L(y_*,y) - \frac{L(y_*,y)}{L(y,y*)} L(y^*, y^*),
+      \end{align*}
+      which also confirms that \eqref{lty-c0} is also true in this case. As a result, we can conclude that \eqref{lty-c0} is true in all cases.
+
+      In a similar manner that we proved \eqref{lty-c0}, we can also show that:
+      \begin{align}
+        L(y_*,y) = L(y_*,y_m) + c_2 L(y_m, y) \label{lyy-c2}
+      \end{align}
+      where $c_2$ is defined in the Theorem's statement. Again, there are two cases. First, when $y_m = y_*$, we have that \eqref{lyy-c2} becomes:
+      \begin{align*}
+        L(y_m, y) = L(y_m,y_m) + 1 \cdot L(y_m, y),
+      \end{align*}
+      which is trivially true. Second, when $y_m \neq y_*$. Then, either $y = y_m$ or $y = y_*$. If $y = y_m$, then \eqref{lyy-c2} reduces to:
+      \begin{align*}
+        L(y_*, y_m) = L(y_*, y_m) - \frac{L(y_*, y_m)}{L(y_m, y_*)} L(y_m,y_m),
+      \end{align*}
+      which is true. If $y = y_*$, then \eqref{lyy-c2} reduces to:
+      \begin{align*}
+        L(y_*,y_*) = L(y_*,y_m) - \frac{L(y_*, y_m)}{L(y_m, y_*)} L(y_m,y_*),
+      \end{align*}
+      which is also true as well. As a result, we can say that \eqref{lyy-c2} is true in all cases.
+
+      Using \eqref{lty-c0}, we have that:
+      \begin{align*}
+        E_{D,t}[L(t,y)]
+        &= E_D[E_t[L(t,y)]] \\
+        &= E_D[E_t[L(y_*, y) + c_0 L(t,y_*)]] \\
+        &= E_D[L(y_*, y) + c_0 E_t[ L(t,y_*)]]] \\
+        &= E_D[L(y_*, y)] + E_D[c_0] E_t[ L(t,y_*) ]]].
+      \end{align*}
+      The next to last line comes from the fact that $L(y_*,y)$ and $c_0$ does not depend on $t$. The last line comes from the fact that $y_*$ and $t$ does not depends on the training dataset $D$.
+
+      Substituting \eqref{lyy-c2}, we have that:
+      \begin{align*}        
+        E_{D,t}[L(t,y)]
+        &= E_D[L(y_*,y_m) + c_2 L(y_m, y)] + E_D[c_0] E_t[ L(t,y_*) ]]] \\
+        &= L(y_*,y_m) + c_2 E_D[ L(y_m,y)] + E_D[c_0] E_t[ L(t,y_*) ] \\
+        &= B(x) + c_2 V(x) + E_D[c_0] N(x).
+      \end{align*}
+      Now,
+      \begin{align*}
+        E_D[c_0] &= P_D(y = y_*) - \frac{L(y_*,y)}{L(y,y*)} P_D(y \neq y_*) = c_1.
+      \end{align*}
+      As a result, we have that:
+      \begin{align*}
+        E_{D,t}[L(t,y)] = c_1 N(x) + B(x) + c_2 V(x)
+      \end{align*}
+      as desired.
+    \end{proof}
+
+    \item If the loss function is symmetric (for example, the zero-one loss), then we have that:
+    \begin{align*}
+      c_1 &= 2 P_D(y=y_*) - 1,\\
+      c_2 &= \begin{cases}
+        1, & y_* = y_m \\
+        -1, & y_* \neq y_m
+      \end{cases}.
+    \end{align*}
+    
+    \item To rephrase the item above, \emph{variance is additive in unbiased examples and subtractive in biased examples} in binary classification problems with symmetric loss functions.
+    \begin{itemize}
+      \item It is easy to understand why variance is beneficial in bias examples: if the main prediction is not optimal, it is better to deviate from it.
+      \item Consequently, highly unstable learners like decision tree and rule induction algorithms can produce good results in practice because it has a good chance to deviate from biased predictions.
+      \item Zero-one loss has higher tolerance for variance: variance on unbiased examples is offset by the variance on biased ones. 
+    \end{itemize}
+
+    \item Now, consider the $c_1$ factor:
+    \begin{itemize}
+      \item In the squared loss, increasing noise always increases the expected error.
+      \item However, in the zero-one loss, $c_1$ can be negative in examples where $P_D(y = y_*) < 0.5$. In this case, increasing the noise decreases the error.
+    \end{itemize}
+
+    \item Loss in general can be asymmetric. (There are cases where false negatives are more costly then false positives and vice versa.) So, the general case (i.e., Theorem~\ref{two-class-decomp}) is important as well.
+
+    \item \begin{theorem}
+      For multi-class problems under the zero-one loss, Equation \eqref{bias-variance-decomp} holds with:
+      \begin{align*}
+        c_1 &= P_D(y = y_*) - P_D(y \neq y_*) P_t(y = t | y_* \neq t), \\
+        c_2 &= \begin{cases}
+          1, & y_m = y_* \\
+          -P_D(y=y_* | y \neq y_m), & y_m \neq y_*
+        \end{cases}.
+      \end{align*}
+    \end{theorem}
+
+    \item According to the above theorem, not all variance on biased examples contributes to the reduction of the error. It is only those examples where $y = y_*$ that reduces the error.
+    \begin{itemize}
+      \item Of course, only the optimal prediction would reduce error.
+    \end{itemize}
+  \end{itemize}
+
+  \subsection{Properties of the Decomposition}
+
+  \subsubsection{Order Correctness}
+
+  \begin{itemize}
+    \item Breiman observed that bagging reduces zero-one loss and explained the phenomenon with the concept of \emph{order-correct} learner \cite{Breiman:1996}.
+
+    \item \begin{definition}
+      A learner is \emph{order-correct} on an example $x$ if:
+      \begin{align*}
+        \forall_{y \neq y_*}, P_D(y) < P_D(y_*)
+      \end{align*}          
+    \end{definition}
+    In other words, the learner has higher probability to arrive at the optimal prediction than any other predictions.
+
+    \item Breiman proved that bagging transforms an order-correct learner into a nearly optimal one.
+
+    \item \begin{claim}
+      A learner is order-correct on $x$ if and only if $B(x) = 0$ under the zero-one loss.
+    \end{claim}
+  \end{itemize}
+
+  \subsubsection{Margin}
+
+  \begin{itemize}
+    \item Schapire \etal explained why boosting works with the notion of \emph{margin} \cite{Schapire:1997}.
+
+    \item \begin{definition}
+      In two-class problems, the margin of a learner on an example $x$ is given by:
+      \begin{align*}
+        M(x) = P_D(y=t) - P_D(y \neq t)
+      \end{align*}    
+    \end{definition}
+    The set $D$ here is a generalized version of the sample space of all possible training sets. It now means the set of training sets that the learner is applied. In other words, if boosting is conducted for $100$ rounds, then $|D| = 100$. Moreover, different training sets have different weights, which can be made to sum up to $1$. This naturallly induces a probability distribution over the training set.
+
+    \item A large margin corresponds to a high confidence in the prediction.
+
+    \item Schapire \etal\ showed that, the lower the probability of a low margin, the lower the bound on generalization error.    
+  \end{itemize}
+
+  \subsubsection{Relationship between Order Correctness and Margin}
+  
+  \begin{itemize}
+    \item \begin{theorem}
+      The margin of a learner on an example $x$ can be expressed in terms of its zero-one bias and variance as:
+      \begin{align*}
+        M(x) = \pm [2B(x)-1][2V(x)-1]
+      \end{align*}
+      with positive sign if $y_* = t$ and negative sign otherwise.
+    \end{theorem}
+
+    \begin{proof}
+      When $y_* = t$, we have that:
+      \begin{align*}
+        M(x) = P_D(y = y_*) - P_D(y \neq y_*) = 2P_D(y=y_*)-1.
+      \end{align*}
+      If $B(x) = 0$, then $y_m = y_*$. So,
+      \begin{align*}
+        M(x) = 2P_D(y = y_m) - 1 = 2(1 - V(x)) - 1 = -(2V(x)-1).
+      \end{align*}
+      If $B(x) = 1$, then
+      \begin{align*}
+        M(x) = 2V(x)-1.
+      \end{align*}
+      In both case, it is true that
+      \begin{align*}
+        M(x) = [2B(x)-1][2V(x)-1].
+      \end{align*}
+
+      The case for when $y_* \neq t$ is similar.
+    \end{proof}
+
+    \item It is also possible to express the bias and the variance in terms of the margin:
+    \begin{align*}
+      B(x) &= \frac{1}{2}\big( 1 \pm \mathrm{sgn}(M(x)) \big) \\
+      V(x) &= \frac{1}{2}\big( 1 \pm |M(x)| \big) \\
+    \end{align*}
+    The $\pm$ is positive if $y_* \neq t$ and negative otherwise.
+
+    \item Since margin can be written in terms of bias and variance, Schapire \etal's treatment and Breiman's treatment is actually the same thing.
+
+    \item Bias and variance explanation is difficult to apply to boosting because they are multipled together. That is, suppose that $y_* = t$ and we want to increase the margin. Then, we would like to increase variance on biased examples and decrease variance on unbiased ones. (If $y_* \neq t$, it's the other way around.)
+
+    \item All in all, I think Domingos's treatment works because we have a binary classification problem, and the loss function is the zero-one loss. It does not really generalize to other lossses. Moreover, the theorems look kind of ugly.
+  \end{itemize}
+
+  \bibliographystyle{apalike}
+  \bibliography{bias-variance}  
+\end{document}

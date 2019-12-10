@@ -1,0 +1,207 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+
+\newtheorem{lemma}{Lemma}[section]
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{claim}[lemma]{Claim}
+
+\title{Computational Learning Theory}
+\author{Pramook Khungurn}
+
+\begin{document}
+\maketitle
+
+\section{PAC Learning}
+\begin{itemize}
+    \item Computational learning theory seek to answer the following
+        questions:
+        \begin{itemize}
+            \item How good is the learned rule after $n$ examples?
+            \item How many examples do I need before the learned rule
+                is accurate?
+            \item What can be learned and what cannot?
+            \item Is there a universally best learning algorithm?
+        \end{itemize}
+    
+    \item For the question of how many samples needed to learn, the
+        answer is like this:
+        \begin{quote}
+            Any hypothesis that is seriously wrong will be 
+            ``found out'' with high probability after a samll
+            number of examples, because it will make an incorrect
+            prediction. Thus, any hypothesis that is consistent
+            with a sufficiently large set of training examples is
+            unlikely to be seriously wrong.              
+        \end{quote}
+        
+    \item A hypothesis that is ``unlikely to be seriously wrong''
+        is called {\bf probably approximately correct} (PAC).
+        
+    \item Any learning algorithm that returns hypotheses that
+        are probably approximately correct is called a
+        {\bf PAC learning algorithm}.
+        
+    \item To get a PAC learning algorith, we assume two things:
+        \begin{itemize}
+            \item The probability distribution of samples 
+                is stationary. That is, all examples are drawn 
+                from the same distribution independently.
+            \item The target function $f$ is in the hypothesis
+                space $\mathcal{H}$.
+        \end{itemize}
+
+    \item Simplest PAC theorems deals with boolean functions.
+        The lost function used is the 0/1 lost function.
+        \begin{align*}
+            L_{0/1}(y,\hat{y}) = \begin{cases}
+                1 & y \neq \hat{y}\\
+                0 & y = \hat{y}
+            \end{cases}.
+        \end{align*}
+    
+    \item The {\bf error rate} of a hypothesis $h$ is the 
+        expected generalization error for examples drawn
+        from the stationary distribution:
+        \begin{align*}
+            \mathrm{error}(h) = GenLoss_{L_{0/1}}(h)
+            = \sum_{x,y} L_{0/1}(h(x),y) P(x,y).
+        \end{align*}
+        In other words, the error rate is the probability
+        that $h$ misclassifies an example.
+        
+    \item A hypothesis $h$ is {\bf approximately correct}
+        if $\mathrm{error}(h) < \epsilon$ where $\epsilon$
+        is a small constant.
+        
+    \item We can show that we can find $N$, such that,
+        after seeing $N$ examples, all consistent hypothesis
+        is approximately correct with high probability.
+        
+    \item We let $\mathcal{H}_{\mathrm{bad}}$ denote the
+        set of hypothesis that is not approximately correct.
+        
+    \item Let us calculate the probability that a bad hypothesis
+        $h_b \in \mathcal{H}_{\mathrm{bad}}$ is consistent with 
+        the first $N$ examples.
+        
+        We know that $\mathrm{error}(h_b) > \epsilon.$
+        So the probability of picking an example that $h_b$
+        classifies correctly is at most $1-\epsilon$.
+        So, the probability of picking $N$ such examples
+        is less than $(1 - \epsilon)^N$. Hence,
+        \begin{align*}
+            \Pr(\mbox{$\mathcal{H}_{\mathrm{bad}}$ contains
+            a consitent hypothesis}) \leq 
+            |\mathcal{H}_{\mathrm{bad}}|(1-\epsilon)^N
+            \leq |\mathcal{H}|(1 - \epsilon)^N.
+        \end{align*}
+        The above probability is not more than a small number
+        $\delta$ when
+        \begin{align*}
+            | \mathcal{H} | (1 - \epsilon)^N \leq \delta
+        \end{align*}
+        Using the fact that $1-\epsilon \leq e^{-\epsilon}$,
+        we have that
+        \begin{align*}
+            | \mathcal{H} | e^{-\epsilon N} &\leq \delta\\
+            e^{-\epsilon N} &\leq \delta / | \mathcal{H} |\\
+            -\epsilon N &\leq  \ln \delta - \ln | \mathcal{H} |\\
+            N &\geq \frac{1}{\epsilon} \bigg( \ln \frac{1}{\delta} + \ln | \mathcal{H} | \bigg).
+        \end{align*}
+    
+    \item In conclusion, if the algorithm outpus a hypothesis
+        with that many examples, then the hypothesis has error
+        rate at most $\epsilon$ with probability at least 
+        $1-\delta$.
+        
+    \item The number of required examples, as a function of
+        $\epsilon$ and $\delta$ is called the {\bf sampling
+        complexity} of the hypothesis space.
+        
+    \item If $\mathcal{H}$ is the class of boolean functions,
+        then $|\mathcal{H}| = 2^{2^n}$ where $n$ is the number
+        of inputs. A PAC learning algorithm would require seeing
+        at least $2^n$ examples, which is pretty much all
+        the examples are there.
+        
+    \item How to escape seeing so many examples? 
+    
+        We may insist that the hypothesis and the 
+        true function be simple. 
+        This limits the size of $|\mathcal{H}|$.
+\end{itemize}
+
+\section{Learning Decision List}
+
+\begin{itemize}
+    \item An example of a simple hypothesis space is
+    the {\bf decision lists}.
+    
+    \item A decision list is a series of tests. Each
+        of which is a conjunction of literals.
+        
+        If a test succeeds when applied to an example description,
+        the decision list specifies the value to be returned.
+        
+        If the test fails, the processing continues with
+        the next test in the list.
+        
+    \item A decision list is similar to a decision tree, but
+        the branching structure is much simpler.
+        
+    \item If we allows tests of arbitrary size, the decision
+        lists can represent any boolean function.
+        
+    \item If we allows tests to contain at most $k$ literals,
+        we get a hypothesis space called $k$-{\bf DL}.
+        
+        We use the symbol $\mbox{$k$-DL}(n)$ to denote
+        the set $k$-DL using $n$ boolean attributes.
+        
+    \item We shall calculate the size of $\mbox{$k$-DL}(n)$.
+    
+        Let the set of all boolean expressions that
+        are conjunctions of at most $k$ literals from $n$
+        boolean attributes by be denoted by $Conj(n,k)$.
+        
+        Because a decision list is constructed of tests, and
+        because each test can be attached to either a
+        YES or a NO outcome, or can be absent from the decision
+        list, there are at most $3^{|Conj(n,k)|}$
+        distinct sets of component tests.
+        
+        Since we can order the tests in any particular order, 
+        we have that
+        \begin{align*}
+            |\mbox{$k$-DL}(n)| \leq 3^{|Conj(n,k)|}|Conj(n,k)|!.
+        \end{align*}
+        We also have that
+        \begin{align*}
+            |Conj(n,k)| = \sum_{i=0}^k {n \choose i} 2^i = O(n^k).
+        \end{align*}
+        Hence, using Sterling approximation, we have
+        $$|\mbox{$k$-DL}(n)| = 2^{O(n^k \log n^k)}.$$
+        
+    \item This means that, after seeing
+    $$N = \frac{1}{\epsilon}\bigg( \ln \frac{1}{\delta} + O(n^k \log n^k )\bigg)$$ examples, any consistent hypothesis is approximately
+    correct.
+    
+    \item There's a simple algorithm that finds a 
+    consistent decision list given a set of examples. 
+    
+    The algorithm starts with an empty decision list.
+    Then, it finds a test that evaluates to TRUE for some
+    subset of the examples. It adds that test to the decision
+    list and throws examples that agrees with the test away.
+    It then continues on with the rest of the example until
+    no example is left.
+    
+    Obviously, the algorithm is a PAC learning algorithm.
+\end{itemize}
+
+\end{document}

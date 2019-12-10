@@ -1,0 +1,94 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+\usepackage{verbatim}
+\usepackage{hyperref}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\Dee}{\mathrm{D}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\Var}{\mathrm{Var}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+\newcommand{\ov}[1]{\overline{#1}}
+
+\title{Gradient of Softmax Followed by Cross Entropy Loss Function}
+\author{Pramook Khungurn}
+
+\begin{document}
+  \maketitle
+
+  Let there be $k$ classes in a classification problem. Let the logit of the classses be denoted by the vector $\ve{x} = (x_1, x_2, \dotsc, x_k)^T$. The softmax function define the probabilities $\ve{q} = (q_1, q_2, \dotsc, q_k)^T$ where:
+  \begin{align*}
+  	q_i = \frac{\exp(x_i)}{\sum_{j=1}^k \exp(x_j)}.
+  \end{align*}
+  Suppose the correct class is $c$. We have that the cross entropy loss of the probabilities $\ve{q}$ is:
+  \begin{align*}
+  	L 
+  	= -\ln q_c 
+  	= -\ln \bigg( \frac{\exp(x_c)}{\sum \exp(x_j)} \bigg)
+  	= \ln \bigg( \frac{\sum \exp(x_j)}{\exp(x_c)} \bigg).
+  \end{align*}
+
+  Let $\mathcal{L}$ be the overall loss function. We have that:
+  \begin{align*}
+  	\frac{\partial \mathcal{L}}{\partial x_i}
+  	&= \frac{\partial \mathcal{L}}{\partial L} \cdot \frac{\partial L}{\partial x_i} \\
+  	&= \frac{\partial \mathcal{L}}{\partial L} \cdot \frac{\partial}{\partial x_j} \bigg\{ \ln \bigg( \frac{\sum \exp(x_j)}{\exp(x_c)} \bigg) \bigg\} \\
+  	&= \frac{\partial \mathcal{L}}{\partial L} \cdot \frac{\exp(x_c)}{\sum \exp(x_j)} \cdot \frac{\partial}{\partial x_i} \bigg\{ \frac{\sum \exp(x_j)}{\exp(x_c)} \bigg\}.
+  \end{align*}
+  Now, there are two cases. If $i \neq c$, we have that:
+  \begin{align*}
+  	\frac{\partial \mathcal{L}}{\partial x_i}
+  	&= \frac{\partial \mathcal{L}}{\partial L} \cdot \frac{\exp(x_c)}{\sum \exp(x_j)} \cdot \frac{1}{\exp(x_c)} \cdot \frac{\partial}{\partial x_i} \sum \exp(x_j) \\
+  	&= \frac{\partial \mathcal{L}}{\partial L} \cdot \frac{\exp(x_c)}{\sum \exp(x_j)} \cdot \frac{1}{\exp(x_c)} \cdot \exp(x_i) 
+  	= \frac{\partial \mathcal{L}}{\partial L} \cdot \frac{\exp(x_i)}{\sum \exp(x_j)} \\
+  	&= \frac{\partial \mathcal{L}}{\partial L} \cdot q_i.
+  \end{align*}
+  If $i = c$, we have that:
+  \begin{align*}
+  	\frac{\partial \mathcal{L}}{\partial x_i}
+  	&= \frac{\partial \mathcal{L}}{\partial L} \cdot \frac{\exp(x_c)}{\sum \exp(x_j)} \cdot \frac{1}{\exp(x_c)^2} \bigg[ \frac{\partial \sum \exp(x_j)}{\partial x_c} \exp(x_c) - \big( \sum \exp(x_j) \big) \frac{\partial \exp(x_c)}{\partial x_c} \bigg] \\
+  	&= \frac{\partial \mathcal{L}}{\partial L} \cdot \frac{\exp(x_c)}{\sum \exp(x_j)} \cdot \frac{1}{\exp(x_c)^2} \bigg[ \exp(x_c)^2 - \big( \sum \exp(x_j) \big) \exp(x_c) \bigg] \\
+  	&= \frac{\partial \mathcal{L}}{\partial L} \cdot \frac{1}{\sum \exp(x_j)} \bigg[ \exp(x_c) - \big( \sum \exp(x_j) \big) \bigg] \\
+  	&= \frac{\partial \mathcal{L}}{\partial L} \cdot (q_c - 1)
+  \end{align*}
+
+  \bibliographystyle{apalike}
+  \bibliography{softmax-cross-entropy}  
+\end{document}

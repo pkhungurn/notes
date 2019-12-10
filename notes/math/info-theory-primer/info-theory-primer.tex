@@ -1,0 +1,424 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+\usepackage{verbatim}
+\usepackage{hyperref}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\Dee}{\mathrm{D}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\Var}{\mathrm{Var}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+\newcommand{\ov}[1]{\overline{#1}}
+
+\title{A Primer on Information Theory}
+
+\begin{document}
+  \maketitle
+
+  This note is written as I try to become familiar with terms in information theory such as entropy, mutual information, cross entropy, and the Kullback--Leibler divergence. It is based on two tutorial articles \cite{Rosenfeld:2018, Galvin:2014} and Chapter 2 of Cover and Thomas \cite{Cover:1991}.
+
+  \section{Information}
+
+  \begin{itemize}
+  	\item 
+  	\begin{definition}
+  	Let $E$ be some event which occurs with probability $\Pr(E)$. If we are told that $E$ has occurred, then we say that we have received
+  	\begin{align*}
+  		I(E) = \log \frac{1}{P(E)}
+  	\end{align*}
+  	bits of \textbf{information} \cite{Abramson:1963}. Here, the logarithm is in base $2$.	
+  	\end{definition}  
+
+  	\item Information can be thought of as the amount of ``surprise'' in the fact that $E$ occcured.
+
+  	\item The expression $\log (1/P(E))$ can be motivated by searching for a function that satisfies a number of criteria \cite{Galvin:2014}. Say, let $S(p)$ be a function that measures the amount of surprise associated with observing an event that occurs with probability $p$. The following are reasonable criteria to impose on $S$:
+  	\begin{itemize}
+  		\item $S(1) = 0$. (Observing a certain event is no surprise.)
+  		\item If $p < q$ then $S(p) > S(q)$. (Rarer events are more surprising.)
+  		\item $S$ varies continuously with $p$.
+  		\item $S(pq) = S(p) + S(q)$. (Consider two independent events $E$ and $F$ that occurs with probability $p$ and $q$, respectively. The surprise on seeing $E \cap F$ should be the surprise of seeing $E$ plus the surprise of seeing $F$.)
+  		\item $S(1/2) = 1.$ (A normalizing condition.)
+  	\end{itemize}
+  	Given the above criteria, the unique function $S$ that statisfies it is $S(p) = \log(1/p)$.
+  \end{itemize}
+
+  \section{Entropy}
+
+  \begin{itemize}
+  	\item \begin{definition}
+  	Let $X$ be a discrete random variable that takes values $x_1, x_2, \dotsc, x_n$ with probabilities $p_1, p_2, \dotsc, p_n$, respectively. The \textbf{entropy} of $X$, denoted by $H(X)$ is given by:
+  	\begin{align*}
+  		H(X) 
+  		= \sum_{i=1}^n \Pr(X=x_i) \log \frac{1}{\Pr(X=x_i)}
+  		= \sum_{i=1}^n p_i \log \frac{1}{p_i}
+  		= -\sum_{i=1}^n p_i \log p_i.
+  	\end{align*}	
+  	\end{definition}
+  	
+  	\item $H(X)$ can be interpreted as:
+  	\begin{itemize}
+  		\item The average amount of surprise when we observe a realization of $X$.
+  		\item The average amount of information of a value $X$ can take.
+  		\item The average number of bits needs to communicate the outcome of $X$.
+  		\item The uncertainty an observer has before seeing the outcome of $X$.
+  	\end{itemize}
+
+  	\item When Shannon first defined the concept, he was at a lost of what to call it. Von Neumann suggested the word entropy because (1) it is similar to entropy in statistical physics (but not exactly the same), and (2) nobody knows what entropy actually means, so Shannon would have an advantage when arguing with other people \cite{Galvin:2014}.
+
+  	\item Many properties of entropy can be proven by Jensen's inequality.
+
+  	\begin{theorem}[Jensen's inequality]
+  		Let $f: [a,b] \rightarrow \Real$ be a continuous, concave function. Let $p_1, p_2, \dotsc, p_n$ be non-negative real numbers that sum to $1$. For any $x_1, x_2, \dotsc, x_n \in [a,b]$, we have:
+  		\begin{align*}
+  			\sum_{i=1}^n p_i f(x_i) \leq f\bigg( \sum_{i=1}^n p_i x_i \bigg).
+  		\end{align*}
+  	\end{theorem}
+  	 
+  	\item \begin{proposition}[Maximality of the Uniform]
+  		For random variable $X$,
+  		\begin{align*}
+  			H(X) \leq \log | \mathrm{range}(X) |
+  		\end{align*}
+  		where $\mathrm{range}(X)$ is the set of values that $X$takes on with positive probability.
+  	\end{proposition}
+
+  	\begin{proof}
+  		Let $X$ takes value $x_1, \dotsc, x_n$ with probability $p_1, \dotsc, p_n$. Let us also assume that all the $p_i$'s are positive. We have that:
+  		\begin{align*}
+  			H(X) 
+  			= \sum_{i=1}^n p_i \log \frac{1}{p_i}
+  			\leq \log\bigg( \sum_{i=1}^n p_i \frac{1}{p_i} \bigg)
+  			= \log n = \log |\mathrm{range}(X)|.
+  		\end{align*}
+  		The inequality in the derivation is an application of Jensen's inequality.
+  	\end{proof}
+
+  	\item \begin{theorem}[Gibb's Inequality]
+  		Let $X$ be a random variable that takes value $x_1, \dotsc, x_n$ with probability $p_1, \dotsc, p_n$. Let $q_1, q_2, \dotsc, q_n$ be another probability mass function over the possible values of $X$. Then,
+  		\begin{align*}
+  			H(X) = \sum_{i=1}^n p_i \log \frac{1}{p_i} \leq \sum_{i=1}^n p_i \log \frac{1}{q_i}.
+  		\end{align*}
+  	\end{theorem}
+
+  	\begin{proof}
+  		WLOG, let us assume that all the $p_i$'s are positive. We have that:
+  		\begin{align*}
+  			\sum_{i=1}^n p_i \log \frac{1}{p_i} - \sum_{i=1}^n p_i \log \frac{1}{q_i}
+  			&= \sum_{i=1}^n p_i \log \frac{q_i}{p_i}
+  			\leq \log \bigg( \sum_{i=1}^n p_i \frac{q_i}{p_i} \bigg)
+  			= \log \bigg( \sum_{i=1}^n q_i \bigg)
+  			= \log 1 = 0.
+  		\end{align*}
+  	\end{proof}
+
+  	\item We will use the above inequality when we define the Kullback--Leiber divergence.  	
+  \end{itemize}
+
+  \section{Joint and Conditional Entropy}
+
+  \begin{itemize}
+  	\item In this section, let $X$ and $Y$ be two random variables with joint probability distribution $p(x,y)$.
+
+  	\item \begin{definition}
+  		The \textbf{joint entropy} $H(X,Y)$ is defined as:
+  		\begin{align*}
+  			H(X,Y) 
+  			= \sum_{x} \sum_{y} p(x,y) \log \frac{1}{p(x,y)}
+  			= -\sum_{x} \sum_{y} p(x,y) \log p(x,y).
+  		\end{align*}
+  	\end{definition}
+
+  	\item In other words, the cross entropy $H(X,Y)$ is the entropy of the tuple $(X,Y)$, taken as a single random variable.
+
+  	\item \begin{definition}
+  		If $E$ is any event, we define the entropy of $X$ given $E$ to be
+  		\begin{align*}
+  			H(X|E) = \sum_{x} p(x|E) \log \frac{1}{p(x|E)}.
+  		\end{align*}
+  	\end{definition}
+
+  	\item \begin{definition}
+  		For a pair of random variables $X$ and $Y$, the conditional entropy of $X$ given $Y$ is given by:
+  		\begin{align*}
+  			H(X|Y) 
+  			= E_Y[H(X|\{Y = y\})]
+  			= \sum_{y} p(y) \bigg( \sum_{x} p(x|y) \log \frac{1}{p(x|y)}\bigg).
+  		\end{align*}
+  	\end{definition}
+
+  	\item \begin{proposition}[Chain Rule]
+  		$$H(X,Y) = H(X) + H(Y|X).$$
+  	\end{proposition}
+  	\begin{proof}
+  		We have that:
+  		\begin{align*}
+  			H(X,Y) - H(X)
+  			&= \sum_{x} \sum_{y} p(x,y) \log \frac{1}{p(x,y)} 
+  			   - \sum_{x} p(x) \log \frac{1}{p(x)} \\
+  			&= \sum_{x} \sum_{y} p(x)  p(y|x) \log \frac{1}{p(x)p(y|x)}
+  			   - \sum_{x} p(x) \bigg( \sum_{y} p(y|x) \bigg) \log \frac{1}{p(x)} \\
+  			&= \sum_{x} p(x) \bigg( \sum_{y}  p(y|x) \log \frac{1}{p(x)p(y|x)} \bigg)
+  			   - \sum_{x} p(x) \bigg( \sum_{y} p(y|x) \log \frac{1}{p(x)} \bigg) \\
+  			&= \sum_{x} p(x) \bigg[ \sum_{y}  p(y|x) \bigg( \log \frac{1}{p(x)p(y|x)} - \frac{1}{p(x)}  \bigg) \bigg] \\
+  			&= \sum_{x} p(x) \bigg( \sum_{y}  p(y|x) \log \frac{1}{p(y|x)}  \bigg) \\
+  			&= H(Y|X).
+  		\end{align*}
+  	\end{proof}
+
+  	\item It can be shown by induction that:
+  	\begin{align*}
+  		H(X_1, \dotsc, H_k)
+  		&= H(X_1) + H(X_2|X_1) + H(H_3|H_1,H_2) + \dotsb + H(X_n|X_1, \dotsc, X_{n-1}).
+  	\end{align*}
+
+  	\item The chain rule relates the entropy of a random vector to the entropy of revealing the components one by one.
+
+  	\item \begin{proposition}[Dropping Conditioning]
+  		For random variables $X$ and $Y$,
+  		$$H(X|Y) \leq H(X).$$
+  		Also, for random variable $Z$, 
+  		$$H(X|Y,Z) \leq H(X|Y).$$
+  	\end{proposition}
+
+  	\begin{proof}
+  		We will prove only the first inequality. The second is very similar. We have that:
+  		\begin{align*}
+  			H(X|Y)
+  			&= \sum_y p(y) \bigg( \sum_x p(x|y) \log \frac{1}{p(x|y)} \bigg) \\
+  			&= \sum_y \sum_x p(y) p(x|y) \log \frac{1}{p(x|y)} \\
+  			&= \sum_x \sum_y p(x) p(y|x) \log \frac{1}{p(x|y)} \\
+  			&= \sum_x p(x) \bigg( \sum_y  p(y|x) \log \frac{1}{p(x|y)} \bigg) \\
+  			&\leq \sum_x p(x) \log \bigg( \sum_y \frac{p(y|x)}{p(x|y)} \bigg) \\
+  			&= \sum_x p(x) \log \bigg( \sum_y \frac{p(x,y)}{p(x)} \frac{p(y)}{p(x,y)} \bigg) \\
+  			&= \sum_x p(x) \log \bigg( \sum_y \frac{p(y)}{p(x)} \bigg) \\
+  			&= \sum_x p(x) \log \frac{1}{p(x)} \\
+  			&= H(X).
+  		\end{align*}
+  	\end{proof}
+
+  	\item The above proposition should be intuitive. The surprise of knowing $X$ after knowing $Y$ should be less than the surprise of knowing $X$ without having any other information because more information can only reduce surprise.
+
+  	\item \begin{proposition}[Subadditivity]
+  		For random variables $X_1, X_2, \dotsc, X_n$, we have that:
+  		\begin{align*}
+  			H(X_1, X_2, \dotsc, X_n) \leq \sum_{i=1}^n H(X_i).
+  		\end{align*}
+  	\end{proposition}
+
+  	\begin{proof}
+  		\begin{align*}
+  			H(X_1, X_2, \dotsc, X_n)
+  			&= \sum_{i=1}^n H(X_i | X_1, X_2, \dotsc, X_{i=1})
+  			\leq \sum_{i=1}^n H(X_i).
+  		\end{align*}
+  		The first step is an application of the chain rule, and the second step is just dropping conditioning.
+  	\end{proof}
+  \end{itemize}
+
+  \section{Mutual Information}
+
+  \begin{itemize}
+  	\item Let $p$ and $q$ be two probability mass functions on the set ${x_1, x_2, \dotsc, x_n}$. 
+
+  	\item \begin{definition}
+  		The \textbf{relative entropy} or \textbf{Kullback--Leiblier divergence} from $q$ to $p$, denoted by $D(p \| q)$, is given by:
+  		\begin{align*}
+  			D(p \| q) 
+  			= \sum_{x} p(x) \log \frac{p(x)}{q(x)}.
+  		\end{align*}
+  	\end{definition}
+
+  	\item The KL divergence is a non-negative number. This is because
+  	\begin{align*}
+  		\sum_{x} p(x) \log \frac{p(x)}{q(x)}
+  		&= \sum_{x} p(x) \log \frac{1}{q(x)} - \sum_{x} p(x) \log \frac{1}{p(x)}.
+  	\end{align*}
+  	We know from Gibb's inequality that the above expression is greater than or equal to $0$. We can also show that it is zero if and only if $p = q$. As such, it can be a measure of how $q$ is different from $p$.
+
+  	\item Let $X$ and $Y$ be two random variables with joint probability distribution $p(x,y)$ and marginal distribution $p(x)$ and $p(y)$.
+
+ 	\begin{definition}
+ 		The \textbf{mutual information} between $X$ and $Y$, denoted by $I(X;Y)$, is the KL divergence between the joint distribution and the product distribution $p(x)p(y)$. That is,
+ 		\begin{align*}
+ 			I(X;Y) 
+ 			&= D(p(x,y) \| p(x)p(y))
+ 			= \sum_x \sum_y p(x,y) \log \frac{p(x,y)}{p(x)p(y)}.
+ 		\end{align*}
+ 	\end{definition}
+
+ 	\item Clearly, $I(X;Y) = I(Y;X)$.
+
+ 	\item \begin{proposition}
+ 		\begin{align*}
+ 			I(X;Y) 
+ 			&= H(X) - H(X|Y) = H(Y) - H(Y|X) = H(X) + X(Y) - H(X,Y). 
+ 		\end{align*}
+ 	\end{proposition}
+
+ 	\begin{proof}
+ 		\begin{align*}
+ 			I(X;Y)
+	 		&= \sum_x \sum_y p(x,y) \log \frac{p(x,y)}{p(x)p(y)} \\
+	 		&= \sum_x \sum_y p(x,y) \log \frac{p(x|y)}{p(x)} \\
+	 		&= \sum_x \sum_y p(x,y) \log \frac{1}{p(x)}
+	 		   - \sum_x \sum_y p(x,y) \log \frac{1}{p(x|y)} \\
+	 		&= \sum_x p(x) \log \frac{1}{p(x)}
+	 		   - \sum_y p(y) \bigg( \sum_x  p(x|y) \log \frac{1}{p(x|y)} \bigg) \\
+	 		&= H(X) - H(X|Y).
+ 		\end{align*}
+ 		The equation $I(X;Y) = H(Y) - H(Y|X)$ can be proved similarly. Now, we have that:
+ 		\begin{align*}
+ 			I(X,Y) 
+ 			= H(X) - H(X|Y)
+ 			= H(X) - [H(X,Y) - H(Y)]
+ 			= H(X) + H(Y) - H(X,Y).
+ 		\end{align*}
+ 	\end{proof}
+
+ 	\item Let's interpret what the mutual information means. Consider the equation
+ 	\begin{align*}
+ 		I(X;Y) = H(X) - H(X|Y).
+ 	\end{align*}
+ 	$H(X)$ is the information about $X$, and $H(X|Y)$ is the extra information about $X$ given that we already know about $Y$. Subtracting $H(X|Y)$ from $H(X)$ gives us the information about $X$ that we already know when we know $Y$. So, $I(X;Y)$ is the information the random variables have about each other.
+
+ 	\item \begin{definition}
+ 		The \textbf{conditional mutual information} of random variable $X$ and $Y$ given $Z$ is defined by:
+ 		\begin{align*}
+ 			I(X;Y|Z) 
+ 			&= H(X|Z) - H(X|Y,Z)
+ 			= \sum_{x,y,z} p(x,y,z) \frac{p(x,y|z)}{p(x|z)p(y|z)}.
+ 		\end{align*}
+ 	\end{definition}
+
+ 	\item \begin{proposition}[Chain Rule for Mutual Information]
+ 		\begin{align*}
+ 		I(X_1,X_2,\dotsc,X_n;Y) = \sum_{i=1}^n I(X_i;Y|X_1, \dotsc, X_{i-1})
+ 		\end{align*}
+ 	\end{proposition}
+ 	\begin{proof}
+ 		\begin{align*}
+ 			I(X_1,X_2,\dotsc,X_n;Y)
+ 			&= H(X_1,X_2,\dotsc,X_n) - H(X_1,X_2,\dotsc,X_n|Y) \\
+ 			&= \sum_{i=1}^n H(X_i|X_1, \dotsc, X_{i-1})
+ 			- \sum_{i=1}^n H(X_i|X_1, \dotsc, X_{i-1},Y) \\
+ 			&= \sum_{i=1}^n [ H(X_i|X_1, \dotsc, X_{i-1})
+ 			- H(X_i|X_1, \dotsc, X_{i-1},Y) ] \\
+ 			&= \sum_{i=1}^n I(X_i;Y|X_1, \dotsc, X_{i-1}).
+ 		\end{align*}
+ 	\end{proof}
+
+ 	\item Now, consider two probability distribions $p(\cdot,\cdot)$ and $q(\cdot,\cdot)$ over the set of tuples $\{x_1, \dotsc, x_n \} \times \{y_1, \dotsc, y_m \}$. Note that the KL divergence from $q$ to $p$ is given by:
+ 	\begin{align*}
+ 		D(p\|q) = D(p(x,y)\|q(x,y)) = \sum_{x,y} p(x,y) \log \frac{p(x,y)}{q(x,y)}.
+ 	\end{align*}
+
+ 	\item \begin{definition}
+ 		The \textbf{conditional Kullback--Leibler divergence} $D(p(y|x)\|q(y|x))$ is the expected value with respect to $x$ of the KL divergence from $q(y|x)$ to $p(y|x)$. That is,
+ 		\begin{align*}
+ 			D(p(y|x)\|q(y|x))
+ 			&= \sum_{x} p(x) \bigg( \sum_{y} p(y|x) \log \frac{p(y|x)}{q(y|x)} \bigg)
+ 			= \sum_{x,y} p(x,y) \log \frac{p(y|x)}{q(y|x)}.
+ 		\end{align*}
+ 	\end{definition}
+
+ 	\item \begin{proposition}[Chain Rule for KL Divergence]
+ 		\begin{align*}
+ 			D(p(x,y)\|q(x,y))
+ 			= D(p(x)\|q(x)) + D(p(y|x)\|q(y|x)) 
+ 		\end{align*} 		
+ 	\end{proposition}
+ 	\begin{proof}
+ 	\begin{align*}
+ 		D(p(x,y)\|q(x,y))
+ 		&= \sum_{x,y} p(x,y) \log \frac{p(x,y)}{q(x,y)} \\
+ 		&= \sum_{x,y} p(x,y) \log \frac{p(x)p(y|x)}{q(x)q(y|x)} \\
+ 		&= \sum_{x,y} p(x,y) \log \frac{p(x)}{q(x)} 
+ 		   + \sum_{x,y} p(x,y) \log \frac{p(y|x)}{q(y|x)}\\
+ 		&= \sum_{x} p(x) \log \frac{p(x)}{q(x)} 
+ 		   + D(p(y|x)\|q(y|x))\\
+ 		&= D(p(x)\|q(x)) + D(p(y|x)\|q(y|x)).
+ 	\end{align*}	
+ 	\end{proof} 	
+  \end{itemize}
+
+  \section{Cross Entropy}
+
+  \begin{itemize}
+  	\item So far, we have only defined entropy of a random variable. However, we can also think of entropy as a function of the probability distribution.
+
+  	\begin{definition}
+  		Let $p(\cdot)$ be a probability distribution over the set ${x_1, \dotsc, x_n}$. The \textbf{entropy} $H(p)$ of $p$ is given by:
+  		\begin{align*}
+  			H(p) = \sum_{x} p(x) \log \frac{1}{p(x)}.
+  		\end{align*}
+  	\end{definition}
+
+  	That is, it is the entropy of the random variable $X$ where $\Pr(X = x_i) = p(x_i)$.
+
+  	\item \begin{definition}
+  		The \textbf{cross entropy} $H(p,q)$ of probability distribution $q$ with respect to $p$ is given by:
+  		\begin{align*}
+  			H(p,q) = \sum_{x} p(x) \log \frac{1}{q(x)}.
+  		\end{align*}
+  	\end{definition}
+
+  	\item \begin{proposition}
+  		$$H(p,q) = H(p) + D(p\|q)$$
+  	\end{proposition}
+  	\begin{proof}
+  		\begin{align*}
+  			H(p) + D(p\|q)
+  			&= \sum_{x} p(x) \log \frac{1}{p(x)}
+  			   + \sum_{x} p(x) \log \frac{p(x)}{q(x)} \\
+  			&= \sum_{x} p(x) \bigg( \log \frac{1}{p(x)}
+  			   + \log \frac{p(x)}{q(x)} \bigg)\\
+			&= \sum_{x} p(x) \log \frac{1}{q(x)} \\
+			&= H(p,q).
+  		\end{align*}
+  	\end{proof}
+
+  	\item The typical interpretation of the cross entropy involves trying to estimate $p$ with $q$. For each element $x_i$, the number $\log(1/q(x_i))$ is the amount of bits needed to encode the outcome $x_i$ when the generating distribution is $q$. The cross entropy measures the average number of bits when the outcomes are sampled according to $p$ but encoded according to $q$.
+
+  	By Gibb's inequality, the most succinct encoding is when $p = q$, resulting in the average number of bits of $H(p)$. By trying to minimize the cross entropy, the process would make $q$ as close to $p$ as possible. Equivalently, it would try to force the KL divergence down to $0$.
+  \end{itemize}
+
+  \bibliographystyle{acm}
+  \bibliography{info-theory-primer}  
+\end{document}

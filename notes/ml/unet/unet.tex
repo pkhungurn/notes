@@ -1,0 +1,229 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+\usepackage{verbatim}
+\usepackage{hyperref}
+\usepackage{clrscode3e}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\Dee}{\mathrm{D}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\Var}{\mathrm{Var}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+\newcommand{\ov}[1]{\overline{#1}}
+
+\title{U-Net: Convolutional Networks for Biomedical Image Segmentation}
+\author{}
+
+\begin{document}
+  \maketitle
+
+  This article is written as I read the U-Net paper by Ronneberger \etal\ \cite{Ronneberger:2015}. U-Net is an architecture that, I think, is popular among later research works that perform image transformation. The most famous derivative work is the pix2pix paper \cite{Isola:2016}. By studying this paper, I will add a tool into my bag to tricks for network design.
+
+  \section{Introduction}
+
+  \begin{itemize}
+  	\item Deep CNNs outperforms other methods when it comes to image classification. However, they require a lot of data to train. For example, AlexNet \cite{Krizhevsky:2012} was trained with the ImageNet dataset, which has 1M labelled training examples.
+
+  	\item Image segmentation, on the other hand, requires a label to be attached to each pixel. Image segmentation is common in biomedical imagae processing. However, biomedial datasets do not even have more than thousands of training examples.
+
+  	\item A work by Ciresan \etal\ trained a sliding-window CNN to segment patches instead of whole images \cite{Ciresan:2012}. This solves the data scarcity problem because there are more patches than whole images.
+
+  	\item However, Ciresan \etal's approach has two drawbacks:
+  	\begin{itemize}
+  		\item It is quite slow because you have to slide the network over the whole image.
+
+  		\item There is a trade-off when choosing the patch size.
+  		\begin{itemize}
+  			\item Larger patch size see more context but requires more max pooling layers, which reduce localization accuracy.
+
+  			\item Small patch size affords better localization accuracy but it can only see little context.
+  		\end{itemize}
+  	\end{itemize}
+
+  	\item The authors propose a new architecture based on the ``fully convolutional network'' (FCN)  \cite{Long:2014}. They extend it so that it works with small training sets.
+
+  	\item The main ideas of the Long \etal's paper are:
+  	\begin{itemize}
+  	 	\item Make a classifier network convolutional by interpreting the last fully connected layers as a convolution filter that spans the whole image.
+
+  	 	\item Upsample the final result of the classifier network to full resolution by a tranposed convolution layer. The layer is initialized to bilinear upsampling first, and the paper let the network learn the parameters.
+
+  	 	\item Upscaled predictions from several layers are combined so that predictions from deeper layers (more context but less resolution) are combined with predictions for shallower layers (less context but more resolution).
+  	\end{itemize} 
+
+  	\item One feature of the FCN that the upsampled images does not have many channels. This is because the paper upsamples \emph{predictions}: the number of channels is equal to the number of classes.
+
+  	\item The present paper's modifies the FCN by allowing the upsampling images to have a large number of feature channels. In this way, the network can propagate context information to higher resolution. The upsampling part is more or less equivalent to the downsampling part, yielding a U-shaped architecture.
+
+  	\item To segment a large image, the image is divided into tiles, where is tile is smaller than the input the network can take. The network is then fed the subimages in which the tiles are the center of the image. The missing area is taken from the part of the image that overlaps the receptive field. Pixels beyond the borders are filled by mirroring the source image.
+
+  	\item Biomedical data do not have many examples. The paper augments the data by applying elastic deformations.
+
+  	\item Cell segmentation tasks also have many touching instances of the same class. The paper uses a weighted loss where the background label between two touching instances have large weights.  	
+  \end{itemize}
+
+  \section{Network Architecture}
+
+  \begin{itemize}
+  	\item The network takes as input a greyscale (1-channel) image of size $572 \times 572$. It outputs an image of size $388 \times 388$ with two channels. Supposedly, the first channel is the probability that the pixel is in a cell, and the second is the probability that it is outside a cell. The output $388 \times 388$ image corresponds to the center $388 \times 388$ image of the input image.
+
+  	\item The architecture is probably best described by a code snippet in Table~\ref{unet-architecture}.
+
+  	\begin{table}
+  	\centering
+  	\begin{tabular}{l|l}
+  	\textbf{Tensors} & \textbf{Shape} \\
+  	\hline
+  	$A_0 = \textrm{input}$
+  	& $1 \times 572 \times 572$ \\
+  	$A_1 \gets \proc{Relu}(\proc{Convolve}(A_0, 3{\times}3, 64))$ 
+  	& $64 \times 570 \times 570$ \\
+  	$A_2 \gets \proc{Relu}(\proc{Convolve}(A_1, 3{\times}3, 64))$ 
+  	& $64 \times 568 \times 568$ \\
+  	\hline
+  	$B_0 \gets \proc{Max-Pool}(A_2, 2{\times}2)$
+  	& $64 \times 284 \times 284$ \\
+  	$B_1 \gets \proc{Relu}(\proc{Convolve}(B_0, 3{\times}3, 128))$ 
+  	& $128 \times 282 \times 282$ \\
+  	$B_2 \gets \proc{Relu}(\proc{Convolve}(B_1, 3{\times}3, 128))$ 
+  	& $128 \times 280 \times 280$ \\
+  	\hline
+  	$C_0 \gets \proc{Max-Pool}(B_2, 2{\times}2)$
+  	& $128 \times 140 \times 140$ \\
+  	$C_1 \gets \proc{Relu}(\proc{Convolve}(C_0, 3{\times}3, 256))$ 
+  	& $256 \times 138 \times 138$ \\
+  	$C_2 \gets \proc{Relu}(\proc{Convolve}(C_1, 3{\times}3, 256))$ 
+  	& $256 \times 136 \times 136$ \\
+  	\hline
+  	$D_0 \gets \proc{Max-Pool}(C_2, 2{\times}2)$
+  	& $256 \times 68 \times 68$ \\
+  	$D_1 \gets \proc{Relu}(\proc{Convolve}(D_0, 3{\times}3, 512))$ 
+  	& $512 \times 66 \times 66$ \\
+  	$D_2 \gets \proc{Relu}(\proc{Convolve}(C_1, 3{\times}3, 512))$ 
+  	& $512 \times 64 \times 64$ \\
+  	\hline
+  	$E_0 \gets \proc{Max-Pool}(D_2, 2{\times}2)$
+  	& $512 \times 32 \times 32$ \\
+  	$E_1 \gets \proc{Relu}(\proc{Convolve}(E_0, 3{\times}3, 1024))$ 
+  	& $1024 \times 30 \times 30$ \\
+  	$E_2 \gets \proc{Relu}(\proc{Convolve}(E_1, 3{\times}3, 1024))$ 
+  	& $1024 \times 28 \times 28$ \\
+  	\hline\hline
+  	$F_0 \gets \proc{Up-Convolve}(E_2, 2{\times}2, 512)$
+  	& $512 \times 56 \times 56$ \\
+  	$F_1 \gets \proc{Concat}(F_0, \proc{Crop-Center}(D_2, 56{\times}56))$
+  	& $1024 \times 56 \times 56$ \\
+  	$F_2 \gets \proc{Relu}(\proc{Convolve}(F_1, 3{\times}3, 512))$ 
+  	& $512 \times 54 \times 54$ \\
+  	$F_3 \gets \proc{Relu}(\proc{Convolve}(F_2, 3{\times}3, 512))$ 
+  	& $512 \times 52 \times 52$ \\
+  	\hline
+  	$G_0 \gets \proc{Up-Convolve}(F_3, 2{\times}2, 256)$
+  	& $256 \times 104 \times 104$ \\
+  	$G_1 \gets \proc{Concat}(G_0, \proc{Crop-Center}(C_2, 104{\times}104))$
+  	& $512 \times 104 \times 104$ \\
+  	$G_2 \gets \proc{Relu}(\proc{Convolve}(G_1, 3{\times}3, 256))$ 
+  	& $256 \times 102 \times 102$ \\
+  	$G_3 \gets \proc{Relu}(\proc{Convolve}(G_2, 3{\times}3, 256))$ 
+  	& $256 \times 100 \times 100$ \\
+  	\hline
+  	$H_0 \gets \proc{Up-Convolve}(G_3, 2{\times}2, 128)$
+  	& $128 \times 200 \times 200$ \\
+  	$H_1 \gets \proc{Concat}(H_0, \proc{Crop-Center}(B_2, 200{\times}200))$
+  	& $256 \times 200 \times 200$ \\
+  	$H_2 \gets \proc{Relu}(\proc{Convolve}(G_1, 3{\times}3, 128))$ 
+  	& $128 \times 198 \times 198$ \\
+  	$H_3 \gets \proc{Relu}(\proc{Convolve}(G_2, 3{\times}3, 128))$ 
+  	& $128 \times 196 \times 196$ \\
+  	\hline
+  	$I_0 \gets \proc{Up-Convolve}(H_3, 2{\times}2, 64)$
+  	& $64 \times 392 \times 392$ \\
+  	$I_1 \gets \proc{Concat}(I_0, \proc{Crop-Center}(A_2, 392{\times}392))$
+  	& $128 \times 392 \times 392$ \\
+  	$I_2 \gets \proc{Relu}(\proc{Convolve}(I_1, 3{\times}3, 64))$ 
+  	& $64 \times 390 \times 390$ \\
+  	$I_3 \gets \proc{Relu}(\proc{Convolve}(I_2, 3{\times}3, 64))$ 
+  	& $64 \times 388 \times 388$ \\
+  	\hline \hline
+  	$G_0 \gets \proc{Convolve}(I_3, 1{\times}1, 2)$ 
+  	& $2 \times 388 \times 388$ \\
+  	$G_1 \gets \proc{Pixel-Wise-Softmax}(G_0)$ 
+  	& $2 \times 388 \times 388$
+  	\end{tabular}
+  	\caption{U-Net architecture.}
+  	\label{unet-architecture}
+  	\end{table}  
+  \end{itemize}
+
+  \section{Training}
+
+  \begin{itemize}
+  	\item To limit memory use, the paper uses the batch size of $1$ and a large momentum factor of $0.99$. This allows for previous samples to have impact on the optimization's trajectory.
+
+  	\item Let $\Omega$ denote the set of 2D positions in the output image. The loss used to train the network is the weighted cross entropy loss:
+  	\begin{align*}
+  		\mathcal{L} = -\sum_{\ve{x} \in \Omega} w(\ve{x}) \log(p_{\ell(\ve{x})} (\ve{x}))
+  	\end{align*}
+  	where $p_k(\ve{x}) = G_{1,k}(\ve{x})$ is the probability that Pixel $\ve{x}$ has label $k$, and $\ve{\ell}(x)$ is the correct label of Pixel $\ve{x}$.
+
+  	\item The weight $w(\ve{x})$ of each pixel is computed as follows:
+  	\begin{align*}
+  		w(\ve{x}) = w_c(\ve{x}) + w_0 + \exp \bigg( -\frac{(d_1(\ve{x}) + d_2(\ve{x}))^2}{2\sigma^2} \bigg)
+  	\end{align*}
+  	where:
+  	\begin{itemize}
+  		\item $w_c$ is the weight function to balance the class frequecies. (I'm not actually so sure what this means. Is it a constant factor divided by the frequency of the class at that pixel?)
+
+  		\item $d_1$ is the distance to the border of the nearest cell.
+  		
+  		\item $d_2$ is the distance to the border of the second nearest cell.
+
+  		\item $w_0 = 10.$
+
+  		\item $\sigma = 5$ pixels.
+  	\end{itemize}  	
+
+  	\item The paper uses He initialization.
+  \end{itemize}
+
+  \bibliographystyle{acm}
+  \bibliography{unet}  
+  	
+\end{document}

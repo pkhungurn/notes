@@ -1,0 +1,191 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+\usepackage{verbatim}
+\usepackage{hyperref}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\Dee}{\mathrm{D}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\Var}{\mathrm{Var}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+\newcommand{\ov}[1]{\overline{#1}}
+
+\title{Rendering Glints on\\High-Resolution Normal-Mapped Specular Surfaces}
+\author{Pramook Khungurn}
+
+\begin{document}
+  \maketitle
+
+  This document was written as I read ``Rendering Glints on High-Resolution Normal-Mapped Specular Surfaces'' \cite{Yan:2014}.
+
+  \section{Introduction} % (fold)
+  \label{sec:introduction}
+  
+  \begin{itemize}
+  	\item This paper seeks to render glints on surfaces equiped with high-resolution normal maps under sharp lighting.
+
+  	\item In such a situation, most of the energy is concentrated in tiny highlight that take up a miniscule fraction of a pixel.  So, standard uniform pixel sampling has a hard time hitting the highlight and so results in high variance.
+
+  	\item The paper introduces the concept of $\mathcal{P}$-NDF, which is the unsimplified normal distribution function of a surface path $\mathcal{P}$ seen though a single pixel.
+
+  	\item To render a pixel with a $\mathcal{P}$-NDF, one elementary approach is to repeatedly choose a point on the patch, take its normals, perturb the normal by intrinsic roughness, and add the normal to a bin.  After we have done this enough time, the histogram should be representative of the $\mathcal{P}$-NDF, and we can perform normal integral over the bins.
+
+  	The problem with the above algorithm is that there is probably only one bin the histogram that contributes any energy.  This is because, given the light and the eye directions, the normal that contribute to the glint is the half vector between these two directions. As a result, we wasted resource trying to gather information about a single bin.
+
+  	\item The paper's approach is to evaluate the density of a single normal with a deterministic approach (i.e., analytical integration).
+  \end{itemize}  
+  % section introduction (end)
+
+  \section{Preliminaries} % (fold)
+  \label{sec:preliminaries}
+  
+  \begin{itemize}
+  	\item \textbf{Pixel footprint.} The pixel footprint in this paper is not a triangle over the normal map as would normally be used.  Instead, the paper uses a Gaussian pixel reconstruction filter on the $uv$-parameterization of the normal map instead.
+
+  	The Gaussian does not have to be circular.  The covariance matrix can be easily computed by tracing ray differentials.
+
+  	\item \textbf{Projected hemisphere.}  A normal, which is a hemispherical vector, is represented with a two dimensional vector in the unit disk $\mathcal{D}$.  A point $\ve{s} = (s,t) \in \mathcal{D}$ represents the unit 3-vector $(s,t,\sqrt{1-s^2-t^2})$.
+
+  	The \emph{extended unit disk} is the union of $\mathcal{D}$ and the symbol $\perp$, which denotes an invalid normal.  This is useful when dealing with normal maps that has invalid normals in it.
+
+  	\item \textbf{Normal map.}  A normal map is defined as a function $n: \Real^2 \ra \mathcal{D}$ from points $\ve{u} = (u,v)$ in the texture space to normals $\ve{s} = (s,t)$.
+
+  	The Jacobian of $n(\ve{u})$ is denoted $J(\ve{u})$.  This quantity shows up as change-of-variable factor when we integrate the normal map.  In particular, a singular occurs when $\det J(\ve{u}) = 0$.
+
+  	\item \textbf{Intrinsic roughness.}  To avoid singularity caused by $\det J(\ve{u}) = 0$, the paper convolves the normal map with a small Gaussian kernel, which introduces intrinsic roughness to the normal map.
+
+  	\item \textbf{NDFs.}  An NDF is a probability density function on the extended unit disk, with the obvious measure.  (I have no idea what this ``obvious'' measure is.  Is it the area measure?)
+
+  	This formulation allows the paper to process the NDF very easily.  If they want to convolve it with a filter, they just convolve it in 2D.
+
+  	\item \textbf{$\mathcal{P}$-NDF.}  The $\mathcal{P}$-NDF is the probability density of sampling the footprint $\mathcal{P}$, evaluating the normal, and purturbing by the intrinsic roughness kernel.
+
+  	\item Once we have the $\mathcal{P}$-NDF $D(\ve{s})$, we can use it to render specular surface, modeled by a microfacet distribution, as follows.  First, we need to determine the half vector $\ve{h} = (\ve{i} + \ve{o}) / \| \ve{i} + \ve{o} \|$ where $\ve{i}$ is the light vector and $\ve{o}$ is the eye vector.  Next, we can plug this into the microfacet BRDF evaluation:
+  	\begin{align*}
+  		f_r(\ve{i}, \ve{o}) = \frac{F(\ve{i}\cdot\ve{n}) G(\ve{i}\cdot \ve{h}) D(\ve{h})}{4(\ve{i} \cdot \ve{n}) (\ve{o} \cdot \ve{n})}
+  	\end{align*}
+  	where $\ve{n}$ is the shading frame normal.
+  \end{itemize}
+  % section preliminaries (end)
+
+  \section{$\mathcal{P}$-NDF evaluation in flatland and 3D}
+  \begin{itemize}
+  	\item To derive at the algorithm the paper uses, it is instructive to work in a simpler flatland situation.
+
+  	\item In the flat land, a normal is specified by a single number in $s \in (-1,1)$.  The full normal vector is given by $(s, \sqrt{1-s^2})$.
+
+  	\item The normal map can be written as a function $n(u)$.
+
+  	\item The pixel reconstruction filter is the Gaussian probability distribution $G_p(u)$.
+
+  	\item The $\mathcal{P}$-NDF is the probability density of $n(u)$ according to the following process:
+  	\begin{itemize}
+  		\item Pick $u$ according to $G_p(u)$.
+  		\item Evaluate $n(u)$.
+  	\end{itemize}
+  	As such, for a value $s \in (-1,1)$, we have that the $\mathcal{P}$-NDF $D(s)$ is given by:
+  	\begin{align*}
+  		D(s) = \int_{-\infty}^\infty G_p(u) \delta(n(u) - s)\ \dee u.
+  	\end{align*}
+  	To evaluate this integral, we perform the change of variable with $v(u) = n(u) - s$.  As a result,
+  	\begin{align*}  		
+  		\dee u &= \frac{\dee v}{|n'(u)|}.
+  	\end{align*}
+  	Therefore,
+  	\begin{align*}
+  		D(s) 
+  		&= \int_{v(-\infty)}^{v(\infty)} G_p(u) \frac{\delta(v)}{|n'(u)|}\ \dee v
+  		= \sum_{i} \frac{G(u_i)}{|n'(u_i)|}
+  	\end{align*}
+  	where $u_i$ is such that $n(u_i) = s$.
+
+  	\item The above formulation has problems when $n'(u_i) = 0$.  To avoid this problem, the paper replaces the Direct delta function with a small Gaussian $G_r(s)$:
+  	\begin{align*}
+  		D(s) = \int_{-\infty}^\infty G_p(u) G_r(n(u) - s)\ \dee u.
+  	\end{align*}
+  	Momentarily, let us substitute $n(u)$ with $v$.  As a result, we have that
+  	\begin{align*}
+  		G_p(u) G_r(n(u)-s) = G_p(u)G_r(v-s).
+  	\end{align*}
+  	Notice that $G_p(u)G_r(v-s)$ is a 2D Gaussian, which we will replace by the symbol $G_c[\mathcal{P},s](u,v)$.  In other words,
+  	\begin{align*}
+  		G_p(u) G_r(n(u)-s) = G_c[\mathcal{P},s](u, n(u)).
+  	\end{align*}
+  	As such,
+  	\begin{align*}
+  		D(s) = \int_{-\infty}^{\infty} G_c[\mathcal{P},s](u, n(u))\ \dee u.
+  	\end{align*}
+  	A way to visualize the situation is that we travel along the graph $(u,n(u))$, evaluate the 2D Gaussian on each point of the graph, and integrate the value with the $du$ measure.
+
+  	\item Now, if we move to 3D (reduced to 2D vector in $\mathcal{D}$), the situation is the same.  The only differences are that the variables are now 2D vectors:
+  	\begin{align*}
+  		D(\ve{s}) = \int_{\Real^2} G_c[\mathcal{P},s](\ve{u}, n(\ve{u}))\ \dee \ve{u}.
+  	\end{align*}
+  	Here, $G_c[\mathcal{P},\ve{s}]$ is a 4D Gaussian.  Also, instead of integrating the values of the Gaussian on the graph $(u,n(u))$, we integrate on the 2D surface $(\ve{u}, n(\ve{u}))$ embeded in 4D space.
+  \end{itemize}
+
+  \section{Actually performing the integration}
+  
+  \begin{itemize}
+  	\item The normal map is discretized into triangles (why not squares?).  The normals are linearly interpolated across the triangles.  The paper divides each pixel of the normal map into $4 \times 4$ subpixels.  Each square pixel is covered by $2$ triangles.  So, there are $32$ triangles per pixel.
+
+  	\item The goal then becomes to integrate the 4D Gaussian values over the each triangles:
+  	\begin{align*}
+  		I = \int_{\Delta} G_c(\ve{u}, n(\ve{u}))\ \dee\ve{u} = \int_{\Delta} G(\ve{u})\ \dee\ve{u}.
+  	\end{align*}
+
+  	\item Suppose the triangle $\Delta$ has vertices at $(u_0, v_0)$, $(u_1, v_0)$, and $(u_0, v_1)$.  Then,
+  	\begin{align*}
+  		I = \int_{u_0}^{u_1} \bigg( \int_{v_0}^{f(u)}G(u,v)\ \dee v \bigg)\ \dee u
+  	\end{align*}
+  	where
+  	\begin{align*}
+  		f(u) = \frac{(u_1-u)v_1 + (u - u_0)v_0}{u_1 - u_0}.
+  	\end{align*}
+
+  	\item Let us expand the $G$ term a little bit.  We have that
+  	\begin{align*}
+  		G(u,v) = G_p(u,v) G_r(n(u,v) - (s_x, s_y))
+  	\end{align*}
+  \end{itemize}
+
+  \bibliographystyle{apalike}
+  \bibliography{render-glint-normalmap}  
+\end{document}

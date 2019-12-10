@@ -1,0 +1,158 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{epstopdf}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+
+\newtheorem{lemma}{Lemma}[section]
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\likelihood}{\mathcal{L}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\new}{\mathrm{new}}
+\newcommand{\Arg}{\mathrm{Arg\,}}
+\newcommand{\Log}{\mathrm{Log\,}}
+\newcommand{\RE}{\mathrm{Re\,}}
+\newcommand{\IM}{\mathrm{Im\,}}
+\newcommand{\Res}{\mathrm{Res}}
+\newcommand{\pv}{\mathrm{p.v.}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+
+\title{Differential Geometry Notes of 03/03/2013}
+\author{Pramook Khungurn}
+
+\begin{document}
+  \maketitle
+
+  \section{Self-Adjoint Linear Maps and Quadratic Forms}
+
+  \begin{itemize}
+    \item Let $V$ denote a real vector space of dimension $2$ endowed with an inner product $\langle\ ,\ \rangle$.
+
+    \item We say that a linear map $A: V \ra V$ is {\bf self-adjoint} if $\langle Av, w \rangle = \langle v, Aw\rangle$ for all $v, w \in V$.
+
+    \item If $\{ e_1, e_2 \}$ is an orthonormal basis for $V$ and $a_{ij}$ for $i,j = 1,2$ is the matrix for $A$ in this basis, then
+    \begin{align*}
+      a_{ji} = \langle Ae_i, e_j \rangle = \langle e_i, Ae_j \rangle = a_{ij}.
+    \end{align*}
+    So, if $A$ is self-adjoint, then it is represented by a symmetric matrix in any orthonormal basis.
+
+    \item To each self-adjoint linear map, we associate a map $B: V \times V \ra \Real$ defined by
+    \begin{align*}
+      B(v,w) = \langle Av, \rangle.
+    \end{align*}
+    We have that $B$ is bilinear; that is, it is linear in both $v$ and $w$.\\
+    Moreover, the fact that $A$ is self-adjoint means that $B(v,w) = B(w,v)$.\\
+    So, $B$ is a symmetric bilinear form.
+
+    \item If $B$ is a symmetric bilinear form in $V$, we can define a linear map $A: V \ra V$ by $\langle Av, w \langle = B(v,w).$\\
+    (That is, you can get the coefficients of the matrix of $A$ by computing $B(e_i, e_j)$)\\
+    Because $B$ is symmetric, it implies that $A$ is self-adjoint.
+
+    \item A quadratic form is a polynomial $Q: \Real^2 \ra \Real$ such that
+    \begin{align*}
+      Q(x,y) = ax^2 + 2bxy + cy^2
+    \end{align*}
+    for some $a, b, c \in Real^2$.
+
+    \item For each symmetric bilinear form, $B$ in $V$, there corresponds a quadratic form $Q$ in $V$ given by:
+    \begin{align*}
+      Q(v) = B(v,v).
+    \end{align*}
+
+    \item $Q$ determines $B$ completely because
+    \begin{align*}
+      B(v + w, v + w) 
+      &= B(v+w,v) + B(v+w,w)\\
+      &= B(v,v) + B(w,v) + B(v,w) + B(w,w)\\
+      &= B(v,v) + 2B(v,w) + B(w,w).
+    \end{align*}
+    So,
+    \begin{align*}
+      B(v,w) = \frac{1}{2}\big( Q(v+w) - Q(v) - Q(w) \big).
+    \end{align*}
+
+    \item As a result, there's a one-to-one correponsdence between quadratic forms and self-adjoint linear maps in $V$.
+
+    \item Given a self-adjoint linear map $A: V \ra V$, there exists an orthonormal basis for $V$ such that, relative to the basis, the matrix of $A$ is a diagonal matrix.
+
+    Furthermore, the elements of the diagonal are the maximum and the minimum of the corresponding quadratic form restricted to the unit circle of $V$.
+
+    \item \begin{lemma}
+      If the function $Q(x,y) = ax^2 + 2bxy + cy^2$, restricted to the unit circle $x^2 + y^2 = 1$, as a maximum at the point $(1,0)$, then $b = 0$.
+    \end{lemma}
+
+    \begin{proof}
+      Parametermize the cirlce $x^2 + y^2 = 1$ by $x = \cos t$ and $y = \sin t$. Write $Q$ as a function of $t$. Differentiate and set equal to 0. Substitute $t = 0$, and you'll get $b = 0$.
+    \end{proof}
+
+    \item \begin{proposition}
+      Given a quadratic form $Q$ in $V$, there exists an orthonormal basis $\{ e_1, e_2 \}$ of $V$ such that, if $v \in V$ is given by $v = xe_1 + ye_2$, then
+      \begin{align*}
+        Q(v) = \lambda_1 x^2 + \lambda_2 y^2
+      \end{align*}
+      where $\lambda_1$ and $\lambda_2$ are the maximum and minimum, respectively, of $Q$ on the unit circle $|v| = 1$.
+    \end{proposition}
+    \begin{proof}
+      Let $\lambda_1$ be the maximum of $Q$ on the unit circle $|v| = 1$, and let $e_1$ be the unit vector with $Q(e_1) = v$. Such $e_1$ exists by continuity of $Q$ on the compact set $|v| = 1$. Let $e_2$ be a unit vector orthogonal to $e_1$ and set $\lambda_2 = Q(e_2)$. We will show that the basis $\{ e_1, e_2 \}$ satisfies the conditions of the proposition.
+
+      Let $B$ be the symmetric bilinear form that is associated to $Q$. Let $v = xe_1 + ye_2$.
+      \begin{align*}
+        Q(v) &= B(v,v) = B(xe_1 + ye_2, xe_1 + ye_2)\\
+        &= B(xe_1, xe_1) + 2B(xe_1, ye_2) + B(ye_2, y_e_2)\\
+        &= x^2 B(e_1, e_1) + 2xyB(e_1, e_2) + y^2 B(e_2, e_2)\\
+        &= \lambda_1 x^2 + 2bxy + \lambda_2y^2
+      \end{align*}
+      where $b = B(e_1, e_2)$.  By the lemma, $b = 0$, and it only remains to prove that $\lambda_2$ is the minimum of $Q$ in the circle $|v| = 1$. However,
+      \begin{align*}
+        Q(v) = \lambda_1 x^2 + \lambda_2 y^2 \geq \lambda_2(x^2 + y^2)     = \lambda_2
+      \end{align*}
+      since $\lambda_2 \leq 1$. So, $\lambda_2$ is the minimum.
+    \end{proof}
+
+    \item \begin{theorem}
+      Let $A: V \ra V$ be a self-adjoint linear map. Then, there exists an orthonormal basis $\{ e_1, e_2 \}$ of $V$ such that $A(e_1) = \lambda_1 e_1, A(e_2) = \lambda_2 e_2$. In the basis $\{ e_1, e_2 \}$, the matrix of $A$ is clearly diagonal and the elements $\lambda_1, \lambda_2$ with $\lambda_1 \geq \lambda_2$ on the diagonals are the maximum and the minimum, respectively, of the quadratic form $Q(v) = \langle Av, v \rangle$.
+    \end{theorem}
+
+    \begin{proof}
+      Consider the quadratic form $Q(v) = \langle Av, v \rangle$. By the proposition above, there exists an orthonormal basis $\{ e_1, e_2 \}$ of $V$ with $Q(e_1) = \lambda_1$, and $Q(e_2) = \lambda_2 \leq \lambda_1$, where $\lambda_1$ and $\lambda_2$ are the maximum and the minimum, respectively, of $Q$ in the unit circle. It remains to show that
+      $A(e_1) = \lambda_1 e_1$ and $A(e_2) = \lambda_2 e_2$.
+
+      Since $B(e_1, e_2) = \langle A e_1, e_2 \langle = 0$ (by the lemma) and $e_2 \neq \ve{0}$, we have that either $Ae_1$ is parallel to $e_1$ or $A e_1 = 0$. If $Ae_1$ is parallel to $e_1$, then $A e_1 = \alpha e_1$, and since $\langle Ae_1, e_1 \rangle = \lambda_1 = \lambda \alpha e_1, e_1 = \alpha$, we conclude thet $Ae_1 = \lambda_1 e_1$. If $Ae_1 = \ve{0}$, then $\almbda_1 = \langle Ae_1, e_1 \rangle = 0$. So, $Ae_1 = \ve{0} = \lambda_1 e_1$. In any case, we have that $Ae_1 = \lambda_1 e_1$.
+
+      Using the same argument, we can show that $Ae_2 = \lambda_2 e_2$.
+    \end{proof}
+  \end{itemize}  
+\end{document}

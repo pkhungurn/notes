@@ -1,0 +1,316 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{epstopdf}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+
+\newtheorem{lemma}{Lemma}[section]
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\likelihood}{\mathcal{L}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\new}{\mathrm{new}}
+\newcommand{\Arg}{\mathrm{Arg\,}}
+\newcommand{\Log}{\mathrm{Log\,}}
+\newcommand{\RE}{\mathrm{Re\,}}
+\newcommand{\IM}{\mathrm{Im\,}}
+\newcommand{\Res}{\mathrm{Res}}
+\newcommand{\pv}{\mathrm{p.v.}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+
+\title{Differential Geometry Notes of 03/25/2013}
+\author{Pramook Khungurn}
+
+\begin{document}
+  \maketitle
+
+  \section{Isometries}
+  \begin{itemize}
+    \item In this note, $S$ and $\bar S$ will always denote regular surfaces.
+
+    \item \begin{definition}
+      A differomorphism $\varphi : S \ra \bar S$ is an {\bf isometry} if for all $p \in S$ and all pairs $w_1, w_2 \in T_p(S)$, we have
+      \begin{align*}
+        \langle w_1, w_2 \rangle_p = \langle \dee \varphi_p(w_1), \dee \varphi_p(w_2) \rangle_{\varphi(p)}.
+      \end{align*}
+      The surfaces $S$ and $\bar S$ are then said to be isometric.
+    \end{definition}
+
+    \item In other words, $\varphi$ is an isometry if the differential $\dee \varphi$ preserves the inner product.
+
+    \item \begin{proposition}
+      $\varphi$ is an isometry if and only if it preserves the first fundamental form.
+    \end{proposition}
+    \begin{proof}
+      ($\ra$) Suppose $\varphi$ is an isometry. Then,
+      \begin{align*}
+        I_p(w) = \langle w, w \rangle_p = \langle \dee\varphi_p(w), \dee\varphi_p(w) \rangle_{\varphi(p)} = I_{\varphi(p)}(\dee\varphi_p(w))
+      \end{align*}
+      for all $w \in T_p(S)$.
+
+      ($\leftarrow$) Suppose $\varphi$ preserves the first fundamental form; that is,
+      \begin{align*}
+        I_p(w) = I_{\varphi(p)}(\dee\varphi_p(w))
+      \end{align*}
+      for all $w \in T_p(S)$. Then,
+      \begin{align*}
+        2 \langle w_1, w_2 \rangle 
+        &= I_p(w_1 + w_2) - I_p(w_1) - I_p(w_2)\\
+        &= I_{\varphi(p)}(\dee\varphi_p(w_1 + w_2)) - I_\varphi(p)(\dee\varphi_p(w_1)) - I_\varphi(p)(\dee\varphi_p(w_2))\\
+        &= 2\langle \dee\varphi_p(w_1), \dee\varphi_p(w_2) \rangle_{\varphi(p)},
+      \end{align*}
+      and $\varphi$ is an isometry.
+    \end{proof}    
+
+    \item \begin{definition}
+      A map $\varphi: V \ra \bar S$ of a neighborhood $V$ of $p \in S$ is a {\bf local isometry} at $p$ if there exists a neighborhood $\bar V$ of $\varphi(p) \in \bar S$ such that $\varphi : V \ra \bar V$ is an isometry.
+
+      If there exists a local isometry ino $\bar S$ at every $p \in S$ the surface $S$ is said to be {\bf locally isometric} to $\bar S$
+
+      We say that $S$ and $\bar S$ are locally isometric to each other if $S$ is locally isometric to $\bar S$ and $\bar S$ is locally isometric to $S$.
+    \end{definition}
+
+    \item It is clear that if $\varphi : S \ra \bar S$ is a diffeomorphism and a local isoemetry for every $p \in S$, then $\phi$ is a local isometry globally.
+
+    \item It may happen that two surfaces are locally isometric without being globally isometric.
+
+    \item Let $U = \{ (u,v) : 0 < u < 2\pi, -\infty < v < \infty \}$\\
+    Let $\bar{\ve{x}}: U \ra \Real^3$ be given $\bar{\ve{x}}(u,v) = (\cos u, \sin u, v)$, which is a parameterization of a cylinder.\\
+    Let $\ve{x}: \Real^2 \ra \Real^3$ be the map $\ve{x}(u,v) = p_0 + u w_1 + v w_2$ where $p_0, w_1, w_2 \in \Real^3$ and $w_1$ and $w_2$ are unit orthogonal vectors. (That is, $\ve{x}$ is a parametermization of a plane.)\\
+    Define $\varphi = \ve{x} \circ \ve{\bar{x}}^{-1}$, which is a map from a coordinate neighborhood of a cylinder to a plane.
+
+    We have that $\varphi$ is a local isometry. 
+
+    In particular, each vector $w$ tangent to the cylinder at a point $p \in \bar{\var x}(U)$ is tangent to a curve $\bar{\ve{x}}(u(t), v(t))$ where $(u(t), v(t))$ is a curve in $U$. Thus, $w = \bar{\ve{x}}_u u' + \bar{\ve{x}}_v v'$.
+
+    On the other hand, $\dee \phi(w)$ is tangent ot the curve $\varphi(\bar{\ve{x}}(u(t), v(t))) = \ve{x}(u(t), v(t)).$ As a result, we have that $\dee \varphi_p(w) = \ve{x}_u u' + \ve{x}_v v'$.
+
+    We have that
+    \begin{align*}
+      \bar{\ve{x}}_u &= (-\sin u, \cos u, 0)\\  
+      \bar{\ve{x}}_v &= (0, 0, 1)\\  
+      \bar E &= \langle \bar{\ve{x}}_u , \bar{\ve{x}}_u \rangle = 1\\
+      \bar F &= \langle \bar{\ve{x}}_u , \bar{\ve{x}}_v \rangle = 0\\
+      \bat G &= \langle \bar{\ve{x}}_v , \bar{\ve{x}}_v \rangle = 1\\
+      E &= \langle \ve{x}_u , \ve{x}_u \rangle = \langle w_1, w_1 \rangle = 1\\
+      F &= \langle \ve{x}_u , \ve{x}_v \rangle = \langle w_1, w_2 \rangle = 0\\
+      G &= \langle \ve{x}_v , \ve{x}_v \rangle = \langle w_2, w_2 \rangle = 1.
+    \end{align*}
+    Therefore,
+    \begin{align*}
+      I_p(w) 
+      = \bar E(u')^2 + \bar F u' v' + \bar G(v')^2
+      = E(u')^2 + F u' v' + G(v')^2
+      = I_{\varphi(p)}(\dee \varphi_p(w)).
+    \end{align*}
+
+    Notee that this isometry cannot be extended to the entire cylinder because the cylinder is not even homeomorphic to a plane. The idea is that any simple closed curve in a plane can be shrunk continuously to a point without leaving the plane. This property is preserved under a homeomorphism. However, a parallel to the cylinder cannot be shrunk continuously to a point. So, there does not exist a homeomorphism between a plane an a point  
+
+    \item \begin{proposition}
+      Assume the existence of a paramerization $\ve{x}: U \ra S$ and $\bar{\ve{x}} : U \ra \bar S$ such that $E = \bar E$, $F = \bar F$, and $G = \bar G$. Then the map $\varphi = \bar{\ve{x}} \circ \ve{x}^{-1}$ is a local isometry.
+    \end{proposition}
+
+    \begin{proof}
+      Let $p \in \ve{x}(U)$ and $w \in T_p(S)$. Then, $w$ is tangent ot a curve $\ve{x}(\alpha(t))$ at $t = 0$, where $\alpha(t) = (u(t), v(t))$ is a curve in $U$. Thus, $w$ may be written as:
+      \begin{align*}
+        w = \ve{x}_u u' + \ve{x}_v v'.
+      \end{align*}
+      By definition, the vector $\dee \varphi_p(w)$ is tangent to the curve $\varphi(\ve{x}(\alpha(t))) = \bar{\ve{x}} \circ \ve{x}^{-1} \circ \ve{x}(\alpha(t)) = \bar{\ve{x}}(\alpha(t)).$ Hence,
+      \begin{align*}
+        \dee \varphi_p(w) = \bar{\ve{x}}_u u' + \bar{\ve{x}}_v v'.
+      \end{align*}
+      Since,
+      \begin{align*}
+        I_p(w) &= E(u')^2 + Fu'v' + G (v')^2\\
+        I_{\varphi(p)}(\dee\varphi_p(w)) &= \bar E(u')^2 + \bar Fu'v' + \bar G (v')^2,
+      \end{align*}
+      we can conclude that $I_p(w) = I_{\var\phi(p)}(\dee\varphi_p(w))$ for all $p \in \ve{x}(U)$. So, $\varphi$ is a local isoemetry.
+    \end{proof}
+
+    \item Let $S$ be surface of revolution and let
+    \begin{align*}
+      \ve{x}(u,v) = (f(v) \cos u, f(v) \sin u, g(v)),
+    \end{align*}
+    where $a \leq v \leq b$, $0 < u < 2\pi$, and $f(v) > 0$, be a paramieterization of $S$.
+
+    The coefficients of the first fundamental form of $S$ with respect to $\ve{x}$ is given by:
+    \begin{align*}
+      E &= (f(v))^2, & F &= 0, & G &= (f'(v))^2 + (g'(v))^2.
+    \end{align*}
+
+    \item The {\bf caternary} is a curve given by:
+    \begin{align*}
+      x &= a \cosh v\\
+      z &= av
+    \end{align*}
+    where $-\infty < v < \infty$.
+
+    \item The surface of revolution of the caternary has the following parameterizaton:
+    \begin{align*}
+      \ve{x}(u,v) &= (a \cosh v \cos u, a \cosh v \sin u, av)
+    \end{align*}
+    where $0 < u < 2\pi$, and $-\infty < v < \infty$. The coefficients of the fundamental forms are:
+    \begin{align*}
+      E &= a^2 \cosh^2 v, & F &= 0, & G = a^2(1 + \sinh^2 v) = a^2 \cosh^2 v.
+    \end{align*}
+    This surface of revolution is called the {\bf cartenoid.}
+
+    \item The {\bf helicoid} is a regular surface of revolution given by the parametermization:
+    \begin{align*}
+      \bar{\ve{x}}(\bar u, \bar v) = (\bar v \cos \bar u, \bar v \sin \bar v, a \bar u)
+    \end{align*}
+    where $0 < \bar u < 2\pi$ and $-\infty < \bar v < \infty$.
+
+    Let us make the following change of parameter:
+    \begin{align*}
+      \bar u &= u \\
+      \bar v &= a \sinh v
+    \end{align*}
+    where $0 < u < 2\pi$ and $-\infty < v < \infty$.
+
+    This is possible since the map is one-to-one. (Hyperbolic sine is a bijection.) Moreover, the Jacobian
+    \begin{align*}
+      \begin{vmatrix}
+        \partial \bar u / \partial u & \partial \bar u / \partial v \\
+        \partial \bar v / \partial u & \partial \bar v / \partial v \\
+      \end{vmatrix}
+      =
+      \begin{bmatrix}
+        1 & 0\\
+        0 & a \cosh v
+      \end{bmatrix}
+      = a\cosh v
+    \end{align*}
+    is non-zero everywhere. (Therefore, this change of variable is a diffeomorphism.)
+
+    Therefore, we have another parametermization of the helicoid:
+    \begin{align*}
+      \bar{x}(u,v) = (a \sinh v \cos u, a \sinh v \sin u, au)
+    \end{align*}
+    relative to which the first fundamental form is given by:
+    \begin{align*}
+      E &= a^2 \cosh^2 v, & F &= 0, & G &= a^2 \cosh^2 v.
+    \end{align*}
+    It follows that the cartenoid and the helicoid are locally isometric.
+
+    \item The one-sheeted cone (minus the vertex) is given by:
+    \begin{align*}
+      z &= +k \sqrt{x^2 + y^2}
+    \end{align*}
+    where $(x,y) \neq (0,0)$.
+
+    We shall show that the one-sheeted cone is locally isometric to a plane. The idea is to show that a cone minus a generator can be ``rolled'' onto a piece of a plane.
+
+    Let $U \sseq \Real^2$ be the open set given in polar coordinates $(\rho, \theta)$ where $0 < \rho < \infty$ and $0 < \theta < 2\pi \sin \alpha$ with $2\alpha$ $(0 < 2\alpha < \pi)$ is the angle at the vertex of the cone. (That is, $\cot \alpha = k$.) Let $F: U \ra \Real^2$ be the map
+    \begin{align*}
+      F(\rho,\theta) = \bigg( \rho \sin\alpha \cos\bigg(\frac{\theta}{\sin \alpha}\bigg), \rho \sin\alpha \sin\bigg(\frac{\theta}{\sin \alpha}\bigg), \rho \cos \alpha \bigg).
+    \end{align*}
+    We have that $F(U)$ is contained in the cone. This is because
+    \begin{align*}
+      k \sqrt{x^2 + y^2} = \cot \alpha \sqrt{\rho^2 \sin^2 \alpha} = \rho \cos\alpha = z.
+    \end{align*}
+    Moreover, when $\theta$ takes all the values from the interval $(0, 2\pi \sin \alpha)$, we have that $\theta / \sin\alpha$ takes the all values from the interval $(0, 2\pi)$. Hence, all points except those with $\theta = 0$ (the generator) are covered by $F(U)$.
+
+    We can check easily that $F$ and $\dee F$ are one-to-one in $U$. Therefore, $F$ is a differeomorphism of $U$ onto the cone minus a generator.
+
+    We shall now show that $F$ is an isometry. First, realize that $U$ may be thought of as a regular surface, parameterized by:
+    \begin{align*}
+      \bar{\ve{x}}(\rho, \theta) = (\rho \cos \theta, \rho \sin \theta, 0)
+    \end{align*}
+    with $0 < \rho < \infty$ and $0 < \theta < 2\pi \sin \alpha$.
+
+    The coefficients of the first fundamental form is given by:
+    \begin{align*}
+      \bar E &= 1, & \bar F &= 0, & \bar G &= \rho^2.
+    \end{align*}
+    On the other hand, the coefficients of the first fundamental form of the cone relative to $F$ is given by:
+    \begin{align*}
+      E &= 1, & \bar F &= 0, & \bar G &= \rho^2.
+    \end{align*}
+    So, the cone is locally isometric to the plane.
+
+    \item The fact that we can compute lengths of curves on a surface $S$ by using only its first fundamental form allows us to introduce a notion of ``intrinsic'' distance for points in $S$.
+
+    \item We may define the {\bf intrinsic distance} $d(p,q)$ between two points of $S$ as the infimum of the length of curves on $S$ joining $p$ and $q$.
+
+    This distance is clearly greater than or equal to the distance $\| p - q \|$ between $p$ and $q$ as points in $\Real^3$. It may be shown that the distance $d$ is invariant uder isometries.
+
+    \item The notion of isometry is the natural concept of equivalence for the metric properties of regular surfaces.
+
+    A diffeomorphism captures the equivalence from the point of view of differentiability.  
+  \end{itemize}
+
+  \section{Conformal Maps}
+  \begin{itemize}
+    \item \begin{definition}
+      A diffeomorphism $\varphi: S \ra \bar S$ is called a {\bf conformal map} if for all $p \in S$ and all $v_1, v_2 \in T_p(S)$, we have
+      \begin{align*}
+        \langle \dee \phi_p(v_1), \dee \phi_p(v_2) \rangle_{\varphi(p)} = \lambda^2(p) \langle v_1, v_2 \rangle_p
+      \end{align*}
+      where $\lambda^2(p)$ is a nowhere-zero differentiable function on $S$.
+
+      The surfaces $S$ and $\bar S$ are then said to be conformal.
+
+      A map $\varphi: V \ra \bar S$ of a neighborhood $V$ of $p \in S$ into $\bar S$ is a local conformal map at $p$ if there exists a neighborhood $\bar V$ of $\varphi(p)$ such that $\varphi: V \ra \bar V$ is a conformal map.
+
+      If for each $p \in S$, there exists a local conformal map at $p$, the surface $S$ is said to be locally conformal to $\bar S$.
+    \end{definition}
+
+    \item The geomeetric meaning of the above definition is that the angles (but not necessarily the lengths) are preserved by conformal maps.
+
+    In fact, let $\alpha : I \ra S$ and $\beta : I \ra S$ be two curves in $S$ which intersects at $t = 0$. Their angle $\theta$ at $t = 0$ is given by:
+    \begin{align*}
+      \cos \theta = \frac{\langle \alpha', \beta' \rangle}{| \alpha' | | \beta' |}.      
+    \end{align*}    
+    A conformal map $\varphi: S \ra \bar S$ maps these curves into curves $\varphi \circ \alpha: I \ra \bar S$ and $\varphi \circ \beta: I \ra \bar S$, which intersect at $t = 0$ and make an angle $\bar \theta$ given by:
+    \begin{align*}
+      \cos \bar\theta 
+      = \frac{\langle \dee \varphi(\alpha'). \dee\varphi(\beta') \rangle }{|\dee\varphi(\alpha')||\dee\varphi(\beta')|}
+      = \frac{\lambda^2 \langle \alpha', \beta' \rangle}{\lambda^2 |\alpha'| |\beta'|} = \cos \theta.
+    \end{align*}
+
+    \item \begin{proposition}
+      Let $\ve{x}: U \ra S$ and $\bar x: U \ra \bar S$ be parametermizations such that $E = \lambda^2 \bar E$, $F = \lambda^2 \bar F$, $G = \lambda^2 \bar G$ in $U$, where $\lambda^2$ is a nowhere-zero differentiable function in $U$. Then, the map $\varphi = \bar{\bar{x}} \circ \ve{x}^{-1}: \ve{x}(U) \ra \bar S$ is a local conformal map.
+    \end{proposition}
+
+    \item Local conformality is eaisly seen to be an equivalence relation; that is, if $S_1$ is locally conformal to $S_2$, and $S_2$ is loally conformal to $S_3$, then $S_1$ is locally conformal to $S_3$.
+
+    \item \begin{theorem}
+      Any two regular surfaces are conformal.
+    \end{theorem}
+
+    The proof is based on the possibility of parametrizing a neighborhood of any point of a regbular surface in such a way tha the coefficienst of the first fundamental form are $E = \lambda^2(u,v) > 0$, $F = 0$, and $G = \lambda^2(u,v).$ Such a coordinate system is called {\bf isothermal}. Once the existence of an isothermal coordinate sysmte of a regular surface $S$ is assume, then $S$ is clearly conformal to a plane. So, by composition, it is locally conformal to any other surface.
+  \end{itemize}  
+ \end{document}

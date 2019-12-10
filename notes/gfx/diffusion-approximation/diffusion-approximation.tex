@@ -1,0 +1,160 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+\usepackage{verbatim}
+\usepackage{hyperref}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\Dee}{\mathrm{D}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\Var}{\mathrm{Var}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+\newcommand{\ov}[1]{\overline{#1}}
+
+\title{Diffusion Approximation for Radiative Transfer}
+\author{Pramook Khungurn}
+
+\begin{document}
+  \maketitle
+
+  This note is written as I try to study the use of diffusion approximation in solving the radiative transfer equation.  The first paper to introduce it to the graphics community is the one by Stam \cite{Stam:1995}.  I will also be discussing the quantized diffusion model in the paper by d'Eon and Irving \cite{d'Eon:2011}.  Moreover, the BSSRDF models which mostly are derived from diffusion approximation \cite{Jensen:2001} will also be discussed.
+
+  \section{The Radiative Transfer Equation}
+  Let us assume that we are dealing with a medium in which the absorption coefficient $\sigma_a$ and the scattering coefficient $\sigma_s$ are constant.  Moreover, let us assume that the phase function only depends on the angle between the incoming and the outgoing vector: $$p(x, \omega' \ra \omega) = p(\omega' \cdot \omega).$$
+  The radiative transfer equation is given by:
+  \begin{align*}
+  	\omega \cdot \nabla L(x,\omega) = -\sigma_t L(x,\omega) + \sigma_s \int_{S^2} p(\omega' \cdot \omega) L(x,\omega')\ \dee\omega' + Q(x,\omega)
+  \end{align*}
+  where $\sigma_t = \sigma_a + \sigma_s$, and $Q$ is the source term.
+
+  \section{Angular Moments}
+
+  The main mathematical tool to formulate the diffusion approximation is the moments of spherical function.  Let $f: S^2 \ra \Real$ be a scalar function on the sphere.  The zeroth moment of $f$ is defined as:
+  \begin{align*}
+  	\mu_0[f] = \int_{S^2} f(\omega)\ \dee\omega,
+  \end{align*}
+  and the first moment of $f$ is defined as:
+  \begin{align*}
+  	\mu_1[f] = \int_{S^2} f(\omega)\omega\ \dee\omega.
+  \end{align*}
+  Notice that the zeroth moment is a scalar, and the first moment is a vector.
+
+  For the radiance distribution function $L(x,\omega)$, its moments has special names and symbols.  The zeroth moment, denoted by $\phi(x)$, is called the \emph{fluence}:
+  \begin{align*}
+  	\phi(x) = \mu_0[L(x,\omega)] = \int_{S^2} L(x,\omega)\ \dee\omega.
+  \end{align*}
+  The first moment, denoted by $E(x)$, is called the \emph{vector irradiance}:
+  \begin{align*}
+  	E(x) = \mu_1[L(x,\omega)] = \int_{S^2} L(x,\omega)\omega\ \dee\omega
+  \end{align*}
+
+  \subsection{Useful Moment Identities}
+  Let $c$ be a constant.  We have that:
+  \begin{align}
+  	\mu_0[c] &= 4\pi c \\
+  	\mu_1[c] &= \ve{0}.
+  \end{align}
+  Let $\ve{a}$ be a constant vector.  We have that:
+  \begin{align}
+  	\mu_0[\ve{a} \cdot \omega] &= 0 \\
+  	\mu_1[\ve{a} \cdot \omega] &= \frac{4\pi}{3}\ve{a}.
+  \end{align}
+  Let $A$ be a matrix.  We have that:
+  \begin{align}
+  	\mu_0[\omega^T A \omega] &= \frac{4\pi}{3} \tr(A) \\
+  	\mu_1[\omega^T A \omega] &= \ve{0}.
+  \end{align}
+  Consult the notes on angular moments for the proofs of the above identities.
+
+  \subsection{Moments of the Phase Function}
+  The zeroth moment of the phase function is
+  \begin{align}
+  	\mu_0[p(\omega' \cdot \omega)] = \int_{S^2} p(\omega' \cdot \omega)\ \dee\omega = 1
+  \end{align}
+  because the phase function is a probability distribution on the sphere.
+
+  For the first moment, consider expanding $\omega$ into a basis where $\omega'$ is one of the basis vector:
+  \begin{align*}
+  	\omega = (\omega' \cdot \omega)\omega' + (\ve{a} \cdot \omega)\ve{a} + (\ve{b} \cdot \omega)\ve{b}
+  \end{align*}
+  where $\ve{a}$ and $\ve{b}$ are any two unit vectors that complete an orthogonal basis with $\omega'$.  We have that
+  \begin{align*}
+  	\mu_1[p(\omega' \cdot \omega)] 
+  	&= \int_{S^2} p(\omega' \cdot \omega) \omega\ \dee \omega \\
+  	&= \int_{S^2} p(\omega' \cdot \omega) [(\omega' \cdot \omega)\omega' + (\ve{a} \cdot \omega)\ve{a} + (\ve{b} \cdot \omega)\ve{b}] \ \dee \omega \\
+  	&= \omega' \int_{S^2} p(\omega' \cdot \omega) (\omega' \cdot \omega)\ \dee \omega
+  	+ \ve{a} \int_{S^2} p(\omega' \cdot \omega) (\ve{a} \cdot \omega)\ \dee \omega
+  	+ \ve{b} \int_{S^2} p(\omega' \cdot \omega) (\ve{b} \cdot \omega)\ \dee \omega
+  \end{align*}
+  We note that
+  \begin{align*}
+  	\int_{S^2} p(\omega' \cdot \omega) (\ve{a} \cdot \omega)\ \dee \omega = 0.
+  \end{align*}
+  This is because, for every $\omega \in S^2$, we can pair it with the vector $\omega - 2(\ve{a}\cdot\omega) \ve{a}$.  The integrands of $\omega$ and $\omega - 2(\ve{a}\cdot\omega)\ve{a}$ cancel out, so the integral is zero.  The same can be said for the integral involving $\ve{b}$.  As a result,
+  \begin{align*}
+  	\mu_1[p(\omega' \cdot \omega)] 
+  	&= \omega' \int_{S^2} p(\omega' \cdot \omega) (\omega' \cdot \omega)\ \dee \omega.
+  \end{align*}
+  The value integral on the RHS is called the \emph{average cosine} of the phase function, and is denoted by:
+  \begin{align*}
+  	g = \int_{S^2} p(\omega' \cdot \omega) (\omega' \cdot \omega)\ \dee \omega.
+  \end{align*}
+  In conclusion,
+  \begin{align}
+  	\mu_1[p(\omega' \cdot \omega)]  = g\omega'.
+  \end{align}
+
+  \section{The Diffusion Approximation}
+
+  When the volume is dense and induces many scattering events, the radiance distribution tends to be uniform.  The diffusion approximation says that the distribution in this cast must be in the form:
+  \begin{align*}
+  	L(x,\omega) = \frac{1}{4\pi}\phi(x) + \frac{3}{4\pi} \omega \cdot E(x).
+  \end{align*}
+  In other words, the diffusion approxation says that the first order Taylor series approximation of the radiance field is enough to approximate it.
+
+  To solve the RTE, we just substitue the above radiance field into it:
+  \begin{align*}
+  	&\omega \cdot \nabla \bigg[ \frac{1}{4\pi}\phi(x) + \frac{3}{4\pi} \omega \cdot E(x) \bigg] \\
+  	&= -\sigma_t \bigg[ \frac{1}{4\pi}\phi(x) + \frac{3}{4\pi} \omega \cdot E(x) \bigg] + \sigma_s \int_{S^2} p(\omega' \cdot \omega) \bigg[ \frac{1}{4\pi}\phi(x) + \frac{3}{4\pi} \omega' \cdot E(x) \bigg] \ \dee\omega' + Q(x,\omega)
+  \end{align*}
+
+
+  \bibliographystyle{apalike}
+  \bibliography{diffusion-approximation}  
+\end{document}

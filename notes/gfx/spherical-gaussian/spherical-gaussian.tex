@@ -1,0 +1,1057 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+\usepackage{verbatim}
+\usepackage{hyperref}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\Dee}{\mathrm{D}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\Var}{\mathrm{Var}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+\newcommand{\ov}[1]{\overline{#1}}
+
+\title{Spherical Gaussian Technology}
+\author{Pramook Khungurn}
+
+\begin{document}
+  \maketitle
+
+  The spherical Gaussian function has become a power tool in real-time rendering research.  This article is written to aid my study of its use.  We'll start with a look at the paper that ``All-Frequency Rendering of Dynamic, Spatially-Varying Reflectance'' \cite{Wang:2009}, which uses the function to great effect.  We will then look at a generalization into anisotropic spherical Gaussians \cite{Xu:2013} and an optimization for integrating the function \cite{Iwasaki:2012}.  Lastly, we will look at how it is applied to render cloth models \cite{Iwasaki:2014}.
+
+  \section{Spherical Gaussians}
+
+  \begin{itemize}
+  	\item A spherical Gaussian (SG) has the form:
+  	\begin{align*}
+  		G(\ve{v}; \ve{p}, \lambda, \mu) = \mu e^{\lambda (\ve{v} \cdot \ve{p}-1)}
+  	\end{align*}
+  	where
+  	\begin{itemize}
+  		\item $\ve{p} \in S^2$ is the {\em lobe axis},
+  		\item $\lambda \in (0, \infty)$  is the {\em lobe sharpness},
+  		\item $\mu \in \Real$ is the {\em lobe amplitude}. and
+  		\item $\ve{v} \in S^2$ is the spherical direction which is the variable of the function.
+  	\end{itemize}
+
+  	\item A spherical Gaussian is \emph{compactly $\varepsilon$-supported}.  This means that the closure of the region in which $G(\ve{v}) \geq \varepsilon$ covers less than the entire sphere.  More specifically, if $\lambda > -\ln \varepsilon$, we have that
+  	\begin{align*}
+  		\int_{G(\ve{v},\ve{p},\lambda,1) \geq \varepsilon} \dee\ve{v} = -2\pi \frac{\ln \varepsilon}{\lambda}.
+  	\end{align*}
+
+  	\item Define $f_a(\lambda)$ to be the above integral value when $\varepsilon = 0.1$.
+
+  	\item The rotation of a spherical Gaussian is given by the rotation of its axis $\ve{p}$.
+
+  	\item There are two types of products that can be defined for SGs:
+  	\begin{enumerate}
+  		\item the inner product, and
+  		\item the vector product.  		
+  	\end{enumerate}
+
+  	\item The \emph{inner product} of two SGs $G_1$ and $G_2$ is denoted by $G_1 \cdot G_2$ and is given by:
+  	\begin{align*}
+  		G_1 \cdot G_2 = \int_{S^2} G_1(\ve{v}) G_2(\ve{v})\ \dee\ve{v} = \frac{4\pi \mu_1 \mu_2}{e^{\lambda_1 + \lambda_2}} \frac{\sinh(d_m)}{d_m}
+  	\end{align*}
+  	where $d_m = \| \lambda_1 \ve{p}_1 + \lambda_2 \ve{p}_2 \|$.
+
+  	\item The \emph{vector product} is denoted by $G_1 \otimes G_2$ and is given by:
+  	\begin{align*}
+  		(G_1 \otimes G_2)(\ve{v}) = G_1(\ve{v}) G_2(\ve{v}) = G\bigg(\ve{v}; \frac{\ve{p}_m}{\| \ve{p}_m \|}, \lambda_m \| \ve{p}_m \|, \mu_1\mu_2 e^{\lambda_m (\| \ve{p}_m \|-1)} \bigg)
+  	\end{align*}
+  	where
+  	\begin{itemize}
+  		\item $\ve{p}_m = (\lambda_1 \ve{p}_1 + \lambda_2 \ve{p}_2) / (\lambda_1 + \lambda_2) $, and
+  		\item $\lambda_m = \lambda_1 + \lambda_2$.
+  	\end{itemize}
+
+  	\item It is because of the ease of computing the inner and outer products that make SGs great for representing rendering related functions.
+
+  	\item Given a spherical function $F: S^2 \ra \Real$, we can approximate it with a sum of SGs:
+  	\begin{align*}
+  		F(\ve{v}) \approx F^*(\ve{v}) = \sum_{i=1}^n G(\ve{v}; \ve{p}_i, \lambda_i, \mu_i).
+  	\end{align*}
+    The sum is also known as a \emph{mixture of Gaussians}.
+
+    \item Given a rotation matrix $\mathfrak{R}$, the rotation of a mixture of Gaussians $\mathfrak{R}F^*(\ve{v})$ as the sum of the rotated version of the constituents Gaussians:
+    \begin{align*}
+      \mathfrak{R}F^*(\ve{v}) = \sum_{i=1}^n G(\ve{v}; \mathfrak{R}\ve{p}_i, \lambda_i, \mu_i).
+    \end{align*}
+  \end{itemize}
+
+  \section{Shading with Spherical Gaussians}
+
+  This section is about the methods employed by the \cite{Wang:2009} paper.
+
+  \subsection{BRDF}
+
+  \begin{itemize}
+    \item Let $\rho(\ve{o}, \ve{i})$ denote a BRDF.  We decompose it to a diffuse and a specular component:
+    \begin{align*}
+      \rho(\ve{o}, \ve{i}) = k_d + k_s \rho_s(\ve{o}, \ve{i}).
+    \end{align*}
+
+    \item Let us say that the specular component is modeled by a microfacet BRDF.  Then, $\rho_s$ is given by:
+    \begin{align*}
+      \rho_s(\ve{o}, \ve{i}) = M_\ve{o}(\ve{i}) D(\ve{h})
+    \end{align*}
+    where 
+    \begin{itemize}
+      \item $\ve{h} = (\ve{o} + \ve{i}) / \| \ve{o} + \ve{i} \|$ is the half vector,
+      \item $D(\ve{h})$ is the \emph{normal distribution function} (NDF), and
+      \item $M_\ve{o}(\ve{i})$ is a function that combines the shadow masking term and the Fresnel reflectance.
+    \end{itemize}
+
+    \item The NDF is modeled using a single SG lobe for isotropic models and multiple lobes for anisotropic models.
+
+    \item For example, the Cook--Torrance model is given by:
+    \begin{align*}
+      \rho_s(\ve{i}, \ve{i}) = \frac{F_{CT}(\ve{o},\ve{i}) S_{CT}(\ve{o},\ve{i})}{\pi (\ve{n} \cdot \ve{i}) (\ve{n} \cdot \ve{o})} e^{-(\arccos(\ve{h} \cdot \ve{n}) /m)^2}.
+    \end{align*}
+    In other words,
+    \begin{align*}
+      M_{\ve{o}}(\ve{i}) &= \frac{F_{CT}(\ve{o},\ve{i}) S_{CT}(\ve{o},\ve{i})}{\pi (\ve{n} \cdot \ve{i}) (\ve{n} \cdot \ve{o})} \\
+      D(\ve{h}) &= e^{-(\arccos(\ve{h} \cdot \ve{n}) / m)^2}.
+    \end{align*}
+    The Wang paper approximates the NDF with a single Gaussian lobe:
+    \begin{align*}
+      D(\ve{h}) \approx G(\ve{h}; \ve{n},2/m^2,1).
+    \end{align*}
+    It said the $M_{\ve{o}}(\ve{i})$ term is ``analytic.''  This is okay as we will see later.
+    
+    \item As another example, the Wang paper also has a model where:
+    \begin{align*}
+      \rho_s(\ve{o},\ve{i}) = \frac{F(\ve{o},\ve{i}) S(\ve{o}) S(\ve{i})}{\pi (\ve{n} \cdot \ve{i}) (\ve{n} \cdot \ve{o})} D(\ve{h})
+    \end{align*}
+    where $F$ denots the Fresnel factor:
+    \begin{align*}
+      F(\ve{o},\ve{i}) = \frac{(g-c)^2}{2(g+c)^2} \bigg( 1 + \frac{(c(g+c)-1)^2}{(c(g-c)+1)^2} \bigg)
+    \end{align*}
+    with $g = \sqrt{\eta^2 - c^2 -1}$, $c = \cos\theta = |\ve{i} \cdot \ve{h}|$, and $\eta$ is the index of refraction.  $S$ denotes the shadow masking function, which the paper assumes to be isotropic.  $D$ is tabulated, and the paper approximates it with a mixture of Gaussians.  Fitting is done by Levenberg--Marquardt optimization.
+
+    \item When performing reflectance integration, the vector $\ve{o}$ is fixed, and we need $\rho_s$ as a function of $\ve{i}$.  We call this view of $\rho_s$ a \emph{slice} of $\rho_s$ and denote it by $\rho_s(\ve{i}; \ve{o})$.  Assuming that $D$ is approximate by a mixture of Gaussian $D^*$, we would like to compute:
+    \begin{align*}
+      \rho_s(\ve{i}; \ve{o}) = M_{\ve{o}}(\ve{i}) D^*(\ve{h}).
+    \end{align*}
+    However, the problem here is that $D^*$ is a function of $\ve{h}$ instead of $\ve{i}$.  As a result, we must write $D^*$ in terms of $\ve{i}$.  Let us call this new mixture $W^*$.
+
+    \item The Wang paper proposes approximating each SG lobe in $D^*$ with an SG lobe in $\ve{i}$.  The idea is that $\ve{i}$ and $\ve{h}$ are related by the following transformation:
+    \begin{align*}
+      \ve{i} = \psi(\ve{h}) = 2(\ve{o} \cdot \ve{h}) \ve{h} - \ve{o}.
+    \end{align*}
+    So, if you have a Gaussian $G(\ve{h}; \ve{p}_i^D, \lambda_i^D, \mu_i^D)$ in $\ve{h}$, then it should be approximated well by a Gaussian in $\ve{i}$ such that
+    \begin{itemize}
+      \item the new Gaussian's axis is the old Gaussian's axis transformed by $\psi$,
+      \item the new Gaussian's ``mass'' should be the same as the old Gaussian's ``mass,'' and
+      \item the amplitudes of the two Gaussians are the same.
+    \end{itemize}
+    More formally, if $G(\ve{i}; \ve{p}_i^W, \lambda_i^W, \mu_i^W)$ is the approximation of $G(\ve{h}; \ve{p}_i^D, \lambda_i^D, \mu_i^D)$, then
+    \begin{align*}
+      \ve{p}_i^W &= \psi(\ve{p}_i^D)\mbox{, and} \\
+      \mu_i^W &= \mu_i^D.
+    \end{align*}
+    The equal mass idea is more complicated.  The Wang paper says that the mass of SG with lobe sharpness $\lambda$ is just $f_a(\lambda)$.  So, we have to find $\lambda_i^W$ such that
+    \begin{align*}
+      f_a(\lambda_i^W) = \int_{G(\ve{i}; \ve{p}_i^W, \lambda_i^W, \mu_i^W) \geq 0.1} \dee\ve{i} = \int_{G(\ve{h}; \ve{p}_i^D, \lambda_i^D, \mu_i^D) \geq 0.1} \dee\ve{h} = f_a(\lambda_i^D)
+    \end{align*}
+    Now, we have that
+    \begin{align*}
+      \dee \ve{i} = |D\psi(\ve{h})|\ \dee{\ve{h}} = 4 |\ve{h} \cdot \ve{o}|\ \dee\ve{h}.
+    \end{align*}
+    Let $A = \{ \ve{h} : G(\ve{h}; \ve{p}_i^D, \lambda_i^D, \mu_i^D) \geq 0.1 \}$.  We have that:
+    \begin{align*}
+      f_a(\lambda_i^D) 
+      = \int_{A} \dee\ve{h}
+      = \int_{\psi(A)} \frac{ \dee\ve{i} } { 4 |\ve{h} \cdot \ve{o}| }.
+    \end{align*}
+    Assuming $\psi(A)$ is a small set, we may say that the change-of-variable factor is constant.  So, 
+    \begin{align*}
+      f_a(\lambda_i^D) \approx \frac{1}{4|\ve{h} \cdot \ve{o}|} \int_{\psi(A)} \dee\ve{i}.
+    \end{align*}
+    Because we want the mass of $G(\ve{i}; \ve{p}_i^W, \lambda_i^W, \mu_i^W)$ to approximate the mass of $G(\ve{h}; \ve{p}_i^D, \lambda_i^D, \mu_i^D)$, we can say that we require
+    \begin{align*}
+      \int_{\psi(A)} \dee\ve{i} = \int_{G(\ve{i}; \ve{p}_i^W, \lambda_i^W, \mu_i^W) \geq 0.1} \dee\ve{i} = f_a(\lambda_i^W).
+    \end{align*}
+    Therefore,
+    \begin{align*}
+      f_a(\lambda_i^D) &= \frac{1}{4|\ve{h} \cdot \ve{o}|} f_a(\lambda_i^W) \\
+      -2\pi \frac{\ln 0.1}{\lambda_i^D} &= \frac{1}{4|\ve{h} \cdot \ve{o}|} \bigg( -2\pi \frac{\ln 0.1}{\lambda_i^W} \bigg) \\
+      \lambda_i^W &= \frac{\lambda_i^D}{4|\ve{h} \cdot \ve{o}|}.
+    \end{align*}
+
+    \item Now, we have that:
+    \begin{align*}
+      \rho_s(\ve{i}; \ve{o}) 
+      = M_{\ve{o}}(i) D(\ve{h}) 
+      \approx M_{\ve{o}}(i) D^*(\ve{h}) 
+      \approx M_{\ve{o}}(i) W^*(\ve{i}).
+    \end{align*}
+    So, we need to approximate $M_{\ve{o}}(i) W^*(\ve{i})$.  The Wang paper assumes that $M_{\ve{o}}(i)$ changes slowly over the $\varepsilon$-support of each SG, so it uses the following approximation:
+    \begin{align*}
+      \rho_s(\ve{i}; \ve{o})
+      \approx M_{\ve{o}}(i) W^*(\ve{i}) 
+      \approx \sum_{i=1}^n G(\ve{i}; \ve{p}_i^W, \lambda_i^W, M_\ve{o}(\ve{p}_i^W) \mu_i^W ).
+    \end{align*}
+  \end{itemize}
+
+  \subsection{Visibility Representation} \label{sg-visibility}
+  \begin{itemize}
+    \item The visibility function at point $\ve{x}$ is denoted by $V_{\ve{x}}(\ve{i})$ where $V_{\ve{x}} = 1$ if the light is visible from $\ve{x}$ in the direction $\ve{i}$, and $V_{\ve{x}}(\ve{i}) = 0$ otherwise.
+
+    \item The Wang paper represents visibility with something called the \emph{spherical signed distance function} (SSDF).  One of this is stored at each mesh vertex and is interpolated to get fragment values.  
+
+    \item The SSDF supports \emph{ghost-free} interpolation: the interpolated value does not feature double images of vertex values.  (See the image from the paper for what this actually is.)    
+
+    \item Let $V^d_{\ve{x}}(\ve{i})$ denote the SSDF encoding of the real visiblity function $V_{\ve{x}}(\ve{i})$.  The value of the SSDF is defined according to the following rules:
+    \begin{itemize}
+      \item $V^d_{\ve{x}}(\ve{i})$ is negative if direction $\ve{i}$ is occluded and positive otherwise.
+      \item The absolute value of $V^d_{\ve{x}}(\ve{i})$ is the angular distancde to the nearest direction $\ve{t}$ that is on the shadow boundary.
+    \end{itemize}
+    Mathematically,
+    \begin{align*}
+      V^d_{\ve{x}}(\ve{i}) = \begin{cases}
+        + \underset{V_{\ve{x}}(\ve{t}) = 0}{\min} \arccos(\ve{t} \cdot \ve{i}), & \mbox{if }V_{\ve{x}}(\ve{i}) = 1 \\
+        - \underset{V_{\ve{x}}(\ve{t}) = 1}{\min} \arccos(\ve{t} \cdot \ve{i}), & \mbox{if }V_{\ve{x}}(\ve{i}) = 0
+      \end{cases}
+    \end{align*}
+
+    \item The Wang paper computes the SSDFs as $512 \times 512$ images and then downsample them to $128 \times 128$ resolution.  Then, it performs PCA of all vertex SSDF and keeps the weight vectors of $48$ principal components.
+
+    \item The central computation in lighting with SGs is multiplication of an SG lobe with the SSDF.  Let $\ve{p}$ denote the lobe axis.  Then, the value $V_{\ve{x}}^d(\ve{p})$, if it is positive, gives you the size of the unoccluded spherical cap centered at $\ve{p}$.  The paper argues that modulating the lobe with this spherical cap is a good approximation to visibility because:
+    \begin{itemize}
+      \item If the lobe is narrow, then it is a good approximation already.
+      \item If the lobe is broad, detailed vibility knowledge is not necessary.  (I'm not sure I'm buying this, but their results say it's good.)
+    \end{itemize}
+
+    \item Let us get formal with the above process.  Let $\theta^d = V^d_\ve{x}(\ve{p})$.  The spherical cap visiblity function $V'(\ve{i})$ centered at $\ve{p}$ is given by:
+    \begin{align*}
+      V'(\ve{i}) = \begin{cases}
+        1, & \ve{p}\cdot \ve{i} \geq \cos(\theta_d) \\
+        0, & \mbox{otherwise}
+      \end{cases}.
+    \end{align*}
+    We are interested in the computing the dot product and the vector product of the Gaussian lobe $G(\ve{i}; \ve{p}, \lambda, \mu)$ with $V'(\ve{i})$.
+
+    \item Let us work with the dot product first.  We have that
+    \begin{align*}
+      G(\ve{i}; \ve{p}, \lambda, \mu) \cdot V'(\ve{i})
+      &= \int_{S^2} G(\ve{i}; \ve{p}, \lambda, \mu) V'(\ve{i})\ \dee\ve{i}.
+    \end{align*}
+    Paramerizing the direction $\ve{i}$ with spherical coordinates $(\theta,\varphi)$ in the coordinate system where $\ve{p}$ is the positive $z$-axis, the above integral becomes:
+    \begin{align*}
+      \int_{S^2} G(\ve{i}; \ve{p}, \lambda, \mu) V'(\ve{i})\ \dee\ve{i}
+      = \mu \int_{0}^{\theta_d} \int_{0}^{2\pi} G(\ve{i}; \ve{z}, \lambda, 1) \sin\theta\ \dee\varphi \dee\theta .
+    \end{align*}
+    The paper precomputes the 2D function 
+    \begin{align*}
+      f_h(\theta_d, \lambda) = \int_{0}^{\theta_d} \int_{0}^{2\pi} G(\ve{i}; \ve{z}, \lambda, 1) \sin\theta\ \dee\varphi \dee\theta
+    \end{align*}
+    and approximates it with a sigmoid multiplies with a polynomial.
+
+    \item For the vector product, the paper approximates it with a Gaussian lobe with the same center and sharpness, but with amplitude scaled to give the same integral value as the product:
+    \begin{align*}
+      G(\ve{i}; \ve{p}, \lambda, \mu) \otimes V'(\ve{i}) \approx G\bigg(\ve{i}; \ve{p}, \lambda, \frac{f_h(\theta_d, \lambda)}{f_h(\pi/2, \lambda)}\mu \bigg).
+    \end{align*}
+  \end{itemize}
+
+  \subsection{Lighting Representation}
+
+  \begin{itemize}
+    \item The paper approximates the radiance field incident on point $x$ from a spherical light source with radius $r$ and intensity $s$ yields, located at $\ve{l}$, with the following sphercial Gaussian:
+    \begin{align*}
+       L_\ve{x}^*(\ve{i}) = G\bigg( \ve{i}; \frac{\ve{l} - \ve{x}}{\| \ve{l} - \ve{x} \|}, f^{-1}\bigg( \frac{2\pi r^2}{\| \ve{l} - \ve{x} \|^2}, \frac{s}{\| \ve{l} - \ve{x} \|^2} \bigg) \bigg)
+     \end{align*} 
+     If the light source is infinitely far away, the approximation is:
+     \begin{align*}
+       L_\ve{x}^*(\ve{i}) = G(\ve{i}; \ve{l}, f_a^{-1}(2\pi r^2), s).
+     \end{align*}
+     Here, note that $\ve{l}$ becomes a direction, not a 3D position like in the previous case.
+
+    \item The paper represents environment lighting differently based on whether it is convolved with diffuse or specular BRDFs.
+    \begin{itemize}       
+        \item For diffuse BRDFs, the paper simply fit $< 10$ SG lobes to the environment map.
+
+        \item For specular BRDFs, the paper preconvolves the environmental radiance with SGs of varying lobe sharpness.  Formally, the paper precompues a 3D function $\Gamma_L(\ve{p}, \lambda)$ where
+        \begin{align*}
+          \Gamma_L(\ve{p}, \lambda) = \int_{S^2} G(\ve{i};\ve{p}, \lambda, 1) L(\ve{i})\ \dee \ve{i}
+        \end{align*}
+        where $L$ is the environment lighting.  In this way, the convolution between environment lighting and an SG lobe that represents the BRDF is given by:
+        \begin{align*}
+          G(\ve{i}; \ve{p}, \lambda, \mu) = \mu \int_{S^2} G(\ve{i}; \ve{p}, \lambda, 1) L(\ve{i})\ \dee\ve{i} = \mu \Gamma_L(\ve{p}, \lambda).
+        \end{align*}
+    \end{itemize}     
+  \end{itemize}
+
+  \subsection{Shading}
+
+  \begin{itemize}
+    \item First, let us review the data that the paper uses.  At each vertex $\ve{x}$, we have
+    \begin{itemize}
+      \item the position, the texture coordinates, the local coordinate frame, and
+      \item the $48$ PC coefficients $w_{\ve{x},j}^V$ of the SSDF.
+    \end{itemize}
+    The textures contain:
+    \begin{itemize}
+      \item the diffuse color,
+      \item parameters for the specular lobe:
+      \begin{itemize}
+        \item In case of the Cook--Torrance model, this is just a single number.
+        \item In case of measured specular BRDF, a list of Gaussian lobes that makes up the approximate normal distribution fuction $D^*$.        
+      \end{itemize}
+    \end{itemize}
+
+    \item We are ready to work out the rendering integral:
+    \begin{align*}
+      R(\ve{o}) 
+      &= \int_{S^2} (k_d + k_s \rho_s(\ve{o}, \ve{i})) L(\ve{i}) V(\ve{i}) \max\{0, \ve{i} \cdot \ve{n} \}\ \dee\ve{i} \\
+      &= k_d \int_{S^2} L(\ve{i}) V(\ve{i}) \max\{0, \ve{i} \cdot \ve{n} \}\ \dee\ve{i} + k_s \int_{S^2} \rho_s(\ve{o}, \ve{i}) L(\ve{i}) V(\ve{i}) \max\{0, \ve{i} \cdot \ve{n} \}\ \dee\ve{i}.
+    \end{align*}
+
+    \item For the diffuse integral, we have that:
+    \begin{align*}
+      \int_{S^2} L(\ve{i}) V(\ve{i}) \max{0,\ve{i}\cdot\ve{n}}\ \dee\ve{i}
+      &= (L(\ve{i}) \max\{0,\ve{i} \cdot \ve{n} \}) \cdot V(\ve{i}) \\
+      &\approx (L(\ve{i}) \max\{0 \cdot \ve{i},\ve{n} \}) \cdot V_\ve{x}^d(\ve{i})
+    \end{align*}
+    where $V_\ve{x}^d(\ve{i})$ is the SSDF.
+
+    Since we have discussed how to compute the dot product of SGs with SSDF in Section~\ref{sg-visibility}, it remains to figure out how represent $L(\ve{i}) \max\{0,\ve{i},\ve{n} \}$ with SGs.  However, this is quite simple because we already represent $L(\ve{i})$ with a mixture of SGs $L^*(\ve{i})$.  The function $\max\{ 0, \ve{i} \cdot \ve{n} \}$ is approximated with the following SG:
+    \begin{align*}
+      C^*(\ve{i},\ve{n}) = G(\ve{i}; \ve{n}, 2.133, 1.170).
+    \end{align*}
+    So,
+    \begin{align*}
+      L(\ve{i}) \max\{0,\ve{i}\cdot\ve{n} \} \approx L^*(\ve{i}) \otimes C^*(\ve{i},\ve{n})
+    \end{align*}
+    and we already know how to compute the scalar product of two SGs.
+
+    \item For the specular integral, we approximate it as:
+    \begin{align*}
+      \int_{S^2} \rho_s(\ve{o}, \ve{i}) L(\ve{i}) V(\ve{i}) \max\{0, \ve{i} \cdot \ve{n} \}\ \dee\ve{i}
+      \approx ( C^*(\ve{i},\ve{n}) \otimes \rho^*_{s,\ve{x}}(i;\ve{o}) \otimes V^d_{\ve{x}}(\ve{i}) ) \cdot L(\ve{i})
+    \end{align*}
+    This means that, we compute the SG lobes in the parenthesis first and look up $\Gamma_L$ for the dot product.
+
+  \end{itemize}
+
+  \section{Anisotropic Gaussian}
+
+  This section is based on the \cite{Xu:2013} paper.
+
+  \subsection{Basic Definition}
+  \begin{itemize}
+    \item An \emph{anisotropic spherical Gaussian} (ASG) is the function:
+    \begin{align*}
+      G(\ve{v}; [\ve{x}, \ve{y}, \ve{z}], [\lambda,\mu], c) = c \cdot S(\ve{v};\ve{z}) \cdot e^{-\lambda(\ve{v} \cdot \ve{x})^2 -\mu(\ve{v} \cdot \ve{y})^2}
+    \end{align*}
+    where
+    \begin{itemize}
+      \item $S(\ve{v}; \ve{z}) = \max\{ 0, \ve{v} \cdot \ve{z} \}$ is called the \emph{smooth term}.
+      \item The vectors $\ve{z}$, $\ve{x}$, and $\ve{y}$ are called the \emph{lobe}, \emph{tangent}, and \emph{bitangent} directions, respectively, and they should form an orthonormal frame.
+      \item The $\lambda$ and $\mu$ constants are called the \emph{bandwidths}.
+    \end{itemize}
+    The definition above is called the \emph{geometric form} of ASG.
+
+    \item The above definition is based on the \emph{Bingham distribution} in directional statistics.  Basically, if you remove the smooth term, you get the Bingham distribution.
+
+    \item There is another equivalent definition of ASG called the \emph{algebric form}:
+    \begin{align*}
+      G(\ve{v}; A) = S(\ve{v}; \ve{z}) \cdot e^{-\ve{v}^T A \ve{v}}
+    \end{align*}
+    where $\ve{A}$ is a $3 \times 3$ symmetric matrix, and $\ve{z}$ is its eigenvector with the smallest eigenvalue.
+
+    \item Spherical Gaussians are defined in terms of the Von Mises distribution:
+    \begin{align*}
+      G_{\mathrm{iso}}(\ve{v}; \ve{p}, \nu, c) = c \cdot e^{2\nu(\ve{v}\cdot\ve{p}-1)}.
+    \end{align*}
+    As a result, it is not the same as ASG with two equal bandwidths because it lacks the smooth term.  However, it is still roughly the same:
+    \begin{align*}
+      G_{\mathrm{iso}}(\ve{v};\ve{p},\nu, c) \approx G(\ve{v}; [\ve{x},\ve{y},\ve{p}], [\nu,\nu], c).
+    \end{align*}
+  \end{itemize}
+
+  \subsection{Operations}
+  
+  \begin{itemize}
+    \item In order to create a rendering system from ASG, we need to know how to compute the following operations on ASGs:
+    \begin{itemize}
+      \item \textbf{Integral}: $\int_{S^2} G(\ve{v})\ \dee\ve{v}$
+      \item \textbf{Product}: $G_1(\ve{v}) G_2(\ve{v})$
+      \item \textbf{Convolution}: $\int_{S^2} G_1(\ve{v}) G_2(\ve{v})\ \dee\ve{v}$
+    \end{itemize}    
+  \end{itemize}
+
+  \subsubsection{Integral}
+
+  \begin{itemize}
+    \item The integral of an ASG over the sphere does not have a closed form.  However, it can be approximated as follows:
+    \begin{align*}
+      \int_{S^2} G(\ve{v})\ \dee\ve{v} = \frac{\pi}{\sqrt{\lambda\mu}} - \frac{e^{-\mu}}{2\lambda} \bigg( F(\nu) + \frac{\nu}{\mu} F\Big( \nu + \frac{\nu}{\mu} \Big)  \bigg)
+    \end{align*}
+    where $\nu = \lambda - \mu$, and
+    \begin{align*}
+      F(a) = \int_{0}^{2\pi} e^{-a \cos^2 \phi}\ \dee\phi.
+    \end{align*}
+    Here, we assume that $\lambda \geq \mu$ WLOG.
+
+    \item The function $F$ can be precomputed into a lookup table, or it can be approximated by a rational function.
+
+    \item If $\lambda, \mu > 5$, the terms involving $F$ becomes small, so the integral is well approximated by:
+    \begin{align*}
+      \int_{S^2} G(\ve{v})\ \dee\ve{v} \approx \frac{\pi}{\sqrt{\lambda \mu}}.
+    \end{align*}
+  \end{itemize}
+
+  \subsubsection{Product}
+
+  \begin{itemize}
+    \item Given two ASGs in algebraic form:
+    \begin{align*}
+      G_1(\ve{v}) = G(\ve{v}; \ve{A}_1) &= \max(\ve{v} \cdot \ve{z}_1, 0) \cdot e^{-\ve{v}^T \ve{A}_1 \ve{v}} \\
+      G_2(\ve{v}) =  G(\ve{v}; \ve{A}_2) &= \max(\ve{v} \cdot \ve{z}_2, 0) \cdot e^{-\ve{v}^T \ve{A}_2 \ve{v}}.
+    \end{align*}
+    The product of the two ASGs is given by:
+    \begin{align*}
+      G_1(\ve{v}) G_2(\ve{v}) = S(\ve{v};\ve{z}_1, \ve{z}_2) \cdot e^{-\ve{v}^T(\ve{A}_1 + \ve{A}_2) \ve{v}}
+    \end{align*}
+    where
+    \begin{align*}
+      S(\ve{v}; \ve{z}_1, \ve{z}_2) = S(\ve{v}; \ve{z}_1) S(\ve{v}; \ve{z}_2).
+    \end{align*}
+
+    \item Let $\ve{A}_3 = \ve{A}_1 + \ve{A}_2$ and $\ve{z}_3$ be the smallest eigenvector of $\ve{A}_3$.  We have that:
+    \begin{align*}
+      G_1(\ve{v}) G_2(\ve{v}) 
+      &= \frac{S(\ve{v}; \ve{z}_1, \ve{z}_2)}{\max(\ve{v} \cdot \ve{z}_3, 0)} \bigg( \max(\ve{v} \cdot \ve{z}_3) \cdot e^{-\ve{v}^T \ve{A}_3 \ve{v}} \bigg) \\
+      &= \frac{S(\ve{v}; \ve{z}_1, \ve{z}_2)}{\max(\ve{v} \cdot \ve{z}_3, 0)} G(\ve{v}; \ve{A}_3).
+    \end{align*}
+    The paper makes the following approximation:
+    \begin{align*}
+      \frac{S(\ve{v}; \ve{z}_1, \ve{z}_2)}{\max(\ve{v} \cdot \ve{z}_3, 0)}
+      \approx \frac{S(\ve{z_3}; \ve{z}_1, \ve{z}_2)}{\max(\ve{z_3} \cdot \ve{z}_3, 0)}
+      =  S(\ve{z_3}; \ve{z}_1, \ve{z}_2).
+    \end{align*}
+    Basically, they approximate the ratio with its value at $\ve{z}_3$, which is the peak of the Gaussian term.  Xu \etal\ argues that this approximation is acceptable because the Gaussian term changes much faster than the smooth term.
+  \end{itemize}
+
+  \subsubsection{Convolution of ASG with SG}
+
+  \begin{itemize}
+    \item Surprisingly, the Xu \etal\ paper only gives a convolution of an ASG with an SG.  Maybe they don't have good approximations for the convolution of two ASGs?
+
+    \item Let us denote the (isotropic) SG with:
+    \begin{align*}
+      G_{\mathrm{iso}}(\ve{v}; \ve{p}, \nu) 
+      = e^{2\nu(\ve{v} \cdot \ve{p}-1)}
+      = e^{-\nu \|\ve{v} - \ve{p}\|^2}.
+    \end{align*}
+
+    \item Let $C(\ve{p})$ denotes the convolution between ASG $G(\ve{v})$ and SP $G_{\mathrm{iso}}(\ve{v}; \ve{p}, \nu)$:
+    \begin{align*}
+      C(\ve{p}) 
+      = \int_{S^2} G(\ve{v}) G_{\mathrm{iso}}(\ve{v}; \ve{p}, \nu)\ \dee\ve{v}
+      = \int_{S^2} S(\ve{v}; \ve{z}) e^{-\lambda(\ve{v} \cdot \ve{x})^2 - \mu (\ve{v} \cdot \ve{y})^2 - \nu \| \ve{v} - \ve{p} \|^2}\ \dee\ve{v}.
+    \end{align*}
+
+    \item The first approximate the Xu \etal\ paper made is to approximate $S(\ve{v};\ve{z})$ with its value at $\ve{p}$:
+    \begin{align*}
+      \int_{S^2} S(\ve{v}; \ve{z}) e^{-\lambda(\ve{v} \cdot \ve{x})^2 - \mu (\ve{v} \cdot \ve{y})^2 - \nu \| \ve{v} - \ve{p} \|^2}\ \dee\ve{v}
+      &\approx S(\ve{p}; \ve{z}) \int_{S^2} e^{-\lambda(\ve{v} \cdot \ve{x})^2 - \mu (\ve{v} \cdot \ve{y})^2 - \nu \| \ve{v} - \ve{p} \|^2}\ \dee\ve{v}.
+    \end{align*}
+
+    \item Next, the paper approximates the $\| \ve{v} - \ve{p} \|^2$ term by a Taylor series expansion around $\ve{z}$, which is the peak of $G(\ve{v})$.  To do so, observe that:
+    \begin{align*}
+      \ve{p} 
+      &= \ve{z} + (\ve{p} - \ve{z}) \\
+      &= \ve{z} + [(\ve{p} - \ve{z})\cdot \ve{x}] \ve{x} + [(\ve{p} - \ve{z})\cdot \ve{y}] \ve{y} + [(\ve{p} - \ve{z})\cdot \ve{z}] \ve{z} \\
+      &= \ve{z} + (\ve{p} \cdot \ve{x}) \ve{x} + (\ve{p} \cdot \ve{y}) \ve{y} + [(\ve{p} - \ve{z})\cdot \ve{z}] \ve{z} \\
+      &\approx \ve{z} + (\ve{p} \cdot \ve{x}) \ve{x} + (\ve{p} \cdot \ve{y}) \ve{y}.
+    \end{align*}
+    So,
+    \begin{align*}
+      \ve{v} \approx \ve{z} + (\ve{v} \cdot \ve{x}) \ve{x} + (\ve{v} \cdot \ve{y}) \ve{y}.
+    \end{align*}
+    Thus,
+    \begin{align*}
+      \ve{v} - \ve{p} \approx (\ve{v} \cdot \ve{x} - \ve{p} \cdot \ve{x}) \ve{x} + (\ve{v} \cdot \ve{y} - \ve{p} \cdot \ve{y}) \ve{y}.
+    \end{align*}
+    As a result,
+    \begin{align*}
+      \| \ve{v} - \ve{p} \|^2 \approx (\ve{v} \cdot \ve{x} - \ve{p} \cdot \ve{x})^2 + (\ve{v} \cdot \ve{y} - \ve{p} \cdot \ve{y})^2.      
+    \end{align*}
+
+    \item Substituing the above approximation to into the convolution integral, we have that:
+    \begin{align*}
+      C(\ve{p}) 
+      &\approx S(\ve{p};\ve{z}) \int_{S^2} e^{-\lambda (\ve{v}\cdot\ve{x})^2 - \mu(\ve{v} \cdot\ve{y})^2 - \nu(\ve{v} \cdot \ve{x} - \ve{p} \cdot \ve{x})^2 - \nu (\ve{v} \cdot \ve{y} - \ve{p} \cdot \ve{y})^2 }\ \dee\ve{v}.
+    \end{align*}
+    We now simplify the exponent of $e$ of the integrand:
+    \begin{align*}
+      & -\lambda (\ve{v}\cdot\ve{x})^2 - \mu(\ve{v} \cdot\ve{y})^2 - \nu(\ve{v} \cdot \ve{x} - \ve{p} \cdot \ve{x})^2 - \nu (\ve{v} \cdot \ve{y} - \ve{p} \cdot \ve{y})^2 \\
+      &= -\lambda (\ve{v}\cdot\ve{x})^2 
+      - \mu(\ve{v} \cdot\ve{y})^2 
+      - \nu[(\ve{v} \cdot \ve{x})^2 + (\ve{p} \cdot \ve{x})^2 - 2(\ve{v} \cdot \ve{x})(\ve{p} \cdot \ve{x}) ]
+      - \nu [(\ve{v} \cdot \ve{y})^2 + (\ve{p} \cdot \ve{y})^2 - 2(\ve{v} \cdot \ve{y})(\ve{p} \cdot \ve{y}) ] \\
+      &= - \big[ (\lambda+\nu)(\ve{v} \cdot \ve{x})^2 - 2\nu(\ve{v}\cdot\ve{x})(\ve{p}\cdot\ve{x}) + \nu(\ve{p} \cdot \ve{x})^2 \big]
+      - \big[ (\mu+\nu)(\ve{v} \cdot \ve{y})^2 - 2\nu(\ve{v}\cdot\ve{y})(\ve{p}\cdot\ve{y}) + \nu(\ve{p} \cdot \ve{y})^2 \big].      
+    \end{align*}
+    Let us simplify the left term:
+    \begin{align*}
+      & (\lambda+\nu)(\ve{v} \cdot \ve{x})^2 - 2\nu(\ve{v}\cdot\ve{x})(\ve{p}\cdot\ve{x}) + \nu(\ve{p} \cdot \ve{x})^2 \\
+      &= \Big[ (\lambda+\nu)(\ve{v} \cdot \ve{x})^2 - 2\nu(\ve{v}\cdot\ve{x})(\ve{p}\cdot\ve{x}) + \frac{\nu^2}{\lambda + \nu} (\ve{p} \cdot \ve{x})^2 \Big] - \frac{\nu^2}{\lambda + \nu} (\ve{p} \cdot \ve{x})^2 + \nu(\ve{p} \cdot \ve{x})^2\\
+      &= \Big[ \sqrt{\lambda+\nu}(\ve{v} \cdot \ve{x}) - \frac{\nu}{\sqrt{\lambda + \nu}} (\ve{p} \cdot \ve{x}) \Big]^2 
+      + \frac{-\nu^2 + \nu(\lambda + \nu)}{\lambda + \nu} (\ve{p} \cdot \ve{x})^2\\
+      &= (\lambda + \nu) \Big[ \ve{v} \cdot \ve{x} - \frac{\nu}{\lambda + \nu} (\ve{p} \cdot \ve{x}) \Big]^2 
+      + \frac{\lambda\nu}{\lambda + \nu} (\ve{p} \cdot \ve{x})^2.
+    \end{align*}
+    As a result,
+    \begin{align*}
+      & -\lambda (\ve{v}\cdot\ve{x})^2 - \mu(\ve{v} \cdot\ve{y})^2 - \nu(\ve{v} \cdot \ve{x} - \ve{p} \cdot \ve{x})^2 - \nu (\ve{v} \cdot \ve{y} - \ve{p} \cdot \ve{y})^2\\
+      &= -(\lambda + \nu) \Big( \ve{v} \cdot \ve{x} - \frac{\nu}{\lambda + \nu} (\ve{p} \cdot \ve{x}) \Big)^2 
+      - \frac{\lambda\nu}{\lambda + \nu} (\ve{p} \cdot \ve{x})^2
+      -(\mu + \nu) \Big( \ve{v} \cdot \ve{y} - \frac{\nu}{\mu + \nu} (\ve{p} \cdot \ve{y}) \Big)^2 
+      - \frac{\mu\nu}{\mu + \nu} (\ve{p} \cdot \ve{y})^2 \\
+      &= -(\lambda + \nu) \Big( \ve{v} \cdot \ve{x} - \frac{\nu}{\lambda + \nu} (\ve{p} \cdot \ve{x}) \Big)^2 
+      -(\mu + \nu) \Big( \ve{v} \cdot \ve{y} - \frac{\nu}{\nu + \nu} (\ve{p} \cdot \ve{y}) \Big)^2 
+      - \frac{\lambda\nu}{\lambda + \nu} (\ve{p} \cdot \ve{x})^2
+      - \frac{\mu\nu}{\mu + \nu} (\ve{p} \cdot \ve{y})^2.
+    \end{align*}
+    Hence,
+    \begin{align*}
+      C(\ve{p}) 
+      &\approx S(\ve{p};\ve{z}) \cdot e^{- \frac{\lambda\nu}{\lambda + \nu} (\ve{p} \cdot \ve{x})^2 - \frac{\mu\nu}{\mu + \nu} (\ve{p} \cdot \ve{y})^2}
+      \int_{S^2} e^{ -(\lambda + \nu) \big( \ve{v} \cdot \ve{x} - \frac{\nu}{\lambda + \nu} (\ve{p} \cdot \ve{x}) \big)^2 
+      -(\mu + \nu) \big( \ve{v} \cdot \ve{y} - \frac{\nu}{\mu + \nu} (\ve{p} \cdot \ve{y}) \big)^2 }\ \dee\ve{v}.
+    \end{align*}
+    The integral on the right evaluates to a constant.  The Xu \etal\ paper says that it can be approximated as an integral of an ASG on the sphere:
+    \begin{align*}
+      \int_{S^2} e^{ -(\lambda + \nu) \big( \ve{v} \cdot \ve{x} - \frac{\nu}{\lambda + \nu} (\ve{p} \cdot \ve{x}) \big)^2 
+      -(\lambda + \mu) \big( \ve{v} \cdot \ve{y} - \frac{\nu}{\mu + \nu} (\ve{p} \cdot \ve{y}) \big)^2 }\ \dee\ve{v}
+      \approx \frac{\pi}{\sqrt{(\lambda + \nu)(\mu+\nu)}}.
+    \end{align*}
+    The logic on this part is VERY sketchy, and I shall ask Run-Dong for clarification.
+
+    If you believe in the simplication above, we have that:
+    \begin{align*}
+      C(\ve{p}) \approx G\Big(\ve{p}, [\ve{x}, \ve{y}, \ve{z}], \Big[ \frac{\lambda \nu}{\lambda + \nu}, \frac{\mu \nu}{\mu + \nu} \Big], \frac{\pi}{\sqrt{(\lambda + \nu)(\mu + \nu)}} \Big).
+    \end{align*}
+
+    \item The approximation above is accurate when $(\ve{p} - \ve{v}) \cdot \ve{z}$ is small.  However, when it is large, the SG is small, so the error will be small too.
+
+    \item The approximation becomes more accurate when $\lambda$ and $\mu$ becomes larger.  When $\lambda, \mu > 3$, the L2-error is less than $0.2\%$.  When $\lambda, \mu > 1$, the error is bounded by $2.8\%$.
+  \end{itemize}
+
+  \subsection{ASG-Based Rendering Framework}
+
+  \begin{itemize}
+    \item The framework is based on the SG-based framework in \cite{Wang:2009} paper, but BRDFs and lighting are represented with ASGs instead of SGs.
+
+    \item Assuming distant lighting and static geometry, the outgoing radiance $L(\ve{o})$ is given by:
+    \begin{align*}
+      L(\ve{o}) 
+      = \int_{S^2} L(\ve{i}) V(\ve{i}) \rho(\ve{i}, \ve{o}) \max(\ve{i} \cdot \ve{n}, 0)\ \dee\ve{i}
+    \end{align*}
+    where the BRDF $\rho(\ve{i},\ve{o})$ is the sum of diffuse and specular component:
+    \begin{align*}
+      \rho(\ve{i},\ve{o}) = k_d + k_s \rho_s(\ve{i}, \ve{o}).
+    \end{align*}
+    As a result, $L(\ve{o}) = k_d L_d + k_s L_s(\ve{o})$ where
+    \begin{align*}
+      L_d &= \int_{S^2} L(\ve{i}) V(\ve{i}) \max(\ve{i} \cdot \ve{n}, 0)\ \dee\ve{i} \\
+      L_s(\ve{o}) &= \int_{S^2} L(\ve{i}) V(\ve{i}) \rho_s(\ve{i},\ve{o})\max(\ve{i}\cdot\ve{n}, 0)\ \dee\ve{i}
+    \end{align*}
+  \end{itemize}
+
+  \subsubsection{Light Approximation}
+
+  \begin{itemize}
+    \item The environment light is represented by a mixture of ASGs.
+
+    \item Given an environment map, the Xu \etal\ paper first determine some initial ASGs to cover the mininum value of the environment map.  Then, the yuse the L-BFGS-B solver (aka scipy) to fit the rest of the ASGs.
+  \end{itemize}
+
+  \subsubsection{BRDF Approximation}
+
+  \begin{itemize}
+    \item According the Cook--Torrance model, the specular term is given by:
+    \begin{align*}
+      \rho_s(\ve{i}, \ve{o}) = M(\ve{i}, \ve{o}) D(\ve{h})
+    \end{align*}
+    where $\ve{h} = (\ve{i} + \ve{o}) / \| \ve{i} + \ve{o} \|$ is the half vector, $D$ is the normal distribution function (NDF), and $M$ is the product of the shadowing and Fresnel terms.
+
+    \item For the Ward model, $M$ and $D$ are approximated as:
+    \begin{align*}
+      M(\ve{i}, \ve{o}) 
+      &= \frac{1}{4\pi \alpha_x \alpha_y \sqrt{(\ve{i}\cdot\ve{n})(\ve{o}\cdot\ve{n})}} \\
+      D(\ve{h})
+      &= \exp\bigg( - \frac{2}{1+\ve{h}\cdot\ve{n}}\bigg( \frac{(\ve{h}\cdot\ve{x})^2}{\alpha_x^2} + \frac{(\ve{h}\cdot\ve{y})^2}{\alpha_y^2} \bigg) \bigg)
+      \approx G\bigg( \ve{h}; [\ve{x}, \ve{y}, \ve{n}], \Big[\frac{1}{\alpha_x^2}, \frac{1}{\alpha_y^2}\Big] \bigg)
+    \end{align*}
+
+    \item For the Ashikhmin model, $M$ and $D$ are approximate as:
+    \begin{align*}
+      M(\ve{i}, \ve{o})
+      &= \frac{\sqrt{(n_u + 1)(n_v + 1)} F(\ve{i} \cdot \ve{h})}{8\pi(\ve{i}\cdot\ve{h}) \max(\ve{i}\cdot\ve{n}, \ve{o}\cdot\ve{n})} \\
+      D(\ve{h}) 
+      &= (\ve{h} \cdot \ve{n})^{\frac{n_u(\ve{h}\cdot\ve{u})^2 + n_v(\ve{h}\cdot\ve{v})^2}{1 - (\ve{h}\cdot\ve{n})^2}}
+      \approx G\bigg(\ve{h}; [\ve{u},\ve{v},\ve{n}], \Big[ \frac{n_u}{2}, \frac{n_v}{2} \Big]\bigg)
+    \end{align*}
+
+    \item The Xu \etal\ paper reports that measured BRDFs' NDFs can be fitted with 3-4 ASGs.
+
+    \item In the same way as the last section on isotropic SGs, $D(h)$ is written in terms of the half vector, but the shading integral is written in terns of $\ve{i}$.  There is a change of variable that needs to be performed, and it is best if the resulting function can be approximated again by an ASG.
+
+    \item Suppose that $D(h)$ is approximated by $G(\ve{h}; [\ve{x}_h, \ve{y}_h, \ve{z}_h], [\lambda_h, \mu_h])$.  We want to write this as a function of $\ve{i}$ and approximates it as an ASG:
+    \begin{align*}
+      G_h(\ve{h}) 
+      = G(\ve{h}; [\ve{x}_h, \ve{y}_h, \ve{z}_h], [\lambda_h, \mu_h]) 
+      = G\bigg( \frac{\ve{i} + \ve{o}}{\| \ve{i} + \ve{o} \|} ; [\ve{x}_h, \ve{y}_h, \ve{z}_h], [\lambda_h, \mu_h]\bigg) 
+      \approx G(\ve{i}; [\ve{x}_i, \ve{y}_i, \ve{z}_i], [\lambda_i, \mu_i])
+      = G_i(\ve{i})
+    \end{align*}
+    The main task to write $\ve{x}_i$, $\ve{y}_i$, $\ve{z}_i$, $\lambda_i$, and $\mu_i$ in terms of $\ve{x}_h$, $\ve{y}_h$, $\ve{z}_h$, $\lambda_h$, and $\mu_h$.
+
+    \item First, we preserve the peak location by writing $\ve{z}_i$ in terms of $\ve{z}_h$:
+    \begin{align*}
+      \ve{z}_i = 2(\ve{o} \cdot \ve{z}_h) \ve{z}_h = \ve{o}.
+    \end{align*}
+
+    \item Other parameters are determined by preserving the second-order derivative of the exponential term in $G_h(\ve{h})$ at the lobe position $\ve{i} = \ve{z}_i$.
+
+    \item Let $G_h(\ve{h}(\ve{i})) = S(\ve{h}(\ve{i})) \cdot e^{-g(\ve{i})}$.  We have that:
+    \begin{align*}
+      g(\ve{i}) = \lambda_h (\ve{h}(\ve{i}) \cdot \ve{x}_h)^2 + \mu_h (\ve{h}(\ve{i}) \cdot \ve{y}_h)^2
+    \end{align*}
+    Define the coordinate frame $[\ve{x}_i', \ve{y}_i', \ve{z}_i]$ where $\ve{x}_i'$ is chosen to be perpendicular to $\ve{o}$.  We have that $g(\ve{i})$ can be approximate by a second order Tyalor expansion at $\ve{i} = \ve{z}_i$ as:
+    \begin{align*}
+      g(\ve{i}) 
+      \approx 
+      \begin{bmatrix}
+        \ve{i} \cdot \ve{x}_i' &
+        \ve{i} \cdot \ve{y}_i'
+      \end{bmatrix}
+      \begin{bmatrix}
+        \frac{\partial^2 g}{\partial x_i'^2} & \frac{\partial^2 g}{\partial x_i' \partial y_i'} \\
+        \frac{\partial^2 g}{\partial x_i' \partial y_i'} & \frac{\partial^2 g}{\partial y_i'^2} 
+      \end{bmatrix}
+      \begin{bmatrix}
+        \ve{i} \cdot \ve{x}_i' \\
+        \ve{i} \cdot \ve{y}_i'
+      \end{bmatrix}
+    \end{align*}
+    where
+    \begin{align*}
+      \frac{\partial^2 g}{\partial x_i'^2} 
+      &= \frac{\lambda_h(\ve{x}_h \cdot \ve{x}'_i) + \mu_h (\ve{y}_h \cdot \ve{x}'_h)^2}{4(\ve{o} \cdot \ve{z}_h)^2} \\
+      \frac{\partial^2 g}{\partial x_i' \partial y_i'}
+      &= \frac{(\mu_h - \lambda_h)(\ve{x}_h \cdot \ve{x}_i')(\ve{y}_h \cdot \ve{x}'_i)}{4(\ve{o} \cdot \ve{z}_h)} \\
+      \frac{\partial^2 g}{\partial y_i'^2}
+      &= \frac{\mu_h(\ve{x}_h \cdot \ve{x}_i')^2 + \lambda_h(\ve{y}_h \cdot \ve{x}'_i)}{4}.
+    \end{align*}
+    The middle matrix in the approximation for $g(\ve{i})$ is the Hessian matrix $\ve{H}(g)$, which can then be factored with the eigen-decomposition:
+    \begin{align*}
+      \ve{H}(g) = \ve{U} \begin{bmatrix}
+        \lambda_i & 0 \\
+        0 & \mu_i
+      \end{bmatrix}
+      \ve{U}^T.
+    \end{align*}
+    Now, we have that:
+    \begin{align*}
+      g(\ve{i}) \approx \lambda_i (\ve{i} \cdot \ve{x}_i)^2 + \mu_i (\ve{i} \cdot \ve{y}_i)^2 
+    \end{align*}
+    with
+    \begin{align*}
+      \begin{bmatrix}
+        \ve{x}_i & \ve{y}_i
+      \end{bmatrix}
+      = \ve{U} \begin{bmatrix}
+        \ve{x}_i' & \ve{y}_i'
+      \end{bmatrix}.
+    \end{align*}
+
+    \item I have a bad feeling about all these formulas because of several reasons:
+    \begin{itemize}
+      \item Is it valid to say
+      \begin{align*}
+        g(\ve{i}) \approx
+        \begin{bmatrix}
+          \ve{i} \cdot \ve{x}_i' &
+          \ve{i} \cdot \ve{y}_i'
+        \end{bmatrix}
+        \ve{H}(g)
+        \begin{bmatrix}
+          \ve{i} \cdot \ve{x}_i' \\
+          \ve{i} \cdot \ve{y}_i'
+        \end{bmatrix}?
+      \end{align*}
+      Where is $\Delta \ve{i}$?  Shouldn't the LHS be $g(\ve{i} + \Delta\ve{i})$?  Should't the RHS contain the $g(\ve{i})$ term?  Where is the first order term?  How does this approximation come about?
+
+      \item Where is the change-of-variable factor?  Shouldn't it become a part of the constant of $G_i(\ve{i})$?
+
+      \item It's hard to verify the correctness of the second-order derivatves given in the paper.
+    \end{itemize}
+    Really, I need to ask Run-Dong or Zhao about this.
+  \end{itemize}  
+
+  \subsubsection{Visibility Approximation}
+
+  \begin{itemize}
+    \item The Xu \etal\ paper still uses the spherical signed distance function (SSDF) to represent visibility.  To recap, given a binary visibility function $V(\ve{i})$, its corresponding SSDF $\theta_d(\ve{i})$ is the signed angular distance to the nearest point to $\ve{i}$ in which $V(\ve{i})$ changes value.  The sign is positive when $V(\ve{i}) = 1$ and negative when $V(\ve{i}) = 0$.
+
+    \item The convolution between an SG and visibility function $V(\ve{i})$ is approximated as:
+    \begin{align*}
+      \int_{S^2} G_{\mathrm{iso}}(\ve{i};\ve{p}, \nu) V(\ve{i})\ \dee\ve{i} \approx f_h(\theta_d(\ve{p}), \nu)
+    \end{align*}
+    where $f_h$ is a sigmoid multipled with a polynomial.
+
+    \item The above calculation cannot be applied to ASGs.  The Xu \etal\ paper proposes turning an ASG into an isotropic SG when doing the above convolution.  Given an ASG with bandwidths $\lambda$ and $\mu$, we say that the ASG's \emph{effective bandwidth} is $\sqrt{\lambda\mu}$.  When computing convolution with visibility, we use the formula above, substituting $\nu$ with the effective bandwidth:
+    \begin{align*}
+      \int_{S^2} G(\ve{i}; [\ve{x}, \ve{y}, \ve{p}], [\lambda,\mu]) \approx f_h(\theta_d(\ve{i}), \sqrt{\lambda \mu}).
+    \end{align*}
+
+    \item We also need to compute the vector product of an ASG with visibility function.  The paper proposes using the effective bandwidth to compute the scaling term as follows:
+    \begin{align*}
+      G(\ve{i};[\ve{x}, \ve{y}, \ve{p}], [\lambda,\mu])
+      = \frac{f_h(\theta_d(\ve{p}), \sqrt{\lambda\mu})}{f_h(\pi/2, \sqrt{\lambda\mu})}
+      G(\ve{i};[\ve{x},\ve{y},\ve{p}],[\lambda, \mu]).
+    \end{align*}
+
+    \item The use of effective bandwidth causes much error when the aspect ratio is large.  The error manifests in the form of softness of shadow boundary, which can be visually subtle.
+
+    \item The SSDF is compressed with PCA.  The paper says $48$ PCA coefficients yield good restuls.
+  \end{itemize}
+
+  \subsubsection{Rendering}
+  \begin{itemize}
+    \item When computing the diffuse term, the environment lighting $L(\ve{i})$ is approximated with a mixture of ASGs:
+    \begin{align*}
+      L(\ve{i}) \approx \sum_{j} l_j G_j(\ve{i})
+    \end{align*}
+    where $G_j(\ve{i})$ stands for $G(\ve{i};[\ve{x}_j, \ve{y}_j, \ve{z}_j], [\lambda_j, \mu_j]).$
+
+    The diffuse term is then approximated as follows:
+    \begin{align*}
+      L_d 
+      &\approx \int_{S^2} \bigg( \sum_j l_j G_j(\ve{i}) \bigg) V(\ve{i}) \max(\ve{i} \cdot \ve{n}, 0)\ \dee\ve{i} \\
+      &\approx \sum_{j} l_j \max(\ve{z}_j \cdot \ve{n}, 0) \int_{S^2} G_j(\ve{i}) V(\ve{i})\ \dee\ve{i}.
+    \end{align*}
+
+    \item For the specular term, the environment lighting is represented with an environment map.  To enable faster computation, the environment map must be prefiltered with Gaussian kernels.  I believe this is the $\Gamma_L$ table that the Wang \etal\ paper uses.
+
+    The Xu \etal\ paper approximates $\rho_s(\ve{i},\ve{o})$ as:
+    \begin{align*}
+      \rho_s(\ve{i},\ve{o}) \approx M(\ve{i},\ve{o}) \sum_k G_k(\ve{i})
+    \end{align*}
+    where $k$ is usually no more than $4$.  So,
+    \begin{align*}
+      L_s(\ve{o}) 
+      \approx \int_{S^2} L(\ve{i}) V(\ve{i}) \bigg( \sum_k M(\ve{i}, \ve{o}) G_k(\ve{i}) \bigg) \max(\ve{i} \cdot \ve{n}, 0)\ \dee\ve{i} \\
+      \approx \sum_k M(\ve{z}_k, \ve{o}) \max(\ve{z}_k, \ve{n}, 0) \int_{S^2} L(\ve{i}) V(\ve{i}) G_k(\ve{i})\ \dee\ve{i}
+    \end{align*}
+    The paper then approximate $V(\ve{i})G_k(\ve{i})$ with $g_k G_k(\ve{i})$ where
+    \begin{align*}
+      g_k = \frac{f_h(\theta_d(\ve{z}_k), \sqrt{\lambda_k\mu_k})}{f_h(\pi/2, \sqrt{\lambda_k\mu_k)})}.
+    \end{align*}
+    So, the specular term becomes:
+    \begin{align*}
+      L_s(\ve{o}) 
+      \approx \sum_k M(\ve{z}_k, \ve{o}) \max(\ve{z}_k, \ve{n}, 0) g_k \int_{S^2} L(\ve{i}) G_k(\ve{i})\ \dee\ve{i}
+    \end{align*}
+    The calculation is then reduced to convolving environment map $L(\ve{i})$ with ASGs.  The paper says they perform anisotropic lookup into the texture with the \texttt{textureGrad} function in GLSL.  However, \texttt{textureGrad} can only handle aspect ratio of at most $16$, so they must place more samples by themselves.  How this is actually done is not documented in the paper.  (Is this even reproducible?)
+  \end{itemize}
+
+  \section{Rendering Microcylinder Cloth with Spherical Gaussians}
+
+  This section is about \cite{Iwasaki:2014}, which deals with rendering Sadeghi \etal's microcylinder model under environment lighting \cite{Sadeghi:2013}.
+
+  \subsection{Gaussians}
+  \begin{itemize}
+    \item A \emph{spherical Gaussian} is defined by:
+    \begin{align*}
+      G(\omega; \xi, \sigma) &= \exp \bigg( \frac{2}{\sigma^2} (\omega \cdot \xi - 1) \bigg)
+    \end{align*}
+    where $\omega, \xi \in S^2$.  Here, $\xi$ is the lobe direction, $\sigma$ is the bandwidth.
+
+    \item A \emph{circular Gaussian} is defined as:
+    \begin{align*}
+      g^c(x;\mu,\sigma) = \exp \bigg( \frac{2}{\sigma^2}(\cos(x-\mu) - 1) \bigg).
+    \end{align*}
+    Here $g^c$ is a function on the circular angles, $\sigma$ is the bandwidth, and $\mu$ is the mean.    
+
+    \item A (canonical) Gaussian is defined as:
+    \begin{align*}
+      g(x; \mu, \sigma) = \exp \bigg( - \frac{(x-\mu)^2}{\sigma^2} \bigg)
+    \end{align*}  
+    The normalized version is written as:
+    \begin{align*}
+      g^u(x; \mu, \sigma) = \frac{1}{\sqrt{\pi} \sigma} \exp \bigg( - \frac{(x - \mu)^2}{\sigma^2} \bigg).
+    \end{align*}
+    Note that this is a little bit different on the way the Gaussian function is defined in most literature.  Basically, the bandwidth $\sigma$ here is $\sqrt{2}$ times larger than the bandwidth in other literator.
+
+    \item The paper works with fiber-based coordinate system discussed in \cite{Marschner:2003}.  Basically, we have the longitudinal angle $\theta$ and the azimuthal angle $\phi$.  The paper let
+    \begin{align*}
+      \theta_d &= (\theta_i - \theta_o)/2 \\
+      \theta_h &= (\theta_i + \theta_o)/2\mbox{, and} \\
+      \phi_d &= \phi_i - \phi_o.
+    \end{align*}     
+
+    \item One interesting thing to note is that a spherical Gaussian can be decomposed into a product of two circular Gaussians.  First, let us write:
+    \begin{align*}
+      \omega = \begin{bmatrix}
+        \sin\theta \\
+        \cos\theta\cos\phi \\
+        \cos\theta\sin\phi
+      \end{bmatrix}
+      \qquad\mbox{ and }\qquad
+      \xi = \begin{bmatrix}
+        \sin\theta' \\
+        \cos\theta'\cos\phi' \\
+        \cos\theta'\sin\phi'
+      \end{bmatrix}.
+    \end{align*}
+    We have that
+    \begin{align*}
+      \omega \cdot \xi - 1
+      &= \sin\theta \sin\theta' 
+      + \cos\theta\cos\phi\cos\theta'\cos\phi' 
+      + \cos\theta\sin\phi\cos\theta'\sin\phi' - 1\\
+      &= \sin\theta \sin\theta' 
+      + \cos\theta\cos\theta'\cos\phi\cos\phi' 
+      + \cos\theta\cos\theta'\sin\phi\sin\phi' - 1\\
+      &= \sin\theta \sin\theta' 
+      + \cos\theta\cos\theta'(\cos\phi\cos\phi' + \sin\phi\sin\phi')\\
+      &= \sin\theta \sin\theta' 
+      + \cos\theta\cos\theta'\cos(\phi - \phi') - 1\\
+      &= \sin\theta \sin\theta' + (\cos\theta\cos\theta' - \cos\theta\cos\theta')
+      + \cos\theta\cos\theta'\cos(\phi - \phi') - 1\\
+      &= (\sin\theta \sin\theta' + \cos\theta\cos\theta' -1) 
+      + [\cos\theta\cos\theta'\cos(\phi - \phi') - \cos\theta\cos\theta'] \\
+      &= (\sin\theta \sin\theta' + \cos\theta\cos\theta' -1) 
+      + \cos\theta\cos\theta'(\cos(\phi - \phi') - 1) \\
+      &= (\cos(\theta - \theta') -1) 
+      + \cos\theta\cos\theta'(\cos(\phi - \phi') - 1).
+    \end{align*}
+    As a result:
+    \begin{align*}
+      \frac{2}{\sigma^2}(\omega \cdot \xi - 1)
+      &= \frac{2}{\sigma^2}(\cos(\theta-\theta')-1) + \frac{2}{(\sigma/\sqrt{\cos\theta\cos\theta'})^2} (\cos(\phi - \phi') - 1) \\
+      \exp \bigg( \frac{2}{\sigma^2}(\omega \cdot \xi - 1) \bigg) 
+      &= \exp\bigg( \frac{2}{\sigma^2}(\cos(\theta-\theta')-1) \bigg)
+      \exp\bigg( \frac{2}{(\sigma/\sqrt{\cos\theta\cos\theta'})^2} (\cos(\phi - \phi') - 1) \bigg)\\
+      G(\omega;\xi,\sigma) &= g^c(\theta;\theta',\sigma)g^c\bigg(\phi;\phi',\frac{\sigma}{\sqrt{\cos\theta\cos\theta'}}\bigg).
+    \end{align*}
+    The paper abbreviates $\sigma / \sqrt{\cos\theta\cos\theta'}$ as $\sigma'$.    
+  \end{itemize}
+
+  \subsection{Microcylinder Model}
+  
+  \begin{itemize}
+    \item According to the model, the outgoing radiance $L(\omega_o)$ is given by $\alpha_1 L_1(\omega_o) + \alpha_2 L_2(\omega_o)$ where
+    \begin{itemize}
+      \item $L_1(\omega_o)$ is the outgoing radiance from the warp yarn,
+      \item $L_2(\omega_o)$ is the outgoing radiance from the weft yarn, and
+      \item $\alpha_1$ and $\alpha_2$ are percentage of surface area of the two yarns.      
+    \end{itemize}
+    
+    \item Each yarn has a tangent curve, which the Sadeghi \etal\ samples at discretes points.  Let $C_j$ denote the set of sampled tangent vectors of the tangent curve of Yarn $j$ where $j \in \{1,2\}$.  Then, the outgoing radiance from the yarn is given by:
+    \begin{align*}
+      L_j(\omega_o) = \sum_{\ve{t} \in C_j} \int_{S^2} L(\omega_i) f_s(\omega_i, \omega_o) W(\ve{t}, \omega_i, \omega_o) \cos\theta_i\ \dee \omega_i
+    \end{align*}
+    where $f_s$ is the \emph{yarn scattering function}, and $W$ is the \emph{weighting function}.  Note that each integral is evaluated in a coordinate frame with $\ve{t}$ acting as the fiber tangent, so $\theta_i = \sin^{-1}(\omega_i \cdot \ve{t}).$ 
+
+    \item The yarn scattering function is given by:
+    \begin{align*}
+      f_s(\omega_i,\omega_o) 
+      &= \frac{f_{r,s}(\omega_i,\omega_o) + f_{r,v}(\omega_i,\omega_o)}{\cos^2 \theta_d} \\
+      f_{r,s}(\omega_i,\omega_o)
+      &= F_r(\eta, \theta_d, \phi_d) \cos(\theta_d/2) g^u(\theta_h; 0, \gamma_s) \\
+      f_{r,v}(\omega_i,\omega_o)
+      &= F \frac{(1-k_d)g^u(\theta_h; 0, \gamma_v) + k_d}{\cos\theta_i + \cos\theta_d} A
+    \end{align*}
+    Here, $\eta$ is the index of refraction, $F_r$ is the Fresnel reflectance term, and $F$ is the product of two Fresnel transmittance terms (which I'm still fucking unclear what it actually is, even after looking at \cite{Sadeghi:2013}).
+
+    \item The weighting function $W$ is given by:
+    \begin{align*}
+      W(\ve{t}, \omega_i, \omega_o) &= M(\ve{t}, \omega_i, \omega_o) \frac{P(\ve{t},\omega_i,\omega_o)}{\sum_{t' \in C_1 \cup C_2} P(\ve{t'}, \omega_i, \omega_o)}
+    \end{align*}
+    where $M$ is called the \emph{shadowing and masking term}, and $P$ is called the \emph{projection term}.  They are defined as follows:
+    \begin{align*}
+      M(\ve{t},\omega_i,\omega_o) 
+      &= D(g(\phi_d; 0, \sigma), \max(\cos\phi_i, 0), \max(\cos\phi_o, 0)) \\
+      P(\ve{t}, \omega_i,\omega_o)
+      &= D(g(\psi_d; 0, \sigma), \max(\cos\psi_i, 0), \max(\cos\psi_o, 0))      
+    \end{align*}
+    where $D(x,y,z) = (1-x) \cdot y \cdot z + x\min(y,z)$, and $\sigma$ is a bandwidth parameter between $15^\circ$ and $20^\circ$.  Also, given a direction $\omega$, the angle $\psi$ is the angle between the cloth surface's normal $\ve{n}$ and the projection of $\omega$ onto the plane spanned by $\ve{n}$ and $\ve{t}$.
+  \end{itemize}
+
+  \subsection{Shading}
+
+  \begin{itemize}
+    \item The paper represents environment lighting as a mixture of Gaussian:
+    \begin{align*}
+      L_{\mathrm{env}}(\omega_i) \approx \sum_{k=1}^K L_k G(\omega_i; \xi_k, \sigma_k).
+    \end{align*}
+    We shall abbreviate $G(\omega_i; \xi_k, \sigma_k)$ with $G_k(\omega_i)$.
+
+    \item Assuming environment lighting, the outgoing radiance for Yarn $j$ is given by:
+    \begin{align*}
+      L_j(\omega_o) = \sum_{k=1}^K L_k \sum_{\ve{t} \in C_j} B_{j,k}(\ve{t}, \omega_o)
+    \end{align*}
+    where
+    \begin{align*}
+      B_{j,k}(\ve{t}, \omega_o)
+      &= \int_{S^2} G_k(\omega_i) V(\omega_i) f_s(\omega_i, \omega_o) W(\ve{t},\omega_i,\omega_o)\cos\theta_i\ \dee\omega_i,
+    \end{align*}
+    which is the central integral that we have to evaluate.
+
+    \item The weighting function is the bane of the above integral, the Iwasaki \etal\ paper factors it out first:
+    \begin{align*}
+      B_{j,k}(\ve{t},\omega_o) 
+      = \frac{\int_{S^2} G_k(\omega_i)W(\ve{t}, \omega_i,\omega_o)\ \dee\omega_i}{\int_{S^2} G_k(\omega_i)\ \dee\omega_i}
+      \times \int_{S^2} G_k(\omega_i) V(\omega_i) f_s(\omega_i, \omega_o)\cos\theta_i\ \dee\omega_i.
+    \end{align*}
+    The factored out term is denoted $T(\ve{t}, \xi_k, \sigma_k, \omega_o)$.  
+
+    The paper precomputed $T$ for all the sampled $\ve{t}$ and a discrete set of $\sigma_k$.  For a fixed pair of $\ve{t}$ and $\sigma_k$, the paper computes the 4D function $T_{\ve{t},\sigma_k}(\xi_k, \omega_o)$, performs SVD on it, and keeps a few largest singular values and vectors.  The resolution of $T_{\ve{t},\sigma_k}(\xi_k, \omega_o)$ is $48 \times 48$, and average number singular values used is in the range of $7.2$ to $14.4$
+
+    \item Now, we turn to the integral on the right.  Let's consider integral involving $f_{r,s}$ term because the paper says the $f_{r,v}$ term can be thought about in the same way.  That is, we want to evaluate:
+    \begin{align*}
+      I_s 
+      &= \int_{S^2} G_k(\omega_i) V(\omega_i) f_{r,s}(\omega_i,\omega_o) \cos\theta_i\ \dee\omega_i \\
+      &= \int_{S^2} G_k(\omega_i) V(\omega_i) F_r(\eta,\theta_d,\phi_d) \cos(\theta_d/2) g^u(\theta_h;0,\gamma_s) \frac{\cos\theta_i}{\cos^2\theta_d}\ \dee\omega_i \\
+      &= \int_{S^2} g^c(\theta_i;\theta_k,\sigma_k) g^c\bigg(\phi_i; \phi_k, \frac{\sigma_k}{\sqrt{\cos\theta_i\cos\theta_k}}\bigg) V(\omega_i) F_r(\eta,\theta_d,\phi_d) \cos(\theta_d/2) g^u(\theta_h;0,\gamma_s) \frac{\cos\theta_i}{\cos^2\theta_d}\ \dee\omega_i.
+    \end{align*}
+    The circular Gaussian $g^u(\theta_h;0,\gamma_s)$ may be approximated by $g^c(\theta_i;-\theta_o,2\gamma_s)/ (\sqrt{\pi} \gamma_s)$.  Because the product of two circular Gaussian is another circular Gaussian, we have that
+    \begin{align*}
+      g^c(\theta_i;\theta_k,\sigma_k) g^c(\theta_i;-\theta_o,2\gamma_s) / (\sqrt{pi}\gamma_s)
+      = \alpha \cdot g^c(\theta_i;\theta_l,\sigma_l)      
+    \end{align*}
+    for some $\theta_l$, $\sigma_l$, and $\alpha$.  So,
+    \begin{align*}
+      I_s 
+      &\approx \int_{S^2} \alpha g^c(\theta_i;\theta_l,\sigma_l) g^c\bigg(\phi_i; \phi_k, \frac{\sigma_k}{\sqrt{\cos\theta_i\cos\theta_k}}\bigg) V(\omega_i) F_r(\eta,\theta_d,\phi_d) \cos(\theta_d/2) \frac{\cos\theta_i}{\cos^2\theta_d}\ \dee\omega_i \\
+      &= \int_{-\pi/2}^{\pi/2} \int_{0}^{2\pi} \alpha g^c(\theta_i;\theta_l,\sigma_l) g^c\bigg(\phi_i; \phi_k, \frac{\sigma_k}{\sqrt{\cos\theta_i\cos\theta_k}}\bigg) V(\omega_i) F_r(\eta,\theta_d,\phi_d) \cos(\theta_d/2) \frac{\cos^2\theta_i}{\cos^2\theta_d}\ \dee\phi_i \dee\theta_i \\
+      &= \int_{-\pi/2}^{\pi/2} \int_{0}^{2\pi} \bigg( \alpha F_r(\eta,\theta_d,\phi_d) \cos(\theta_d/2) \frac{\cos^2\theta_i}{\cos^2\theta_d} \bigg) g^c(\theta_i;\theta_l,\sigma_l) g^c\bigg(\phi_i; \phi_k, \frac{\sigma_k}{\sqrt{\cos\theta_i\cos\theta_k}}\bigg) V(\omega_i)\ \dee\phi_i \dee\theta_i.
+    \end{align*}
+    Let us define $C(\theta_i, \phi_i) = \alpha F_r(\eta,\theta_d,\phi_d) \cos(\theta_d/2) \frac{\cos^2\theta_i}{\cos^2\theta_d}$.  The above expression simplifies to:
+    \begin{align*}
+      I_s \approx \int_{-\pi/2}^{\pi/2} \int_{0}^{2\pi} C(\theta_i, \phi_i) g^c(\theta_i;\theta_l,\sigma_l) g^c\bigg(\phi_i; \phi_k, \frac{\sigma_k}{\sqrt{\cos\theta_i\cos\theta_k}}\bigg) V(\omega_i)\ \dee\phi_i \dee\theta_i.
+    \end{align*}
+    Because the functions that make up $C(\theta_i, \phi_i)$ changes slowly relative to the Gaussians, the paper approximates it as a constant $C(\theta_l, \phi_k)$, which is at the peak of the two Gaussians in the integrand.  We now have:
+    \begin{align*}
+      I_s \approx C(\theta_l, \phi_k) \int_{-\pi/2}^{\pi/2} \int_{0}^{2\pi} g^c(\theta_i;\theta_l,\sigma_l) g^c\bigg(\phi_i; \phi_k, \frac{\sigma_k}{\sqrt{\cos\theta_i\cos\theta_k}}\bigg) V(\omega_i)\ \dee\phi_i \dee\theta_i.
+    \end{align*}
+    It remains to approximate the remaining integral.
+
+    \item To make approximation of the integral easier, the Iwasaki \etal\ paper represents the visibility function $V(\omega_i)$ with the following signed distance function:
+    \begin{align*}
+      d(\theta_i,\phi_i) = \begin{cases}
+        + \min_{V(\theta,\phi) = 0} \sqrt{(\theta_i - \theta)^2 + (\phi_i - \phi)^2}
+        & \mathrm{if}\ V(\theta_i,\phi_i) = 1 \\
+        - \min_{V(\theta,\phi) = 1} \sqrt{(\theta_i - \theta)^2 + (\phi_i - \phi)^2}
+        & \mathrm{if}\ V(\theta_i,\phi_i) = 0
+      \end{cases}.
+    \end{align*}
+    I think this definition is problematic because it relies on a coordinate frame defined at each tangent vector.  Do you have to store a separate $d$ for each tangent vector $\ve{t}$?  Can you define this in a way that is not specific to a particular coordinate system?
+
+    \item With the distance function $d$ defined, let $d'_{\theta_l, \phi_k}(\theta_i,\phi_i)$ denote the first-order Taylor expansion of $d$ around $(\theta_l, \phi_k)$:
+    \begin{align*}
+      d_{\theta_l, \phi_k}'(\theta_i, \phi_i)
+      &= d(\theta_l, \phi_k) 
+      + (\theta_i - \theta_l)\frac{\partial d}{\partial \theta_i}\bigg|_{\theta_l,\phi_k}
+      + (\phi_i - \phi_k)\frac{\partial d}{\partial \phi_i}\bigg|_{\theta_l,\phi_k}
+    \end{align*}
+
+    \item The paper then approximates $V$ with the following function:
+    \begin{align*}
+      V'_{\theta_l, \phi_k}(\theta_i, \phi_i) = \begin{cases}
+        1, & \mathrm{if}\ d_{\theta_l,\phi_k}'(\theta_i, \phi_i) > 0 \\
+        0, & \mathrm{if}\ d_{\theta_l,\phi_k}'(\theta_i, \phi_i) < 0
+      \end{cases}.
+    \end{align*}
+
+    \item The integral involving visibility function is then approximated as:
+    \begin{align*}
+      I &= \int_{-\pi/2}^{\pi/2} \int_{0}^{2\pi} g^c(\theta_i;\theta_l,\sigma_l) g^c\bigg(\phi_i; \phi_k, \frac{\sigma_k}{\sqrt{\cos\theta_i\cos\theta_k}}\bigg) V(\omega_i)\ \dee\phi_i \dee\theta_i \\
+      &\approx \int_{-\pi/2}^{\pi/2} \int_{0}^{2\pi} g^c(\theta_i;\theta_l,\sigma_l) g^c\bigg(\phi_i; \phi_k, \frac{\sigma_k}{\sqrt{\cos\theta_i\cos\theta_k}}\bigg) V'_{\theta_l,\phi_k}(\theta_i, \phi_i)\ \dee\phi_i \dee\theta_i.
+    \end{align*}
+
+    \item The above is still hard to approximate, so $V'$ is factored out:
+    \begin{align*}
+      I 
+      &\approx \int_{-\pi/2}^{\pi/2} \int_{0}^{2\pi} g^c(\theta_i;\theta_l,\sigma_l) g^c\bigg(\phi_i; \phi_k, \frac{\sigma_k}{\sqrt{\cos\theta_i\cos\theta_k}}\bigg)\ \dee\phi_i \dee\theta_i\\
+      &\phantom{\approx} \times \frac{\int_{-\pi/2}^{\pi/2} \int_{0}^{2\pi} g^c(\theta_i;\theta_l,\sigma_l) g^c\big(\phi_i; \phi_k, \frac{\sigma_k}{\sqrt{\cos\theta_i\cos\theta_k}}\big) V'_{\theta_l,\phi_k}(\theta_i + \theta_l, \phi_i + \phi_k)\ \dee\phi_i \dee\theta_i}{\int_{-\pi/2}^{\pi/2} \int_{0}^{2\pi} g^c(\theta_i;\theta_l,\sigma_l) g^c\big(\phi_i; \phi_k, \frac{\sigma_k}{\sqrt{\cos\theta_i\cos\theta_k}}\big)\ \dee\phi_i \dee\theta_i}
+    \end{align*}
+
+    \item The first term is approximate as:
+    \begin{align*}
+      & \int_{-\pi/2}^{\pi/2} \int_{0}^{2\pi} g^c(\theta_i;\theta_l,\sigma_l) g^c\bigg(\phi_i; \phi_k, \frac{\sigma_k}{\sqrt{\cos\theta_i\cos\theta_k}}\bigg)\ \dee\phi_i \dee\theta_i \\
+      &\approx \bigg( \int_{-\pi/2}^{\pi/2} g^c(\theta_i;\theta_l,\sigma_l)\ \dee \theta_i \bigg) \bigg[ \int_{0}^{2\pi}g^c\bigg( \phi_i; \phi_k, \frac{\sigma_k}{\sqrt{\cos\theta_l \cos\theta_k}} \bigg) \ \dee\phi_i \bigg].      
+    \end{align*}
+    The left term in the product is approximated as:
+    \begin{align*}
+      \int_{-\pi/2}^{\pi/2} g^c(\theta_i;\theta_l, \sigma_l)\ \dee\theta_i
+      &= \int_{-\pi/2}^{\pi/2} g(\theta_i;\theta_l, \sigma_l)\ \dee\theta_i \\
+      &= \frac{\sqrt{\pi} \sigma_l}{2} \bigg[ \mathrm{erf}\bigg( \frac{\pi/2 - \theta_l}{\sigma_l} \bigg) - \mathrm{erf}\bigg( \frac{-\pi/2 - \theta_l}{\sigma_l} \bigg) \bigg].
+    \end{align*}
+    The right term can be computed exactly.  From the von Mises distribution, we know that
+    \begin{align*}
+      \int_{0}^{2\pi} \exp(\kappa \cos(x - \mu)) = 2\pi I_0(\kappa)
+    \end{align*}
+    where $I_0$ is the modified Bessel function of order $0$.  So,
+    \begin{align*}
+      & \int_0^{2\pi} g^c\bigg( \phi_i; \phi_k, \frac{\sigma_k}{\sqrt{\cos\theta_l\cos\theta_k}} \bigg)\ \dee\phi_i \\
+      &= \int_0^{2\pi} \exp\bigg(\frac{2 \cos\theta_l \cos\theta_k}{\sigma^2_k} (\cos(\phi_i - \phi_k) - 1) \bigg) \ \dee\phi_i \\
+      &= \exp \bigg(-\frac{2 \cos\theta_l \cos\theta_k}{\sigma^2_k} \bigg)
+      \int_0^{2\pi} \exp\bigg(\frac{2 \cos\theta_l \cos\theta_k}{\sigma^2_k} \cos(\phi_i - \phi_k) \bigg) \ \dee\phi_i \\
+      &= \exp \bigg(-\frac{2 \cos\theta_l \cos\theta_k}{\sigma^2_k} \bigg) 2\pi I_0\bigg( \frac{2 \cos\theta_l \cos\theta_k}{\sigma^2_k} \bigg).
+    \end{align*}
+
+    \item The second term is problematic.  I just felt that the paper was written in a way that prevents comprehension.
+    \begin{itemize}
+      \item First, why is $V'$ even introduced in the first place?  You see that $V'_{\theta_l,\phi_k}(\theta_i,\phi_i)$ depends on $d'_{\theta_l,\phi_k}(\theta_i, \phi_i)$.  So, we have that $d'_{\theta_l,\phi_k}(\theta_l + \theta_i,\phi_k + \phi_i) = d(\theta_l, \phi_k)$, and $V'_{\theta_l, \phi_k}(\theta_i, \phi_i) = V(\theta_l, \phi_k)$, which is a constant!  The value of the integral would be reduced to $1$.
+
+      \item Second, they try to approximate the integral ratio, which is a function of $\sigma_l$, $\sigma_k' = \frac{\sigma_k}{\sqrt{\cos\theta_l\cos\theta_k}}$, $d$, and $\nabla d$.  They say this is a 4D function, but $d$ is a 2D function!  The type doesn't check!
+    \end{itemize}
+  \end{itemize}
+
+  \bibliographystyle{apalike}
+  \bibliography{spherical-gaussian}  
+\end{document}

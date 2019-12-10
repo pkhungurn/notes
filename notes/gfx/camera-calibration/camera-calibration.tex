@@ -1,0 +1,222 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+
+\newtheorem{lemma}{Lemma}[section]
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{corollary}[lemma]{Corollary}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\msf}[1]{\mathsf{#1}}
+
+\title{Camera Calibration}
+\author{Pramook Khungurn}
+
+\begin{document}
+	\maketitle
+	
+	The material in this note is lifted from relevant sections of 
+	Szeliski's \emph{Computer Vision} book. A note on notation
+	is that if $\ve{v}$ is a vector, then $\bar{\ve{v}}$ is its homogeneous
+	coordinate. Therefore, if $\ve{v} \in \mathbb{R}^d$,
+	then $\bar{\ve{v}} \in \mathbb{R}^{d+1}.$
+	
+	\section{Camera Intrinsics} % (fold)
+	
+	\begin{itemize}
+	  \item Pixels are indexed by {\bf pixel coordinates} $\ve{x}_s = (x_s, y_s)$.
+	    We let $\bar{\ve{x}}_s$ denote the homogeneous coordinate of $(x_s, y_s)$.
+	    That is, $$\bar{\ve{x}}_s \sim \begin{bmatrix}x_s \\ y_s \\ 1\end{bmatrix}$$
+	    where $\sim$ denotes ``equals modulo a scaling factor.''	  	  
+	  
+	  \item Most coordinate systems starts at the top left of the image plane. We let $\ve{c}_s$ denote
+	    3D coordinate of this top left point, which we call the {\bf origin}.
+	    
+    \item $\ve{O}_c$ denote the camera's center of projection.	    
+    	  
+	  \item We let $\ve{p}_c$ denote a \emph{camera-centered} point, which is a point
+	    written in a coordinate system where ${\bf O}_c$ is the origin.  Let $\ve{p}$ be the 
+	    projection of $\ve{p}_c$ on to the image plane.
+	  
+	  \item To map $\bar{\ve{x}}_s$ to a 3D point on the image place, we first scale it by
+	    the pixel spacing $(s_x, s_y)$, and then rotate it with a 3D rotation $\ve{R}_s$ and
+	    then add the resulting vector to the origin $\ve{c}_s$:
+	    \begin{align*}
+	      \ve{p} = \left[ \begin{array}{c|c} \ve{R}_s & \ve{c}_s \end{array} \right]
+	        \begin{bmatrix}
+	          s_x & 0 & 0\\
+	          0 & s_y & 0\\
+	          0 & 0 & 0\\
+	          0 & 0 & 1
+	        \end{bmatrix}
+	        \begin{bmatrix}
+	          x_s \\ y_s \\ 1
+	        \end{bmatrix}
+	        = \ve{M}_s \bar{\ve{x}}_s.
+	    \end{align*}
+	    Here, $\ve{M}_s$ is called the {\bf sensor homography}.
+	    
+	  \item The matrix $\ve{M}_s$ has eight parameters:
+	    \begin{itemize}
+	      \item 3 parameters to describe the rotation $\ve{R}_s$.
+	      \item 3 parameters to describe the center $\ve{c}_s$.
+	      \item 2 parameters to describe the scale $(s_x, s_y)$.
+	    \end{itemize}
+	    
+	  \item In practice, unless we have accurate information about
+	    sensor spacing or sensor orientation, there are only 
+	    7 degrees of freedom.
+	    
+	    The reason is that the distance from the sensor to the origin
+	    cannot be separated from sensor spacing, based on 
+	    external image measurement alone.
+	    	  
+	  \item The relationship between the pixel center $\ve{p}$ and
+	    the camera-centered point $\ve{p}_c$ is given by an unknown 
+	    scaling factor $\alpha$, where $\ve{p} = \alpha \ve{p}_c$.
+	    Hence,
+	    $$\bar{\ve{x}}_s = \ve{M}_s^{-1} \ve{p} = \alpha \ve{M}_s^{-1} \ve{p}_c $$
+	    
+	  \item The {\bf calibration matrix} $\ve{K}$ is defined as
+	    $$\ve{K} = \alpha \ve{M}_c^{-1}.$$
+	    
+	  \item Literature treats $\ve{K}$ as being an upper triangular matrix 
+	    with having only 5 degrees of freedom instead
+	    of the full 7 or 8. This is because we cannot retrieve all the
+	    degrees of freedom using external measurements alone.	  
+  \end{itemize}		
+  % section section_name (end)	
+  
+  \section{Camera Pose Estimation}\label{sec:camera_pose_estimation} % (fold)
+  
+  \begin{itemize}
+    \item The input a number of known 3D locations 
+      $\ve{p}_1$, $\ve{p}_2$, $\ve{p}_3$, $\dotsc$, $\ve{p}_n$
+      and its corresponding screen coordinates 
+      $\ve{x}_1$, $\ve{x}_2$, $\dotsc$, $\ve{x}_n$.
+      
+    \item We would like to find a $3 \times 4$ matrix $\ve{C}$ such that      
+      $\bar{\ve{x}}_i = \ve{C} \bar{\ve{p}}_i$. This is called
+      the {\bf camera matrix}.
+      
+    \item After we have $\ve{C}$, we can retrieve the calibration matrix $\ve{K}$
+      by the following equation:
+      \begin{align*}
+        \ve{C} = \ve{K} \left[ \begin{array}{c|c} \ve{R} & \ve{t} \end{array} \right]
+      \end{align*}
+      where $\ve{K}$ is upper triangular and $\ve{R}$ is a $3 \times 3$ matrix.
+      
+    \item $\ve{K}$ in the above equation can be found by QR factorization. That is,
+      we know that
+      \begin{align*}
+        \ve{C}^T = QR = 
+        \begin{bmatrix} 
+          * & * & * \\
+          * & * & * \\
+          * & * & * \\
+          * & * & *          
+        \end{bmatrix}
+        \begin{bmatrix} * & * & * \\ & * & * \\ &   & * \end{bmatrix}
+      \end{align*}
+      Note that, $P^T = Q E E R$ where $$E = \begin{bmatrix} 0 & 0 & 1 \\ 0 & 1 & 0 \\ 1 & 0 & 0 \end{bmatrix}.$$
+      Hence, we can write $P = R^T E E Q^T$. Note that $R^T E$ is upper triangular because
+      \begin{align*}
+        R^T E 
+        &= 
+        \left( \begin{bmatrix} * & * & * \\ & * & * \\ &   & * \end{bmatrix} \right)^T
+        \begin{bmatrix} 0 & 0 & 1 \\ 0 & 1 & 0 \\ 1 & 0 & 0 \end{bmatrix}\\
+        &=
+        \begin{bmatrix} * &  &  \\ * & * & \\ * & * & * \end{bmatrix}
+        \begin{bmatrix} 0 & 0 & 1 \\ 0 & 1 & 0 \\ 1 & 0 & 0 \end{bmatrix}\\
+        &= \begin{bmatrix} * & * & * \\ & * & * \\ &   & * \end{bmatrix}.
+      \end{align*}
+      Therefore, we can set $\ve{K} = R^T E$ and $[\ve{R}|\ve{t}] = E Q^T$.          
+  \end{itemize}
+  
+  \subsection{A Simple Analytic Algorithm}
+  
+  \begin{itemize}
+    \item Consider a point $\ve{p}_i = (X_i, Y_i, Z_i)$ and its screen coordinate
+      $\ve{x}_i = (x_i, y_i)$. We know that
+      \begin{align*}
+        x_i &= \frac{ c_{00} X_i + c_{01} Y_i + c_{02} Z_i + c_{03} }{ c_{20} X_i + c_{21} Y_i + c_{22} Z_i + c_{23} }\\
+        y_i &= \frac{ c_{10} X_i + c_{11} Y_i + c_{12} Z_i + c_{13} }{ c_{20} X_i + c_{21} Y_i + c_{22} Z_i + c_{23} }
+      \end{align*}
+    \item The above equations give us the following system of linear equations:      
+      \begin{align*}
+        \left[
+        \begin{array}{cccccccccccc}
+          X_1 & Y_1 & Z_1 & 1 &     &     &        &   & -x_1 X_1 & -x_1 Y_1 & -x_1 Z_1  & -x_1\\
+              &     &     &   & X_1 & Y_1 & Z_1    & 1 & -y_1 X_1 & -y_1 Y_1 & -y_1 Z_1  & -y_1\\
+          X_2 & Y_2 & Z_2 & 1 &     &     &        &   & -x_2 X_2 & -x_2 Y_2 & -x_2 Z_2  & -x_2\\
+              &     &     &   & X_2 & Y_2 & Z_2    & 1 & -y_2 X_2 & -y_2 Y_2 & -y_2 Z_2  & -y_2\\
+              &     &     &   &     &     &   & \vdots &          &          &           &    \\
+          X_n & Y_n & Z_n & 1 &     &     &        &   & -x_n X_n & -x_2 Y_n & -x_n Z_n  & -x_n\\
+              &     &     &   & X_n & Y_n & Z_n    & 1 & -y_n X_n & -y_2 Y_n & -y_n Z_n  & -y_n              
+        \end{array}
+        \right]
+        \begin{bmatrix}
+          c_{00} \\
+          c_{01} \\
+          \vdots \\
+          c_{23}
+        \end{bmatrix}
+        =
+        \begin{bmatrix}
+          0\\
+          0\\
+          \vdots\\
+          0          
+        \end{bmatrix}        
+      \end{align*}
+      In other words, if we let 
+      \begin{align*}
+        \msf{c} = \begin{bmatrix}
+          c_{00} \\
+          c_{01} \\
+          \vdots \\
+          c_{23}
+        \end{bmatrix}
+      \end{align*}
+      and we let $\msf{A}$ denote the big matrix on the right, then we want to solve the equation
+      \begin{align*}
+        \msf{A} \msf{c} = \ve{0}.
+      \end{align*}
+      
+    \item Note that if we find $\msf{c} \neq \ve{0}$ that is a solution to the above system, then any
+      matrix of the form $k\msf{c}$ should also be a solution to the system. This implies that $\msf{A}$ should be rank deficient. 
+                
+      Because $\msf{c}$ has dimention 12 and each 3D-2D correspondence gives us 2 equations,
+      we need at least 6 points in order to be able to solve the equation. However, we need more
+      than $6$ points to ensure that $\msf{A}$ is actually rank deficient.
+      
+    \item To actually find $\msf{c}$, we may set one component of $\msf{c}$, say $c_{23}$, to 1, and get a smaller
+      system of linear equations to solve. 
+      
+    \item Alternatively, since $\ve{A}$ is rank deficient, its smallest singular value is 0 (or should be close to 0).
+      We can take $\ve{c}$ to be the singular vector corresponding to this singular value.
+      
+    \item This method is called the {\bf direct linear transform} (DLT).    
+  \end{itemize}
+  
+  \subsection{Iterative Algorithms}
+  
+  \begin{itemize}
+    \item Instead of solving for the entries of $\ve{C}$, we try to minimize the reprojection
+      error of 2D points as a function of unknown pose parameters in $(\ve{R}, \ve{t})$ and $\ve{K}$.
+      
+    \item We first write the projection equation as:
+      \begin{align*}
+        \ve{x}_i = \ve{f}(\ve{p}_i; \ve{R}, \ve{t}, \ve{K})
+      \end{align*}      
+  \end{itemize}
+  
+  
+  % section section_name (end)
+\end{document}

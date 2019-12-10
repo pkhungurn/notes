@@ -1,0 +1,421 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+
+\newtheorem{lemma}{Lemma}[section]
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{corollary}[lemma]{Corollary}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\ve}[1]{\mathbf{#1}}
+
+\title{Angular Moments}
+\author{Pramook Khungurn}
+
+\begin{document}
+	\maketitle
+		
+	\section{Definitions} % (fold)
+	\label{sec:angular_moments}
+	
+		\begin{itemize}
+			\item In this section, we talk about spherical functions and their moments.
+			
+			\item A function $f$ that associates a point on the unit sphere $S^2$ to a real number is called
+				a \emph{spherical function}.
+				
+			\item Here, $S^2$ is parameterized by two angles: the \emph{azimuthal angle} $\theta \in [0, 2\pi)$ and the \emph{inclination angle}
+				$\varphi \in [0,\pi)$.
+				The point associated with the ordered pair $(\theta, \phi)$ is 
+				$$\begin{bmatrix} \cos \theta \sin \varphi \\ \sin\theta\sin\varphi \\ \cos\varphi \end{bmatrix}.$$
+				Such a point is often denoted by $\omega.$ The three components of $\omega$, from top to bottom, are denoted by $\omega_1$, $\omega_2$,
+				and $\omega_3$.
+				
+			\item Note that $d\omega = \sin\varphi\ d\varphi\ d\theta$. Hence, integrating a spherical function $f$ over the sphere
+				can be rewritten in terms of $\theta$ and $\varphi$ as follows:
+				$$\int_{S^2} f(\omega)\ d\omega = \int_{0}^{2\pi} \int_{0}^\pi f(\theta, \varphi) \sin \varphi\ d\varphi\ d\theta.$$
+			
+			\item Let $f$ be a spherical function. 
+				
+				The \emph{$0$th moment} of $f$ is $$\mu_0[f] = \int_{S^2} f(\omega)\ d\omega.$$
+				
+				The \emph{$1$st moment} of $f$ is 
+				\begin{align*}
+					\mu_1[f] 
+					= \begin{bmatrix} \mu_1[f]_1 \\ \mu_1[f]_2 \\ \mu_1[f]_3 \end{bmatrix}
+					= \begin{bmatrix} \int_{S^2} f(\omega) \omega_1\ d\omega \\ \int_{S^2} f(\omega) \omega_2\ d\omega \\ \int_{S^2} f(\omega) \omega_3\ d\omega \end{bmatrix}
+					= \int_{S^2} f(\omega) \omega\ d\omega.
+				\end{align*}
+				
+				The \emph{$2$nd moment} of $f$ is
+				\begin{align*}
+					\mu_2[f]
+					= \begin{bmatrix}
+						\mu_2[f]_{11} & \mu_2[f]_{12} & \mu_2[f]_{13} \\
+						\mu_2[f]_{21} & \mu_2[f]_{22} & \mu_2[f]_{23} \\
+						\mu_2[f]_{31} & \mu_2[f]_{32} & \mu_2[f]_{33} 
+					\end{bmatrix}
+				\end{align*}
+				where $$\mu_2[f]_{ij} = \int_{S^2} f(\omega) \omega_i \omega_j\ \dee\omega.$$
+				
+				The $3$rd moment, $4$th moment, and so on can be defined in a similar way, but we will not go there.
+		\end{itemize}
+		
+	\section{Integrals of Powers of Sine and Cosine} \label{sec:integrals_of_powers_of_sine_and_cosine} % (fold)
+	
+		\begin{itemize}
+				
+			\item We shall develop some identities for evaluating 
+				the moments. These identities involve integrals 
+				of sine and cosine.
+			
+			\item \begin{definition}
+				Let $m$ and $n$ be non-negative integers. Define
+				$$\mathcal{I}^{m,n}(a,b) = \int_a^b \sin^m \theta \cos^n \theta \ \dee\theta.$$ Moreover, let
+				\begin{align*}
+					\mathcal{S}^{m,n} &= \mathcal{I}^{m,n}(0,2\pi), &\\
+					\mathcal{H}_1^{m,n} &= \mathcal{I}^{m,n}(0,\pi),
+					&\mathcal{H}_2^{m,n} &= \mathcal{I}^{m,n}(\pi,2\pi),\\
+					\mathcal{Q}_1^{m,n} &= \mathcal{I}^{m,n}(0,\pi/2), 
+					&\mathcal{Q}_2^{m,n} &= \mathcal{I}^{m,n}(\pi/2,\pi),\\
+					\mathcal{Q}_3^{m,n} &= \mathcal{I}^{m,n}(\pi,3\pi/2), 
+					&\mathcal{Q}_4^{m,n} &= \mathcal{I}^{m,n}(3\pi/2,2\pi).	
+				\end{align*}
+			\end{definition}
+				
+			\item \begin{lemma} \label{q-relations}
+				$\mathcal{Q}_1^{m,n} = (-1)^n \mathcal{Q}_2^{m,n} = (-1)^{m+n}\mathcal{Q}_3^{m,n} = (-1)^m \mathcal{Q}_4^{m,n}.$
+			\end{lemma}
+			\begin{proof}
+				We have that
+				$$\mathcal{Q}_2^{m,n} = \int_{\pi/2}^\pi \sin^m \theta \cos^n \theta\ \dee\theta.$$
+				Let $u = \pi - \theta.$ We have that $\dee u = -\dee \theta,$ and
+				\begin{align*}
+					\int_{\pi/2}^\pi \sin^m \theta \cos^n \theta\ \dee\theta
+					&= -\int_{\pi/2}^0 \sin^m (\pi - u) \cos^n (\pi - u)\ \dee u \\
+					&= \int_0^{\pi/2} \sin^m u\ (-1)^n \cos^n u\ \dee u = (-1)^n \mathcal{Q}_2^{m,n}.					
+				\end{align*}
+				Other equations are similar.
+			\end{proof}
+			
+			\item \begin{lemma} \label{s-in-terms-of-q1}
+				If $m$ or $n$ is odd, then $\mathcal{S}^{m,n} = 0.$
+				Otherwise, $\mathcal{S}^{m,n} = 4\mathcal{Q}_1^{m,n}.$
+			\end{lemma}
+			\begin{proof}
+				If $m$ or $n$ is odd, then exactly two of $m$, $n$, and $m+n$ are odd. 
+				So, 
+				$$\mathcal{S}^{m,n} 
+				= \mathcal{Q}_1^{m,n} + \mathcal{Q}_2^{m,n} + \mathcal{Q}_3^{m,n} + \mathcal{Q}_4^{m,n} 
+				= \mathcal{Q}_1^{m,n} + (-1)^n\mathcal{Q}_1^{m,n} 
+				+ (-1)^{m+n}\mathcal{Q}_1^{m,n} + (-1)^m\mathcal{Q}_1^{m,n} = 0.$$
+				Otherwise, all of $m$, $n$, and $m+n$ are positive.
+				$$\mathcal{S}^{m,n} 
+				= \mathcal{Q}_1^{m,n} + \mathcal{Q}_2^{m,n} + \mathcal{Q}_3^{m,n} + \mathcal{Q}_4^{m,n} 
+				= \mathcal{Q}_1^{m,n} + \mathcal{Q}_1^{m,n} 
+				+ \mathcal{Q}_1^{m,n} + \mathcal{Q}_1^{m,n} = 4\mathcal{Q}_1^{m,n}.$$
+			\end{proof}			
+			
+			\item \begin{lemma}
+				$\mathcal{Q}_1^{m,n} = \mathcal{Q}_1^{n,m}$ and $\mathcal{S}^{m,n} = \mathcal{S}^{n,m}.$				
+			\end{lemma}
+			\begin{proof}
+				Let $u = \pi/2 - \theta$. We have $\dee \theta = -\dee u,$ and
+				\begin{align*}
+					\mathcal{Q}_1^{m,n} 
+					&= \int_{0}^{\pi/2} \sin^m \theta \cos^n \theta\ \dee\theta\\
+					&= -\int_{\pi/2}^{0} \sin^m (\pi/2 - u) \cos^n (\pi/2-u)\ \dee u\\
+					&= \int_{0}^{\pi/2} \cos^m u \sin^n u\ \dee u = \mathcal{Q}_1^{n,m}.
+				\end{align*}
+				The equation involving $\mathcal{S}^{m,n}$ follows from Lemma~\ref{s-in-terms-of-q1}.
+			\end{proof}
+			
+			\item \begin{lemma} \label{reduction}
+				If $m \geq 2$ and $n \geq 0$, then $\mathcal{Q}_1^{m,n} = \frac{m-1}{m+n} \mathcal{Q}_1^{m-2,n}.$
+				Moreover, if $n \geq 2$ and $m \geq 0$, then $\mathcal{Q}_1^{m,n} = \frac{n-1}{m+n} \mathcal{Q}_1^{m,n-2}.$
+			\end{lemma}
+			\begin{proof}
+				Let $u = \sin^{m-1} \theta \cos^{n} \theta$, and $v = \cos\theta.$
+				We have that $\dee v = -\sin\theta\ \dee \theta,$ and
+				\begin{align*}
+					\dee u 
+					&= [(m-1) \sin^{m-2} \theta \cos^{n+1} \theta - n \sin^{m} \theta \cos^{n-1} \theta]\ \dee \theta \\
+					&= [(m-1) \sin^{m-2} \theta (1 - \sin^2 \theta) \cos^{n-1} \theta - n \sin^{m} \theta \cos^{n-1} \theta]\ \dee \theta\\
+					&= [(m-1) \sin^{m-2} \theta \cos^{n-1} \theta - (m+n-1) \sin^{m} \theta \cos^{n-1} \theta]\ \dee \theta.					
+				\end{align*}
+				So, 				
+				\begin{align*}
+					\mathcal{Q}_1^{m,n} 
+					&= \int_{0}^{\pi/2} \sin^m \theta \cos^{n} \theta\ \dee\theta 
+					= -\int_{0}^{\pi/2} u\ \dee v
+					= -[uv]_{0}^{\pi/2} + \int_{0}^{\pi/2} v\ \dee u.
+				\end{align*}
+				Now, $[uv]_0^{\pi/2} = [\sin^{m-1} \theta \cos^{n+1} \theta]_0^{\pi/2}$. 
+				Since both $m-1$ and $n+1$ are at least one, we have that $[uv]_0^{\pi/2} = 0.$
+				Therefore,
+				\begin{align*}
+					\mathcal{Q}_1^{m,n} 
+					&= \int_{0}^{\pi/2} v\ \dee u\\
+					&= (m-1) \int_0^{\pi/2} \sin^{m-2} \theta \cos^n \theta\ \dee\theta - (m+n-1) \int_{0}^{\pi/2} \sin^{m} \theta \cos^{n} \theta\ \dee \theta\\
+					&= (m-1) \mathcal{Q}_1^{m-2,n} - (m+n-1) \mathcal{Q}_1^{m,n}.
+				\end{align*}
+				Thus, $\mathcal{Q}_1^{m,n} = \frac{m-1}{m+n} \mathcal{Q}_1^{m-2,n}.$ 
+				
+				Moreover, if $n\geq 2$ and $m \geq 0$, then $\mathcal{Q}_1^{n,m} = 
+				\mathcal{Q}_1^{m,n} = \frac{n-1}{m+n} \mathcal{Q}_1^{n-2,m} = \frac{n-1}{m+n} \mathcal{Q}_1^{m,n-2}$
+				as required.
+			\end{proof}
+			
+			\item \begin{definition}
+				Let $n$ be a non-negative integer. The \emph{double factorial} of $n$, 
+				denoted by $n!!$, is defined as follows:
+				$$n!! = \begin{cases} 1, & n \leq 1 \\ n \times (n-2)!!, & n\geq 2 \end{cases}.$$
+			\end{definition}
+						
+			\item \begin{theorem} \label{q1mn}
+				\begin{align*}
+					\mathcal{Q}_1^{m,n} = 
+						\begin{cases}
+							\pi/2, & m = n = 0 \\
+							1, & m = 1, n = 0 \\
+							1, & m = 0, n = 1 \\
+							1/2, & m = 1, n = 1 \\
+							\frac{(m-1)!!(n-1)!!}{(m+n)!!} \mathcal{Q}_1^{m \bmod 2, n \bmod 2}, & \mbox{otherwise}
+						\end{cases}
+				\end{align*}
+			\end{theorem}
+			\begin{proof}
+				By induction on $m+n$ and repeated use of Lemma~\ref{reduction}.
+			\end{proof}
+		\end{itemize}
+	
+	\section{Moment Integrals} % (fold)
+	\label{sec:moment_integrals}
+	
+		\begin{itemize}
+			\item \begin{lemma} \label{index-invariant}
+				Let $k$ be a positive integer. Let $i_1, i_2, \dotsc, i_k \in \{ 1, 2, 3 \}$.
+				Let $\pi$ be any permutation of $\{1, 2, 3\}.$ Then,
+				$$\int_{S^2} \omega_{i_1} \omega_{i_2} \dotsm \omega_{i_k}\ \dee \omega = \int_{S^2} \omega_{\pi(i_1)} \omega_{\pi(i_2)} \dotsm \omega_{\pi(i_k)} \ \dee \omega.$$ That is, you can change the indices without changing the value of the integral.
+			\end{lemma}
+			\begin{proof}
+				Symmetry.
+			\end{proof}
+			
+			\item \begin{lemma}
+				$\mu_1[1]_1 = \mu_1[1]_2 = \mu_1[1]_3 = 0.$
+			\end{lemma}
+			\begin{proof}
+				By Lemma~\ref{index-invariant}, we only need to show that $\mu_1[1]_3 = 0$. We have that
+				\begin{align*}
+					\mu_1[1]_3 
+					&= \int_{S^2} \omega_3\ \dee\omega 
+					= \int_{0}^{2\pi} \int_0^{\pi} \cos \varphi \sin\varphi\ \dee \varphi \dee \theta
+					= \int_{0}^{2\pi}\ \dee \theta \int_{0}^{\pi} \cos \varphi \sin\varphi\ \dee\varphi\\
+					&= 2\pi \mathcal{H}_1^{1,1} 
+					= 2\pi (\mathcal{Q}_1^{1,1} + \mathcal{Q}_2^{1,1})
+					= 2\pi (\mathcal{Q}_1^{1,1} - \mathcal{Q}_1^{1,1}) = 0.
+				\end{align*}
+			\end{proof}
+			
+			\item \begin{lemma} \label{mu_2_const}
+				\begin{align*}
+					\mu_2[1]_{ij} = \begin{cases}
+						0, & i \neq j\\
+						4\pi/3, & i = j
+					\end{cases}
+				\end{align*}
+			\end{lemma}
+			\begin{proof}
+				If $i \neq j$, we have
+				\begin{align*}
+					\mu_2[1]_{ij} 
+					&= \mu_2[1]_{12} 
+					= \int_{0}^{2\pi} \int_{0}^\pi \sin \theta \cos \theta \sin^3 \varphi\ \dee \varphi \dee\theta
+					= \int_{0}^{2\pi} \sin\theta \cos\theta\ \dee\theta \int_{0}^\pi \sin^3\varphi\ \dee\varphi
+					= \mathcal{S}^{1,1} \mathcal{H}_1^{3,0}
+					= 0.
+				\end{align*}
+				If $i = j$, we have
+				\begin{align*}
+					\mu_2[1]_{ii} 
+					&= \mu_2[1]_{33}
+					= \int_{0}^{2\pi} \int_{0}^\pi \cos^2 \varphi \sin \varphi\ \dee \varphi \dee\theta
+					= \int_{0}^{2\pi} \dee\theta \int_{0}^\pi \cos^2\varphi\sin\varphi\ \dee\varphi\\
+					&= 2\pi \mathcal{H}_1^{2,1} = 4\pi Q_1^{2,1} = 4\pi \cdot \frac{1}{3} Q_1^{0,1} = \frac{4\pi}{3}.
+				\end{align*}
+			\end{proof}
+			
+		  \item \begin{lemma}
+			Let $\ve a$ be any constant vector. Then, $\omega_0[\ve a \cdot \omega] = 0.$
+	    \end{lemma}
+	    \begin{proof}
+	        Let $\ve a = (a_1, a_2, a_3)^T$. Then,
+	        \begin{align*}
+	          \omega_0[\ve a \cdot \omega] = \int_{S^2} \omega \cdot \ve a\ \dee \omega 
+	          &= \int_{S^2} (a_1\omega_1 + a_2 \omega_2 + a_3 \omega_3)\ \dee \omega
+	          = a_1 \mu_1 [1]_1 + a_2 \mu_1 [1]_2 + a_3 \mu_1[1]_3 = 0.
+	        \end{align*}
+	    \end{proof}
+	    
+	    \item \begin{lemma}
+	      Let $a$ be any scalar. Then, $\omega_0[a] = 4\pi a$.
+      \end{lemma}
+      \begin{proof}
+        Obvious.
+      \end{proof}
+      
+      \item \begin{lemma}
+        Let $A$ be any $3 \times 3$ constant matrix. Then, $\mu_0[\omega^T A \omega] = \frac{4\pi}{3} \mathrm{tr}(A).$
+      \end{lemma}
+      \begin{proof}
+        We have that
+        \begin{align*}
+          \omega^T A \omega
+          &= \begin{bmatrix} \omega_1 & \omega_2 & \omega_3 \end{bmatrix}
+          \begin{bmatrix}
+            a_{11} & a_{12} & a_{13} \\
+            a_{21} & a_{22} & a_{23} \\
+            a_{31} & a_{32} & a_{33}
+          \end{bmatrix}
+          \begin{bmatrix} \omega_1 \\ \omega_2 \\ \omega_3 \end{bmatrix}
+          = \sum_{i=1}^3 \sum_{j=1}^3 \omega_i \omega_j a_{ij}.
+        \end{align*}
+        Thus,
+        \begin{align*}
+          \mu_0[\omega^T A \omega] 
+          &= \mu_0 \bigg[ \sum_{i=1}^3 \sum_{j=1}^3 \omega_i \omega_j a_{ij} \bigg]
+          =  \sum_{i=1}^3 \sum_{j=1}^3 a_{ij} \mu_0 [\omega_i \omega_j ]
+          =  \sum_{i=1}^3 \sum_{j=1}^3 a_{ij} \mu_2 [ 1 ]_{ij}.
+        \end{align*}
+        By Lemma~\ref{mu_2_const}, the only non-zero terms in the sum are those where
+        $i = j$. Thus,
+        \begin{align*}
+            \mu_0[\omega^T A \omega] = a_{11} \mu_2[1]_{11} + a_{22} \mu_2[1]_{22} + a_{33} \mu_2[1]_{33}
+            = \frac{4\pi}{3} (a_{11} + a_{22} + a_{33}) = \frac{4\pi}{3} \mathrm{tr(A)}.
+        \end{align*}
+      \end{proof}
+      
+      \item \begin{lemma}
+        Let $a$ be any constant. We have that $\mu_1[a] = \ve 0$.      
+      \end{lemma}
+      \begin{proof}
+        We have that
+        \begin{align*}
+          \mu_1[a] = \begin{bmatrix} \mu_1[a]_1 \\ \mu_1[a]_2 \\ \mu_1[a]_3  \end{bmatrix}
+          = \begin{bmatrix} a \mu_1[1]_1 \\ a \mu_1[1]_2 \\ a \mu_1[1]_3  \end{bmatrix}
+          = \begin{bmatrix} 0 \\ 0 \\ 0 \end{bmatrix} = \ve 0.
+        \end{align*}
+      \end{proof}
+      
+      \item \begin{lemma}
+        If $\ve a$ is a constant vector, then $\mu_1[\omega \cdot \ve a] = \frac{4\pi}{3}\ve a.$
+      \end{lemma}      
+      \begin{proof}
+        Let $\ve a = (a_1, a_2, a_3)^T$. Then,        
+        \begin{align*} 
+          \mu_1 [\omega \cdot \ve a]
+          &= \begin{bmatrix}
+            \mu_1 [\omega \cdot \ve a]_1 \\
+            \mu_1 [\omega \cdot \ve a]_2 \\
+            \mu_1 [\omega \cdot \ve a]_3
+          \end{bmatrix}
+          = \begin{bmatrix}
+            \mu_1 [a_1 \omega_1 + a_2 \omega_2 + a_3 \omega_3]_1 \\
+            \mu_1 [a_1 \omega_1 + a_2 \omega_2 + a_3 \omega_3]_2 \\
+            \mu_1 [a_1 \omega_1 + a_2 \omega_2 + a_3 \omega_3]_3
+          \end{bmatrix}
+          = \begin{bmatrix}
+            a_1 \mu_1 [\omega_1 ]_1 + a_2 \mu_1 [\omega_2]_1 + a_3 \mu_1 [\omega_3]_1 \\
+            a_1 \mu_1 [\omega_1 ]_2 + a_2 \mu_1 [\omega_2]_2 + a_3 \mu_1 [\omega_3]_2 \\
+            a_1 \mu_1 [\omega_1 ]_3 + a_2 \mu_1 [\omega_2]_3 + a_3 \mu_1 [\omega_3]_3
+          \end{bmatrix}\\
+          &= \begin{bmatrix}
+            a_1 \mu_2 [1]_{11} + a_2 \mu_2 [1]_{12} + a_3 \mu_2 [1]_{13} \\
+            a_1 \mu_2 [1]_{21} + a_2 \mu_2 [1]_{22} + a_3 \mu_2 [1]_{23} \\
+            a_1 \mu_2 [1]_{31} + a_2 \mu_2 [1]_{32} + a_3 \mu_2 [1]_{33}
+          \end{bmatrix}
+          = \begin{bmatrix}
+            a_1 (4\pi/3) \\
+            a_2 (4\pi/3) \\
+            a_3 (4\pi/3)
+          \end{bmatrix}
+          = \frac{4\pi}{3} \begin{bmatrix}
+            a_1 \\
+            a_2\\
+            a_3
+          \end{bmatrix}
+          = \frac{4\pi}{3}\ve a.
+        \end{align*}
+      \end{proof}
+      
+      \item \begin{lemma}
+        $\mu_3[1]_{ijk} = 0$ for all $i$, $j$, $k$.
+      \end{lemma}
+      \begin{proof}
+        We start with the case where $i$, $j$, and $k$ are all different.
+        \begin{align*}
+          \mu_3[1]_{ijk} &= \mu_3[1]_{123} = \int_{0}^{2\pi} \int_0^\pi (\sin \varphi \sin \theta) (\sin \varphi \cos \theta) \cos \varphi \sin \varphi \ \dee \varphi\ \dee \theta\\
+          &= \int_{0}^{2\pi} \int_0^\pi (\sin^3 \varphi \cos \varphi) (\sin \theta \cos \theta)\ \dee \varphi\ \dee \theta\\
+          &= \bigg( \int_{0}^{2\pi} \sin \theta \cos \theta\ \dee \theta \bigg) \bigg( \int_0^\pi \sin^3 \varphi \cos \varphi\ \dee \varphi \bigg)\\
+          &= \mathcal{S}^{1,1} \bigg( \int_0^\pi \sin^3 \varphi \cos \varphi\ \dee \varphi \bigg) = 0.
+        \end{align*}
+        We then deal with the case where two of $i$, $j$, and $k$ are the same.
+        \begin{align*}
+          \mu_3[1]_{ijk}
+          &= \mu_3[1]_{113}
+          = \int_{0}^{2\pi} \int_0^\pi (\sin \varphi \cos \theta)^2 \cos \varphi \sin \varphi \ \dee \varphi\ \dee \theta\\
+          &= \bigg( \int_{0}^{2\pi} \cos^2 \theta\ \dee \theta \bigg) \bigg( \int_0^\pi \cos^3 \varphi \sin \varphi\ \dee \phi \bigg)\\
+          &= \mathcal{S}^{0,2} \mathcal{H}_1^{1,3}
+          = \mathcal{S}^{0,2} ( \mathcal{Q}_1^{1,3} + \mathcal{Q}_2^{1,3})
+          = \mathcal{S}^{0,2} ( \mathcal{Q}_1^{1,3} + (-1)^3\mathcal{Q}_1^{1,3})
+          = 0.
+        \end{align*}
+        Lastly, we work on the case  where $i = j = k$.
+        \begin{align*}
+          \mu_{3}[1]_{ijk}
+          &= \mu_{3}[1]_{111}
+          = \int_{0}^{2\pi} \int_0^\pi (\sin \varphi \cos \theta)^3 \sin \varphi \ \dee \varphi\ \dee \theta\\
+          &= \bigg( \int_{0}^{2\pi} \cos^3 \theta\ \dee \theta \bigg) \bigg( \int_{0}^\pi \sin^4 \varphi \ \dee \varphi \bigg)\\
+          &= \mathcal{S}^{0,3} \mathcal{H}_1^{4,0} = 0.
+        \end{align*}
+      \end{proof}
+      
+      \item \begin{lemma}
+        Let $A$ be a constant $3 \times 3$ matrix. Then, $\mu_1[\omega^T A \omega] = \ve 0.$
+      \end{lemma}
+      \begin{proof}
+        We have that
+        \begin{align*}
+          \mu_1[\omega^T A \omega] 
+          &= \begin{bmatrix}
+            \mu_1[\omega^T A \omega]_1 \\
+            \mu_1[\omega^T A \omega]_2 \\
+            \mu_1[\omega^T A \omega]_3 \\
+          \end{bmatrix}
+          = \begin{bmatrix}
+            \mu_1[\sum \sum a_{ij} \omega_i \omega_j ]_1 \\
+            \mu_1[\sum \sum a_{ij} \omega_i \omega_j ]_2 \\
+            \mu_1[\sum \sum a_{ij} \omega_i \omega_j ]_3 \\
+          \end{bmatrix}
+          = \begin{bmatrix}
+            \sum \sum a_{ij} \mu_1[ \omega_i \omega_j ]_1 \\
+            \sum \sum a_{ij} \mu_1[ \omega_i \omega_j ]_2 \\
+            \sum \sum a_{ij} \mu_1[ \omega_i \omega_j ]_3 \\
+          \end{bmatrix}
+          = \begin{bmatrix}
+            \sum \sum a_{ij} \mu_3[ 1 ]_{1ij} \\
+            \sum \sum a_{ij} \mu_3[ 1 ]_{2ij} \\
+            \sum \sum a_{ij} \mu_3[ 1 ]_{3ij} \\
+          \end{bmatrix}
+          = \ve 0.
+        \end{align*}
+      \end{proof}
+		\end{itemize}		
+	% section moment_integrals (end)
+\end{document}

@@ -1,0 +1,754 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{epstopdf}
+\usepackage{enumerate}
+
+\newtheorem{lemma}{Lemma}[section]
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{claim}[lemma]{Claim}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+\newcommand{\Ei}{\mathrm{Ei}}
+\newcommand{\Tri}{\mathbf{tri}}
+\newcommand{\Th}{\mathbf{th}}
+\newcommand{\V}{\mathbf{V}}
+\newcommand{\Const}{\mathbf{const}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+
+\title{Approximating Volume Line Integral\\
+by Low-Rank Matrix Approximation}
+\author{Pramook Khungurn}
+
+\begin{document}
+	\maketitle
+		
+	Given a 3D function $V$ represented as a trilinear interpolation
+	of a 3D grid, we would like to construct a data structure that 
+	approximates/upper bounds/lower bounds the answer to 
+	the following query:
+	
+	\begin{quote}
+	    Given two points $\mathbf{p}_0$ and $\mathbf{p}_1$ in
+	    space, compute the line integral
+	    \begin{align} \label{line-integral}
+	        \| \mathbf{p}_1 - \mathbf{p}_0 \| \int_0^1 V(\mathbf{p}_0 + (\mathbf{p}_1 - \mathbf{p}_0)t ) \ \dee t.
+	    \end{align}
+	\end{quote}
+	
+\section{Motivation and Settings}
+
+\begin{itemize}
+    \item Suppose a volume of participating media at point $\mathbf{p}$
+    has extinction coefficient $\sigma_t(\mathbf{p})$. Then, radiance
+    originating at point $\mathbf{p}_0$ going to point $\mathbf{p}_1$
+    in the direction of $\mathbf{p}_1 = \mathbf{p}_0$ would be
+    attenuated by a factor of 
+    \begin{align} \label{extinction-attenuation}
+        \exp \bigg( - \| \mathbf{p}_1 - \mathbf{p}_0 \| \int_0^1 \sigma_t(\mathbf{p}_0 + (\mathbf{p}_1 - \mathbf{p}_0)t ) \ \dee t \bigg).
+    \end{align}
+    
+    \item The attenuation factor (\ref{extinction-attenuation})
+    is useful for multiple importance sampling and computation
+    of shadow rays.
+    
+    \item Ray marching is a popular technique used in computer graphics
+    to compute the line integral. However, the evaluation 
+    is not accurate
+    if the step is too large, and it becomes slow if the step is too 
+    small. Moreover, when used in a renderer, the resulting image 
+    is biased. 
+    
+    \item Simpling techniques such as Woodcock tracking gives
+    a random variable whose expectation is equal to 
+    (\ref{extinction-attenuation}), but it cannot evaluate
+    or give an approximation to (\ref{extinction-attenuation}).
+    Hence, the technique cannot be used with multiple importance
+    sampling.
+    
+    \item As such, we seek a data structure or a precomputation
+    scheme that approximates the line integral (\ref{line-integral})
+    while incurring small computational cost.
+    
+    \item We focus on cube volumes $V$ that are represented by
+        a 3D grid of size $(n+1)\times(n+1)\times(n+1)$
+        where $n = 2^m$. The grid partitions the volume
+        into $n^3$ cells. For each cell, the value of the
+        volume function at a point in the cell is defined
+        to be the trilinear interpolation of the values
+        of the grid points that are the cell's corners.                        
+    \item In this seeting, we can calculate the line integral
+        through $V$ exactly using an algorithm similar to
+        the 3D differential analyzer. The complexity of evaluating
+        this integral is $O(n)$. We aim to do better than this
+        baseline by sacrificing some quality of the result.    
+\end{itemize}
+
+\section{Exact Integral for One Cell}
+
+\begin{itemize}
+    \item Before we go on to talk about approximations we make,
+    we need to discuss how to compute the exact result.
+    
+    \item Imagine a cube whose bottom corner is at $(0,0,0)$
+        and whose top corner is at $(1,1,1).$ The volume contained
+        in this cube is $[0,1] \times [0,1] \times [0,1].$
+        
+        We view the corners of the grid as a $2\times 2\times 2$ grid.
+        Let $c_{ijk}$, where $i, j, k \in \{0, 1\}$ denote the 
+        value stored at the corner $(i,j,k).$
+        
+    \item Let $V_{i'j'k'}(x,y,z)$ denote a volume function defined
+        on $[0,1] \times [0,1] \times [0,1]$ as the trilinear
+        interpolation of the values stored in following grid:
+        \begin{align*}
+            c_{ijk} = \begin{cases}
+                1, & i = i', j=j',\mbox{ and } k=k',\\
+                0, & \mbox{otherwise}
+            \end{cases}.
+        \end{align*}
+        We have that
+        \begin{align*}
+            V_{000}(x,y,z) &= (1-x)(1-y)(1-z),\\
+            V_{001}(x,y,z) &= (1-x)(1-y)z,\\
+            V_{010}(x,y,z) &= (1-x)y(1-z),\\
+            V_{011}(x,y,z) &= (1-x)yz,\\
+            V_{100}(x,y,z) &= x(1-y)(1-z),\\
+            V_{101}(x,y,z) &= x(1-y)z,\\
+            V_{110}(x,y,z) &= xy(1-z), \mbox{ and}\\
+            V_{111}(x,y,z) &= xyz
+        \end{align*}    
+        for all $(x,y,z) \in [0,1] \times [0,1] \times [0,1].$
+    \item So, for a general cube where values stored at corners
+        can be arbitrary, we let $V(x,y,z)$ denote the volume function
+        defined as the trilinear interpolation of the values stored
+        at the corners. We have that
+        \begin{align*}
+            V(x,y,z) = c_{000}V_{000}(x,y,z) + c_{001}V_{001}(x,y,z) +
+            \dotsb + c_{111}V_{111}(x,y,z).
+        \end{align*}
+        
+    \item Given two points $\mathbf{p}_0 = (x_0, y_0, z_0)$ and 
+        $\mathbf{p}_1 = (x_1, y_1, z_1)$ inside the volume 
+        $[0,1] \times [0,1] \times [0,1]$, the line connecting
+        them is given by the function
+        $\mathbf{p}(t) = \mathbf{p}_0 + (\mathbf{p}_1 - \mathbf{p}_1)t$.        
+    
+    \item Again, we are interested in computing the line integral.
+        \begin{align*}
+            \mathcal{L}_V(\mathbf{p}_0, \mathbf{p}_1) 
+            &= \| \mathbf{p}_1 - \mathbf{p}_0 \| \int_0^1 
+                V(\mathbf{p}_0 - (\mathbf{p_1} - \mathbf{p_0})t)\ 
+                \dee t.
+        \end{align*}
+        We have that
+        \begin{align*}
+            \mathcal{L}_V(\mathbf{p}_0, \mathbf{p}_1) 
+            &= \| \mathbf{p}_1 - \mathbf{p}_0 \| \int_0^1 
+                V(\mathbf{p}(t))\ 
+                \dee t \\
+            &= \| \mathbf{p}_1 - \mathbf{p}_0 \|
+                \int_0^1 \bigg( 
+                     c_{000}V_{000}(\mathbf{p}(t)) +
+                    \dotsb
+                    c_{111}V_{111}(\mathbf{p}(t))
+                \bigg)\ \dee t\\
+            &= c_{000} \| \mathbf{p}_1 - \mathbf{p}_0 \|
+                \int_0^1 V_{000}(\mathbf{p}(t)) \dee t +
+                \dotsb +
+                c_{111} \| \mathbf{p}_1 - \mathbf{p}_0 \|
+                \int_0^1 V_{111}(\mathbf{p}(t)) \dee t\\
+            &= c_{000} \mathcal{L}_{V_{000}}(\mathbf{p}_0, \mathbf{p}_1)
+                + \dotsb +
+                c_{111} \mathcal{L}_{V_{111}}(\mathbf{p}_0, \mathbf{p}_1).
+        \end{align*}    
+        Hence, $\mathcal{L}_{V_{000}}$, $\mathcal{L}_{V_{001}}$,
+        $\dotsc$, and $\mathcal{L}_{V_{111}}$ are basis functions
+        of trilinearly interpolated volume.
+        
+    \item We can evaluate the integrals using the following identity:
+        \begin{align*}
+            \int_0^1 (at + b)(ct + d)(et + f)\ \dee t
+            &= \int_0^1 \big( ace t^3 + (acf + ade + bce)t^2  
+            + (adf + bcf + bde)t + bdf \big) \ \dee t \\
+            &= \frac{ace}{4} + \frac{acf + ade + bce}{3}
+                + \frac{adf + bcf + bde}{2} + bdf.
+        \end{align*}
+        
+    \item Trying the identity out with $V_{000}$,
+        we have
+        \begin{align*}
+            \int_0^1 V_{000}(\mathbf{p}(t))\ \dee t
+            &= \int_0^1 \big( (x_1-x_0)t + x_0 \big)
+                \big( (y_1-y_0)t + y_0 \big)
+                \big( (z_1-z_0)t + z_0 \big)\ \dee t\\
+            &= \frac{(x_1-x_0)(y_1-y_0)(z_1-z_0)}{4} +
+                \dotsb + x_0 y_0 z_0.
+        \end{align*}
+        Using Mathematica to simplify the terms,
+        we have
+        \begin{align} \label{v000-close-form}
+            \int_0^1 V_{000}(\mathbf{p}(t))\ \dee t
+            &= \frac{x_0 y_0 z_0}{4} +
+                \frac{x_1 y_0 z_0 + x_0 y_1 z_0 + x_1 y_1 z_0 +
+                    x_0 y_0 z_1 + x_1 y_0 z_1 + x_0 y_1 z_1}{12} +
+                \frac{x_1 y_1 z_1}{4} \notag\\
+            &= \frac{x_0 y_0 z_0}{6} 
+                + \frac{(x_0+x_1)(y_0+y_1)(z_0+z_1)}{12}
+                + \frac{x_1 y_1 z_1}{6} \notag\\
+            &= \frac{2x_0y_0z_0 +
+                 (x_0+x_1)(y_0+y_1)(z_0+z_1) + 
+                 2x_1 y_1 z_1}{12}.
+        \end{align}
+        
+    \item For other $V_{ijk}$, we can use \eqref{v000-close-form}
+        to evaluate it. For example, for $V_{111}$, the integrand
+        is
+        \begin{align*}
+            & \big(1 - (x_1-x_0)t - x_0 \big)
+                \big(1 - (y_1-y_0)t - y_0 \big)
+                \big(1 - (z_1-z_0)t - z_0 \big)\\
+            &= \big((x_0-x_1)t + 1 - x_0 \big)
+                \big((y_0-y_1)t + 1 - y_0 \big)
+                \big((z_0-z_1)t + 1 - z_0 \big) \\
+            &= ((x'_1 - x'_0)t + x'_0)
+                ((y'_1 - y'_0)t + y'_0)
+                ((z'_1 - z'_0)t + z'_0)
+        \end{align*}
+        where $x'_0 = 1 - x_0$, $x'_1 = 1 - x_1$, and so on.
+        Thus, using \eqref{v000-close-form}
+        \begin{align*}
+            \int_0^1 V_{111}(\mathbf{p}(t))\ \dee t
+            &= \frac{2x'_0y'_0z'_0 +
+                 (x'_0+x'_1)(y'_0+y'_1)(z'_0+z'_1) + 
+                 2x'_1 y'_1 z'_1}{12}\\
+            &= \frac{1}{12}\bigg( 2(1-x_0)(1-y_0)(1-z_0)
+                + (2-x_0-x_1)(2-y_0-y_1)(2-z_0-z_1)\\
+            & \qquad + 2(1-x_0)(1-y_0)(1-z_0) \bigg).
+        \end{align*}
+\end{itemize}
+
+\section{A Framework for Multiscale Precomputed Line Integrals}
+
+\subsection{Notations}
+
+\begin{itemize}
+	\item For $k \in \mathbb{Z}^+$, let $\mathbb{Z}_k$ denote the set $\{ 0, 1, \dotsc, k-1 \}.$ 
+	
+	\item We call a function $c: \mathbb{Z}_n \times \mathbb{Z}_n \times \mathbb{Z}_n \rightarrow \mathbb{R}$ 
+		a \emph{grid of size $n$}. For notational convenience, we denote the value of $c$ as 
+		$c_{ijk}$ instead of $c(i,j,k).$
+		
+	\item Let $c$ be a grid of size $n$. We will discuss 
+	    \emph{subgrids} of $c$, and we shall define a notion 
+	    for it. 
+	    
+	    \begin{definition}
+	    Using Python's array slicing notation, 
+	    we let $$c^{i_0:i_1, j_0:j_1, k_0:k_1}$$
+	    where $i_0 < i_1$, $j_0 < j_1$, and $k_0 < k_1$ to be a grid 
+	    of dimension $(i_1-i_0) \times (j_1-j_0) \times (k_1-k_0)$
+		where
+		\begin{align*}
+		    c^{i_0:i_1, j_0:j_1, k_0:k_1}_{ijk} = c_{i_0+i, j_0+j, k_0+k}
+		\end{align*}
+		for all $0 \leq i < i_1-i_0$, $0 \leq j < j_1-j_0$,
+		and $k < k_1-k_0$.
+	    \end{definition}
+	
+	\item Notice that $c = c^{0:n,0:n,0:n}$.
+	
+	\item We will also discuss \emph{subvolumes} of a volume.
+	    \begin{definition}
+	        Let $V: [x_0,x_1]\times[y_0,y_1] \times [z_0,z_1] 
+	    \rightarrow \mathbb{R}$ be a volume function. We define
+	    \begin{align*}
+	        V^{[x'_0, x'_1] \times [y'_0,y'_1] \times [z'_0,z'_1]},
+	    \end{align*}
+	    where $x_0 \leq x'_0 \leq x'_1 \leq x_1$, 
+	    $y_0 \leq y'_0 \leq y'_1 \leq y_1$,
+	    and $z_0 \leq z'_0 \leq z'_1 \leq z_1$,
+	    to be another volume function from 
+	    $[x_0, x_1] \times [y_0, y_1] \times [z_0, z_1]$
+	    to $\mathbb{R}$ such that
+        \begin{align*}
+            V^{[x'_0, x'_1] \times [y'_0,y'_1] \times [z'_0,z'_1]}(x,y,z) =
+            \begin{cases}
+                V(x,y,z), &\mbox{if }(x,y,z) \in 
+                [x'_0, x'_1] \times [y'_0, y'_1] \times [z'_0, z'_1]\\
+                0, &\mbox{otherwise}
+            \end{cases}
+        \end{align*}
+        \end{definition}
+		
+    \item We will also discuss functions that takes a grid and turns
+    it into a volume. 
+    \begin{definition}
+        An function $\V$ is called a \emph{grid-to-volume operator}
+        if it satisfies the following properties:
+        \begin{itemize}        
+        \item $\V$ takes as input a grid $c$. Its output is
+            denoted by $\V(c)$ or just $\V c.$
+        \item $\V(c)$ is a functiom from 
+            $[0,1] \times [0,1] \times [0,1]$
+            to $\mathbb{R}$.
+        \item $\V$ is a linear function in $c$.
+        \item $\V$ ``stretches'' $c$ so that it fills         
+        the cube $[0,1] \times [0,1] \times [0,1]$. That is, 
+	    the point $(0,0,0)$ coincides with $c_{000}$ and 
+	    the point $(1,1,1)$ coincides with $c_{nnn}$.
+	    \item The value of a subvolume of $\V$ that coincides
+	        with a subgrid of $c$ depends only on that subgrid.
+	        
+	        More precisely, let $c$ be a grid of size 
+	        $n+1$. Then, the values of 
+	        $$\V(c)^{[i_0/n,i_1/n]\times[j_0/n,j_1/n]
+	        \times[k_0/n,k_1/n]}$$ depends only on
+	        $$c^{i_0:i_1+1,j_0:j_1+1,k_0:k_1+1}.$$
+    \end{itemize}
+    \end{definition}
+    
+    In general, we denote such a function 
+    with a boldfaced name such as $\V$.    
+    
+    \item An example of such an operator is the one
+    that takes a grid c of size $n+1$,
+    subdivides the unit cube into $n \times n \times n$
+    smaller cubes, and let the value of the $(i,j,k)$-cube
+    be $c_{ijk}.$ We denote this operator by $\Const$.
+    
+    \item The main grid-to-volume operator we will work on
+        is the trilinear interpolation, which we shall
+        denote by $\Tri$. Note that $\Tri$ satisfies all the
+        properties above. Moreover, the last section
+        gave the closed form formula for line integrals
+        through $\Tri(c)$ where $c$ is a grid of size 2.
+		
+	\item A volume function can be scaled and translated.
+	    We are particularly interested in the following
+	    operator.
+	    	    
+	    \begin{definition}
+	    For $i,j,k \in \{0,1\}$, define the operator 
+	    $\Th_{ijk}$ (standing for ``half and then translate'') 
+	    as follows. If 
+	    $V: [0,1]\times[0,1]\times[0,1] \rightarrow \mathbb{R}$
+	    is a volume function, then $\Th_{ijk}V$ 
+	    is another volume function from $[0,1]\times[0,1]\times[0,1]$
+	    to $\mathbb{R}$ such that
+	    \begin{align*}
+	        (\Th_{ijk}V)(x,y,z) = \begin{cases}
+	            V(2x - i, 2y-j, 2z-k), & \mbox{if}(x,y,z)
+	            \in [\frac{i}{2},\frac{i+1}{2}] 
+	            \times [\frac{j}{2},\frac{j+1}{2}] 
+	            \times [\frac{k}{2},\frac{k+1}{2}]\\
+	            0, & \mbox{otherwise}
+            \end{cases}.
+	    \end{align*}
+        \end{definition}
+	    
+	    The idea of $\Th_{ijk}$ is to scale the volume
+	    down by a factor of 2 and translate it so that
+	    the lower-left-front corner is at $(i/2,j/2,k/2)$.
+	
+	\item The following lemma gives a way to decompose a
+	    volume function constructed from a grid
+	    to the volume functions constructed from
+	    the grid's octants. We state it without proof.
+	    
+	    \begin{lemma} \label{volume-octant}
+	    If $c$ is a grid of size $2m+1$,
+	    and let $\V$ be a grid-to-volume operator 
+	    discussed above, then
+	    \begin{align*}
+	        \V(c)^{[0,0.5]\times[0,0.5]\times[0,0.5]} &=
+	        \Th_{000}\V(c^{0:m+1,0:m+1,0:m+1}),\\
+	        \V(c)^{[0.5,1]\times[0,0.5]\times[0,0.5]} &=
+	        \Th_{100}\V(c^{m:2m+1,0:m+1,0:m+1}),\\
+	        \V(c)^{[0,0.5]\times[0.5,1]\times[0,0.5]} &=
+	        \Th_{010}\V(c^{0:m+1,m:2m+1,0:m+1}),\\
+	        \V(c)^{[0.5,1]\times[0.5,1]\times[0,0.5]} &=
+	        \Th_{110}\V(c^{0:m+1,m:2m+1,0:m+1}),\\	        
+	        \V(c)^{[0,0.5]\times[0,0.5]\times[0.5,1]} &=
+	        \Th_{001}\V(c^{0:m+1,0:m+1,m:2m+1}),\\
+	        \V(c)^{[0.5,1]\times[0,0.5]\times[0.5,1]} &=
+	        \Th_{101}\V(c^{m:2m+1,0:m+1,m:2m+1}),\\
+	        \V(c)^{[0,0.5]\times[0.5,1]\times[0.5,1]} &=
+	        \Th_{011}\V(c^{0:m+1,m:2m+1,m:2m+1}),\mbox{ and}\\
+	        \V(c)^{[0.5,1]\times[0.5,1]\times[0.5,1]} &=
+	        \Th_{111}\V(c^{m:2m+1,m:2m+1,m:2m+1}).
+	    \end{align*}
+        \end{lemma}
+    	    
+\end{itemize}
+
+\subsection{The Framework} \label{framework}
+
+\begin{itemize}
+    \item Let $c$ be a grid of size $2^k+1$ for some $k \in \mathbb{Z}^+\cup \{0\}$, and 
+    let $\V$ be a grid-to-volume operator.
+    We are interested in constructing a data structure that
+    can answer the following query:
+    \begin{quote} 
+        Given two points $\mathbf{p}_0$ and $\mathbf{p}_1$ in
+	    $[0,1] \times [0,1] \times [0,1]$, compute the line
+	    integral:
+	    \begin{align} \label{grid-volume-line-integral}
+	        \| \mathbf{p}_1 - \mathbf{p}_0 \| \int_0^1 
+	        (\V(c))(\mathbf{p}_0 + (\mathbf{p}_1 - \mathbf{p}_0)t ) \ \dee t.
+	    \end{align}
+    \end{quote}
+    
+    Let us calls this a \emph{volume line integral data structure}
+    (VLIDS).
+    
+    \item We start by showing that a data that computes
+    \eqref{grid-volume-line-integral} can be obtained
+    from ones that answers a slightly different but easier
+    query:
+    \begin{quote}
+        Given two points $\mathbf{p}_0$ and $\mathbf{p}_1$
+        \emph{on the boundary} of $[0,1] \times [0,1] \times [0,1]$,
+        compute the line integral:
+        \begin{align} \label{grid-surface-line-integral}
+	        \| \mathbf{p}_1 - \mathbf{p}_0 \| \int_0^1 
+	        (\V(c))(\mathbf{p}_0 + (\mathbf{p}_1 - \mathbf{p}_0)t ) \ \dee t.
+	    \end{align}
+    \end{quote}
+    Let us call this data structure a \emph{surface point 
+    line integral data structure} (SPLIDS).
+    
+    \item A SPLIDS represents a 4D function 
+        $s(\mathbf{p_0}, \mathbf{p_1})$
+        that maps two points on the boundary of the unit
+        cube to the line integral of the segment between
+        them. We shall refer to this kind of
+        functions as the \emph{surface point line integral 
+        functions} (SPLIF).
+    
+    \item \begin{lemma} \label{hierarchical-splids}
+        Let all the input sizes in this lemma be powers of 2.
+        If there is a SPLIDS that takes $f(n)$ time to answer 
+        a query and takes $g(n)$ total space for 
+        a grid of size $n+1$, then there is a VLIDS that 
+        takes $$O(f(1) + f(2) + \dotsb + f(2^r) + \dotsb + f(n))$$ 
+        time to answer a query and
+        $$O(n^3g(1) + n^3g(2)/8 + \dotsb + n^3 g(2^r) / 2^{3r}
+        + \dotsb + g(n))$$ total space.        
+    \end{lemma}
+    
+    \begin{proof}
+        Note that a grid of size $n+1$ partitions the unit
+        cube to $n^3$ cells. We build an octree on these $n^3$
+        cells such that each leaf corresponds to a cell.
+        For each node in the octree, we build a SPLIDS for
+        the volume corresponding to the node. This yields 
+        a data structure with 
+        $$O(n^3g(1) + n^3g(2)/8 + \dotsb + n^3 g(2^r) / 2^{3r}
+        + \dotsb + g(n))$$ space.
+        
+        Given two points $\mathbf{p}_0$ and $\mathbf{p}_1$
+        inside the unit cube, we answer the query as follows.
+        From the data structure, we can find a sequence of 
+        non-intersecting volumes with the following properties:
+        \begin{itemize}
+            \item The volumes in the sequence are non-intersecting.
+            \item The volumes together covers the line segment
+                from $\mathbf{p}_0$ to $\mathbf{p}_1$.
+            \item Each volume corresponds to a node in the octree.
+            \item There are at most 4 volumes in the sequence
+                belonging to each level of the octree.
+        \end{itemize}
+        The procedure of finding such a sequence of volumes
+        is pretty much like tracing a ray from $\mathbf{p}_0$
+        to $\mathbf{p}_1$ in an octree. We can then use the 
+        SPLIDS for each volume to compute the line integral
+        of the part of the segment that goes through the volume,
+        and then add all the result together. This process
+        thus takes $O(f(1) + f(2) + \dotsb + f(2^r) + \dotsb + f(n))$
+        as desired.
+    \end{proof}
+    
+    \item We still need to determine the time needed to create
+        all the SPLIDSs according to the data structure
+        outlined in the last Lemma. We would prefer not to
+        create the SPLID for an octree node from the underlying
+        grid data. Instead, we would like to build it from
+        the SPLIDSs of the node's children. If we can
+        do so, we can characterize the running time of
+        the preprocessing phase as follows:
+        
+        \begin{lemma}
+            If the SPLIDS for an octree node corresponding
+            to a subvolume of size $n+1$ can be built from
+            the 8 SPLIDS of the node's children in time $h(n)$,
+            then the whole data structure in 
+            Lemma~\ref{hierarchical-splids} can be built
+            in $$O(n^3 + n^3h(2)/8 + \dotsb +  
+            n^3 h(2^r) / 2^{3r} +\dotsb + h(n)),$$
+            assuming that SPLIDS for a grid
+            of size $2$ (the leaf node) can be built 
+            in constant time.
+        \end{lemma}
+        
+        \begin{proof}
+            Just count the number of SPLIDS to be built
+            in each level.
+        \end{proof}
+    
+    \item We want an implementation of SPLIDSs allow us
+        to accomplish the following tasks:        
+        \begin{enumerate}[(i)]
+            \item Given a SPLIDS of a volume function
+            $V$, compute the SPLIDS of $\Th_{ijk}V$
+            for any $i,j,k \in \{0,1\}.$
+            
+            \item Given SPLIDSs for volume functions
+            $V_1$ and $V_2$, compute the SPLIDS of
+            $V_1 + V_2$.
+        \end{enumerate}        
+        
+        If we can do so, then we create create the SPLIDS of
+        a node from the SPLIDSs of its children. This is
+        the result of Lemma~\ref{volume-octant}
+        and the fact that the SPLIF is linear in its underlying
+        volume. 
+    
+    \item We aim to make $f(n) = O(1)$ so that
+        the lookup time is $O(\log n)$, and $g(n) = h(n) = O(n^2)$
+        so that the space used and the precessing time
+        is
+        $$O(n^3 \cdot 1 + n^3 \cdot 4 / 8 + n^3 \cdot 16 / 64
+        + \dotsb + n^3 \cdot 2^{2r} / 2^{3r} + \dotsb + n^2)
+        = O(n^3 + n^3/2 + \dotsc + n^3/2^r + \dotsc + n^2)
+        = O(n^3)$$
+        so that the precomputed data do not take more space
+        than the original data.
+\end{itemize}
+
+\section{Possible SPLIDS Implementations}
+
+\subsection{Lookup Tables}
+
+\begin{itemize}
+    \item We can implement a SPLID as a table of equally
+        spaced samples of the SPLIF it represents. 
+        Reconstruction involves doing a quadrilinear interpolation
+        of the stored samples. Hence, a query can
+        be answered in constant time.
+    
+    \item The implementation would be to define a resolution
+        parameter $m$. Then, we put an $m \times m$ grid of 
+        sampling points on each face of the cube. This results
+        result in $6m^2$ points, and we can make a lookup
+        table of size $6m^2 \times 6m^2 = 36m^4$.
+        
+    \item However, the space requirement can be reduced by
+        exploiting basic properties of the SPLIF, which we
+        shall denote with $s$.
+        
+        First, if $\mathbf{p_0}$ and $\mathbf{p}_1$ lie
+        on the same face of the cube, then 
+        $s(\mathbf{p}_0, \mathbf{p}_1) = 0.$ Thus, there
+        is no need to store the sample whose points lie
+        on the same face.
+        
+        Second, the SPLIF is a symmetric function. That is,
+        $s(\mathbf{p}_0,\mathbf{p}_1) = s(\mathbf{p}_1,\mathbf{p}_0).$
+        Hence, we can totally order the faces and store
+        only those samples that go from a ``lower'' face to 
+        ``higher'' faces.
+        
+        Exploting the above properties, we store the sample
+        in ${6 \choose 2} = 15$ tables of size $m^2 \times m^2$.
+        The space requirement is then $15m^4$.
+        
+    \item To facilitate interpolation, we recommend positioning
+        the grid of sample points so that the grid's edge coincide 
+        with the cube's face edge. In this way, we have that for 
+        any other points on the face, we can always find 4 
+        sampling points forming a rectangle around that point.                    
+    \item In conclusion, the loopup table takes $O(1)$ to answer
+        a query and $O(m^4)$ space. The space requirement makes
+        it impractical. That is, for a volume grid of size $n$,
+        it would be reasonable to set $m = \Theta(n)$, 
+        but $O(n^4)$ space for the SPLIDS is not reasonable at all.
+\end{itemize}
+
+\subsection{Factored Matrices}
+
+\begin{itemize}
+    \item In the last section, a SPLIDS is represented by
+        $15$ lookup tables of size $m^2 \times m^2$. We
+        can think of each lookup table as a matrix $A$ and
+        approximate it with a rank-$r$ approximation
+        $A \approx UV^T$ where $U,V \in \mathbb{R}^{m^2 \times p}$
+        for some $r << m^2.$
+        
+    \item Using this representation, a lookup takes $O(r)$
+    and the space requirement is $O(m^2r)$, which is a huge
+    saving from $O(m^4)$.
+    
+    \item One drawback is that this representation is that
+        the reconstruction would not be accurate if the underlying
+        SPLIF is not a low rank signal. However, we believe
+        that, if the data in the volume grid is low in frequency,
+        the SPLIF should be represented well by a low rank
+        approximation.
+        
+    \item In order to use this SPLIDS implementation in the
+    framework outlined in Section~\ref{framework}, we
+    must be able to
+    \begin{enumerate}[(a)]
+        \item Construct a SPLIDS for a grid of size 2.
+        \item Combine 8 SPLIDSs for octants of a volume
+            into the SPLIDS for the volume itself
+            (which involves task (i) and (ii) in
+            Section~\ref{framework}).            
+    \end{enumerate}
+    
+    \item Requirement (a) is easy to satisfy. We may precompute
+        the full lookup tables for $V_{000}$, $V_{001}$, $\dotsc$,
+        $V_{111}$ for some small resolution parameter $m$, and
+        then compute a linear combination of them to get the full
+        lookup table for any grid of size 2. We can then factor
+        the resulting matrix.
+        
+    \item Requirement (b) is harder to satisfy as factored matrices
+        cannot be directly added together. Moreover, we don't know 
+        how to compute the factored matrix of $\Th_{ijk}V$
+        from the factored matrix of $V$ without expanding
+        the matrix and multiplying it with the matrix 
+        associated with $\Th_{ijk}$, which is much bigger 
+        (its size is $O(m^8)$).
+        
+    \item Rather, we propose satisfying Requirement (b) by
+        a data-driven approach. We view computing the SPLIDS as 
+        a matrix approximation problem. In literature, 
+        there are already a number of algorithms that can 
+        approximate a matrix by sampling a few of its rows
+        and columns. \cite{kernel-nystrom, optical-computing}.
+        
+    \item More specifically, if we have 8 SPLIDS of children of 
+        an octree node, then we can evaluate the SPLIF of
+        the parent by breaking the line segment connecting
+        the end points into parts, each of which intersects
+        only one child. We can then use the SPLIDS of the 
+        children to evalute the line integral for each
+        segment and add the results up to get the parent's
+        SPLIF value. This evaluation can be done in $O(r)$ time.        
+        Hence, it is possible to sample a row or a column
+        of the parent's SPLIF matrix in $O(m^2r)$ time.
+        
+    \item The Nystrom method \cite{kernel-nystrom}, for example,
+        samples $r$ rows and $r$ columns of the matrix
+        to get a rank-$r$ approximation. In our settings,
+        these sampling can be done in $O(m^2 r^2)$ time.
+        Additional $O(m^2 r^2 + r^2)$ time is required to
+        produced the low rank approximation. (This includes
+        multiplying an $r \times m^2$ matrix to a $m^2 \times r$ 
+        matrix, and finding the pseudo-inverse of an $r \times r$
+        matrix.)
+        
+    \item Therefore, if we set the resolution parameter $m$
+        to be $O(n)$, then we have $f(n) = O(r)$,
+        $g(n) = O(n^2 r)$, and $h(n) = O(n^2 r^2 + r^3).$
+        Since $r$ is a constant, we have an implement
+        of SPLIDS that satisfies all the goals we were
+        aiming for in Section~\ref{framework}.
+        
+    \item However, one worrying aspect of this implementation
+        is that we do not know how to assess the accuracy of
+        the implementation.        
+\end{itemize}
+
+\subsection{Spherical Harmonic Reflection Map}
+
+\begin{itemize}
+    \item The spherical harmonic reflection map (SHRM)
+        was invented by Ramamoorthi and Hanrahan to
+        represent isotropic BRDFs \cite{shrm}. 
+        An SHRM is a cube map whose entries are 
+        spherical harmonoics. In other words, 
+        each sample point on the surface of the
+        cube stores a 2D function. Since the SHRM
+        is capable of representing any 4D function, it
+        can be used to represent SPLIF as well.
+        
+    \item We use the SHRM to store the SPLIF as follows.
+        Let the cube map have resolution $m \times m$
+        where $m$ is the resolution parameter. For each
+        sample point $\mathbf{p}$ on a cube's face,
+        we store the spherical function
+        $$Y_{\mathbf{p}}(\omega) = s(\mathbf{p}, l(\mathbf{p}, \omega))$$
+        where $l(\mathbf{p},\omega)$ is the first point
+        that the ray $\mathbf{p} + t\omega$ intersects
+        the unit cube. 
+    
+    \item Evaluating $s(\mathbf{p}_0, \mathbf{p}_1)$ involves
+        finding 4 sample points $\mathbf{p}_{BL}$,
+        $\mathbf{p}_{BR}$, $\mathbf{p}_{TL}$, $\mathbf{p}_{TR}$
+        forming a rectangle around $\mathbf{p}_0$, and then
+        doing a bilinear interpolation between
+        \begin{align*}
+            &Y_{\mathbf{p}_{BL}}(\mathbf{p}_{BL}, (\mathbf{p}_1 - \mathbf{p}_{BL})/\| \mathbf{p}_1 - \mathbf{p}_{BL} \|),\\
+            &Y_{\mathbf{p}_{BR}}(\mathbf{p}_{BR}, (\mathbf{p}_1 - \mathbf{p}_{BR})/\| \mathbf{p}_1 - \mathbf{p}_{BR} \|),\\
+            &Y_{\mathbf{p}_{TL}}(\mathbf{p}_{TL}, (\mathbf{p}_1 - \mathbf{p}_{TL})/\| \mathbf{p}_1 - \mathbf{p}_{TL} \|), \mbox{ and}\\
+            &Y_{\mathbf{p}_{TR}}(\mathbf{p}_{TR}, (\mathbf{p}_1 - \mathbf{p}_{TR})/\| \mathbf{p}_1 - \mathbf{p}_{TR} \|).
+        \end{align*}
+        
+    \item If we use a spherical harmonic representation of order
+        $q$, then the representation uses $6m^2 q^2$ floating points,
+        and a query can be answered in $O(q^2)$ time.
+        
+    \item One nice thing about the SHRM is that, if have
+        an SHRM that represents the SPLIF of $V_1$ and
+        another that represents the SPLIF of $V_2$,
+        we can compute the SHRM that represents the 
+        SPLIF of $V_1 + V_2$ by just adding the two SHRMs together.
+        This makes conbining children's SPLIDS when creating
+        parent's SPLIDS very easy.
+        
+    \item Moreover, suppose we have an SHRM representation
+        of the SPLIF of $V$, and this representation is at
+        resolution $m'$. Then, there is a linear 
+        operator that transforms it to the SHRM representation 
+        of the SPLIF of $\Th_{ijk} V$ at resolution $m$.
+        This linear operator is a matrix of dimension 
+        $m^2 q \times m'^2 q$. Let us denote this matrix
+        by $\mathbf{TH}_{ijk}^{m' \rightarrow m}$. 
+        We can precompute them for all $i,j,k$ and various
+        $m'$ and $m$.
+        
+    \item Naively storing $\mathbf{TH}_{ijk}^{m' \rightarrow m}$
+         uses $O(m^2 m'^2 q^4)$ space, which is not scalable
+         if $m$ and $m'$ are large. To alleviate this problem
+         by storing and using its rank-$r$ approximation. 
+         This reduces the space requirement to $O((m^2 + m'^2)q^2 r)$.
+         It also reduces the time requirement of 
+         transforming the SHRM to $O((m^2 + m'^2)q^2 r)$ as well.
+         
+    \item All in all, setting $m = O(n)$, 
+        we have that $f(n) = O(q^2)$, $g(n) = O(n^2 q^2)$,
+        and $h(n) = O(n^2 q^2 r)$. We thus have another
+        representation that satisfies all the requirements
+        of the framework in Section~\ref{framework}.
+        
+    \item However, this SPLIDS implementation can only represent low frequency SPLIF, and we don’t know
+how to quantify the error it introduces.
+\end{itemize}
+
+
+\bibliography{precomputed-line-integrals}{}
+\bibliographystyle{plain}
+
+\end{document}

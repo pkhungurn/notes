@@ -1,0 +1,1583 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{epstopdf}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+\usepackage{upgreek}
+
+
+\newtheorem{lemma}{Lemma}[section]
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\Dee}{\mathrm{D}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\likelihood}{\mathcal{L}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\new}{\mathrm{new}}
+\newcommand{\Arg}{\mathrm{Arg\,}}
+\newcommand{\Log}{\mathrm{Log\,}}
+\newcommand{\RE}{\mathrm{Re\,}}
+\newcommand{\IM}{\mathrm{Im\,}}
+\newcommand{\Res}{\mathrm{Res}}
+\newcommand{\pv}{\mathrm{p.v.}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+\newcommand{\II}{\mathrm{II}}
+\DeclareMathOperator{\Bd}{Bd}
+\newcommand{\ov}[1]{\overline{#1}}
+\newcommand{\metre}{\mathrm{m}}
+\newcommand{\second}{\mathrm{s}}
+\newcommand{\sterad}{\mathrm{sr}}
+\newcommand{\kg}{\mathrm{kg}}
+\newcommand{\Watt}{\mathrm{W}}
+\newcommand{\group}{\mathrm{gr}}
+
+\title{Radiative Transfer Equation}
+\author{Pramook Khungurn}
+
+\begin{document}
+  \maketitle
+
+  This article is written as I read the article ``Refractive Radiative Transfer Equation'' by Ament \etal\ \cite{Ament:2014}. However, most of the content is coming the book ``The Equations of Radiative Hydrodynamics'' by Pomraning \cite{pomraning}.
+
+  \section{Basic Definitions}
+  \begin{itemize}
+    \item Light is carried by photons. 
+    \item One property of a photon is its frequency $\nu$.
+    \item Between collision with matter, a photon is supposed to travel in a straight line with speed $c$. The frequency must remain constant. (That is, the speed and the frequency does not change when a photon travels in a vacuum.)
+    \item A photon with frequency $\nu$ has energy $$E = h\nu$$ where $h$ is the Planck constant.
+    \item The magnitude momentum of photon with energy $E$ is given by $$ E/c = h\nu/c. $$
+    \item The phase space of a photon has 6 degrees of freedom:
+    \begin{itemize}
+      \item three for its position, and
+      \item three for its frequency.
+    \end{itemize}
+    \item We denote the position by vector $\ve{r} = (x,y,z)^T$.
+    \item While the momentum can be represented by a vector, it is typically represented by:
+    \begin{itemize}
+      \item the frequency $\nu$, which can be used to determine the magnitude of the momentum, and
+      \item the unit vector $\omega$ that the photon travels in. (The Pomraning book uses the symbol $\omega$ instead.)
+    \end{itemize}
+    
+    \item The vector $\omega$ can be written in terms of the longitudinal angle $\theta$ and the azimuthal angle $\varphi$:
+    \begin{align*}
+      \omega = \begin{bmatrix}
+        \sin \theta \cos \varphi \\
+        \sin \theta \sin \varphi \\
+        \cos \theta
+      \end{bmatrix}.
+    \end{align*}
+    Here $\theta \in [0,\pi]$, and $\varphi \in [0,2\pi)$
+
+    \item We then define the function
+    \begin{align*}
+      f \equiv f(\ve{r}, \nu, \omega, t) := \frac{\dee n }{\dee \ve{r}\, \dee \nu\, \dee\omega }
+    \end{align*}
+    where $\dee n$ is the number of photons which, at time t, has the following properties:
+    \begin{itemize}
+      \item they are contained in the infinitesimal volume $\dee \ve{r}$ around point $\ve{r}$,
+      \item their frequencies lie in the interval $\dee \nu$ around the frequency $\nu$, and
+      \item their direction is contained in the solid angle $\dee \omega$ around the direction $\omega$.
+    \end{itemize}
+    Basically, $f$ denotes the density of photon in a particular point in the phase space. So, it is called the \textbf{phase space density}. The unit of $f$ is $\mathrm{m}^{-3}\, \mathrm{sr}^{-1}\, \mathrm{s}.$
+
+    \item Here are some formulas for conversion of differentials:
+    \begin{align*}
+      \dee \ve{r} &= \dee x\, \dee y\, \dee z \\
+      \dee \omega &= \sin \theta\, \dee \theta\, \dee \varphi.
+    \end{align*}
+    Sometimes, we might define $\mu = \cos \theta$ so that we can use $\dee \mu = \sin \theta\, \dee \theta.$
+
+    In this way, the function $f$ can be written as follows:
+    \begin{align*}
+      f(x,y,z,\nu,\theta,\varphi,t) = \frac{\dee n}{\dee x\, \dee y\, \dee z\, \dee \nu\, \sin \theta\, \dee \theta\, \dee \varphi}
+    \end{align*}
+
+    \item The (spectral) radiance, called ``specific intensity'' in \cite{pomraning}, is related to the phase space density by:
+    \begin{align*}
+      L(\ve{r}, \omega, \nu, t) = c h \nu f(\ve{r}, \omega, \nu, t).
+    \end{align*}
+    Let's do some unit checking. We have that (spectral) radiance has unit 
+    \begin{align*}
+      W\, \mathrm{m}^{-2}\,\mathrm{sr}^{-1}\,\second = \mathrm{kg}\, \mathrm{m}^2\, \mathrm{s}^{-3}\, \mathrm{m}^{-2}\,\mathrm{sr}^{-1}\, \second = \mathrm{kg}\,\mathrm{s}^{-2}\,\mathrm{sr}^{-1}.
+    \end{align*}
+    Now, the radiance formulat tells us that it should have unit:
+    \begin{align*}
+      (\metre\,\second^{-1}) (\kg\, \metre^2\, \second^{-2})(\metre^{-3}\, \sterad^{-1}\, \second) = \kg\,s^{-2}\,\sterad^{-1},
+    \end{align*}    
+    which matches the calculation carried out before. The interpretation of the radiance is the one we have known for so long: it is the energy that passes the point $\ve{r}$ along direction $\omega$ per unit area of surface perpendicular to $\omega$ and per unit time.
+
+    \item The \textbf{energy density} $u(\ve{r},t)$ at point $\ve{r}$ at time $t$ is given by:
+    \begin{align*}
+      u = \int_{0}^\infty \int_{S^2} h \nu f\, \dee \omega\, \dee \nu = \frac{1}{c} \int_{0}^\infty \int_{S^2} L \, \dee \omega\, \dee \nu
+    \end{align*}
+
+    \item The (scalar) \textbf{irradiance} $I(\ve{r}, t, \ve{n})$ is the rate of energy passing through an infinitesimal surface located at point $\ve{r}$ whose normal is $\ve{n}$ per the surface area. It is given by:
+    \begin{align*}
+      I(\ve{r}, t, \ve{n}) = \int_{0}^\infty \int_{S^2} c h \nu f\,  (\omega \cdot \ve{n}) \, \dee \omega\, \dee \nu = \int_{0}^\infty \int_{S^2} L \,  (\omega \cdot \ve{n}) \, \dee \omega\, \dee \nu,
+    \end{align*}
+    which is a formula we should be familiar with. However, we may observe that we can compute a vector quantity:
+    \begin{align*}
+      \ve{I}(\ve{r},t) = \int_{0}^\infty \int_{S^2} c h \nu f \omega\, \dee \omega\, \dee \nu = \int_{0}^\infty \int_{S^2} L \omega\, \dee \omega\, \dee \nu
+    \end{align*}
+    so that $I(\ve{r}, t, \ve{n}) = \ve{I}(\ve{r},t) \cdot \ve{n}.$ The quantity $\ve{I}(\ve{r},t)$ is called the \textbf{vector radiance}.
+
+    \item From now, the $i$th component of vector $\ve{v}$ is denoted by $\ve{v}_i$.
+
+    \item The vector irradiance can be regarded as the ``first moment'' of the radiance. This is because:
+    \begin{align*}
+      \ve{I}_1 = \int_{0}^\infty \int_{S^2} L \omega_1 \, \dee \omega\, \dee \nu \\
+      \ve{I}_2 = \int_{0}^\infty \int_{S^2} L \omega_2 \, \dee \omega\, \dee \nu \\
+      \ve{I}_3 = \int_{0}^\infty \int_{S^2} L \omega_3 \, \dee \omega\, \dee \nu.
+    \end{align*}
+
+    \item The second moment of the radiance can be defined similarly by including exactly two components of $\omega$ inside the integrand in RHS. The second moment is used to define the \textbf{pressure tensor}, which is a $3 \times 3$ matrix $P$ such that
+    \begin{align*}
+      p_{ij} = \frac{1}{c} \int_{0}^\infty \int_{S^2} L \omega_i \omega_j \, \dee \omega\, \dee \nu.
+    \end{align*}
+    One can readily observe that $P$ is symmetric. Also, because $1 = \| \omega \| = \omega_{1}^2 + \omega_{2}^2 + \omega_{3}^2$, we have that
+    \begin{align*}
+      \tr(P) = p_{11} + p_{22} + p_{33} = \frac{1}{c} \int_{0}^\infty \int_{S^2} L \, \dee \omega\, \dee \nu = u.
+    \end{align*}
+    This also reminds us that the energy density is closely related to the zeroth moment of the radiance.
+  \end{itemize}
+
+  \section{Interaction of Light with Matter}
+  \begin{itemize}
+    \item There are three modes of interaction of light with matter:
+    \begin{itemize}
+      \item absorption,
+      \item scattering, and
+      \item emission.
+    \end{itemize}    
+  \end{itemize}
+
+  \subsection{Absorption}
+  \begin{itemize}
+    \item As a photon travels through matter, there is a certain probability that it will interact with the material and disappear.
+
+    \item Absorption is determined by the \textbf{absorption coefficient} $\sigma_a \equiv \sigma_a(\mathrm{r}, \nu, \omega, t)$, which gives the probability of a photon being absorbed in traveling a distance $\dee s$:
+    \begin{align*}
+      \mbox{probability of absorption } = \sigma_a\, \dee s.
+    \end{align*}
+
+    \item In other words, if $N$ photons of frequency $\nu$ is at point $\ve{r}$, traveling along $\omega$ at time $t$, then the infinitesimal change to the number of photon is given by:
+    \begin{align*}
+      \dee N = - N \sigma_a(\ve{r}, \nu, \omega, t)\, \dee s.
+    \end{align*}
+
+    \item It is often assume that the material is \emph{isotropic}. That is, $\sigma_a$ does not depend on $\sigma$. Wenzel's 2010 paper \cite{Jakob2010Radiative} does not make this assumption and offers a full treatment of anisotropic material.
+  \end{itemize}
+
+  \subsection{Scattering}
+  \begin{itemize}
+    \item The photon can also undergo scattering interaction with matter.
+
+    \item The \textbf{scattering coefficient} $\sigma_s \equiv \sigma_s(\ve{r}, \nu, \omega, t)$ gives the probability of scattering interaction as the photon travels distance $\dee s$:
+    \begin{align*}
+      \mbox{probability of scattering } = \sigma_s\, \dee s.
+    \end{align*}
+
+    \item In contrast to absorption, the photon continues to exist, but traveling in a different direction and/or chaning its frequency. In other words, the photon might change its $\nu'$ and $\omega'$ parameter to a new pair of $\nu$ and $\omega$. This leads to the definition of the \textbf{differential scattering coefficient}:
+    \begin{align*}
+      \mbox{probability of changing from $(\nu,\omega)$ to $(\nu',\omega')$} = \sigma_s(\ve{r}, \nu' \ra \nu, \omega' \ra \omega, t)\, \dee v\, \dee \omega \, \dee s
+    \end{align*}
+    We should have that:
+    \begin{align*}
+      \sigma_s(\ve{r}, \nu', \omega', t) = \int_{0}^\infty \int_{S^2} \sigma_s(\ve{r}, \nu' \ra \nu, \omega' \ra \omega, t)\, \dee \omega \, \dee \nu
+    \end{align*}
+
+    \item Again, it is often assume that the material is isotropic. It is often assume that the change of direction only depends on the angle between $\omega'$ and $\omega$. This fact is often expressed as dependency on $\omega' \cdot \omega$. According to this assumption, the differential scattering coeffient becomes:
+    \begin{align*}
+      \sigma_s(\ve{r}, \nu' \ra \nu, \omega' \cdot \omega, t).
+    \end{align*}
+    Also, the definition of the scattering coefficient becomes:
+    \begin{align*}
+      \sigma_s(\ve{r}, \nu', t) = \int_{0}^\infty \int_{-1}^1 \sigma_s(\ve{r}, \nu' \ra \nu, \mu_0, t)\, \dee \mu_0 \, \dee \nu
+    \end{align*}
+    where $\mu_0 = \omega' \cdot \omega$.
+
+    \item It is common to split the differential scattering coefficient into two terms: the (non-differential) scattering coefficient and the \textbf{phase function}:
+    \begin{align*}
+      \sigma_s(\ve{r}, \nu' \ra \nu, \omega' \ra \omega, t) = \sigma_s(\ve{r}, \nu', \omega', t) p(\ve{r}, \nu' \ra \nu, \omega' \ra \omega, t)
+    \end{align*}
+    where $p$ is a probability distribution.
+
+    \item If there is no change in frequency when light is scattered, then the phase function is a product of a Dirac delta function with a probability on the direction:
+    \begin{align*}
+      p(\ve{r}, \nu' \ra \nu, \omega' \ra \omega, t) = p(\ve{r}, \omega' \ra \omega, t) \delta(\nu' - \nu).
+    \end{align*}
+    When the phase function has this form, we say that it is \textbf{consistent}.
+
+    \item The \textbf{extinction coefficient} $\sigma_t \equiv \sigma_t(\ve{r}, \nu, \omega, t)$ is defined as:
+    \begin{align*}
+      \sigma_t(\ve{r},\nu, \omega, t) = \sigma_a(\ve{r},\nu, \omega, t) + \sigma_s(\ve{r},\nu, \omega, t).
+    \end{align*}
+
+    \item The \textbf{albedo} $\alpha$ gives the probability that a scattering event occurs given that an interaction of light with matter occurs:
+    \begin{align*}
+      \alpha = \frac{\sigma_s}{\sigma_a + \sigma_s} = \frac{\sigma_s}{\sigma_t}.
+    \end{align*}
+
+    \item The \textbf{mean free path} of a photon inside a material is the expected distance the photon travels up to the point where it interacts with the material. It is denoted by $\lambda_t$.
+
+    \item Let us calculate the mean free path in the most simple case. This is when the material is \emph{honogeneous} (no dependency on $\ve{r}$), \emph{isotropic} (no dependency on $\omega$), and \emph{stationary} (no dependency on $t$).  From the definition of the extinction coefficient, we have:
+    \begin{align*}
+      \dee N &= - N \sigma_t\, \dee s \\
+      \frac{\dee N}{\dee s} &= -N \sigma_t.
+    \end{align*}
+    So,
+    \begin{align*}
+      N = N_0 e^{-\sigma_t s}.
+    \end{align*}
+    That is, if there is initially $N_0$ photon in a beam, the number of photons will reduce exponentially as it travels through the material. 
+
+    By the above derivation, the numbers of photon that interact with the material in an interval of width $\dee s$ around distance $s$ from the staring point is given by:
+    \begin{align*}
+      | \dee N(s) | = N_0 e^{-\sigma s} \sigma_t\, \dee s.
+    \end{align*}
+    This number of photons have traveled distance $s$ before interacting with the material. Hence, the expected distance travel by a photon is $s$ averaged over all the particles:
+    \begin{align*}
+      \lambda_t 
+       = \overline{s}
+       = \frac{\int_{0}^\infty s\, |\dee N(s)|}{\int_{0}^\infty |\dee N(s)|}
+       = \frac{\int_{0}^\infty s N_0 e^{-\sigma_t s }\sigma_t \, \dee s}{\int_{0}^\infty N_0 e^{-\sigma_t s }\sigma_t \, \dee s}
+       = \frac{N_0[-e^{-\sigma_t s}(\sigma_t s + 1) / \sigma_t]_0^\infty}{N_0}
+       = \frac{1}{\sigma_t}.
+    \end{align*}
+    In other words, in a homogeneous material, the mean free path (generally frequency dependent) is just the reciprocal of the extinction coefficient.
+
+    \item In more general situation, the mean free path is just taken to be the reciprocal of the extinction coefficient:
+    \begin{align*}
+      \lambda_t(\ve{r}, \nu, \omega, t) = 1 / \sigma_t(\ve{r}, \nu, \omega, t).
+    \end{align*}
+    We can also the \textbf{absorption mean free path} and the \textbf{scattering mean free path}:
+    \begin{align*}
+      \lambda_a(\ve{r}, \nu, \omega, t) &= 1 / \sigma_a(\ve{r}, \nu, \omega, t) \\
+      \lambda_s(\ve{r}, \nu, \omega, t) &= 1 / \sigma_s(\ve{r}, \nu, \omega, t).
+    \end{align*}
+    It follows that the mean free paths obey the following relationship:
+    \begin{align*}
+      \lambda_t^{-1} = \lambda_a^{-1} + \lambda_s^{-1}.
+    \end{align*}
+  \end{itemize}
+
+  \subsection{Emission}
+  \begin{itemize}
+    \item Photons can be introduced into a system by shining light into the system at the boundary.
+
+    \item They can also be introduced by the process of \emph{spontaneous emission}, which means the matter itself emits photons characteristic of the matter.
+
+    \item The emission is modeled by the function $q \equiv q(\ve{r}, \nu, \omega, t)$ which denotes the density of photon emitted per unit time, having frequency in the small interval $\dee \nu$ around $\nu$, by the volume $\dee \ve{r}$ around point $\ve{r}$ of matter, to the solid angle $\dee \omega$ around direction $\omega$. In other words,
+    \begin{align*}
+      \mbox{rate of photon emitted } = q(\ve{r}, \nu, \omega, t)\, \dee \ve{r}\, \dee \nu \, \dee \omega.
+    \end{align*}
+  \end{itemize}
+
+  \section{The Radiative Transfer Equation in Non-Refractive Media}
+  \begin{itemize}
+    \item The radiative transfer equation is given by the following theorem:
+    \begin{theorem} \label{basic-rte}
+      Given that the speed of light is constant and is $c$,
+      the change of the phase space density of photons is governed by the equation:
+      \begin{align*}
+        & \frac{\partial f}{\partial t}  
+        + \frac{\partial (\dot x f)}{\partial x}
+        + \frac{\partial (\dot y f)}{\partial y}
+        + \frac{\partial (\dot z f)}{\partial z}
+        + \frac{\partial (\dot \nu f)}{\partial \nu}
+        + \frac{\partial (\dot \mu f)}{\partial \mu}
+        + \frac{\partial (\dot \varphi f)}{\partial \varphi} \\
+        &= q -c \sigma_t f
+        +c \int_{0}^\infty \int_{S^2} \sigma_s(\nu' \ra \nu, \omega' \ra \omega) f(\nu', \omega')\, \dee \omega'\, \dee \nu'.
+      \end{align*}      
+    \end{theorem}
+    
+    \item The RTE is a statement about the rate of change of phase space density at any point in the phase space. However, it is harder to reason about density than reasoning about the number of photons contained in a volume. 
+
+    As a result, in the derivation of the RTE, we will instead be paying attention to a small 6-dimensional cube $V$ in phase space of dimensions $\Delta x$, $\Delta y$, $\Delta z$, $\Delta \nu$, $\Delta \mu$, $\Delta \varphi$ around point $(x, y, z, \nu, \theta, \mu)$ in phase space. The number of photons contained in this volume at time $t$ is given by:
+    \begin{align*}
+      \mbox{number of photons } = f(\ve{r}, \nu, \omega, t)\, \Delta x\, \Delta y\, \Delta z\, \Delta \nu\, \Delta \mu\, \Delta \varphi
+      = f(\ve{r}, \nu, \omega, t)\, \Delta V
+    \end{align*}
+    The equality is understood to mean that it holds in the limit as we shrink the volume so that $\Delta V$ approaches $0$.
+    
+    \item There are two ways to derive the RTE. The Eulerian way considers the volume $V$ fixed in space. The Lagrangian way considers $V$ to move along a trajectory. 
+
+  \end{itemize}
+
+  \subsection{Interaction of Light with Matter}
+  \begin{itemize}
+    \item However, one thing that is common to both derivations is that it involves the rate at which photons interact with matter inside $V$. This is summarized in the following lemma:
+    \begin{lemma} \label{photon-matter-interaction}
+      Assuming that the speed of light is constant and is $c$, the rate at which photons interact with matter inside volume $V$, specified above, is given by:
+      \begin{align*}
+        \mbox{rate of interaction in V} = q \Delta V - c \sigma_t f \Delta V + c \Delta V \int_{0}^\infty \int_{S^2} \sigma_s(\nu' \ra \nu, \omega' \ra \omega) f(\nu', \omega')\, \dee \omega'\, \dee \nu'.
+      \end{align*}
+      Accordingly, the rate of interaction at a point is given by:
+      \begin{align*}
+        \mbox{rate of interaction at a point} = q - c \sigma_t f + c \int_{0}^\infty \int_{S^2} \sigma_s(\nu' \ra \nu, \omega' \ra \omega) f(\nu', \omega')\, \dee \omega'\, \dee \nu',
+      \end{align*}
+      which is the RHS of the RTE above.
+    \end{lemma}
+    \begin{proof}
+      From the discussion on the interaction of photons with matter, we have that:
+      \begin{align*}
+        \mbox{rate of interaction} 
+        &= \mbox{rate of emission}\\
+        &\phantom{\ =} - \mbox{rate of absorption} \\
+        &\phantom{\ =} - \mbox{rate of out-scattering}\\
+        &\phantom{\ =} + \mbox{rate of in-scattering}.
+      \end{align*}
+      We will now evaluate each term on the RHS one by one.
+
+      (Emission) By the definition of $q$, we have that the rate of emission at point $(\ve{r}, \nu, \omega)$ at time $t$ is given by $q(\ve{r}, \nu, \omega, t)$. So, in the small volume $V$ around the point, the rate of emission is given by:
+      \begin{align*}
+        \mbox{rate of emission} = q(\ve{r}, \nu, \omega, t) \Delta V,
+      \end{align*}
+      which is abbreviated to just $q \Delta V$.
+
+      (Absorption) The number of photon in $V$ is given by $f \Delta V$. The probability of absorption per photon and per unit time is given by the absorption coefficient and the rate of change of path length $\dee s / \dee t$, which is just $c$. So, the rate of absorption is given by:
+      \begin{align*}
+        \mbox{rate of absorption} = c \sigma_a(\ve{r}, \nu, \omega, t) f(\ve{r}, \nu, \omega, t) \Delta V = c \sigma_a f \Delta V.
+      \end{align*}
+
+      (Out-Scattering and In-Scattering) A similar argument to the absorption case can be use to derive the rate of out-scattering and in-scattering:
+      \begin{align*}
+        \mbox{rate of out-scattering} &= c \Delta V \int_{0}^\infty \int_{S^2} \sigma_s(\ve{r}, \nu \ra \nu', \omega \ra \omega', t) f(\ve{r}, \nu, \omega, t)\, \dee \omega'\, \dee \nu' \\
+        \mbox{rate of in-scattering} &= c \Delta V \int_{0}^\infty \int_{S^2} \sigma_s(\ve{r}, \nu' \ra \nu, \omega' \ra \omega, t) f(\ve{r}, \nu', \omega', t)\, \dee \omega'\, \dee \nu'
+      \end{align*}
+      However, we can simplify the out-scattering term further by noting that $f(\ve{r},\nu,\omega,t)$ is constant with respect to the integration variable:
+      \begin{align*}
+        \mbox{rate of out-scattering} 
+        &= c \Delta V \int_{0}^\infty \int_{S^2} \sigma_s(\ve{r}, \nu \ra \nu', \omega \ra \omega', t) f(\ve{r}, \nu, \omega, t)\, \dee \omega'\, \dee \nu'\\
+        &= c \Delta V f(\ve{r}, \nu, \omega, t) \int_{0}^\infty \int_{S^2} \sigma_s(\ve{r}, \nu \ra \nu', \omega \ra \omega', t)\, \dee \omega'\, \dee \nu'\\
+        &= c \Delta V f(\ve{r}, \nu, \omega, t) \sigma_s(\ve{r}, \nu, \omega, t)
+        = c \sigma_s f \Delta V.
+      \end{align*}
+
+      Adding up all the terms, we have
+      \begin{align*}
+        \mbox{rate of interaction} 
+        &= q\Delta V - c \sigma_a f \Delta V - c\sigma_s f \Delta V + c \Delta V \int_{0}^\infty \int_{S^2} \sigma_s(\ve{r}, \nu' \ra \nu, \omega' \ra \omega, t) f(\ve{r}, \nu', \omega', t)\, \dee \omega'\, \dee \nu'\\
+        &= q\Delta V - c \sigma_t f \Delta V + c \Delta V \int_{0}^\infty \int_{S^2} \sigma_s(\ve{r}, \nu' \ra \nu, \omega' \ra \omega, t) f(\ve{r}, \nu', \omega', t)\, \dee \omega'\, \dee \nu'
+      \end{align*}
+      as required.
+    \end{proof}
+    
+  \end{itemize}
+
+  \subsection{An Eulerian Derivation of the RTE}
+  \begin{itemize}
+    \item The Eulerian derivation considers the volume $V$ fixed in space. It then seeks to evaluate the time rate of change of the number of photons in $V$ with other parameters fixed.
+
+    \item The rate of change of the number of photon in $V$ is given by:
+    \begin{align*}
+      \frac{\partial}{\partial t} [f(\ve{r}, \nu, \omega, t) \Delta V]
+      = \Delta V \frac{\partial f(\ve{r}, \nu, \omega, t)}{\partial t}
+      = \Delta V \frac{\partial f}{\partial t}.
+    \end{align*}    
+
+    \item The rate of change is due to two separate processes:
+    \begin{itemize}
+      \item the net rate of photon streaming out of the cube through the bounding surface, and
+      \item interaction of photons inside the volume with matter.
+    \end{itemize}
+    We have derived the rate of interaction, so we need to compute the rate of streaming.
+
+    \item First, consider the streaming through the surfaces perpendicular to the $x$-axis. Consider the faces of the cube perpendicular to the $x$-axis. There are two such faces. Let us assume that left one is located at $x - \Delta x /2$ and the right one at $x + \Delta x /2$. The time rate at which photons stream through the surfaces is the rate at which photons stream through the right surface minus the rate at which photons stream through the left surface.
+
+    Let us calculate the rate at which photons stream through the right surface first. The right surface has area $\dee x\, \Delta y\, \Delta z\, \Delta \nu\, \Delta \mu\, \Delta\varphi$. The density of the photon per unit length in the $x$ direction on this surface is given by:
+    \begin{align*}
+      f(x + \Delta x/2, y, z, \nu, \omega, t)\, \dee x\, \Delta y\, \Delta z\, \Delta \nu\, \Delta \mu\, \Delta\varphi.
+    \end{align*}
+    Now, each photon on this surface is moving with velocity $\dot x(x+\Delta x/2, y, z, \nu, \omega, t)$. As a result, the rate at which photons stream through this surface is:
+    \begin{align*}
+      \dot x(x + \Delta x/2, y, z, \nu, \omega, t) f(x + \Delta x/2, y, z, \nu, \omega, t)\, \Delta y\, \Delta z\, \Delta \nu\, \Delta \mu\, \Delta\varphi
+    \end{align*}
+    Similarly, the rate at which photons stream through of the left surface is given by:
+    \begin{align*}
+      \dot x(x - \Delta x/2, y, z, \nu, \omega, t) f(x - \Delta x/2, y, z, \nu, \omega, t)\, \Delta y\, \Delta z\, \Delta \nu\, \Delta \mu\, \Delta\varphi.
+    \end{align*}
+    As a result, the rate at which photons stream through the surfaces perpendicular to the $x$-axis is given by:
+    \begin{align*}
+      [\dot x f]_{x-\Delta x/2}^{x+\Delta x/2}\, \Delta y\, \Delta z\, \Delta \nu\, \Delta \mu\, \Delta\varphi
+      = \frac{[\dot x f]_{x-\Delta x/2}^{x+\Delta x/2}}{\Delta x} \Delta V
+    \end{align*}
+
+    As we let $\Delta x$ approaches $0$, we have that the rate of streaming becomes:
+    \begin{align*}
+      \mbox{streaming through $x$-parallel surfaces} = \Delta V \frac{\partial}{\partial x} [\dot x f]
+    \end{align*}
+
+    \item We can do the same analysis for the other components. In the end, we have:
+    \begin{lemma} \label{eulerian-streaming}
+      The rate of photon streaming through the volume $V$ is given by:
+      \begin{align*}
+        \mbox{rate of streaming out} 
+        = \bigg[ 
+          \frac{\partial (\dot x f)}{\partial x}
+          + \frac{\partial (\dot y f)}{\partial y}
+          + \frac{\partial (\dot z f)}{\partial z}
+          + \frac{\partial (\dot \nu f)}{\partial \nu}
+          + \frac{\partial (\dot \mu f)}{\partial \mu}
+          + \frac{\partial (\dot \varphi f)}{\partial \varphi}
+          \bigg] \Delta V
+      \end{align*}
+    \end{lemma}
+
+    \item We are now ready to prove the RTE.
+    \begin{proof}
+
+    (Theorem~\ref{basic-rte}) We have that
+    \begin{align*}
+      \mbox{rate of change of photon} = -(\mbox{rate of streaming out}) + (\mbox{rate of interaction with matter}).
+    \end{align*}
+    Using Lemma~\ref{photon-matter-interaction} and Lemma~\ref{eulerian-streaming}, we have
+    \begin{align*}
+      \Delta V \frac{\partial f}{\partial t}
+      &= -\bigg[ 
+          \frac{\partial (\dot x f)}{\partial x}
+          + \frac{\partial (\dot y f)}{\partial y}
+          + \frac{\partial (\dot z f)}{\partial z}
+          + \frac{\partial (\dot \nu f)}{\partial \nu}
+          + \frac{\partial (\dot \mu f)}{\partial \mu}
+          + \frac{\partial (\dot \varphi f)}{\partial \varphi}
+          \bigg] \Delta V\\
+      &\phantom{\ =} + q\Delta V - c \sigma_t f \Delta V + c \Delta V \int_{0}^\infty \int_{S^2} \sigma_s(\ve{r}, \nu' \ra \nu, \omega' \ra \omega, t) f(\ve{r}, \nu', \omega', t)\, \dee \omega'\, \dee \nu'
+    \end{align*}
+    In other words,
+    \begin{align*}
+      &\Delta V \frac{\partial f}{\partial t}
+      +\bigg[ 
+          \frac{\partial (\dot x f)}{\partial x}
+          + \frac{\partial (\dot y f)}{\partial y}
+          + \frac{\partial (\dot z f)}{\partial z}
+          + \frac{\partial (\dot \nu f)}{\partial \nu}
+          + \frac{\partial (\dot \mu f)}{\partial \mu}
+          + \frac{\partial (\dot \varphi f)}{\partial \varphi}
+          \bigg] \Delta V\\
+      &= q\Delta V - c \sigma_t f \Delta V + c \Delta V \int_{0}^\infty \int_{S^2} \sigma_s(\ve{r}, \nu' \ra \nu, \omega' \ra \omega, t) f(\ve{r}, \nu', \omega', t)\, \dee \omega'\, \dee \nu'
+    \end{align*}
+    Cancelling $\Delta V$ on both sides, we have
+    \begin{align*}
+      & \frac{\partial f}{\partial t}      
+      + \frac{\partial (\dot x f)}{\partial x}
+      + \frac{\partial (\dot y f)}{\partial y}
+      + \frac{\partial (\dot z f)}{\partial z}
+      + \frac{\partial (\dot \nu f)}{\partial \nu}
+      + \frac{\partial (\dot \mu f)}{\partial \mu}
+      + \frac{\partial (\dot \varphi f)}{\partial \varphi}\\
+      &= q - c \sigma_t f + c \int_{0}^\infty \int_{S^2} \sigma_s(\ve{r}, \nu' \ra \nu, \omega' \ra \omega, t) f(\ve{r}, \nu', \omega', t)\, \dee \omega'\, \dee \nu',
+    \end{align*}
+    which is the RTE in the form stated in Theorem~\ref{basic-rte}.    
+    \end{proof}          
+  \end{itemize}
+
+  \subsection{A Lagrangian Derivation of the RTE}
+  \begin{itemize}
+    \item Consider a packet of photon traveling along the trajectory $\ve{p}(t) = (\ve{r}(t), \nu(t), \omega(t))$ in the phase space. We now consider the small volume $V$ to be moving along this trajectory as well.
+
+    \item As this packet travels through matter, the number of photons is conserved except for the the effect of interaction with the medium. Thus, the rate of change of the number of photons is given by:
+    \begin{align*}
+      \frac{\dee}{\dee t} [f(\nu,\omega) \Delta V] 
+      &= q(\nu,\omega) \Delta V - c \sigma_a(\nu,\omega) f(\nu, \omega) \Delta V \\
+      &\phantom{\ =} + c \Delta V \int_{0}^\infty \int_{S^2} [\sigma_s(\nu' \ra \nu, \omega' \ra \omega) f(\nu', \omega) - \sigma_s(\nu \ra \nu', \omega \ra \omega') f(\nu, \omega) ]\, \dee \omega' \, \dee \nu'.
+    \end{align*}
+    Note that in the above equation, we elide dependencies on $\ve{r}$ and $t$ for brevity.
+
+    \item Notice that since the volume follows the path, the volume $\Delta V$ is not fixed in space. Hence, $\dee \Delta V / \dee t$ is not zero and must be calculated.
+
+    \item We will now expand the LHS of the equation:
+    \begin{align*}
+      \frac{\dee}{\dee t}[f\,\Delta x\, \Delta y\, \Delta z\, \Delta \nu\, \Delta \mu\, \Delta \varphi]
+      &= \Delta x\, \Delta y\, \Delta z\, \Delta \nu\, \Delta \mu\, \Delta \varphi\, \frac{\dee f}{\dee t} \\
+      &\phantom{\ =}+ f\, \Delta y\, \Delta z\, \Delta \nu\, \Delta \mu\, \Delta \varphi\, \frac{\dee \Delta x}{\dee t} \\
+      &\phantom{\ =}+ (\mbox{five similar terms}).
+    \end{align*}
+    We can make the equation shorter by using $\Delta V$:
+    \begin{align*}
+      \frac{\dee}{\dee t}[f\,\Delta V]
+      &= \Delta V \frac{\dee f}{\dee t}
+      + f \Delta V \bigg[ 
+          \frac{1}{\Delta x} \frac{\dee \Delta x}{\dee t} 
+        + \frac{1}{\Delta y} \frac{\dee \Delta y}{\dee t} 
+        + \frac{1}{\Delta z} \frac{\dee \Delta z}{\dee t} 
+        + \frac{1}{\Delta \nu} \frac{\dee \Delta \nu}{\dee t} 
+        + \frac{1}{\Delta \mu} \frac{\dee \Delta \mu}{\dee t} 
+        + \frac{1}{\Delta \varphi} \frac{\dee \Delta \varphi}{\dee t} 
+      \bigg].
+    \end{align*}
+    Consdier $\Delta x = x_2 - x_1$, we have that
+    \begin{align*}
+      \frac{\dee \Delta x}{\dee t} 
+      = \frac{\dee}{\dee x}(x_2 - x_1) 
+      = \dot x|_{x=x_2} - \dot x|_{x=x_1}.
+      = \frac{\dot x|_{x=x_2} - \dot x|_{x=x_1}}{x_2 - x_1} (x_2 - x_1)
+      = \frac{\dot x|_{x=x_2} - \dot x|_{x=x_1}}{x_2 - x_1} \Delta x.
+    \end{align*}
+    Taking the limit as the interval collapse to point $x$, we have that
+    \begin{align*}
+      \frac{\dee \Delta x}{\dee t}  = \frac{\partial \dot x}{\partial x} \Delta x
+    \end{align*}
+    So, we have:
+    \begin{align*}
+      \frac{\dee}{\dee t}[f\,\Delta V]
+      = \Delta V \frac{\dee f}{\dee t}
+      + f \Delta V \bigg[ 
+          \frac{\partial \dot x}{\partial x}
+        + \frac{\partial \dot y}{\partial x}
+        + \frac{\partial \dot z}{\partial x}
+        + \frac{\partial \dot \nu}{\partial \nu}
+        + \frac{\partial \dot \mu}{\partial \mu}
+        + \frac{\partial \dot \varphi}{\partial \varphi}
+      \bigg]
+    \end{align*}
+    Using chain rule on $\dee f / \dee t$, we have:
+    \begin{align*}
+      \frac{\dee}{\dee t}[f\,\Delta V]
+      &= \Delta V \bigg[
+        \frac{\partial f}{\partial t}
+        + \dot x \frac{\partial f}{\partial x}
+        + \dot y \frac{\partial f}{\partial y}
+        + \dot z \frac{\partial f}{\partial z}
+        + \dot \nu \frac{\partial f}{\partial \nu}
+        + \dot \mu \frac{\partial f}{\partial \mu}
+        + \dot \varphi \frac{\partial f}{\partial \varphi}        
+      \bigg]\\
+      &\phantom{\ =} + f \Delta V \bigg[ 
+          \frac{\partial \dot x}{\partial x}
+        + \frac{\partial \dot y}{\partial x}
+        + \frac{\partial \dot z}{\partial x}
+        + \frac{\partial \dot \nu}{\partial \nu}
+        + \frac{\partial \dot \mu}{\partial \mu}
+        + \frac{\partial \dot \varphi}{\partial \varphi}
+      \bigg]\\
+      &= \Delta V \bigg[ 
+          \frac{\partial f}{\partial t} 
+        + \frac{\partial (\dot x f)}{\partial x} 
+        + \frac{\partial (\dot y f)}{\partial y} 
+        + \frac{\partial (\dot z f)}{\partial z} 
+        + \frac{\partial (\dot \nu f)}{\partial \nu} 
+        + \frac{\partial (\dot \mu f)}{\partial \mu} 
+        + \frac{\partial (\dot \varphi f)}{\partial \varphi} 
+      \bigg].
+    \end{align*}  
+    Now, we are back at the equation that we have seen before, and the RTE is proven.
+  \end{itemize}
+
+  \subsection{Another Derivation using Divergence Theorem}
+  \begin{itemize}
+    \item We offer another Eulerian proof of the RTE that uses the divergence theorem instead of evaluating the streaming term explicitly.
+
+    \item Consider a closed surface S in \emph{phase space} in space that surrounds a volume $V$. The amount of photon contained in $V$ is given by:
+    \begin{align*}
+      \iiint_V f\, \dee V.
+    \end{align*}
+    The time rate of change of the number of photon is thus:
+    \begin{align*}
+      \frac{\partial}{\partial t} \iiint_V f\, \dee V = \iiint_V \frac{\partial f}{\partial t}\, \dee V.
+    \end{align*}
+
+    \item Now, recall that:
+    \begin{align*}
+      (\mbox{rate of photons changed}) 
+      &= -(\mbox{rate of streaming out})\\
+      &\phantom{\ =} + (\mbox{rate of emission})\\
+      &\phantom{\ =} -(\mbox{rate of absorption and scattering out})\\
+      &\phantom{\ =} + (\mbox{rate of scattering in}).
+    \end{align*}
+
+    \item The rate of streaming out is given by:
+    \begin{align*}
+      \iint_S f \dot{\ve{p}} \cdot \hat{\ve{n}}
+    \end{align*}
+    where $\ve{p}$ is the phase space position, and so $\dot{\ve{p}}$ is the velocity in phase space.
+
+    By the divergence thoerem, we have that
+    \begin{align*}
+      \iint_S f \dot{\ve{p}} \cdot \hat{\ve{n}} = \iiint_V \nabla_{\ve{p}} \cdot f\, \dee V.
+    \end{align*}
+
+    \item The rate of emission is given by:
+    \begin{align*}
+      \iiint q\, \dee V
+    \end{align*}
+
+    \item The rate of absorption and scattering out is given by:
+    \begin{align*}
+      \iiint_V \sigma_t c f\, \dee V
+    \end{align*}
+
+    \item The rate of streaming in is given by:
+    \begin{align*}
+      \iiint_V c \sigma_s \int_{0}^\infty \int_{S^2} \sigma_s(\nu' \ra \nu, \omega' \ra \omega) f\, \dee \omega'\, \dee \nu' \, \dee V(\ve{r}, \nu, \omega)
+    \end{align*}
+
+    \item Putting the rates into the equation, we have
+    \begin{align*}
+      \iiint_V \bigg( \frac{\partial f}{\partial t} + \nabla_{\ve{p}} \cdot (f \dot{\ve{p}}) \bigg)\, \dee V
+      &= \iiint_v \bigg( q - c\sigma_t f - c\sigma_s \int_{0}^\infty \int_{S^2} \sigma_s(\nu' \ra \nu, \omega' \ra \omega) f\, \dee \omega'\, \dee \nu' \bigg)\, \dee V.
+    \end{align*}
+    Since the volume $V$ is arbitrary, it follows that the integrand must be equal, so:
+    \begin{align*}
+      \frac{\partial f}{\partial t} + \nabla_{\ve{p}} \cdot (f \dot{\ve{p}})
+      &= q - c\sigma_t f - c\sigma_s \int_{0}^\infty \int_{S^2} \sigma_s(\nu' \ra \nu, \omega' \ra \omega) f\, \dee \omega'\, \dee \nu'.
+    \end{align*}
+    Of course, the $\nabla_{\ve{p}} \cdot (f \dot{\ve{p}})$ can be expected to the sum of the partial derivatives, just like what we have done before.
+  \end{itemize}
+
+  \subsection{Specializations to Non-Refractive Media}
+  \begin{itemize}
+    \item Since we assume that the photon moves in a straight line between interactions, we have that $\dot \mu = \dot \varphi = 0$. Moreover, $\dot \nu = 0$ since photon travels in vacuum with no frequency change. Lastly,
+    we have that $\dot x = c \omega_x$, $\dot y = c \omega_y$, and $\dot z = c \omega_z$ since that is the definition of the photon's velocity. As such, we can rewrite the equation as:
+    \begin{align*}
+      \frac{\partial f}{\partial t} 
+      + c \omega \cdot \nabla f
+      = q -c \sigma_t f
+      +c \int_{0}^\infty \int_{S^2} \sigma_s(\nu' \ra \nu, \omega' \ra \omega) f(\nu', \omega')\, \dee \omega'\, \dee \nu'.
+    \end{align*}    
+    It is understood that all the appropriate terms have dependency on $\ve{r}$, $\nu$, $\omega$, and $t$.
+
+    \item We can also write everything in terms of the radiance instead of the phase space density function. With $L = c h \nu f$, the equation becomes:
+    \begin{align*}
+      \frac{1}{ch\nu}\frac{\partial L}{\partial t} 
+      + \frac{1}{ch\nu} c \omega \cdot \nabla L
+      &= q - \frac{1}{ch\nu} c \sigma_t L
+      +  \frac{c}{ch} \int_{0}^\infty \int_{S^2} \frac{1}{\nu'} \sigma_s(\nu' \ra \nu, \omega' \ra \omega) L(\nu', \omega')\, \dee \omega'\, \dee \nu'\\
+      \frac{1}{c}\frac{\partial L}{\partial t} 
+      +  \omega \cdot \nabla L
+      &= h\nu q - \sigma_t L
+      +  \int_{0}^\infty \int_{S^2} \frac{\nu}{\nu'} \sigma_s(\nu' \ra \nu, \omega' \ra \omega) L(\nu', \omega')\, \dee \omega'\, \dee \nu'.
+    \end{align*}
+    To simplify the equation further, define
+    \begin{align*}
+      Q(\ve{r}, \nu, \omega, t) = h \nu q(\ve{r}, \nu, \omega, t),
+    \end{align*}
+    and we will have that:
+    \begin{align*}
+      \frac{1}{c}\frac{\partial L}{\partial t} 
+      +  \omega \cdot \nabla L
+      &= Q - \sigma_t L
+      +  \int_{0}^\infty \int_{S^2} \frac{\nu}{\nu'} \sigma_s(\nu' \ra \nu, \omega' \ra \omega) L(\nu', \omega')\, \dee \omega'\, \dee \nu'.
+    \end{align*}
+
+    \item In physically based rendering, the following two assumptions are commonly made:
+    \begin{itemize}
+      \item The distribution of the photon has reached a steady state, meaning it doesn't change with time. This means that $\partial L / \partial t$.
+      \item The scattering coefficient is describe by a consistent phase function. This means that lights in different frequencies are independent of one another, but are scattered in the same way.
+    \end{itemize}
+    With these assumptions, the RTE becomes:
+    \begin{align*}
+      \omega \cdot \nabla L(\nu,\omega)
+      &= Q(\nu,\omega) - \sigma_t(\nu,\omega) L(\nu,\omega)
+      +  \sigma_s(\nu,\omega) \int_{S^2} p(\omega' \ra \omega) L(\nu, \omega')\, \dee \omega',
+    \end{align*}
+    which is the RTE commonly taught in rendering classes.
+  \end{itemize}
+
+  \subsection{Boundary Conditions}
+  \begin{itemize}
+    \item We assume that the system of interest is characterized by a volume $V$ and surface area $A$. We also assume that the system is non-rentrant, which means that photons leaving the system will not re-enter it through another part of the surface.
+
+    \item As an initial condition, it is sufficient to specify the radiance at all points on $A$ along all direction at some time $t_0$. That is, we can specify a function $\Lambda(\ve{r}, \nu, \omega)$ for all $\ve{r} \in A$ and $\omega \cdot \ve{n} < 0$ where $\ve{n}$  is the normal vector of surface $A$ at point $\ve{r}$. Then, we can require that
+    \begin{align*}
+      L(\ve{r}, \nu, \omega, t_0) = \Lambda(\ve{r}, \nu, \omega).
+    \end{align*}
+
+    \item The special case where $\Lambda = 0$ for all argument values is called the \textbf{free space} or \textbf{vacuum} boundary condition, which basically means that no photons enter the surface through the surface.
+  \end{itemize}
+
+  \section{Light Motion in Refractive Media}
+  \begin{itemize}
+    \item When light is moving in media with non-constant index of refraction, we can no longer assume that the speed of light is constantly $c$. We can also no longer assume that $\dot \omega$ and $\dot \nu$ are zero.
+
+    \item In this setting, there are additional equations that the photons observe. We state this up front and will procede to prove it in this seciton.
+    \begin{theorem} \label{light-in-refractive-media}
+      In a medium with non-constant index of refraction, the followings are true:
+      \begin{align}
+        \frac{\dee \ve{r}}{\dee s} &= \omega \label{light-position-deriv}\\
+        \frac{\dee \nu}{\dee s} &= -\frac{\nu}{c} \frac{\partial \eta}{\partial t} \label{light-frequency-deriv}\\
+        \frac{\dee \omega}{\dee s} &= \frac{1}{\eta} \big( \nabla_{\ve{r}}\eta - \omega(\omega \cdot \nabla_{\ve{r}}\eta)\big) \label{light-direction-deriv}\\
+        \frac{\dee s}{\dee t} &= v_\group = \frac{c}{\eta + \nu \frac{\partial \eta}{\partial \nu}} \label{light-distance-deriv}
+      \end{align}
+      where $s$ is the distance traveled by the photon, and $\eta \equiv \eta(\ve{r}, \nu, t)$ is the index of refraction, which is a fucntion of position, frequency, and time.
+    \end{theorem}    
+    
+    \item Reasoning about the index of refraction requires wave optics. Hever, wave is expressed with equation:
+    \begin{align*}
+      \xi(\ve{r}, t) = \xi_0 e^{i(\ve{k} \cdot \ve{r} - \Omega t)}
+    \end{align*}
+    where $\ve{k} \in \mathbb{R}^3$ is called the \textbf{wave vector}, and $\Omega = 2\pi \nu$ is the angular frequency.
+
+    Notice that $\ve{k}$ is the direction where the wave propagates.
+
+    \item We assume that there's a relationship between $\ve{k}$, $\Omega$, $\ve{r}$, and $t$. This is called the \textbf{dispersion relation} and is written as:
+    \begin{align*}
+      D(\ve{r}, \Omega, \ve{k}, t) = 0.
+    \end{align*}
+
+    \item We can solve the dispersion relation so that we can write $\Omega$ as a function of $\ve{k}$, $\ve{r}$, and $t$:
+    \begin{align*}
+      \Omega_{\alpha}(\ve{r}, \ve{k}, t) = \Omega_{\alpha,\Re}(\ve{r}, \ve{k}, t) + i \Omega_{\alpha, \Im}(\ve{r}, \ve{k}, t).
+    \end{align*}
+    The subscript $\alpha$ indices the multiple solutions of the dispersion relation.
+
+    \item We now make several assumptions:
+    \begin{itemize}
+      \item We assume that the dependency of $\Omega_\alpha$ on $\ve{r}$ and $t$ is weak. That is, the change in $\Omega_\alpha$ over a distance of one wavelength and in a time of one period is small compared to $\Omega_\alpha$ itself.
+      \item We assume that the wave packet is sufficiently monochromatic so that one can assign a reasonably definite angular frequency $\Omega$ to it. This means that the wave train is sufficiently long comparied to the wave length.
+      \item We assume that the wave train is sufficiently short that we can assign a reasonably definite spatial position $\ve{r}$ to the wave packet.
+    \end{itemize}
+
+    \item From now on, we shall drop the subscript $\alpha$ and $\Re$ from $\Omega$.
+
+    \item Under the above assumptions, the motion of the wave packet is the same as that of a particle of momentum $\ve{k}$ whose Hamiltonian is $\Omega_{\alpha, \Re}(\ve{r}, \ve{k}, t)$. The motion also obey Hamilton's equations:
+    \begin{align*}
+      \dot{\ve{r}} &= \ve{v}_{\group} = \nabla_{\ve{k}} \Omega_{\alpha, \Re}\\
+      \dot{\ve{k}} &= -\nabla_{\ve{r}} \Omega_{\alpha, \Re}
+    \end{align*}
+    Here, $\ve{v}_\group$ is called the \textbf{group velocity}.
+
+    \item In general, the group velocity does not coincide with the wave vector $\ve{k}$. They are the same only if the material through which the wave packet travels through is isotropic. In this case, $\Omega$ depends only on the magnitude of $\ve{k}$, denoted by $k$, but not its direction. We also have that
+    \begin{align*}
+      \dot{\ve{r}} = \ve{v}_\group = \nabla_{\ve{v}} \Omega = \frac{\partial \Omega}{\partial k} \nabla_{\ve{k}} k = v_\group \omega
+    \end{align*}
+    where 
+    \begin{itemize}
+      \item $v_\group = \partial \Omega / \partial k$ is the \textbf{group speed}, and
+      \item $\omega = \ve{k} / k$ is the direction where the wave travels.
+    \end{itemize}
+
+    \item From now on, we shall assume that the material is isotropic.
+    
+    \item The RTE describes the evolution of the system in terms of $\ve{r}$, $\ve{\nu}$, $\ve{\omega}$, and $t$.
+    Note that the conversion between $\Omega$ and $\nu$ is straightforward because $\Omega = 2\pi \nu$. Also, we have just defined $\omega$ in terms of $\ve{k}$.
+
+    \item Hamilton's equation already give us $\dot{\ve{r}}$. To get the equation to describe the evolution of the system, we need to find $\dot \Omega$ and $\dot \omega$.
+
+    \item Let us first consider $\dot \Omega$. We have that
+    \begin{align*}
+      \dot \Omega 
+      = \frac{\partial \Omega}{\partial t} + \dot{\ve{r}} \cdot \nabla_{\ve{r}}\Omega + \dot{\ve{k}} \cdot \nabla_{\ve{k}} \Omega
+      = \frac{\partial \Omega}{\partial t} + \dot{\ve{r}} \cdot (- \dot{\ve{k}}) + \dot{\ve{k}} \cdot \dot{\ve{r}}
+      = \frac{\partial \Omega}{\partial t}.
+    \end{align*}
+
+    \item Define the \textbf{index of refraction} $\eta \equiv \eta(\ve{r}, k, t)$ as:
+    \begin{align*}
+      \eta = \frac{ck}{\Omega}.
+    \end{align*}
+    So, we have
+    \begin{align*}
+      \dot \Omega 
+      = \frac{\partial \Omega}{\partial t} 
+      = \frac{\partial}{\partial t} \bigg( \frac{ck}{\Omega} \bigg)
+      = -\frac{ck}{\eta^2} \frac{\partial \eta}{\partial t}
+      = -\frac{\Omega}{\eta} \frac{\partial \eta}{\partial t}.
+    \end{align*}
+
+    \item We will now obtain an alternative expression for $\dot \Omega$. We have been considering $\eta$ as a function of $k$, which we may write as $\eta(k)$. So, the above equation becomes:
+    \begin{align*}
+      \dot\Omega = \frac{\partial \Omega}{\partial t} = -\frac{\Omega}{\eta} \frac{\partial \eta(k)}{\partial t}.
+    \end{align*}
+    Alternatively, we can consider it as a function of $\Omega$, which we may right as $\eta(\Omega)$. By the chain rule, we have that
+    \begin{align*}
+      \frac{\partial \eta(k)}{\partial t} 
+      &= \frac{\partial \eta(\Omega)}{\partial t} + \frac{\partial \Omega}{\partial t} \frac{\partial \eta(\Omega)}{\partial \Omega}\\
+      &= \frac{\partial \eta(\Omega)}{\partial t} + - \frac{\Omega}{\eta} \frac{\partial \eta(k)}{\partial t} \frac{\partial \eta(\Omega)}{\partial \Omega}.
+    \end{align*}
+    Hence,
+    \begin{align*}
+      \frac{\partial \eta(\Omega)}{\partial t} 
+      &= \frac{\partial \eta(k)}{\partial t} \bigg( 1 + \frac{\Omega}{\eta} \frac{\partial \eta(\Omega)}{\partial \Omega} \bigg)
+      = \frac{1}{\eta} \frac{\partial \eta(k)}{\partial t} \bigg( \eta + \Omega \frac{\partial \eta(\Omega)}{\partial \Omega} \bigg)
+      = \frac{1}{\eta} \frac{\partial \eta(k)}{\partial t} \frac{\partial (\Omega \eta)}{\partial \Omega}
+      = \frac{c}{\eta} \frac{\partial \eta(k)}{\partial t} \frac{\partial k}{\partial \Omega}\\
+      &= \frac{c}{\eta v_\group} \frac{\partial \eta(k)}{\partial t}      
+    \end{align*}
+    In other words,
+    \begin{align*}
+      \frac{\partial \eta(k)}{\partial t} = \frac{\eta v_\group}{c} \frac{\partial \Omega}{\partial t}.
+    \end{align*}
+    As a result,
+    \begin{align*}
+      \dot\Omega 
+      = \frac{\partial \Omega}{\partial t} 
+      = -\frac{\Omega}{\eta} \frac{\eta v_\group}{c} \frac{\partial \eta(\Omega)}{\partial t} 
+      = -\frac{\Omega v_\group}{c} \frac{\partial \eta(\Omega)}{\partial t}.
+    \end{align*}
+
+    \item We now turn to derive the expression for $\dot\omega$. First, note that $\ve{k} = k \omega$. Hence,
+    \begin{align*}
+      \dot{\ve{k}} = \dot k \omega + k \dot \omega.
+    \end{align*}
+    Also, from Hamilton's equations,
+    \begin{align}
+      \dot{\ve{k}} = -\nabla_{\ve{r}}\Omega. \label{dot-ve-k}
+    \end{align}
+    So,
+    \begin{align}
+      k \dot\omega = -\nabla_{\ve{r}}\Omega - \dot k \omega. \label{k-dot-omega}
+    \end{align}
+    Dotting both sides of \ref{dot-ve-k} with $\ve{k}$, we have
+    \begin{align*}
+      -\ve{k} \cdot \nabla_{\ve{r}} \Omega 
+      = \ve{k} \cdot \dot{\ve{k}} 
+      = \frac{1}{2} \frac{\dee}{\dee t}(\ve{k} \cdot \ve{k})
+      = \frac{1}{2} \frac{\dee}{\dee t}(k^2)
+      = k\dot k.
+    \end{align*}
+    Since $\ve{k} = k\omega$, we have that
+    \begin{align}
+      \dot k = -\omega \cdot \nabla_{\ve{r}}\Omega. \label{dot-k}
+    \end{align}
+    Substituting \ref{dot-k} back to \ref{k-dot-omega}, we have
+    \begin{align*}
+      k \dot \omega = -\nabla_{\ve{r}}\Omega + \omega(\omega \cdot \nabla_{\ve{r}}\Omega).
+    \end{align*}
+    Because $\Omega = ck/\eta$, we have that
+    \begin{align*}
+      \nabla_{\ve{r}}\Omega = \nabla_{\ve{r}} \bigg( \frac{ck}{\eta} \bigg) = -\frac{ck}{\eta^2}\nabla_{\ve{r}}\eta.
+    \end{align*}
+    Therefore,
+    \begin{align*}
+      k \dot \omega 
+      &= \frac{ck}{\eta^2} \big( \nabla_{\ve{r}}\eta - \omega(\omega \cdot \nabla_{\ve{r}}\eta)\big) \\
+      \dot \omega 
+      &= \frac{c}{\eta^2} \big( \nabla_{\ve{r}}\eta - \omega(\omega \cdot \nabla_{\ve{r}}\eta)\big).
+    \end{align*}
+    Note that the above equation considers $\eta$ as a function of $k$. Again, we can consider $\eta$ as a function of $\Omega$. Analogous to the result obtained in the last item, we can conclude that
+    \begin{align*}
+      \nabla_{\ve{r}} \big( \eta(k) \big) = \frac{\eta v_\group}{c} \nabla_{\ve{r}} \big( \eta(\Omega) \big)
+    \end{align*}
+    As such, the expression for $\dot\omega$ can be rewritten as:
+    \begin{align*}
+      \dot \omega 
+      &= \frac{v_\group}{\eta} \big( \nabla_{\ve{r}}\eta - \omega(\omega \cdot \nabla_{\ve{r}}\eta)\big).
+    \end{align*}
+
+    \item We will now introduce the variable $s$, the distance tranveled by the wave. We have that $\dot s = v_\group$. So, for any variable $A$, we have that
+    \begin{align*}
+      \dot A = \frac{\dee A}{\dee s} \dot s = \frac{\dee A}{\dee s} v_\group.
+    \end{align*}
+    So,
+    \begin{align*}
+      \frac{\dee A}{\dee s} = \frac{1}{v_\group} \dot A.
+    \end{align*}
+    As a result,
+    \begin{align*}
+      \frac{\dee \ve{r}}{\dee s} &= \frac{\ve{v}_\group}{v_\group} = \omega\\
+      \frac{\dee \Omega}{\dee s} &= -\frac{\Omega}{c} \frac{\partial \eta}{\partial t}\\
+      \frac{\dee \omega}{\dee s} &= \frac{1}{\eta} \big( \nabla_{\ve{r}}\eta - \omega(\omega \cdot \nabla_{\ve{r}}\eta)\big).      
+    \end{align*}
+
+    \item Lastly, we shall perform a change of variable from $\Omega$ to $\nu$. Because $\Omega = 2\pi \nu$, we have that the three equations above become:
+    \begin{align*}
+      \frac{\dee \ve{r}}{\dee s} &= \frac{\ve{v}_\group}{v_\group} = \omega\\
+      \frac{\dee \nu}{\dee s} &= -\frac{\nu}{c} \frac{\partial \eta}{\partial t}\\
+      \frac{\dee \omega}{\dee s} &= \frac{1}{\eta} \big( \nabla_{\ve{r}}\eta - \omega(\omega \cdot \nabla_{\ve{r}}\eta)\big).
+    \end{align*}
+
+    \item We next show that $v_\group = c/(\eta + \nu \frac{\partial \eta}{\partial \nu})$. From the definition of $\eta$, we have
+    \begin{align*}
+      \eta &= \frac{ck}{\Omega} = \frac{ck}{2\pi \nu}\\
+      \eta \nu &= \frac{ck}{2\pi}.
+    \end{align*}
+    Taking the partial derivative of $\nu$ of both sides, we have
+    \begin{align*}
+      \eta + \nu \frac{\partial \eta}{\partial \nu}
+      &= \frac{c}{2\pi}\frac{\partial k}{\partial \nu} \\
+      \eta + \nu \frac{\partial \eta}{\partial \nu}
+      &= c\frac{\partial k}{\partial \Omega} \\
+      \eta + \nu \frac{\partial \eta}{\partial \nu}
+      &= \frac{c}{v_\group} \\
+      v_\group &= \frac{c}{\eta + \nu \frac{\partial \eta}{\partial \nu}}.
+    \end{align*}
+    We have now proven all the equations in Theorem~\ref{light-in-refractive-media}.
+
+    \item When light travels in a material with non-constant index of refraction, its path might not be straight. This path can be derived starting from Equation~\eqref{light-direction-deriv}:
+    \begin{align*}
+      \frac{\dee \omega }{\dee s} 
+      &= \frac{1}{\eta} \big( \nabla_{\ve{r}} \eta - (\omega \cdot \nabla_{\ve{r}} \eta) \omega \big)\\
+      \frac{\dee }{\dee s} \bigg( \frac{\dee \ve{r}}{\dee s} \bigg)
+      &= \frac{1}{\eta} \big( \nabla_{\ve{r}} \eta - (\omega \cdot \nabla_{\ve{r}} \eta) \omega \big)\\
+      \frac{\dee^2 \ve{r}}{\dee s^2}
+      &= \frac{1}{\eta} \big( \nabla_{\ve{r}} \eta - (\omega \cdot \nabla_{\ve{r}} \eta) \omega \big)
+    \end{align*}
+    Because $\eta \equiv \eta(\ve{r}, \nu, t)$, we have that
+    \begin{align*}
+      \frac{\dee \eta}{\dee s} 
+      &= \frac{\dee t}{\dee s} \frac{\partial \eta}{\partial t} 
+      + \frac{\dee \ve{r}}{\dee s} \cdot \nabla_{\ve{r}} \eta
+      + \frac{\dee \nu}{\dee s} \frac{\partial \eta}{\partial \nu}\\
+      &= \frac{\dee t}{\dee s} \frac{\partial \eta}{\partial t} 
+      + \frac{\dee \ve{r}}{\dee s} \cdot \nabla_{\ve{r}} \eta
+      - \frac{\nu}{c} \frac{\dee \eta}{\dee t} \frac{\partial \eta}{\partial \nu}\\
+      &= \frac{\dee \ve{r}}{\dee s} \cdot \nabla_{\ve{r}} \eta
+      + \bigg( \frac{1}{v_\group} - \frac{\nu}{c} \frac{\dee \eta}{\dee \nu} \bigg) \frac{\partial \eta}{\partial t}\\
+      &= \frac{\dee \ve{r}}{\dee s} \cdot \nabla_{\ve{r}} \eta
+      + \bigg( \frac{\eta + \nu \frac{\partial \eta}{\partial \nu}}{c} - \frac{\nu}{c} \frac{\dee \eta}{\dee \nu} \bigg) \frac{\partial \eta}{\partial t}\\
+      &= \frac{\dee \ve{r}}{\dee s} \cdot \nabla_{\ve{r}} \eta
+      + \frac{\eta}{c} \frac{\partial \eta}{\partial t}
+    \end{align*}    
+    If we assume that $\delta \eta / \delta t = 0$, we havet that
+    \begin{align*}
+      \frac{\dee \eta}{\dee s} 
+      = \frac{\dee \ve{r}}{\dee s} \cdot \nabla_{\ve{r}} \eta 
+      = \omega \cdot \nabla_{\ve{r}} \eta.
+    \end{align*}
+    Therefore,
+    \begin{align}
+      \frac{\dee^2 \ve{r}}{\dee s^2}
+      &= \frac{1}{\eta}\bigg( \nabla_{\ve{r}} \eta - \frac{\dee \eta}{\dee s} \frac{\dee \ve{r}}{\dee s} \bigg) \notag\\
+      \eta \frac{\dee^2 \ve{r}}{\dee s^2} - \frac{\dee \eta}{\dee s} \frac{\dee \ve{r}}{\dee s}
+      &= \nabla_{\ve{r}} \eta \notag\\
+      \frac{\dee }{\dee s}\bigg( \eta \frac{\dee \ve{r}}{\dee s} \bigg)
+      &= \nabla_{\ve{r}} \eta. \label{ray-equation}
+    \end{align}
+    This is the so called \textbf{ray equation} in geometric optics.
+
+  \end{itemize}
+
+  \section{RTE in Refractive Media}
+  \begin{itemize}
+    \item With light now traveling in general material, its velocity is not $c$ but $v_\group$. 
+
+    \item As a result, the RTE we derived before becomes:
+    \begin{align*}
+      & \frac{\partial f}{\partial t}  
+      + \frac{\partial (\dot x f)}{\partial x}
+      + \frac{\partial (\dot y f)}{\partial y}
+      + \frac{\partial (\dot z f)}{\partial z}
+      + \frac{\partial (\dot \nu f)}{\partial \nu}
+      + \frac{\partial (\dot \mu f)}{\partial \mu}
+      + \frac{\partial (\dot \varphi f)}{\partial \varphi} \\
+      &= q -v_\group \sigma_t f
+      +v_\group \int_{0}^\infty \int_{S^2} \frac{\nu}{\nu'} \sigma_s(\nu' \ra \nu, \omega' \ra \omega) f(\nu', \omega')\, \dee \omega'\, \dee \nu'.
+    \end{align*}
+
+    \item To simplify matters, we will also make assumption that the scattering coefficient is described by a consistent phase function:
+    \begin{align}
+      & \frac{\partial f}{\partial t}  
+      + \frac{\partial (\dot x f)}{\partial x}
+      + \frac{\partial (\dot y f)}{\partial y}
+      + \frac{\partial (\dot z f)}{\partial z}
+      + \frac{\partial (\dot \nu f)}{\partial \nu}
+      + \frac{\partial (\dot \mu f)}{\partial \mu}
+      + \frac{\partial (\dot \varphi f)}{\partial \varphi} \notag \\
+      &= q -v_\group \sigma_t f 
+      +v_\group \sigma_s \int_{S^2} p(\omega' \ra \omega) f(\omega')\, \dee \omega'. \label{basic-rte-vgroup}.
+    \end{align}    
+
+    \item The task is to incorporate the equations in Theorem~\ref{light-in-refractive-media} to the above equation.
+
+    \item We state the end result up front:
+    \begin{theorem} \label{rrte}
+      In a refractive medium with an index of refraction $\eta \equiv \eta(\ve{r}, \nu)$, radiative transport is described by the equation:
+      \begin{align*}
+        \frac{\dee \tilde L}{\dee s} = \tilde Q - \sigma_t \tilde L + \sigma_s \int_{S^2} p(\omega' \ra \omega) \tilde L(\omega')\, \dee \omega
+      \end{align*}
+      where $\tilde L = L / \eta^2$ is called the \textbf{basic radiance}, and $\tilde Q = Q / \eta^2$.
+    \end{theorem}
+
+    \item The derivation of the above theorem is very long. The first step is to transform Equation~\eqref{basic-rte-vgroup} as follows:
+    \begin{lemma} \label{rte-first-rewrite}
+      Equation~\eqref{basic-rte-vgroup} can be rewritten as:
+      \begin{align}
+        & \frac{\partial}{\partial t}\bigg(\frac{L}{v_\group}\bigg)
+        + \omega \cdot \nabla_{\ve{r}} L
+        + \nabla_{\omega} \cdot \bigg( \frac{\dee \omega}{\dee s} L \bigg)
+        + \nu \frac{\partial}{\partial \nu} \bigg( \frac{\dee \nu}{\dee s} \frac{L}{\nu} \bigg)
+        = Q - \sigma_t L
+        + \sigma_s \int_{S^2} p(\omega' \ra \omega) L(\omega')\, \dee \omega'. \label{rte-first-rewrite-eqn}
+      \end{align}
+    \end{lemma}
+
+    \item We call attention to the divergence operator $\nabla_\omega \cdot$, which is defined as follows. We are given a vector field $\ve{A}$ in spherical coordinate with no $r$ component. That is,
+    \begin{align*}
+      \ve{A} = A_\theta \hat \theta + A_\varphi \hat\varphi.
+    \end{align*}
+    Then, 
+    \begin{align*}
+      \nabla_\omega \cdot \ve{A} = \frac{1}{\sin \theta} \frac{\partial (A_\theta \sin \theta )}{\partial \theta} + \frac{1}{\sin\theta} \frac{\partial A_\varphi}{\partial \varphi}.
+    \end{align*}
+
+    We comment a little bit on why $\nabla_\omega \cdot A$ define this way is considered a valid divergence operator. First, note that the divergence operator in spherical coordinate is given by:
+    \begin{align*}
+      \nabla_{(r,\theta,\varphi)} \cdot \ve{A} 
+      = \frac{1}{r^2} \frac{\partial(r^2 A_r)}{\partial r}
+      + \frac{1}{r\sin\theta} \frac{\partial (A_\theta \sin\theta)}{\partial \theta}
+      + \frac{1}{r\sin\theta} \frac{\partial A_\varphi}{\partial\varphi}.
+    \end{align*}
+    Now, the vector field where $\nabla_\omega \cdot \ve{A}$ is equivalent to evaluating $\nabla_{(r, \theta,\varphi)} \cdot A$ on the $r = 1$ sphere. No that the first time on the RHS vanishes because $A_r = 0$. The fact that $\nabla_\omega\cdot$ is a divergence allows us to use identities involving the del operator with it.
+
+    \item The divergence $\nabla_\omega \cdot$ also defines a gradient operator $\nabla_\omega$, which is defined as:
+    \begin{align*}
+      \nabla_\omega A 
+      = [\nabla_{(r,\theta,\varphi)} A]_{r = 1}
+      = \begin{bmatrix}
+        \frac{\partial A}{\partial r} \\
+        \frac{1}{r} \frac{\partial A}{\partial \theta} \\
+        \frac{1}{r\sin\theta} \frac{\partial A}{\partial \varphi}
+      \end{bmatrix}_{r=1}
+    \end{align*}
+    Now, if we resist that $A$ is defined on the sphere $r = 1$, then there is no dependence on $r$. So,
+    \begin{align*}
+      \nabla_\omega A       
+      = \begin{bmatrix}
+        0 \\
+        \frac{\partial A}{\partial \theta} \\
+        \frac{1}{\sin\theta}\frac{\partial A}{\partial \varphi}
+      \end{bmatrix}.
+    \end{align*}
+
+    \item We now prove Lemma~\ref{rte-first-rewrite}.
+    \begin{proof}
+      First, we simplify the RHS by noting that:
+      \begin{align*}
+        \frac{\partial (\dot x f)}{\partial x}
+        + \frac{\partial (\dot y f)}{\partial y}
+        + \frac{\partial (\dot z f)}{\partial z}
+        = \nabla_{\ve{r}} \cdot (f \dot{\ve{r}}).
+      \end{align*}
+
+      We will now deal with the terms in the LHS that involves the direction $\omega$. We will show that
+      \begin{align*}
+        \frac{\partial (f \dot\mu)}{\partial \mu} + \frac{\partial (f \dot\varphi)}{\partial \varphi}
+        = \nabla_\omega \cdot (f \dot \omega).
+      \end{align*}
+      We have that
+      \begin{align*}
+        \omega = \begin{bmatrix}
+          \sin\theta \cos\varphi \\
+          \sin\theta \sin\varphi \\
+          \cos\theta
+        \end{bmatrix}
+        = \hat{r}.
+      \end{align*}
+      Therefore,
+      \begin{align*}
+        \dot \omega 
+        = \frac{\dee \hat{r}}{\dee t} = \hat \theta \dot\theta + \hat \varphi \dot \varphi \sin\theta.      
+      \end{align*}
+      Notice that $\cdot\omega$ does not have any $\hat r$ component, and so does $f\dot\omega$. This means we can apply the divergence above:    
+      \begin{align*}
+        \nabla_\omega \cdot (f\dot\omega) 
+        = \frac{1}{\sin \theta} \frac{\partial (f \dot \theta \sin \theta)}{\partial \theta} + \frac{1}{\sin\theta} \frac{\partial (f \dot\varphi \sin\theta)}{\partial \varphi}
+        = \frac{1}{\sin \theta} \frac{\partial (f \dot \theta \sin \theta)}{\partial \theta} + \frac{\partial (f \dot\varphi)}{\partial \varphi}.
+      \end{align*}
+      Because $\mu = \cos\theta$, we have that $\dot \mu = \dot\theta \sin\theta$ and $\partial \mu / \partial \theta = \sin\theta$, we have that
+      \begin{align*}
+        \nabla_\omega \cdot (f\dot\omega) 
+        = \frac{\partial \theta}{\partial \mu} \frac{\partial (f \dot\mu)}{\partial \theta} + \frac{\partial (f \dot\varphi)}{\partial \varphi}
+        = \frac{\partial (f \dot\mu)}{\partial \mu} + \frac{\partial (f \dot\varphi)}{\partial \varphi}
+      \end{align*}
+      as desired. 
+
+      With the introduction of the new divergence operator, we have that the RTE becomes:
+      \begin{align*}
+        \frac{\partial f}{\partial t}  
+        + \nabla_{\ve{r}} \cdot (f \dot{\ve{r}})
+        + \nabla_{\omega} \cdot (f \dot{\omega})
+        + \frac{\partial (\dot \nu f)}{\partial \nu}
+        = q -v_\group \sigma_t f
+        +v_\group \sigma_s \int_{S^2} p(\omega' \ra \omega) f(\omega')\, \dee \omega'.
+      \end{align*}
+      Because $\dee s / \dee t = v_\group$, we can rewrite the above equation as:
+      \begin{align*}
+        & \frac{\partial f}{\partial t}  
+        + \nabla_{\ve{r}} \cdot \bigg( \frac{\dee \ve{r}}{\dee s} v_\group f\bigg)
+        + \nabla_{\omega} \cdot \bigg( \frac{\dee \omega}{\dee s} v_\group f \bigg)
+        + \frac{\partial}{\partial \nu} \bigg( \frac{\dee \nu}{\dee s} v_\group f \bigg)\\
+        &= q -v_\group \sigma_t f
+        +v_\group \sigma_s \int_{S^2} p(\omega' \ra \omega) f(\omega')\, \dee \omega'.
+      \end{align*}
+
+      Now, as with the previous derivation, we have that $L = h \nu v_\group f$. So, we can rewrite the equation as:
+      \begin{align*}
+        & \frac{\partial}{\partial t}\bigg(\frac{L}{h \nu v_\group}\bigg)
+        + \nabla_{\ve{r}} \cdot \bigg( \frac{\dee \ve{r}}{\dee s} v_\group \frac{L}{h \nu v_\group} \bigg)
+        + \nabla_{\omega} \cdot \bigg( \frac{\dee \omega}{\dee s} v_\group \frac{L}{h \nu v_\group} \bigg)
+        + \frac{\partial}{\partial \nu} \bigg( \frac{\dee \nu}{\dee s} v_\group \frac{L}{h \nu v_\group} \bigg)\\
+        &= q -v_\group \sigma_t \frac{L}{h \nu v_\group}
+        +v_\group \sigma_s \int_{S^2} p(\omega' \ra \omega) \frac{L(\omega')}{h \nu v_\group}\, \dee \omega'.
+      \end{align*}
+      Multiplying both sizes by $h \nu$, we have
+      \begin{align*}
+        & \frac{\partial}{\partial t}\bigg(\frac{L}{v_\group}\bigg)
+        + \nabla_{\ve{r}} \cdot \bigg( \frac{\dee \ve{r}}{\dee s} L \bigg)
+        + \nabla_{\omega} \cdot \bigg( \frac{\dee \omega}{\dee s} L \bigg)
+        + \nu \frac{\partial}{\partial \nu} \bigg( \frac{\dee \nu}{\dee s} \frac{L}{\nu} \bigg)
+        = Q -\sigma_t L
+        + \sigma_s \int_{S^2} p(\omega' \ra \omega) L(\omega')\, \dee \omega'.
+      \end{align*}
+      Lastly, note that $\dee \ve{r} / \dee s = \omega$. Since $\omega$ is unaffected by the divergence operator $\nabla_{\ve{r}} \cdot$, we can pull it out of the divergence operator like the following:
+      \begin{align*}
+        & \frac{\partial}{\partial t}\bigg(\frac{L}{v_\group}\bigg)
+        + \omega \cdot \nabla_{\ve{r}} L
+        + \nabla_{\omega} \cdot \bigg( \frac{\dee \omega}{\dee s} L \bigg)
+        + \nu \frac{\partial}{\partial \nu} \bigg( \frac{\dee \nu}{\dee s} \frac{L}{\nu} \bigg)
+        = Q -\sigma_t L + \sigma_s \int_{S^2} p(\omega' \ra \omega) L(\omega')\, \dee \omega'
+      \end{align*}
+      as required.
+    \end{proof}
+
+    \item We will now simplify the RHS of Equation~\eqref{rte-first-rewrite-eqn} using the following lemmas.
+    \begin{lemma} \label{time-and-frequency-deriv}
+      Assuming that $\partial \eta / \partial t = 0$, we have that
+      \begin{align*}
+        \frac{\partial}{\partial t} \bigg( \frac{L}{v_\group} \bigg) 
+        + \nu \frac{\partial}{\partial \nu} \bigg( \frac{\dee \nu}{\dee s} \frac{L}{\nu} \bigg)
+        = \frac{\eta^2}{v_\group} \frac{\partial}{\partial t} \bigg( \frac{L}{\eta^2} \bigg).
+      \end{align*}      
+    \end{lemma}
+
+    \begin{lemma} \label{position-and-direction-deriv}
+      \begin{align*}
+        \omega \cdot \nabla_{\ve{r}} L
+        + \nabla_{\omega} \cdot \bigg( \frac{\dee \omega}{\dee s} L \bigg)
+        = \eta^2 \omega \cdot \nabla_{\ve{r}} \bigg( \frac{L}{\eta^2} \bigg)
+        + \eta^2 \frac{\dee \omega}{\dee s} \cdot \nabla_{\omega} \bigg( \frac{L}{\eta^2} \bigg)
+      \end{align*}
+    \end{lemma}
+
+    Since the proofs for the lemmas are very involved, they will be provided later in the following subsections.
+
+    \item Assuming the lemma, we can prove Theorem~\ref{rrte}.
+    \begin{proof}
+      Consider the RHS of Equation~\eqref{rte-first-rewrite-eqn}. We have:
+      \begin{align*}
+        & \frac{\partial}{\partial t}\bigg(\frac{L}{h \nu v_\group}\bigg)
+        + \nabla_{\ve{r}} \cdot \bigg( \frac{\dee \ve{r}}{\dee s} v_\group \frac{L}{h \nu v_\group} \bigg)
+        + \nabla_{\omega} \cdot \bigg( \frac{\dee \omega}{\dee s} v_\group \frac{L}{h \nu v_\group} \bigg)
+        + \frac{\partial}{\partial \nu} \bigg( \frac{\dee \nu}{\dee s} v_\group \frac{L}{h \nu v_\group} \bigg)\\
+        &= \frac{\eta^2}{v_\group} \frac{\partial}{\partial t} \bigg( \frac{L}{\eta^2} \bigg)
+        + \eta^2 \omega \cdot \nabla_{\ve{r}} \bigg( \frac{L}{\eta^2} \bigg)
+        + \eta^2 \frac{\dee \omega}{\dee s} \cdot \nabla_{\omega} \bigg( \frac{L}{\eta^2} \bigg) \\
+        &= \eta^2 \bigg( 
+        \frac{1}{v_\group} \frac{\partial}{\partial t} \bigg( \frac{L}{\eta^2} \bigg)
+        + \omega \cdot \nabla_{\ve{r}} \bigg( \frac{L}{\eta^2} \bigg)
+        + \frac{\dee \omega}{\dee s} \cdot \nabla_{\omega} \bigg( \frac{L}{\eta^2} \bigg)
+        \bigg) \\
+        &= \eta^2 \bigg( 
+        \frac{\dee t}{\dee s} \frac{\partial \tilde L}{\partial t} 
+        + \frac{\dee \ve{r}}{\dee s} \cdot \nabla_{\ve{r}} \tilde L
+        + \frac{\dee \omega}{\dee s} \cdot \nabla_{\omega} \tilde L
+        \bigg) \\
+        &= \eta^2 \bigg[ 
+        \frac{\dee t}{\dee s} \frac{\partial \tilde L}{\partial t} 
+        + \frac{\dee x}{\dee s} \frac{\partial \tilde L}{\partial x}
+        + \frac{\dee y}{\dee s} \frac{\partial \tilde L}{\partial y}
+        + \frac{\dee z}{\dee s} \frac{\partial \tilde L}{\partial z}
+        + \bigg( \hat \theta \frac{\dee \theta}{\dee s} + \hat\varphi \sin \theta \frac{\dee \varphi}{\dee s} \bigg) \cdot \bigg( \hat\theta \frac{\partial \tilde L}{\partial \theta} + \hat\varphi \frac{1}{\sin\theta} \frac{\partial \tilde L}{\partial \varphi} \bigg) 
+        \bigg] \\
+        &= \eta^2 \bigg(
+        \frac{\dee t}{\dee s} \frac{\partial \tilde L}{\partial t} 
+        + \frac{\dee x}{\dee s} \frac{\partial \tilde L}{\partial x}
+        + \frac{\dee y}{\dee s} \frac{\partial \tilde L}{\partial y}
+        + \frac{\dee z}{\dee s} \frac{\partial \tilde L}{\partial z}
+        + \frac{\dee \theta}{\dee s} \frac{\partial \tilde L}{\partial \theta}
+        + \frac{\dee \varphi}{\dee s} \frac{\partial \tilde L}{\partial \varphi}        
+        \bigg).
+      \end{align*}      
+      Because $\eta \equiv \eta(\ve{r}, \nu)$ is not a function of $t$, we have that $\partial \eta / \partial t = 0$. So,
+      \begin{align*}
+        \frac{\dee \nu}{\dee s} = -\frac{\nu}{c} \frac{\partial \eta}{\partial t} = 0.
+      \end{align*}
+      As a result,
+      \begin{align*}
+        & \frac{\partial}{\partial t}\bigg(\frac{L}{h \nu v_\group}\bigg)
+        + \nabla_{\ve{r}} \cdot \bigg( \frac{\dee \ve{r}}{\dee s} v_\group \frac{L}{h \nu v_\group} \bigg)
+        + \nabla_{\omega} \cdot \bigg( \frac{\dee \omega}{\dee s} v_\group \frac{L}{h \nu v_\group} \bigg)
+        + \frac{\partial}{\partial \nu} \bigg( \frac{\dee \nu}{\dee s} v_\group \frac{L}{h \nu v_\group} \bigg)\\
+        &= \eta^2 \bigg(
+        \frac{\dee t}{\dee s} \frac{\partial \tilde L}{\partial t} 
+        + \frac{\dee x}{\dee s} \frac{\partial \tilde L}{\partial x}
+        + \frac{\dee y}{\dee s} \frac{\partial \tilde L}{\partial y}
+        + \frac{\dee z}{\dee s} \frac{\partial \tilde L}{\partial z}
+        + \frac{\dee \theta}{\dee s} \frac{\partial \tilde L}{\partial \theta}
+        + \frac{\dee \varphi}{\dee s} \frac{\partial \tilde L}{\partial \varphi}        
+        \bigg) \\
+        &= \eta^2 \bigg(
+        \frac{\dee t}{\dee s} \frac{\partial \tilde L}{\partial t} 
+        + \frac{\dee x}{\dee s} \frac{\partial \tilde L}{\partial x}
+        + \frac{\dee y}{\dee s} \frac{\partial \tilde L}{\partial y}
+        + \frac{\dee z}{\dee s} \frac{\partial \tilde L}{\partial z}
+        + \frac{\dee \theta}{\dee s} \frac{\partial \tilde L}{\partial \theta}
+        + \frac{\dee \varphi}{\dee s} \frac{\partial \tilde L}{\partial \varphi}
+        + \frac{\dee \nu}{\dee s} \frac{\partial \tilde L}{\partial \nu}
+        \bigg) \\
+        &= \eta^2 \frac{\dee \tilde L}{\dee s}.
+      \end{align*}
+      Equating $\eta^2 \frac{\dee \tilde L}{\dee t}$ to the RHS of Equation~\ref{rte-first-rewrite-eqn}, we have
+      \begin{align*}
+        \eta^2 \frac{\dee \tilde L}{\dee s}
+        &= Q -\sigma_t L + \sigma_s \int_{S^2} p(\omega' \ra \omega) L(\omega')\, \dee \omega'\\
+        \frac{\dee \tilde L}{\dee s}
+        &= \frac{Q}{\eta^2} -\sigma_t \frac{L}{\eta^2} + \sigma_s \int_{S^2} p(\omega' \ra \omega) \frac{L(\omega')}{\eta^2}\, \dee \omega'\\
+        \frac{\dee \tilde L}{\dee s}
+        &= \tilde Q -\sigma_t \tilde L + \sigma_s \int_{S^2} p(\omega' \ra \omega) \tilde L(\omega')\, \dee \omega'
+      \end{align*}
+      as required.
+    \end{proof}    
+  \end{itemize}
+
+  \subsection{Time and Frequency Derivatives}
+  \begin{itemize}    
+    \item We prove Lemma~\ref{time-and-frequency-deriv} in this section.
+
+    \item \begin{lemma}
+      \begin{align*}
+        \frac{\partial}{\partial t} \bigg( \frac{L}{v_\group} \bigg)
+        = \frac{\eta^2}{v_\group} \frac{\partial}{\partial t} \bigg( \frac{L}{\eta^2} \bigg)
+        + \frac{L}{\eta^2} \frac{\partial}{\partial t} \bigg( \frac{\eta^2}{v_\group} \bigg).
+      \end{align*}
+    \end{lemma}
+    \begin{proof}
+      \begin{align*}
+        \frac{\partial}{\partial t} \bigg( \frac{L}{v_\group} \bigg)
+        &= \frac{1}{v_\group} \frac{\partial L}{\partial t} 
+        + \frac{\partial}{\partial t} \bigg( \frac{1}{v_\group} \bigg)L\\
+        &= \frac{1}{v_\group} \frac{\partial L}{\partial t} 
+        - \frac{1}{v_\group}\frac{2L}{\eta} \frac{\partial \eta}{t}
+        + \frac{1}{v_\group}\frac{2L}{\eta} \frac{\partial \eta}{t}
+        + \frac{\partial}{\partial t} \bigg( \frac{1}{v_\group} \bigg)L\\  
+        &= \frac{\eta^2}{v_\group} \bigg( \frac{\partial L}{\partial t} \frac{1}{\eta^2} 
+        - \frac{2}{\eta^3} \frac{\partial \eta}{\partial t} L \bigg)
+        + \frac{L}{\eta^2} \bigg( 2\eta \frac{\partial \eta}{\partial t} \frac{1}{v_\group}
+        + \frac{\partial}{\partial t} \bigg( \frac{1}{v_\group} \bigg)\eta^2
+        \bigg)\\
+        &= \frac{\eta^2}{v_\group} \bigg( \frac{\partial L}{\partial t} \frac{1}{\eta^2} 
+        + \frac{\partial}{\partial t} \bigg( \frac{1}{\eta^2} \bigg) L \bigg)
+        + \frac{L}{\eta^2} \bigg( \frac{\partial \eta^2}{\partial t} \frac{1}{v_\group}
+        + \frac{\partial}{\partial t} \bigg( \frac{1}{v_\group} \bigg)\eta^2
+        \bigg)\\
+        &= \frac{\eta^2}{v_\group} \frac{\partial}{\partial t} \bigg( \frac{L}{\eta^2} \bigg)
+        + \frac{L}{\eta^2} \frac{\partial}{\partial t} \bigg( \frac{\eta^2}{v_\group}
+        \bigg).
+      \end{align*}
+    \end{proof}
+
+    \item \begin{lemma}
+      \begin{align*}
+        \nu \frac{\partial }{\partial \nu} \bigg( \frac{\dee \nu}{\dee s} \frac{L}{s} \bigg)
+        = \eta^2 \frac{\dee \nu}{\dee s} \frac{\partial }{\partial \nu} \bigg( \frac{L}{\eta^2} \bigg)
+        - \frac{\nu}{c} \frac{L}{\eta^2} \frac{\partial }{\partial t} \bigg( \eta^2 \frac{\partial \eta}{\partial \nu} \bigg) 
+      \end{align*}      
+    \end{lemma}
+    \begin{proof}
+      \begin{align*}
+        \nu \frac{\partial }{\partial \nu} \bigg( \frac{\dee \nu}{\dee s} \frac{L}{s} \bigg)
+        &= \nu \frac{\partial }{\partial \nu} \bigg( \bigg( -\frac{\nu}{c} \frac{\partial \eta}{\partial t} \bigg) \frac{L}{\nu} \bigg) \\
+        &= - \frac{\nu}{c} \frac{\partial }{\partial \nu} \bigg( \frac{\partial \eta}{\partial t} L \bigg) \\
+        &= - \frac{\nu}{c} \bigg( \frac{\partial^2 \eta}{\partial \nu \, \partial t} L + \frac{\partial L}{\partial \nu} \frac{\partial \eta}{\partial t} \bigg) \\
+        &= - \frac{\nu}{c} \frac{\partial^2 \eta}{\partial \nu \, \partial t} L 
+        - \frac{\nu}{c} \frac{\partial L}{\partial \nu} \bigg( - \frac{c}{\nu} \frac{\partial \nu}{\partial s} \bigg) \\
+        &= \frac{\partial L}{\partial \nu} \frac{\partial \nu}{\partial s}
+        - \frac{\nu}{c} \frac{\partial^2 \eta}{\partial \nu \, \partial t} L \\
+        &= \frac{\partial L}{\partial \nu} \frac{\partial \nu}{\partial s}
+        + \frac{\nu}{c} \frac{2L}{\eta} \frac{\partial \eta}{\partial t} \frac{\partial \eta}{\partial \nu} 
+        - \frac{\nu}{c} \frac{2L}{\eta} \frac{\partial \eta}{\partial t} \frac{\partial \eta}{\partial \nu} 
+        - \frac{\nu}{c} \frac{\partial^2 \eta}{\partial \nu \, \partial t} L \\
+        &= \frac{\partial L}{\partial \nu} \frac{\partial \nu}{\partial s}
+        - \frac{2L}{\eta} \frac{\partial \nu}{\partial s} \frac{\partial \eta}{\partial \nu} 
+        - \frac{\nu}{c} \frac{2L}{\eta} \frac{\partial \eta}{\partial t} \frac{\partial \eta}{\partial \nu} 
+        - \frac{\nu}{c} \frac{\partial^2 \eta}{\partial \nu \, \partial t} L \\
+        &= \frac{\partial L}{\partial \nu} \frac{\partial \nu}{\partial s}
+        + L \eta^2 \frac{\partial \nu}{\partial s} \bigg( -\frac{2}{\eta^3} \bigg) \frac{\partial \eta}{\partial \nu} 
+        - \frac{\nu}{c} \frac{L}{\eta^2} \bigg( 2\eta \frac{\partial \eta}{\partial t} \frac{\partial \eta}{\partial \nu} + \frac{\partial^2 \eta }{\partial \nu\, \partial t} \eta^2 \bigg)\\
+        &= \eta^2 \frac{\partial \nu}{\partial s} \bigg( \frac{\partial L}{\partial \nu} \frac{1}{\eta^2}         
+        + \frac{\partial }{\partial \nu} \bigg( \frac{1}{\eta^2} \bigg) L \bigg)
+        - \frac{\nu}{c} \frac{L}{\eta^2} \bigg( \frac{\partial \eta^2}{\partial t} \frac{\partial \eta}{\partial \nu} + \frac{\partial^2 \eta }{\partial \nu\, \partial t} \eta^2 \bigg) \\
+        &= \eta^2 \frac{\partial \nu}{\partial s} \frac{\partial }{\partial \nu} \bigg( \frac{L}{\eta^2} \bigg)
+        - \frac{\nu}{c} \frac{L}{\eta^2} \frac{\partial }{\partial t} \bigg( \eta^2 \frac{\partial \eta}{\partial \nu} \bigg).
+      \end{align*}
+    \end{proof}
+
+    \item Now, we prove Lemma~\ref{time-and-frequency-deriv}.
+    \begin{proof}
+      Using the previous two lemmas, we have that:
+      \begin{align*}
+        \frac{\partial}{\partial t} \bigg( \frac{L}{v_\group} \bigg)
+        +\nu \frac{\partial }{\partial \nu} \bigg( \frac{\dee \nu}{\dee s} \frac{L}{s} \bigg)
+        &= \frac{\eta^2}{v_\group} \frac{\partial}{\partial t} \bigg( \frac{L}{\eta^2} \bigg)
+        + \frac{L}{\eta^2} \frac{\partial}{\partial t} \bigg( \frac{\eta^2}{v_\group}
+        \bigg)
+        + \eta^2 \frac{\partial \nu}{\partial s} \frac{\partial }{\partial \nu} \bigg( \frac{L}{\eta^2} \bigg)
+        - \frac{\nu}{c} \frac{L}{\eta^2} \frac{\partial }{\partial t} \bigg( \eta^2 \frac{\partial \eta}{\partial \nu} \bigg).
+      \end{align*}
+      Since we assume that $\partial \eta / \partial t = 0$, we have that $\partial \nu / \partial s = -(\nu/c) \partial \eta / \partial t = 0$ too. Thus,
+      \begin{align*}
+        \frac{\partial}{\partial t} \bigg( \frac{L}{v_\group} \bigg)
+        +\nu \frac{\partial }{\partial \nu} \bigg( \frac{\dee \nu}{\dee s} \frac{L}{s} \bigg)
+        &= \frac{\eta^2}{v_\group} \frac{\partial}{\partial t} \bigg( \frac{L}{\eta^2} \bigg)
+        + \frac{L}{\eta^2} \frac{\partial}{\partial t} \bigg( \frac{\eta^2}{v_\group}
+        \bigg)        
+        - \frac{\nu}{c} \frac{L}{\eta^2} \frac{\partial }{\partial t} \bigg( \eta^2 \frac{\partial \eta}{\partial \nu} \bigg).
+      \end{align*}
+      The second term on the RHS can be transformed further by expanding $v_\group$:
+      \begin{align*}
+        \frac{L}{\eta^2} \frac{\partial}{\partial t} \bigg( \frac{\eta^2}{v_\group}
+        \bigg)
+        &= \frac{L}{\eta^2} \frac{\partial}{\partial t} \bigg( \frac{\eta^2(\eta + \nu \frac{\partial \eta}{\partial \nu})}{c} \bigg)\\
+        &= \frac{L}{c \eta^2} \frac{\partial}{\partial t} \bigg( \eta^2(\eta + \nu \frac{\partial \eta}{\partial \nu}) \bigg)\\
+        &= \frac{L}{c \eta^2} \bigg( \frac{\partial \eta^3}{\partial t} + \frac{\partial }{\partial t}\bigg( \eta^2 \nu \frac{\eta}{\nu}\bigg) \bigg)\\
+        &= \frac{3L}{c}  \frac{\partial \eta}{\partial t} + \frac{\nu}{c} \frac{L}{\eta^2} \frac{\partial }{\partial t}\bigg( \eta^2 \frac{\eta}{\nu}\bigg).
+      \end{align*}
+      Because we have assumed that $\partial \eta /\partial t = 0$, we have that
+      \begin{align*}
+        \frac{L}{\eta^2} \frac{\partial}{\partial t} \bigg( \frac{\eta^2}{v_\group}
+        \bigg)
+        &= \frac{\nu}{c} \frac{L}{\eta^2} \frac{\partial }{\partial t}\bigg( \eta^2 \frac{\eta}{\nu}\bigg).
+      \end{align*}
+      Substituting the above equation back, we have
+      \begin{align*}
+        \frac{\partial}{\partial t} \bigg( \frac{L}{v_\group} \bigg)
+        +\nu \frac{\partial }{\partial \nu} \bigg( \frac{\dee \nu}{\dee s} \frac{L}{s} \bigg)
+        &= \frac{\eta^2}{v_\group} \frac{\partial}{\partial t} \bigg( \frac{L}{\eta^2} \bigg)
+      \end{align*}
+      as required.
+    \end{proof}
+  \end{itemize}
+
+  \subsection{Position and Direction Derivatives}
+  \begin{itemize}
+    \item Consider the term involving the divergence of $\omega$, we have that
+    \begin{align*}
+      \nabla_{\omega} \cdot \bigg( \frac{\dee \omega}{\dee s} L \bigg)
+      &= \frac{\dee \omega}{\dee s} \cdot \nabla_{\omega} L + L \nabla_{\omega} \cdot \frac{\dee \omega}{\dee s}\\
+      &= \frac{\dee \omega}{\dee s} \cdot \nabla_{\omega} L + L \nabla_{\omega} \cdot \bigg( \frac{1}{\eta} \big(\nabla_{\ve{r}}\eta - \omega (\omega \cdot \nabla_{\ve{r}}\eta)\big) \bigg)\\
+      &= \frac{\dee \omega}{\dee s} \cdot \nabla_{\omega} L 
+      + \frac{L}{\eta} \big[ \nabla_{\omega} \cdot (\nabla_{\ve{r}}\eta) - \nabla_{\omega} \cdot (\omega (\omega \cdot \nabla_{\ve{r}}\eta))\big].
+    \end{align*}
+    Since $\eta$ does not depend on $\omega$, then so does $\nabla_{\ve{r}} \eta$. Thus,
+    \begin{align*}
+      \nabla_{\omega} \cdot \bigg( \frac{\dee \omega}{\dee s} L \bigg)
+      &= \frac{\dee \omega}{\dee s} \cdot \nabla_{\omega} L 
+      - \frac{L}{\eta} \big[ \nabla_{\omega} \cdot (\omega (\omega \cdot \nabla_{\ve{r}}\eta))\big]\\
+      &= \frac{\dee \omega}{\dee s} \cdot \nabla_{\omega} L 
+      - \frac{L}{\eta} \big[ \omega \cdot (\nabla_\omega(\omega \cdot \nabla_{\ve{r}} \eta)) 
+      + (\nabla_\omega \cdot \omega) (\omega \cdot \nabla_{\ve{r}} \eta) \big]
+    \end{align*}
+    Now,
+    \begin{align*}
+      \nabla_\omega \cdot \omega 
+      = (\nabla_{(r,\theta,\varphi)} \cdot \hat r )\Big|_{r=1}
+      = \bigg( \frac{1}{r^2} \frac{\partial (r^2 \cdot 1) }{\partial r} \bigg) \bigg|_{r=1}
+      = 2,
+    \end{align*}
+    so,
+    \begin{align*}
+      \nabla_{\omega} \cdot \bigg( \frac{\dee \omega}{\dee s} L \bigg)
+      &= \frac{\dee \omega}{\dee s} \cdot \nabla_{\omega} L 
+      - \frac{L}{\eta} \big[ \nabla_{\omega} \cdot (\omega (\omega \cdot \nabla_{\ve{r}}\eta))\big]\\
+      &= \frac{\dee \omega}{\dee s} \cdot \nabla_{\omega} L 
+      - \frac{L}{\eta} \big[ \omega \cdot (\nabla_\omega(\omega \cdot \nabla_{\ve{r}} \eta)) 
+      + 2 (\omega \cdot \nabla_{\ve{r}} \eta) \big]
+    \end{align*}
+    Next, notice that $\omega \cdot \nabla_\ve{r}\eta$ is a function of only $\theta$ and $\varphi$ but not $r$. Therefore, 
+    \begin{align*}
+      \nabla_\omega(\omega \cdot \nabla_\ve{r}\eta) = \nabla_{r,\theta,\varphi}(\omega \cdot \nabla_{\ve{r}}\eta) \big|_{r=1}
+    \end{align*}
+    has no $\hat r$ component. As a result, $\omega \cdot (\nabla_\omega(\omega \cdot \nabla_\ve{r}\eta)) = \hat r \cdot (\nabla_\omega(\omega \cdot \nabla_\ve{r}\eta)) = \ve{0}.$ Thus,
+    \begin{align*}
+      \nabla_{\omega} \cdot \bigg( \frac{\dee \omega}{\dee s} L \bigg)
+      &= \frac{\dee \omega}{\dee s} \cdot \nabla_{\omega} L 
+      - \frac{2L}{\eta}(\omega \cdot \nabla_{\ve{r}} \eta)
+    \end{align*}
+
+    \item Now, consider the sum
+    \begin{align*}
+      \omega \cdot \nabla_{\ve{r}} L + \nabla_{\omega} \cdot \bigg( \frac{\dee \omega}{\dee s} L \bigg)
+      &= \omega \cdot \nabla_{\ve{r}} L 
+      - \frac{2L}{\eta}(\omega \cdot \nabla_{\ve{r}} \eta)
+      + \frac{\dee \omega}{\dee s} \cdot \nabla_{\omega} L \\
+      &= \omega \cdot \nabla_{\ve{r}} L 
+      - \eta^2 \omega \cdot \bigg( \frac{2}{\eta^3} \nabla_{\ve{r}} \eta \bigg) L
+      + \frac{\dee \omega}{\dee s} \cdot \nabla_{\omega} L 
+      - \frac{2L}{\eta} \frac{\dee\omega}{\dee s} \cdot \nabla_{\omega}\eta
+    \end{align*}
+    The last $-(2L/\eta)(\dee \omega /\dee s) \cdot \nabla_\omega \eta$ term is identically $0$ because $\eta$ is not a function of $\theta$ and $\varphi$, so we can liberally insert it into the equation. Continuing,
+    \begin{align*}
+      \omega \cdot \nabla_{\ve{r}} L + \nabla_{\omega} \cdot \bigg( \frac{\dee \omega}{\dee s} L \bigg)
+      &= \omega \cdot \nabla_{\ve{r}} L 
+      - \eta^2 \omega \cdot \bigg( \frac{2}{\eta^3} \nabla_{\ve{r}} \eta \bigg) L
+      + \frac{\dee \omega}{\dee s} \cdot \nabla_{\omega} L 
+      - \frac{2L}{\eta} \frac{\dee\omega}{\dee s} \cdot \nabla_{\omega}\eta \\
+      &= \eta^2 \omega \cdot \bigg( \frac{1}{\eta^2} \nabla_{\ve{r}} L 
+      - \bigg( \frac{2}{\eta^3} \nabla_{\ve{r}} \eta \bigg) L \bigg)
+      + \frac{\dee \omega}{\dee s} \cdot \nabla_{\omega} L 
+      - \frac{2L}{\eta} \frac{\dee\omega}{\dee s} \cdot \nabla_{\omega}\eta \\
+      &= \eta^2 \omega \cdot \bigg( \frac{1}{\eta^2} \nabla_{\ve{r}} L 
+      + \nabla_{\ve{r}}\bigg( \frac{1}{\eta^2} \bigg) L \bigg)
+      + \frac{\dee \omega}{\dee s} \cdot \nabla_{\omega} L 
+      - \frac{2L}{\eta} \frac{\dee\omega}{\dee s} \cdot \nabla_{\omega}\eta \\      
+      &= \eta^2 \omega \cdot \nabla_{\ve{r}} \bigg( \frac{L}{\eta^2} \bigg)
+      + \frac{\dee \omega}{\dee s} \cdot \nabla_{\omega} L 
+      - \frac{2L}{\eta} \frac{\dee\omega}{\dee s} \cdot \nabla_{\omega}\eta \\ 
+      &= \eta^2 \omega \cdot \nabla_{\ve{r}} \bigg( \frac{L}{\eta^2} \bigg)
+      + \eta^2 \frac{\dee \omega}{\dee s} \cdot \bigg( \frac{1}{\eta^2} \nabla_{\omega} L 
+      - L \frac{2}{\eta^3} \nabla_{\omega}\eta \bigg) \\ 
+      &= \eta^2 \omega \cdot \nabla_{\ve{r}} \bigg( \frac{L}{\eta^2} \bigg)
+      + \eta^2 \frac{\dee \omega}{\dee s} \cdot \bigg( \frac{1}{\eta^2} \nabla_{\omega} L 
+      - L \nabla_{\omega}\bigg( \frac{1}{\eta^2}\bigg) \bigg) \\ 
+      &= \eta^2 \omega \cdot \nabla_{\ve{r}} \bigg( \frac{L}{\eta^2} \bigg)
+      + \eta^2 \frac{\dee \omega}{\dee s} \cdot \nabla_\omega \bigg( \frac{L}{\eta^2} \bigg)
+    \end{align*}
+    which is the equation in Lemma~\ref{position-and-direction-deriv}.    
+  \end{itemize}
+
+  \section{Solutions to the Refractive RTE}  
+  \subsection{Determining the Light Path}
+  \begin{itemize}
+    \item To determine the light's path, we have to compute the function $\ve{r}(s)$.
+
+    \item Recall the ray equation:
+    \begin{align*}
+      \frac{\dee }{\dee s}\bigg( \eta \frac{\dee \ve{r}}{\dee s}\bigg) = \nabla_{\ve{r}} \eta.
+    \end{align*}
+    Setting $\tilde{\ve{v}}(s) = \eta\, \dee{r}/\dee s$, we have that
+    \begin{align*}
+      \frac{\dee \tilde{\ve{v}}}{\dee s} &= \nabla_{\ve{r}}\eta\\
+      \frac{\dee \ve{r}}{\dee s} &= \frac{ \tilde{\ve{v}} }{\eta}.
+    \end{align*}
+    Setting $\ve{q} = (\ve{r},\tilde{\ve{v}})^T$, we have that
+    \begin{align*}
+      \frac{\dee \ve{q} }{\dee s} = \begin{bmatrix}
+        \tilde{\ve{v}} / \eta \\
+        \nabla_{\ve{r}}\eta
+      \end{bmatrix}.
+    \end{align*}
+    Then, $\ve{q}$ can be solved by the standard integrator such as Euler, Runge-Kutta, etc.
+  \end{itemize}
+
+  \subsection{Steady-State RTTE}
+  \begin{itemize}
+    \item Suppose we have determine a path $\ve{r}(s)$ containing two points $\ve{r}_0 = \ve{r}(s_0)$and $\ve{r}_1 = \ve{r}(s_1)$. The \textbf{transmittance} $\tau(\ve{r}_0, \ve{r}_1)$ is the fraction of light traveling from $\ve{r}_0$ that reaches $\ve{r}_1$. This is defined by:
+    \begin{align*}
+      \tau(\ve{r}_0, \ve{r}_1) 
+      = \exp \bigg( - \int_{s_0}^{s_1} \sigma_t(\ve{r}(s'), \ve{v}(s')) \| \ve{v}(s') \| \, \dee s' \bigg)
+    \end{align*}
+    where
+    \begin{align*}
+      \ve{v}(s') = \frac{\dee \ve{r}}{\dee s} \bigg|_{s=s'}.
+    \end{align*}
+    Because we parameterize $\ve{r}$ by $s$, we have that the $\ve{v} = \omega$, which always has magnitude $1$. So, the transmittance reduces to:
+    \begin{align*}
+      \tau(\ve{r}_0, \ve{r}_1) 
+      = \exp \bigg( - \int_{s_0}^{s_1} \sigma_t(\ve{r}(s'), \omega(s')) \, \dee s' \bigg)
+    \end{align*}
+
+    \item Recall the RRTE. Here, we consider the light moving along the path $\ve{r}(s)$ and parameterize everything along the path $s$:
+    \begin{align*}
+      \frac{\dee \tilde L}{\dee s} = \tilde Q(s,\omega(s)) - \sigma_t \tilde L(s,\omega(s)) + \sigma_s(s,\omega) \int_{S^2} p(\ve{r}(s), \omega' \ra \omega(s)) L(\ve{r}(s), \omega') \, \dee \omega'.
+    \end{align*}
+    This can be simplified to:
+    \begin{align*}
+      \frac{\dee \tilde L}{\dee s} + \sigma_t \tilde L = F(s)
+    \end{align*}
+    where
+    \begin{align*}
+      F(s) = \tilde Q(s,\omega(s)) + \sigma_s(s,\omega) \int_{S^2} p(\ve{r}(s), \omega' \ra \omega(s)) L(\ve{r}(s), \omega') \, \dee \omega'.
+    \end{align*}
+    If the path goes from $\ve{r}_0 = \ve{r}(s_0)$ to $\ve{r}_1 = \ve{r}(s_1)$, then then general solution to the above equation is given by: 
+    \begin{align*}
+      \tilde L(s) 
+      = \tau(\ve{r}_0, \ve{r}(s)) \tilde L(\ve{r}_0, \omega(s_0))
+      + \int_{s_0}^s \tau(\ve{r}_0, \ve{r}(u)) F(u)\, \dee u.
+    \end{align*}
+  \end{itemize}
+
+  \subsection{Transient RTTE}
+  \begin{itemize}
+    \item In the transient solution, the arc length parameter $s$ becomes a functon of time $s(t)$, and so does the position $\ve{r}(s(t))$. The differential $\dee s$ becomes $v_\group\, \dee t$
+
+    \item With this, the ray equation becomes:
+    \begin{align*}
+      \frac{1}{v_\group} \frac{\dee }{\dee t} \bigg( \frac{\eta}{v_\group} \frac{\dee \ve{r}}{\dee t} \bigg)
+      &= \nabla_\ve{r} \eta\\
+      \frac{\dee }{\dee t} \bigg( \frac{\eta}{v_\group} \frac{\dee \ve{r}}{\dee t} \bigg)
+      &= v_\group \nabla_\ve{r} \eta.
+    \end{align*}
+    Now, define $\tilde{\ve{v}} = \frac{\eta}{v_\group} \frac{\dee \ve{r}}{\dee t}$, we have
+    \begin{align*}
+      \frac{\dee}{\dee t} \begin{bmatrix}
+        \ve{r} \\ \tilde{\ve{v}}
+      \end{bmatrix}
+      = \begin{bmatrix}
+        v_\group \tilde{\ve{v}} / \eta\\
+        v_\group \nabla_{\ve{r}} \eta
+      \end{bmatrix}.
+    \end{align*}
+    This can be solve in the same manner as the method we outlined before. Note that we can fine the group valeocity using the equation:
+    \begin{align*}
+      v_\group = \frac{c}{\eta + \nu \frac{\partial \eta}{\partial \nu}},
+    \end{align*}
+    and none of the variables has dependence on time.
+
+    \item The definition of the transmittance has to change to accommodate the new parametrization:
+    \begin{align*}
+      \tau(\ve{x}_0, \ve{x}_1) 
+      &= \exp\bigg( - \int_{t_0}^{t_1} \sigma_t(\ve{r}(s(t)), \omega(s(t))) \frac{\dee s}{\dee t}\, \dee t \bigg)\\
+      &= \exp\bigg( - \int_{t_0}^{t_1} \sigma_t(\ve{r}(s(t)), \omega(s(t)))v_\group\, \dee t \bigg).
+    \end{align*}
+
+    \item The RRTE must also be transformed:
+    \begin{align*}
+      \frac{1}{v_\group} \frac{\dee \tilde L}{\dee t} + \sigma_t L(t) = F(t) \\
+      \frac{\dee \tilde L}{\dee t} + \sigma_t v_\group L(t) = v_\group F(t)
+    \end{align*}
+    The solution is given by:
+    \begin{align*}
+      \tilde L(t) 
+      = \tau(\ve{r}_0, \ve{r}(t) \tilde L(\ve{r}_0, \omega(s_0))
+      + \int_{t_0}^t \tau(\ve{r}_0, \ve{r}(u)) v_\group(u) F(u)\, \dee u.
+    \end{align*}
+  \end{itemize}
+
+  \bibliographystyle{plain}
+  \bibliography{rte}   
+\end{document}
+
+ 
+ \item We will now make the assumption that the index of refraction of the material does not change with time:
+    $\partial \eta /\partial t = 0$. This means that:
+    \begin{align*}
+      \frac{\dee \nu}{\dee s} = -\frac{\nu}{c} \frac{\partial \eta}{\partial t} = 0.
+    \end{align*}
+    Moreover,
+    \begin{align*}
+      \frac{\dee \nu}{\dee t} = \frac{\dee \nu}{\dee s} \frac{\dee s}{\dee t} = 0.
+    \end{align*}
+    So, $\nu$ can be considered a constant 

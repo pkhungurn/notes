@@ -1,0 +1,628 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+\usepackage{verbatim}
+\usepackage{hyperref}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\Dee}{\mathrm{D}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\Var}{\mathrm{Var}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+\newcommand{\ov}[1]{\overline{#1}}
+
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+\title{Image Inpainting with Deep Learning}
+
+\begin{document}
+  \maketitle
+
+  Image inpainting is the task of filling in holes in the input image so that the output looks consistent as a whole. Research in using deep learning for image inpainting has become popular since 2017. This document is written as I read some of the papers in this topic. These include Pathak \etal~\cite{Pathak:2016}, Iizuka \etal~\cite{Iizuka:2017}, Yeh \etal~\cite{Yeh:2017}, Yu \etal's CVPR 2018 paper \cite{Yu:2018}, Liu \etal's ECCV 2018 paper \cite{Liu:2018}, and Yu \etal's ICCV 2019 paper \cite{Yu:2019}.
+
+  \section{Pathak \etal~(CVPR 2016)}
+
+  \begin{itemize}
+  	\item The input to the system is an image with a some region marked out with white pixels. The pixels that are not marked out are called the context.
+
+  	\item The authors call their network the \emph{context encoder}. It has an encoder-decoder architecture.
+  	\begin{itemize}
+  		\item The encoder compresses the context into a small latent feature representation.
+
+  		\item The decoder converts the representation into a full image with the missing region filled in.
+  	\end{itemize}
+
+  	\item The whole network is trained to simultaneously minimize two lossses:
+  	\begin{itemize}
+  		\item The \emph{reconstruction loss} is just the L2 loss over the pixels.
+  		\item The \emph{adversarial loss} is the loss computed from the a discriminator network trained to distinguish the network-filled images from the real images before hole introduction.
+  	\end{itemize}
+
+  	\item Using only reconstruction loss results in blurry results. Adding adversarial loss yields much sharper results.
+
+  	\item The paper also reports that the features computed by the encoder are also useful for image retrieval.  
+  \end{itemize}
+
+  \subsection{The Architecture}
+
+  \begin{itemize}
+  	
+  	\item The encoder is connected to the decoder with a \emph{channel-wise fully connected layer}.
+  	\begin{itemize}
+  		\item This allows the unit to reason about the whole image.
+
+  		\item It is not economical to feed the latent vectors to a fully connected layer which produces latent vectors of the same size. 
+
+  		\item The channel-wise fully-connected layer, on the other hand, operates on each chanels independently, which making it much more economical than the full-blown fully connected layers.
+  	\end{itemize}
+
+  	\item The decoder consists of a series of up-convolution layers (i.e., fractionally strided convolution), each followed by a ReLU.	
+  \end{itemize}
+
+  \subsection{The Loss Function}
+
+  \begin{itemize}
+  	\item Symbol definitions:
+  	\begin{itemize}
+  		\item Let $x$ denote the ground truth image. 
+  		\item Let the context encoder be denoted by the function $F$.
+  		\item Let $\hat{M}$ be the binary mask corresponding to the dopped region. The value of $\hat{M}$ is $1$ when the pixel is dropped, and $0$ if the pixel is the same as that of $x$.
+  	\end{itemize}
+
+  	\item The reconstruction loss is the normalized masked L2 distance:
+  	\begin{align*}
+  		\mathcal{L}_{rec} = E_x [\| \hat{M} \odot (x - (F(x \odot (1 - \hat{M})))) \|_2^2]
+  	\end{align*}
+  	where $\odot$ is the element-wise multiplication operation. 
+
+  	\item The authors also experimented with the L1 loss but found no difference between it and the L2 loss.
+
+  	\item The reconstruction loss causes the network to produce rough outline of the predicted object. However, the results do not have high frequency details.
+
+  	\item The advesarial loss depends on the discriminator network $D$. The function is the standard GAN loss applied to the real and generated images:
+  	\begin{align*}
+  		\mathcal{L}_{adv,D} &= - E_{x} [\log D(x) + \log (1 - D(F(x \odot (1-\hat{M}))))] \\
+  		\mathcal{L}_{adv,F} &= - E_{x} [\log D(F(x \odot (1-\hat{M})))]
+  	\end{align*}
+
+  	\item It is interesting to note that $D$ does not text the masked image as input. That is, $D$ is a standard GAN discriminator rather than a conditional GAN discriminator. The authors observe that giving the masked image as an input would allow the discriminator to easily exploit the discrepancy at mask boundaries. Making the discriminator looking at the whole image would encourage the generator to create wholely realistic images.
+
+  	\item The whole loss function for the context encoder is the linear combination between the two losses:
+  	\begin{align*}
+  		\mathcal{L}_F 
+  		&= \lambda_{rec} \mathcal{L}_{rec} + \lambda_{adv} \mathcal{L}_{adv,F}.
+  	\end{align*}
+  	For the discriminator, it includes only the adversarial loss:
+  	\begin{align*}
+  		\mathcal{L}_D &= \lambda_{adv} \mathcal{L}_{adv,F}.
+  	\end{align*}
+  	
+  \end{itemize}
+
+  \subsection{Region Masks}
+
+  \begin{itemize}
+  	\item The paper generate masks from random masks in the PASCAL VOC 2012 dataset. The masks are deformed and pasted at random places in the ground truth image.
+
+  	\item The masks cover up to $1/4$ of the ground truth image.
+
+  	\item The masks are irregular, so it prevents the network from learning features that are specific to particular mask shapes.
+  \end{itemize}
+
+  \subsection{Implementation Details}
+
+  \begin{itemize} 
+  	\item The paper uses $\lambda_{rec} = 0.999$ and $\lambda_{adv} = 0.001$.
+
+  	\item The encoder and decoder are similar to the encoder in the DCGAN paper \cite{Radford:2015}. The bottleneck layer has 4,000 nodes.
+
+  	\item The paper uses higher learning (10x of the discriminator) rate for the context encoder.
+  \end{itemize}
+
+  \section{Iizuka \etal~(SIGGRAPH 2017)}
+
+  \begin{itemize}
+  	\item This work extends the Context Encoder, making it applicable to arbitrary image size and adding a method to sure local consistency of the filled pixels.
+
+  	\item Data involved:
+  	\begin{itemize}
+  		\item $x$ is the ground truth image (without holes). This is the desired output of the system.
+
+  		\item $M_c$ is the binary mask for the holes. The value is $1$ for pixels that are holes, and $0$ for pixels retaining the value of the original image.
+
+  		\item An image with whole is created by filling the hole pixels with the mean of the pixels of the training sets. The system takes this image along with $M_c$ as input.  		
+  	\end{itemize}
+
+  	\item The work uses three networks:
+  	\begin{itemize}
+  		\item The \emph{completion network} takes in the image with holes and the hole mask and tries to fill the holes.
+
+  		\item The \emph{global context discriminator} takes in the full image, resized to $256 \times 256$, and tries to determine whether it is generated by the completion network or is a ground truth image.
+
+  		\item The \emph{local context discriminator} takes in a $128 \times 128$ image that is centered around a whole and also tries to do the same job as the global discriminator. During trainng, there's always one whole in a training example, and this hole is smaller than $128 \times 128$. However, the network as a whole can be used to filled in multiple holes if they are not too large.
+  	\end{itemize}
+
+  	\item The insight is that the global discriminator assesses whether the filled image is consistent as a whole while the local discriminator asesses whether the filled pixels are consistent with its surrounding.  	
+  \end{itemize}
+
+  \subsection{Architectural Details}  
+
+  \begin{itemize}
+  	\item Details of the completion network:
+  	\begin{itemize}
+  		\item It takes as input a $256 \times 256$ image with a whole and the hole mask as an extra channel.
+
+  		\item Through convolutional layers, the image is resized down by a factor of $4$ while increasing the number channels. This downscaled image would then pass through the bottleneck layers.
+
+  		\item The bottleneck layers are mostly convolutional layers which preserve image size. 4 of these layers are \emph{dilated} convolutional layers \cite{Yu:2016}, which are included in order to increase the receptive field of each pixel in the network.
+
+  		\item After the bottleneck layers, the image is resized back to its original size by transposed convolution layers.
+  	\end{itemize}
+
+  	\item Details of the global context discriminators:
+  	\begin{itemize}
+  		\item It takes in a $256 \times 256$ image.
+  		\item It contains $6$ convolutional layers followed by a fully connected layer.
+  		\item It outputs a $1024$ dimentional vector.
+  		\item All convolutional layers have $5 \times 5$ filters and a stride of $2$, which results in downsizing the input image by a factor of $2$.
+  	\end{itemize}
+
+  	\item The local context discriminator follows the same pattern as the global context discriminator. It outputs a $1024$ dimensional vector but takes in a $128 \times 128$ image centered at the hole to be filled.
+
+  	\item The outputs of the discriminators are concatenated to form a single $2048$ dimensional vector, which is then passed to a fully connected network to produce a single scalar, the reality score.
+  	 
+  \end{itemize}
+
+  \subsection{Loss Functions}  
+
+  \begin{itemize}
+  	\item Let the completion network be denoted by the function $C(x, M_c)$, and let the discriminator network (including both the global and local discriminators) be denoted by $D(x, M_d)$.
+
+  	\item The first loss employed is the reconstruction loss:
+  	\begin{align*}
+  		\mathcal{L}_{rec} &= E_{x,M_c} [\| M_c \odot (C(x,M_c) - x) \|_2^2]
+  	\end{align*}
+
+  	\item The adversarial loss is the standard GAN loss:
+  	\begin{align*}
+  		\mathcal{L}_{adv,D} &= - E_{x, M_d} [\log D(x, M_d)] - E_{x,M_c} [\log (1 - D(C(x,M_c), M_c))] \\
+  		\mathcal{L}_{adv,C} &= - E_{x,M_c} [\log D(C(x,M_c), M_c)]
+  	\end{align*}
+
+  	\item Combining the two losses, we have:
+  	\begin{align*}
+  		\mathcal{L}_D &= - \alpha E_{x, M_d} [\log D(x, M_d)] - \alpha E_{x,M_c} [\log (1 - D(C(x,M_c), M_c))] \\
+  		\mathcal{L}_C &= E_{x,M_c} [\| M_c \odot (C(x,M_c) - x) \|_2^2] - \alpha E_{x,M_c} [\log D(C(x,M_c), M_c)]
+  	\end{align*}
+  \end{itemize} 
+
+  \subsection{Training Details}  
+
+  \begin{itemize}
+  	\item One of the more interesting part of the paper is their training scheme. It has three phases:
+  	\begin{itemize}
+  		\item The completion network is trained only with the reconstruction loss for some time.
+  		\item The completion network is fixed, and the discriminators are trained for some time.
+  		\item All networks are then trained jointly.
+  	\end{itemize}
+
+  	\item The paper uses $\alpha = 0.0004$ and batch size of $96$. The first phase has $90,000$ iteration, the second phase $10,000$, and the last phase $500,000$.  	
+  \end{itemize}
+
+  \subsection{Postprocessing}
+
+  \begin{itemize}
+  	\item The inpainted pixels can still have color discrepancy with the surrounding pixels. The paper fixes this by applying pixel blending techniques: fast marching \cite{Telea:2004} followed by Poisson image blending \cite{Perez:2003}.
+  \end{itemize}
+
+  \section{Yeh \etal~(CVPR 2017)}
+
+  \begin{itemize}
+  	\item This is a completely different take on image editing. Other papers uses a single feedforward network to do the job. This paper assumes that there's a pretrained GAN for a dataset. The paper's algorithm searches for a latent code that would make the GAN produces an image that is ``closest'' to the corrupted image.
+  	\begin{itemize}
+  		\item I think this is an interesting perspective, but it is much more expensive than the specialized network approach.
+  	\end{itemize}
+
+  	\item Let us denote the pretrained generator and discriminator by $G$ and $D$, respectively.
+  	\begin{itemize}
+  		\item The generator takes in a latent vector $\ve{z}$, drawn from a probability distribution $p_{\ve{z}}$, and produces an image $G(\ve{z})$ that looks like it comes from the training dataset.
+
+  		\item The discriminator takes in an image $\ve{x}$ and produces a ``reality score'' $D(\ve{x})$, which is the probability that the image comes from the training dataset rather than being generated by the generator.  		
+  	\end{itemize}
+
+  	\item The paper attempts to compute the latent vector $\hat{\ve{z}}$ that is the ``closest'' to the corrupted image. It then uses $\hat{\ve{z}}$ to generate $G(\hat{\ve{z}})$, which is then blended with the uncorrupted part to form the final output.
+
+  	\item Let $\ve{y}$ be the corrupted image, and $\ve{M}$ be the binary mask indicating the missing part. The closest $\hat{\ve{z}}$ is given by:
+  	\begin{align*}
+  		\hat{\ve{z}} = \argmin_{\ve{z}} \Big( \mathcal{L}_c (\ve{z} | \ve{y}, \ve{M}) + \mathcal{L}_p(\ve{z}) \Big)
+  	\end{align*}
+  	where
+  	\begin{itemize}
+  		\item $\mathcal{L}_c$ denotes the \emph{context loss}, which constrains the generated image to be close to $\ve{y}$ in the unmasked parts, and
+
+  		\item $\mathcal{L}_p$ denotes the \emph{prior loss}, which penalizes unrealistic images:
+  		\begin{align*}
+  			\mathcal{L}_p = \lambda \log (1 - D(G(\ve{z}))).
+  		\end{align*}
+  	\end{itemize}
+
+  	\item The definition of the context loss $\mathcal{L}_c$ is closely related to how $G(\hat{\ve{z}})$ is used. Basically, we will only use pixels that are marked as corrupted. As a result, it is not advisable to consider pixels in $G(\hat{\ve{z}})$ that are far away from the holes.
+
+  	\item The paper captures the notion that only pixels near the holes should be used by introducting the weighting image $\ve{W}$ where
+  	\begin{align*}
+  		\ve{W}_i = \begin{cases}
+  			0, & \ve{M}_i = 0 \\
+  			\sum_{j \in N(i)} \frac{1-\ve{M}_j}{|N_i|}, & \ve{M}_i \neq 0
+  		\end{cases}.
+  	\end{align*}
+  	Here,
+  	\begin{itemize}
+  		\item $i$ denotes a pixel index.
+  		\item $N(i)$ denotes the set of neighbor pixels of $i$. The paper uses a window of size $7$.
+  		\item $|N(i)|$ denotes the size of $N(i)$.  		
+  	\end{itemize}
+
+  	\item The context loss is given by:
+  	\begin{align*}
+  		\mathcal{L}_c(\ve{z}|\ve{y}, \ve{M}) = \| \ve{W} \odot (G(\ve{z}) - \ve{y}) \|_1.
+  	\end{align*}
+  	This is slightly different from other papers, which just multiplies $\ve{M}$ to the difference. The main difference is that pixels near the boundaries of the holes are downweighted.
+
+  	\item After $\hat{\ve{z}}$ is found and $G(\hat{\ve{z}})$ is computed, it must be blended with the uncorrupted part. The final image $\hat{\ve{x}}$ is given by:
+  	\begin{align*}
+  		\hat{\ve{x}} = \argmin_{\ve{x}} \| \nabla \ve{x} - \nabla G(\hat{\ve{z}}) \|_2^2
+  		\mbox{ subjected to }
+  		\ve{x}_i = \ve{y}_i\mbox{ where }\ve{M}_i = 0.
+  	\end{align*}
+  	This can be solved by the solver of the Poisson image editing paper \cite{Perez:2003}.
+
+  	\item For the GAN, the paper uses DCGAN \cite{Radford:2015}. The value of $\lambda$ is $0.003$. The paper finds $\hat{\ve{z}}$ by starting with a random $\ve{z}$ and running ADAM for $1500$ iterations.
+  \end{itemize}
+
+  \section{Yu \etal~(CVPR 2018)}
+
+  \begin{itemize}
+  	\item This paper consists of two main parts:
+    \begin{itemize}
+      \item It proposes several improvements to the network of IIzuka \etal~\cite{Iizuka:2017}.
+
+      \item It proposes a new unit called the \emph{contextual attention unit}, which allows the network to copy similar patches that are far away from the missing parts.
+    \end{itemize}
+  \end{itemize}
+
+  \subsection{Improved Network}
+
+  \begin{itemize}
+    \item The input consists of:
+    \begin{itemize}
+       \item a $256 \times 256$ image with holes filled with white pixels, and
+       \item a binary mask, indicating which pixels are the holes.  
+     \end{itemize} 
+
+     \item The network is divided into two parts.
+     \begin{itemize}
+       \item The first part takes the input and makes the coarse, blurry prediction. That is, it fills the white pixels with color pixels.
+
+       \item The second part takes the coarse prediction as input and predict the fine result.
+     \end{itemize}
+
+     \item The coarse part is trained with the reconstruction loss explicitly. The refinement part is trained with both the reconstruction loss and the GAN losses.
+
+     \item Changes in details from Iizuka \etal:
+     \begin{itemize}
+       \item The actual network has fewer parameters than that of Iizuka \etal
+
+       \item Mirror padding is used for all convolutional layers.
+
+       \item No batch normalization.
+
+       \item ELUs \cite{Clevert:2015} are used instead of ReLUs.
+
+       \item Instead of using the hyperbolic tangent or the sigmoid function at the layer that produces the output, the paper just clips the output into the range.       
+     \end{itemize}
+
+    \item The network uses a modified version of the WGAN-GP loss in both the global and local critics. The modification is that only the gradients of the hole pixels are taken into account. That is, the gradient term is given by:
+    \begin{align*}
+      \lambda E_{\hat{\ve{x}}} \Big[ \big( \| \nabla_{\hat{\ve{x}}} D(\hat{\ve{x}} \odot (1-\ve{m})) \|_2 - 1 \big)^2 \Big].
+    \end{align*}
+    Here, the mask is $0$ for hole pixels and $1$ otherwise, and $\hat{\ve{x}}$ represents an image obtained by interpolating between a real image and a fake image.
+
+    From the paper, I think the reality score is still based on the whole input image.
+
+    \item The reconstruction loss is modified so that the hole pixels that are far from the hole boundaries have smaller weights. The weight is computed as $\gamma^l$ where $l$ is the distance of the pixel to the nearest non-hole pixel, and $\gamma$ is set to $0.99$.
+  \end{itemize}
+
+  \subsection{Contextual Attention Layer}
+
+  \begin{itemize}
+    \item The contextual attention layer copies simlar backgound patches that can be far away from the coarsely filled holes (called ``foreground'' in the paper).
+
+    \item Let's say that the patch size is $3 \times 3$. Let
+    \begin{itemize}
+      \item $b_{x,y}$ denotes the background patch centered at Pixel $(x,y)$.
+      \item $f_{x',y'}$ denotes the foreground patch centered at Pixel ${x', y'}$.
+    \end{itemize}
+
+    \item We first extract all the $b_{x,y}$ patches and shape them as a convolutional filter of size $N_b \times C \times 3 \times 3$, where $N_b$ is the number of background patches, and $C$ is the number of channels.
+
+    \item Next, the similarly between all pairs of foreground and background patches is computed by the cosine similarity:
+    \begin{align*}
+      s_{x,y,x',y'} = \bigg\langle \frac{f_{x,y}}{\| f_{x,y} \|}, \frac{ b_{x',y'}}{\| b_{x',y'} \|} \bigg\rangle.
+    \end{align*}
+    This can be computed efficiently by convolving the convolutional filter we just constructed in the last step with the foreground image, normalizing when appropriate. This results in a $N_b \times h_f \times w_f$, where $h_f$ and $w_f$ are the height and the width of the foreground image, respectively.
+
+    \item The similarity computed above is then turned into a discrete probability distribution over the background patch by performing scaled softmax along the $(x',y')$ dimention (i.e., along the channels):
+    \begin{align*}
+      s^*_{x,y,x',y'} = 
+      \frac{
+        \exp(\lambda s_{x,y,x',y'})
+      } { 
+        \sum_{x',y'} \exp(\lambda s_{x,y,x',y'})
+      }.
+    \end{align*}
+
+    \item The convolution filter created from the background patches is then reused as a deconvolution filter against the output of the last step. The values of overlapped pixels are averaged.
+
+    \item Before performing the deconvolution in the last step, the paper performs a diffusion-like steps on the probability distribution.
+
+    The idea is that $s^*_{x,y,x',y'}$ should be similar to $s^*_{x+a,y+b,x'+a,y+b}$ for small values of $a$ and $b$. The paper makes this the case by performing the following propagation steps:
+    \begin{align*}
+      \hat{s}_{x,y,x',y'} 
+      &= \sum_{-k \leq i \leq k} s^*_{x+i,y,x'+i,y} \\
+      \tilde{s}_{x,y,x',y'}
+      &= \sum_{-k \leq j \leq k} \hat{s}_{x,y+j,x',y+j} 
+    \end{align*}
+    Then, the $\tilde{s}_{x,y,x',y'}$ is normalized along the $(x',y')$ dimension. This can be efficiently implemented by a convolution.
+
+    \item $N_b$ and $w_f \times h_f$ can be large. To reduce it, the paper proposes two strategies:
+    \begin{itemize}
+      \item Extracting background patches with strides.
+      \item Downscaling the foreground image before convolution and upscaling attention map after propagation.
+    \end{itemize}
+  \end{itemize}
+
+  \subsection{The Refinement Network}
+
+  \begin{itemize}
+    \item The refinement network contains two encoder branches.
+    \begin{itemize}
+      \item The first branch directly refines the coarse image. It has dilated convolutions in the bottleneck.
+      \item The second branch has a contextual attention layer in the bottleneck so that it can borrows patches from the background.
+    \end{itemize} 
+
+    \item The output of the two decoder branches are concatenated and fed to a single decoder.
+
+    \item Let's say the input image is denoated by $\ve{x}$, the mask by $\ve{m}$. Let $\ve{x}'$ denote the output of the refinement network. The final output of the whole generator is:
+    \begin{align*}
+      G(\ve{x},\ve{m}) = \ve{x} \odot \ve{m} + \ve{x}' \odot (1 - \ve{m}).
+    \end{align*}
+  \end{itemize}
+
+  \section{Liu \etal~(ECCV 2018)}
+
+  \begin{itemize}
+    \item Methods we have discussed so far have several problems:
+    \begin{itemize}
+       \item They do not work well with arbitrary hole shapes. This is because they are sometimes trained with rectangular holes \cite{Pathak:2016} or holes that are at the center of the image \cite{Iizuka:2017, Yu:2018}.
+
+       \item The filled pixels often have color discrepancy with the surrounding pixels, which must be removed by post processing.
+
+       \item Convolutional layers process hole pixels as if they are valid pixels. So, they have dependence on the filled colors. This can results in:
+       \begin{itemize}
+         \item Lack of texture in hole regions.
+         \item Obvious color contrast.
+         \item Artificial edge responses around the holes.
+       \end{itemize}
+     \end{itemize}  Liu \etal\ try to solve these problems.
+
+    \item The paper introduces the \emph{partial convolution layer}.
+    \begin{itemize}
+      \item It has two steps:
+      \begin{itemize}
+        \item A masked and renormalized convolution.
+        \item A mark update.
+      \end{itemize}
+      \item Given a binary mask, the result of the convolution depends only on the non-hole pixels.      
+      \item The mask update step removes masking of holes pixels that are corruped by non-hole pixels.
+
+      \item More specifically, let $\ve{W}$ be the convolutional filter weights, $\ve{X}$ be the feature values at the current sliding window, and $\ve{M}$ be the corresponding mask ($\mathrm{hole} = 0$, $\mathrm{background} = 1$). The partial convolution value $\ve{x}'$ at a particular location is given by:
+      \begin{align*}
+        x' = \begin{cases}
+          \ve{W}^T (\ve{X} \odot \ve{M}) \frac{\mathrm{sum}(\ve{1})}{\mathrm{sum}(\ve{M})} + b,
+          & \mathrm{sum}(\ve{M}) > 0\\
+          0, 
+          & \mathrm{otherwise}
+        \end{cases}.
+      \end{align*}
+      Here, $\ve{1}$ has the same shape as $\ve{M}$, but all of its components' values are $1$.
+
+      \item The convolution can be easiler implemented by just multiplying the mask before applying the convolution.
+      
+      \item After the above convolution, the mask is updated. The value of the new mask $m'$ at a given location is given by:
+      \begin{align*}
+        m' = \begin{cases}
+          1, & \mathrm{sum}(\ve{M}) > 0 \\
+          0, & \mathrm{otherwise}
+        \end{cases}.
+      \end{align*}
+
+      \item The weight update can be easily implemented by a convolution with filter whose weight is all one followed by a clamp.
+    \end{itemize}
+
+    \item Network architecture.
+    \begin{itemize}
+      \item The paper uses a UNet architecture similar to the one used by the Pix2pix paper \cite{Isola:2016}.
+
+      \item All convolution layers are replached by partial convolution layers.
+
+      \item The skip links concatenate two feature maps and two masks. The masks will act on there respective features for the next convolutional layer.
+      \begin{itemize}
+        \item It is unclear in the paper how to compute the new mask. It presume the mask that does not come from the skip link will be the new mask because this is the only sensible way.
+      \end{itemize}
+
+      \item The last partial convolution layer will also have the original image and mask as inputs. This is to make it possible for the network to copy non-hole pixels.
+
+      \item Note that the network \emph{does not} automatically copy non-hole pixels from the input. It must learn to do so by itself.
+    \end{itemize}
+
+    \item The paper uses several loss functions. The main surprise is that, in contrast to other papers, it does not use the adversarial loss at all.
+
+    \begin{itemize}
+      \item We first introduce some notations.
+      \begin{itemize}
+        \item Let $\ve{I}_{in}$ denote the input image.
+        \item Let $\ve{M}$ denote the initial binary mask.
+        \item Let $\ve{I}_{out}$ denote the output image.
+        \item Let $\ve{I}_{gt}$ denote the groundtruth image.
+        \item Let $\ve{I}_{comp}$ denote $\ve{I}_{out}$ where non-hole pixels are replaced by the original pixels.
+        \item $N(\cdot)$ denote the number components of the given vector.        
+      \end{itemize}
+
+      \item The \emph{per-pixel losses} are given by:
+      \begin{align*}
+        \mathcal{L}_{hole} 
+        &= \frac{1}{N(\ve{I}_{gt})} \| (1-\ve{M}) \cdot (\ve{I}_{out} - \ve{I}_{gt}) \|_1 \\
+        \mathcal{L}_{valid}
+        &= \frac{1}{N(\ve{I}_{gt})} \| \ve{M} \cdot (\ve{I}_{out} - \ve{I}_{gt}) \|_1.
+      \end{align*}      
+
+      \item The paper uses the perceptual loss \cite{Johnson:2016}.
+      \begin{itemize}
+        \item The paper uses the outputs of the \emph{pool1}, \emph{pool2}, and \emph{pool3} layers of VGG-16.
+        \item In general, let's say the paper uses $P$ layers. Let $\Psi_{p}$ denote the output of the $p$th used layer.
+        \item Let's say that the output of the $p$th use layer has shape $C_p \times H_p \times W_p$.
+        \item The \emph{Gram matrix} of the output of the $p$th used layer is given by:
+        \begin{align*}
+          G_p(\ve{I}) = \frac{1}{C_p H_p W_p} \Psi_p(\ve{I})^T \Psi_p(\ve{I}).
+        \end{align*}
+        Here, we view $\Psi_p(\ve{I})$ as a $C_p \times (H_pW_p)$ matrix. So, the Gram matrix has size $C_p \times C_p$.
+      \end{itemize}
+
+      \item The \emph{perceptual (content) loss} term is given by:
+      \begin{align*}
+        \mathcal{L}_{perceptual}
+        &= \sum_{p=1}^P \frac{\| \Psi_p(\ve{I}_{out}) - \Psi_p(\ve{I}_{gt}) \|_1}{N(\Psi_p(\ve{I}_{gt}))}
+        + \sum_{p=1}^P \frac{\| \Psi_p(\ve{I}_{comp}) - \Psi_p(\ve{I}_{gt}) \|_1}{N(\Psi_p(\ve{I}_{gt}))}
+      \end{align*}
+
+      \item The \emph{style loss} term is given by:
+      \begin{align*}
+        \mathcal{L}_{style}
+        &= \sum_{p=1}^P \frac{\| G_p(\ve{I}_{out}) - G_p(\ve{I}_{gt}) \|_1 }{N(G_p(\ve{I}_{gt}))}
+        + \sum_{p=1}^P \frac{\| G_p(\ve{I}_{comp}) - G_p(\ve{I}_{gt}) \|_1 }{N(G_p(\ve{I}_{gt}))}
+      \end{align*}
+
+      \item The \emph{total variation loss} is a smoothing penalty on $R$, where $R$ is the region of the $1$-pixel dilation of the hole region. It encourages the filled pixels to transition smoothly into the background.
+      \begin{align*}
+        \mathcal{L}_{tv}
+        &= \sum_{(i,j) \in R, (i,j+1)\in R}
+        \frac{ \|\ve{I}_{comp}[i,j+1] - \ve{I}_{comp}[i,j] \|_1 }{N(\ve{I}_{comp})} \\
+        &\phantom{=\ } + \sum_{(i,j) \in R, (i+1,j)\in R}
+        \frac{ \|\ve{I}_{comp}[i+1,j] - \ve{I}_{comp}[i,j] \|_1 }{N(\ve{I}_{comp})}
+      \end{align*}
+
+      \item The total loss is loss the weighted linear combination of the above:
+      \begin{align*}
+        \mathcal{L}_{total}
+        &= \mathcal{L}_{valid}
+        + 6\mathcal{L}_{hole}
+        + 0.05\mathcal{L}_{perceptual}
+        + 120 \mathcal{L}_{style}
+        + 0.1\mathcal{L}_{tv}.
+      \end{align*}
+      The weights are determined by hyperparameter search on 100 validation images. The paper did not mention which algorithm it used.
+
+      \item Insights about the loss.
+      \begin{itemize}
+        \item Perceptual loss leads to \emph{checkerboard artifacts}. However, leaving it out leads to \emph{grid-shaped artifacts}.
+        \item The paper relies heavily on the style loss. Results are not good when the style loss weight is low. More specifically, low style loss weight leads to \emph{fish scale artifacts}.
+      \end{itemize}      
+    \end{itemize}
+  \end{itemize}
+
+  \section{Yu \etal~(ICCV 2019)}
+
+  \begin{itemize}
+  	\item This paper generalizes the partial convolution unit with the \emph{gated convolution unit}. It also proposes a new loss network called the \emph{SN-PatchGAN}.
+    \begin{itemize}
+      \item The big advantage of the gated convolution unit is that it can incorporate signals other than the mask into the hole filling process. This means that the user sketch and other forms of suggestions can be taken into account when filling holes.      
+    \end{itemize}    
+
+    \item The paper claims that partial convolution has several limitations:
+    \begin{itemize}
+      \item It either classifies pixels to be hole or non-hole. This makes in incompatible with additional user inputs; that is, should this user input be a hole or a non-hole?
+
+      \item In the mask update, a hole pixel will be marked $1$ if it is touch by a filter. This does not take into account how many non-hole pixels are under the filter. Moreover, all non-hole pixels will eventually disappear. The system would be more flexible if it is allowed to learn the mask by itself.
+    \end{itemize}
+
+    \item The gated convolution unit is defined as follows:
+    \begin{align*}
+      Gating[y,x] &= \sum \sum W_g \cdot I \\
+      Feature[y,x] &= \sum \sum W_f \cdot I \\
+      O[y,x] &= \phi(Feature[y,x]) \odot \sigma(Gating[y,x])
+    \end{align*}
+    where $\sigma$ is the sigmoid function, and $\phi$ is any activation function. $W_g$ and $W_f$ are two convolutional features.
+
+    \item SN-PatchGAN:
+    \begin{itemize}
+      \item The discriminator is a convolutional network.      
+    
+      \item The discriminator consists of $6$ convolutional units. (See the paper for details.) Each unit is normalized by spectral normalization \cite{Miyato:2018}. 
+
+      \item The output of the GAN is a 3D feature of shape $\Real^{c \times h \times w}$ where $c = 256$, $h = H/32$ and $w = W/32$ where $H$ and $W$ are the original image height and width, respectively.
+
+      \item The hinge GAN loss is then applied to each $c \times h \times w$ location:
+      \begin{align*}
+        \mathcal{L}_D 
+        &= E_{x \sim p_{data}(x)} [ReLU(1 - D(x))] + E_{z \sim p_z(z) } [ReLU(1 + D(G(z)))] \\
+        \mathcal{L}_G
+        &= - E_{z \sim p_z(z) } [D(G(z))].
+      \end{align*}
+      (Huh, the generator loss does not have ReLU?) The paper does not explicitly tell how these $c \times h \times w$ numbers are combined to a single number. I presume they just average them.      
+    \end{itemize}
+
+    \item The overall loss of the network is just the L1 pixel loss and then adversarial loss based on SN-PatchGAN. The ratio between the losses is $1:1$.
+
+    \item The overall architecture is the same as that of the 2018 paper by the same authors. All vanialla convolution layers are replaced by gated convolution layers.    
+  \end{itemize}    
+
+  \bibliographystyle{acm}	
+  \bibliography{inpainting}  
+\end{document}

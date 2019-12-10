@@ -1,0 +1,734 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+
+\newtheorem{lemma}{Lemma}[section]
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{corollary}[lemma]{Corollary}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\msf}[1]{\mathsf{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+
+\title{Least Squares and Its Variant}
+\author{Pramook Khungurn}
+
+\begin{document}
+	\maketitle
+	
+	In this note, scalars are denoted by small letters in
+	normal type face; for examples, $x$, $y$, and $z$. 
+	Vectors are denoted by small letters in bold face;
+	for examples, $\ve{x}$, $\ve{y}$, and $\ve{z}$. Entries of vectors
+	are denoted by the same small latter in normal type face as the 
+	letter representing the vector; for example, $\ve{x} = (x_1, x_2, x_3)$.
+	Matrices are denoted by capital letters in bold face such
+	as $\ve{X}$, $\ve{Y}$, and $\ve{Z}$, and we use the same small letter to the
+	entries. For example, the entries of $\ve{X}$ are $x_{11}$, $x_{12}$,
+	and so on.
+	
+	After reading books and internet documents regarding the subject,
+	I discovered that there are a number of schemes for variable names.
+	We decide to follow the linear algebra scheme.
+	
+	\section{The Problem and the Paradigm} % (fold)
+	
+	\begin{itemize}
+	  \item The input is a list of pairs of points 
+	    $(\ve{a}_1, \ve{b}_1)$, $(\ve{a}_2, \ve{b}_2)$, 
+	    $\dotsc$, $(\ve{a}_n, \ve{b}_n)$ where $\ve{a}_i \in \mathbb{R}^\ell$ 
+	    and $\ve{b}_i \in \mathbb{R}^m$.
+	    The components of the pairs are supposed to be related by the equation
+	    \begin{align*}
+	      \ve{b}_i = \ve{f}(\ve{a}_i; \ve{x})
+	    \end{align*}
+	    where $\ve{f}$ is an arbitrary vector function and $\ve{x}$ is 
+	    a vector of unknown parameters.
+	    
+	  \item The output is a $\ve{x}$ that satisfies the above equation
+	    for all i.	  
+	    
+	  \item Of course, when $(\ve{a}_i, \ve{b}_i)$ are real data 
+	    gather from experiments, there will be noise and error. Moreover,
+	    we may have more pairs of $(\ve{a}_i, \ve{b}_i)$ than
+	    the degree of freedom of $\ve{x}$. As a result, a parameter $\ve{x}$ 
+	    that satisfies equation for all $i$ might not exist.
+	    
+	  \item Instead, we hope that we can find $\ve{x}$ that 
+	    yields the least error. The {\bf least squares} approach 
+	    of solving the problem is to choose $\ve{x}$ that 
+	    minimizes the following error:
+	    \begin{align*}
+	      E_{LS} = \sum_{i} \| \ve{r}_i \|^2 = \sum_{i} \| \ve{b}_i - \ve{f}(\ve{a}_i; \ve{x}) \|^2
+	    \end{align*}
+	  \item The vector $\ve{r}_i =  \ve{b}_i - \ve{f}(\ve{a}_i; \ve{x})$ 
+	    is called the {\bf residual vector}.
+  \end{itemize}
+  
+  \section{Linear Least Squares}
+  
+  \begin{itemize}        
+    \item An important special case is when $\ve{f}(\ve{b}; \ve{x})$ is 
+    linear in $\ve{x}$. That is,
+      $$\ve{f}(\ve{a}; \ve{x}) = \ve{A}(\ve{a})\ve{x}$$
+      where the function $\ve{A}(\ve{a})$ maps $\ve{a}$ to a 
+      matrix of size $m \times \ell$.
+      
+    \item The action of $f$ on $\ve{a}_1$, $\ve{a}_2$, $\dots$, 
+    $\ve{a}_n$ can be expressed in matrix form. First, we define
+    \begin{align*}
+        \mathsf{b} = 
+        \begin{bmatrix}
+          \ve{b}_1\\
+          \vdots\\
+          \ve{b}_n
+        \end{bmatrix},
+        \mbox{ and }
+        \mathsf{A} =
+        \begin{bmatrix}
+          \ve{A}(\ve{a}_1)\\
+          \vdots\\
+          \ve{A}(\ve{a}_n)
+        \end{bmatrix}.
+      \end{align*}
+    Then, we have that we would like to
+    solve the equation $$\msf{A}\ve{x} = \msf{b}.$$
+    
+    \item The ``linear'' least square error is then
+      $$E_{LS} = E_{LLS} = \| \msf{b} - \mathsf{A} \ve{x} \|^2.$$
+      
+    \item For further discussion, we define the error vector:
+      \begin{align*}
+        \msf{r}
+        = \begin{bmatrix}
+          \ve{r}_1 \\
+          \vdots\\
+          \ve{r}_n \\
+        \end{bmatrix}
+        = \begin{bmatrix}
+          \ve{b}_1 - \ve{f}(\ve{a}_i; \ve{x}) \\
+          \vdots\\
+          \ve{b}_n - \ve{f}(\ve{a}_n; \ve{x}) \\
+        \end{bmatrix}
+        = \begin{bmatrix}
+          \ve{b}_1 - \ve{A}(\ve{a}_1) \ve{x} \\
+          \vdots\\
+          \ve{b}_n - \ve{A}(\ve{a}_n) \ve{x} \\
+        \end{bmatrix}
+        = \msf{b} - \msf{A} \ve{x}
+      \end{align*}
+      
+    \item Linear albegra tells us that the error is minimized 
+      when the residual vector is in the null space of 
+      $\msf{A}^T$. In other words,
+      we solve for $\msf{r}$ and $\ve{x}$ that satisfies
+      the following equations:
+      \begin{align*}
+        \msf{r} + \msf{A}\ve{x} &= \msf{b}\\        
+        \msf{A}^T \msf{r} &= \ve{0}
+      \end{align*}
+      
+    \item Multiplying the top equation by $\msf{A}^T$, we have
+      the {\bf normal equation}:
+      \begin{align*}
+        \msf{A}^T \msf{A} \ve{x} = \msf{A}^T \msf{b},
+      \end{align*}
+      and we can find $\ve{x}$ by solving the normal equation.
+      
+    \item The solution to the normal equation is given by
+      \begin{align*}
+        \ve{x} = (\msf{A}^T \msf{A})^{-1} \msf{A}^T \msf{b}.
+      \end{align*}
+      The matrix $(\msf{A}^T \msf{A})^{-1} \msf{A}^T$
+      is called the {\bf pseudoinverse} $\msf{A}^\dagger$
+      of $\msf{A}$.
+      However, we normally don't find the pseudoinverse to solve the
+      problem.
+      
+    \item A way to solve the normal equation is to compute 
+      the Cholesky factorization of $\msf{A}^T \msf{A}$, which is a symmetric 
+      positive definite matrix:
+      $$\msf{A}^T \msf{A} = \ve{R}^T \ve{R}$$
+      where $\ve{R}$ is upper-triangular. So, we can solve 
+      for $\ve{x}$ as follows:
+      \begin{itemize}        
+        \item Solve $\ve{R}^T \ve{y} = \msf{b}$.
+        \item Solve $\ve{R}\ve{x} = \ve{y}$.
+      \end{itemize}
+      Solving the normal equation that way can be 
+      numerically unstable though. 
+      
+    \item Alternatively, we can 
+      do QR factorization $\msf{A} = \ve{Q}\ve{R}$ and notice that
+      \begin{align*}       
+        E_{LLS} 
+        = \| \msf{b} - \msf{A}\ve{x} \|^2
+        = \| \ve{Q}^T \msf{b} - \ve{Q}^T \msf{A}\ve{x} \|^2
+        = \| \ve{Q}^T \msf{b} - \ve{R} \ve{x} \|^2
+      \end{align*}
+      because $\ve{Q}$ is orthonomal, thus preserving norms.
+      The normal equation becomes $\ve{R} \ve{x} = \ve{Q}^T \msf{b}$,
+      and we can solve for $\ve{x}$ in this one instead.
+      
+    \item We would like to point out the form of the linear least square
+      error:
+      \begin{align*}
+        E_{LLS} 
+        &= (\msf{b} - \msf{A}\ve{x})^T(\msf{b} - \msf{A}\ve{x})\\
+        &= \ve{x}^T \msf{A}^T \msf{A}^T \ve{x} 
+          - 2 \ve{x}^T \msf{A}^T \msf{b} + \msf{b}^T \msf{b}
+      \end{align*}
+      This means that $E_{LLS}$ is a function as a function of $\ve{x}$
+      is minimized when
+      \begin{align*}
+        \msf{A}^T \msf{A} \ve{x} = \msf{b}.
+      \end{align*}
+
+  \end{itemize}  
+  
+  \subsection{Special Case: Linear Regression for Linear Motion Models}
+  \label{linear-motion-model}
+  \begin{itemize}
+    \item In computation, we often have $\ve{a}_i$ be a point
+      in one space and $\ve{b}_i$ is a point in another space.
+      
+      For example, $\ve{a}_i$ might be the pixel position of a 3D
+      point in a photograph taken by one camera, and $\ve{b}_i$ is
+      the pixel position of the same 3D point in a photograph
+      taken by one camera.
+      
+    \item The function $\ve{f}$ in the above setting is called
+      a {\bf motion model}.
+      
+	  \item Many motion models have \emph{linear relationship} between 
+	  the displacement $\ve{d}	= \ve{b} - \ve{a}$ and the unknown 
+	  parameter $\ve{x}$.
+	  That is,
+	  \begin{align*}
+	    \ve{d} = \ve{b} - \ve{a} = \ve{J}(\ve{a}) \ve{x}.
+	  \end{align*}
+	  where $\ve{J}(\ve{a}) = 
+	  \partial \ve{f}(\ve{a};\ve{x}) / \partial \ve{x}$ 
+	  is the Jacobian of $\ve{f}$ with respect to $\ve{x}$.
+	  
+	  \item For example, a similarity transformation in 2D is 
+	    defined by four parameters $\ve{x} = (t_x, t_y, \alpha, \beta),$ and the
+	    motion function is defined as
+	    \begin{align*}
+	      \ve{f}\left( 
+	      \begin{bmatrix} x \\ y \end{bmatrix}; t_x, t_y, \alpha, \beta \right)
+	      = \begin{bmatrix} 
+	          1+\alpha & -\beta & t_x \\ 
+	          \beta & 1+\alpha & t_y 	        
+          \end{bmatrix}
+	      \begin{bmatrix} x \\ y \\ 1 \end{bmatrix}
+	      = \begin{bmatrix} 
+	          x + \alpha x - \beta y + t_x \\ 
+	          y + \beta x + \alpha y  + t_y	          
+          \end{bmatrix}
+	      = \begin{bmatrix} \ve{f}_x \\ \ve{f}_y \end{bmatrix}.
+	    \end{align*}
+	    The Jacobian is given by
+	    \begin{align*}
+	      \ve{J}(\ve{\ve{a}}) = 
+	      \begin{bmatrix} 
+	        \partial \ve{f}_x / \partial{t_x} & \partial \ve{f}_x / \partial{t_y} & \partial \ve{f}_x / \partial{a} & \partial \ve{f}_x / \partial{b}\\
+	        \partial \ve{f}_y / \partial{t_x} & \partial \ve{f}_y / \partial{t_y} & \partial \ve{f}_y / \partial{a} & \partial \ve{f}_x / \partial{b}
+	      \end{bmatrix}
+	      =
+	      \begin{bmatrix} 
+	        1 & 0 & x & -y\\
+	        0 & 1 & y & x
+	      \end{bmatrix}
+	    \end{align*}
+	    We have that
+	    \begin{align*}
+	      \ve{f}(\ve{a};\ve{x}) - \ve{x} 
+	      = \begin{bmatrix} 
+	        x + \alpha x - \beta y + t_x \\ 
+	        y + \beta x + \alpha y  + t_y	      
+        \end{bmatrix} - 
+        \begin{bmatrix} x \\ y \end{bmatrix}
+	      = \begin{bmatrix} 
+	          \alpha x - \beta y + t_x \\ 
+	          \beta x + \alpha y  + t_y	          
+          \end{bmatrix}
+	      = \begin{bmatrix} 
+	          1 & 0 & x & -y \\ 
+	          0 & 1 & y & x 
+	        \end{bmatrix}
+	        \begin{bmatrix} 
+	          t_x \\ t_y \\ \alpha \\ \beta 
+	        \end{bmatrix}
+	      = \ve{J}(\ve{a})\ve{x}.
+	    \end{align*}
+	    
+	  \item In this case, we can set up the following {\bf linear regression} problem:
+	    \begin{align*}
+	      \mbox{minimize }E_{LLS} 
+	      = \sum_{i} \| \ve{d}_i - \ve{J}(\ve{a}_i) \ve{x} \|^2
+	      = \| \msf{d} - \msf{J} \ve{x} \|
+	    \end{align*}
+	    where
+	    \begin{align*}
+	      \msf{d} =\begin{bmatrix} \ve{d}_1 \\ \vdots \\ \ve{d}_n \end{bmatrix}
+	      \mbox{, and }
+	      \msf{J} 
+	      = 
+	      \begin{bmatrix} \ve{J}(\ve{a}_1) \\ \vdots \\ \ve{J}(\ve{a}_n) \end{bmatrix}
+	    \end{align*}
+	    We can use any of any of the methods for linear least squares to 
+	    solve for $\ve{x}$.  	    	  	    
+  \end{itemize}
+  
+  \subsection{Weighted Linear Least Squares}
+
+  \begin{itemize}
+    \item In some situations, we may wish to weight errors of each
+      pairs differently. That is, we might want to minimize
+      \begin{align*}
+        E_{WLLS} = \sum_{i} w_i \| \ve{b}_i - \ve{A}(\ve{a}_i) \ve{x} \|^2.
+      \end{align*}      
+      where each $w_i$ is a positive constant.
+                
+    \item We define the weight matrix
+      \begin{align*}
+        \msf{W} = \begin{bmatrix}
+          \mrm{diag}(\sqrt{w_1}) & &  & \\
+          & \mrm{diag}(\sqrt{w_2}) &  & \\
+          & & \ddots & \\
+          & & & \mrm{diag}(\sqrt{w_n}) \\
+        \end{bmatrix}
+      \end{align*}
+      where $\mrm{diag}(\sqrt{w_i})$ is the diagonal
+      matrix of size $m \times m$ whose diagonal 
+      entries are $\sqrt{w_i}$.
+      
+    \item Using $\msf{W}$, we can write the error
+      as
+      \begin{align*}
+        E_{WLLS} 
+        = \sum_{i} w_i \| \ve{b}_i - \ve{A}(\ve{a}_i) \ve{x} \|^2
+        = \sum_{i} \| \sqrt{w_i} \ve{b}_i - \sqrt{w_i} \ve{A}(\ve{a}_i) \ve{x} \|^2
+        = \| \msf{W} \msf{b} - \msf{W} \msf{A} \ve{x} \|^2 
+      \end{align*}
+      
+    \item The solution is, again, given by the solution to the normal
+      equation:
+      \begin{align*}
+        \msf{A}^T \msf{W}^T \msf{W} \msf{A} \ve{x} 
+        = \msf{A}^T \msf{W}^T \msf{W} \msf{b}.
+      \end{align*}
+  \end{itemize}
+  
+  \subsection{Generalized Linear Least Squares}
+  
+  \begin{itemize}
+    \item In the generalized least square problem, we would like to 
+      minimize the error
+      \begin{align*}
+        E_{GLLS} 
+        = \| \msf{V} \msf{r} \|^2
+        = \| \msf{V} (\msf{b} - \msf{A} \ve{x} ) \|^2 
+        = \| \msf{V} \msf{b} - \msf{V} \msf{A} \ve{x} \|^2 
+      \end{align*}
+      where $\msf{V}$ is an arbitrary $\mathbb{R}^{mn \times mn}$
+      matrix.
+      
+    \item The interpretation of the above optimization problem is
+      that we might assume that the residuals of the pairs are 
+      correlated instead of being independent. The matrix
+      $\msf{V}$ is suppose to denote the variance/covariance 
+      between the residuals of the pairs.
+            
+    \item The solution then can be found by solving the normal equation:
+      \begin{align*}
+        \msf{A}^T \msf{V}^T \msf{V} \msf{A} \ve{x} 
+        = \msf{A}^T \msf{V}^T \msf{V} \msf{b}.
+      \end{align*}
+  \end{itemize}
+  
+  \subsection{Total Linear Least Squares}
+  
+  \begin{itemize}
+    \item In the standard least squares problem, we effectively
+      solve the following optimization problem:
+      \begin{align*}
+        \mbox{minimize } & \| \msf{r} \|_F\\
+        \mbox{subjected to } & \msf{b} + \msf{r} \in \mrm{col}(\msf{A})
+      \end{align*}
+      where $\| \msf{r} \|_F$ is the Frobenius norm of $\msf{r}$,
+      and $\mrm{col}(\msf{A})$ is the column space of $\msf{A}$.
+      
+      Note that, since $\msf{r}$ is a vector, we have that
+      $\| \msf{r} \|_F = \| \msf{r} \|$.
+      
+    \item The interpretation of the above optimization problem is
+      that we find the smallest perturbation $\msf{r}$ to $\msf{b}$ so 
+      that the equation $\msf{A} \ve{x} = \msf{b} + \msf{r}$
+      has a solution.
+      
+    \item In the total least square problem, we would like to
+      solve the minimization problem:
+      \begin{align*}
+        \mbox{minimize } & \left\| \left[ \begin{array}{c|c} \msf{E} & \msf{r} \end{array}\right] \right\|_F \\
+        \mbox{subjected to } &\msf{b} + \msf{r} \in \mrm{col}(\msf{A} + \msf{E})
+      \end{align*}
+      That is, we allow perturbation to both $\msf{b}$ and $\msf{A}$
+      so that the equation $(\msf{A} + \msf{E})\ve{x} = \msf{b} + \msf{r}$
+      has a solution.
+      
+    \item We can generalize the problem a little bit more by solving
+      \begin{align*}
+        \mbox{minimize } & \left\| \ve{D} \left[ \begin{array}{c|c} \msf{E} & \msf{r} \end{array}\right] \ve{T} \right\|_F \\
+        \mbox{subjected to } &\msf{b} + \msf{r} \in \mrm{col}(\msf{A} + \msf{E})
+      \end{align*}
+      where $\ve{D} = \mrm{diag}(d_1, d_2, \dotsc, d_{mn})$
+      and $\ve{T} = \mrm{diag}(t_1, t_2, \dotsc, t_{\ell})$
+      are diagonal matrices of arbitrary scaling factors.                  
+      
+    \item We rewrite the equation
+      \begin{align*}
+        (\msf{A} + \msf{E})\ve{x} = \msf{b} + \msf{r}
+      \end{align*}
+      as 
+      \begin{align*}
+        \bigg( \ve{D} \left[ \begin{array}{c|c} \msf{A} & \msf{b} \end{array} \right] \ve{T} + \ve{D} \left[ \begin{array}{c|c} \msf{E} & \msf{r} \end{array} \right] \ve{T} \bigg) \ve{T}^{-1}
+        \begin{bmatrix}
+          \ve{x} \\
+          -1
+        \end{bmatrix} = \ve{0}
+      \end{align*}
+      
+    \item The above equation tells us to find $\Delta \in \mathbb{R}^{mn \times (\ell+1)}$ such that $\msf{C} + \Delta$ is rank deficient where
+    $$ \msf{C} = \ve{D} \left[ \begin{array}{c|c} \msf{A} & \msf{b} \end{array} \right] \ve{T}.$$
+    
+    \item To do so, we perform the SVD of $\msf{C}$:
+      \begin{align*}
+        \msf{C} = \ve{U} \ve{\Sigma} \ve{V}^T
+      \end{align*}
+      where $\ve{U} = [ \ve{u}_1 \ \ve{u}_2\ \dotsb\ \ve{u}_{mn} ]$,
+      $\ve{V} = [\ve{v}_1 \ \ve{v}_2 \ \dotsb\ \ve{v}_{\ell+1} ]$,
+      $\ve{u}_i \in \mathbb{R}^{mn}$, and 
+      $\ve{v}_j \in \mathbb{R}^{\ell+1}.$ We also have
+      $\ve{\Sigma} = \mrm{diag}(\sigma_1, \sigma_2, \dotsc, \sigma_{\ell+1})$
+      where $\sigma_1 \geq \sigma_2 \geq \dotsb \geq \sigma_k = \sigma_{k+1} = \dotsb = \sigma_{\ell+1}$
+      are singular values of $\msf{C}$.
+      
+    \item The characterization of singular values tells us mininum 
+      value of $\| \Delta \|_F$ is $\sigma_{\ell+1}$. The minimum
+      is attained when we set
+      \begin{align*}
+        \Delta = - \ve{C}\ve{v} \ve{v}^T
+      \end{align*}
+      where $\ve{v}$ is any unit vecotr in
+      $\mrm{span}\{\ve{v}_{k+1}, \ve{v}_{k+2}, \dotsc, \ve{v}_{\ell+1}\}.$
+      
+    \item To find $\ve{x}$, we first find a vector $\ve{v}$ in 
+      the above span having the form
+      \begin{align*}
+        \ve{v} = \begin{bmatrix}
+          \ve{y}\\
+          \alpha
+        \end{bmatrix}\mbox{, }\alpha \neq 0.
+      \end{align*}
+      Then,
+      \begin{align*}
+        \ve{x} = \frac{-1}{\alpha t_{\ell+1}} \ve{T}_1 \ve{y},
+        \mbox{ where }\ve{T}_1 = \mrm{diag}(t_1, t_2, \dotsc, t_\ell)
+      \end{align*}
+      
+    \item If we cannot find the $\ve{x}$ in the last item, then
+      the total least square problem has no solutions.
+      
+    \item When $\sigma_{\ell+1}$ is a repeated singular value,
+      the solution $\ve{x}$ is not unique. However, we can easily
+      find a solution $\ve{x}_{TLS}$ with the ``least norm''.
+      
+      The process involves finding an orthonormal matrix 
+      $\ve{Q} \in \mathbb{R}^{mn \times (\ell-k+1)}$ such that
+      \begin{align*}
+        \begin{bmatrix}
+          \ve{v}_{k+1} & \ve{v}_{k+2} & \cdots & \ve{v}_{\ell+1}
+        \end{bmatrix}
+        \ve{Q}
+        =
+        \begin{bmatrix}
+          \ve{W} & \ve{y}\\
+          \ve{0} & \alpha
+        \end{bmatrix}
+        \begin{array}{l}
+          \{ \ell - k \\ 
+          \{ 1
+        \end{array}.
+      \end{align*}
+      Then, $\ve{x}_{TLS} = \frac{-1}{\alpha t_{\ell+1}} \ve{T}_1 \ve{y}$
+      is the solution such that
+      \begin{align*}
+        \| \ve{T}^{-1}_1 \ve{x}_{TLS} \| \leq \| \ve{T}^{-1}_1 \ve{x} \|
+      \end{align*}
+      for any solution $\ve{x}$.
+  \end{itemize}  
+  
+  
+  \section{Non-Linear Least Squares}
+  
+  \begin{itemize}
+    \item We might have that $\ve{f}$ is a non-linear function of
+      the parameter $\ve{x}$.
+      In this case, we have the problem of {\bf non-linear least squares}.
+      
+    \item We solve the non-linear least squares by turning it to a
+      linear least square problem. This is achieved by first order 
+      Taylor's series expansion:
+      \begin{align*}
+        \ve{f}(\ve{a}_i; \ve{x} + \Delta \ve{x})
+        \approx \ve{f}(\ve{a}_i; \ve{x} ) + 
+          \ve{J}(\ve{a}_i;\ve{x}) \Delta \ve{x}.
+      \end{align*}
+      
+    \item The above equation suggests that we use a Newton-like
+      iteration. That is, we first come up with a initial parameter $\ve{x}$. 
+      Then, we iteratively
+      find update $\Delta \ve{x}$ to $\ve{x}$ by evaluating
+      \begin{align*}
+        E_{LNS}(\Delta \ve{x})
+        &= \sum_i \| \ve{b}_i - 
+          \ve{f}(\ve{a}_i;\ve{x} + \Delta \ve{x}) \|^2\\
+        &\approx  \sum_i \| \ve{b}_i - 
+          \ve{f}(\ve{a}_i;\ve{x}) - 
+          \ve{J}(\ve{a}_i;\ve{x})\Delta \ve{x} \|^2\\
+        &= \sum_i \| \ve{r}_i - \ve{J}(\ve{a}_i;\ve{x})\Delta \ve{x} \|^2\\
+        &= \Delta \ve{x}^T \bigg[ \sum_i \ve{J}^T \ve{J} \bigg] \Delta \ve{x}
+          - 2 \Delta \ve{x}^T \bigg[ \sum_i \ve{J}^T \ve{r}_i \bigg]
+          + \sum_i \| \ve{r}_i \|^2\\
+        &= \Delta \ve{x}^T \msf{J}^T \msf{J} \Delta \ve{x}
+          - 2 \Delta \ve{x}^T \msf{J}^T \msf{r}
+          + \msf{r}^T \msf{r}
+      \end{align*}
+      where the definition of $\msf{r}$ is the same
+      as that in the last section. $\msf{J}$ is similar to the one in
+      Section~\ref{linear-motion-model}, and the difference is that, now,
+      the Jacobian also depends on $\ve{x}:$
+      \begin{align*}
+        \msf{J}
+        = \begin{bmatrix}
+          \ve{J}(\ve{a}_1; \ve{x})\\
+          \vdots\\
+          \ve{J}(\ve{a}_n; \ve{x})\\
+        \end{bmatrix}
+      \end{align*}
+      
+    \item We would like to minimize the error. Therefore, we choose
+      $\Delta \ve{x}$ so that $E_{LNS}(\Delta \ve{x})$ is minimized.
+      To do so, we solve for $\Delta \ve{x}$ in the normal equation:
+      \begin{align*}
+        \msf{J}^T \msf{J} \Delta \ve{x} = \msf{J}^T \msf{r}.
+      \end{align*}      
+      and update $\ve{x} + \Delta \ve{x}$.        
+      
+    \item As with any iterative method, the system can become unstable.
+      We'll talk about two approaches to prevent this.
+      
+    \item The first approach is to choose {\bf step size} $\alpha$
+      such that $0 < \alpha \leq 1$ and do the update 
+      $\ve{x} \gets \ve{x} + \alpha \Delta \ve{x}$
+      instead.
+      
+      A simple way to pick $\alpha$ is to start with $1$
+      and successively halve the value. 
+      
+    \item The second approach is to solve for $\Delta \ve{x}$ in
+      the equation
+      \begin{align*}
+        (\msf{J}^T \msf{J} + \lambda \mathrm{diag}(\msf{J}^T \msf{J})) 
+          \Delta \ve{x} = \msf{J}^T \msf{r}.
+      \end{align*}      
+      where $\lambda$ is a damping parameter used to ensure that 
+      the system is stable.
+      
+    \item The {\bf Levenberg--Marquardt algorithm} is the combination
+      of the damped Newton-like iteration and the following rules
+      for updating $\lambda$:
+      \begin{itemize}
+        \item Start with $\lambda = \lambda_0$ and a factor $\nu > 1$.
+        \item Compute the $E_{LNS}(\Delta \ve{x})$ using
+          the current $\lambda$ and $\lambda / \nu$.
+          \begin{itemize}
+            \item If both of the cases are worst than the current
+              guess, then update $\lambda \gets \lambda \nu$
+              and repeat the calculation without updating
+              $\ve{x}$ until it gets better.
+              
+            \item If $\lambda / \nu$ results in a reduction in
+              the error, then an update to $\ve{x}$ is made
+              and we update $\lambda \gets \lambda / \nu$.
+              
+            \item If $\lambda / \nu$ results in a worst error,
+              but $\lambda$ is better, then we make the update
+              to $\ve{x}$ with $\lambda$ staying the same.
+          \end{itemize}
+      \end{itemize}
+      Note that the rule says that, if both $\lambda$ and $\lambda/\nu$
+      results in better errors, we always take the $\lambda/\nu$
+      update.
+  \end{itemize}
+  
+  \subsection{Weighted Non-Linear Least Squares}
+  
+  \begin{itemize}
+    \item Just as in the linear least squares case, 
+      we might which to weight the error of each sample
+      different. So, we minimize
+      \begin{align*}
+        E_{WNLS} 
+        &= \sum_i w_i \| \ve{b}_i - 
+          \ve{f}(\ve{a}_i;\ve{x}) \|^2        
+      \end{align*}
+    
+    \item Now, as $\ve{f}$ is non-linear, we seek incremental 
+      update $\Delta \ve{x}$ that minimizes
+      \begin{align*}
+        E_{WNLS}(\Delta \ve{x}) 
+        &= \sum_i w_i \| \ve{b}_i - 
+          \ve{f}(\ve{a}_i;\ve{x} + \Delta \ve{x}) \|^2\\
+        &\approx \sum_i w_i \| \ve{r}_i - \ve{J}(\ve{a}_i;\ve{x})\Delta \ve{x} \|^2\\
+        &= \sum_i \| \sqrt{w_i} \ve{r}_i - \sqrt{w_i} \ve{J}(\ve{a}_i;\ve{x})\Delta \ve{x} \|^2\\
+        &= \| \msf{W} \msf{r} - \msf{W} \msf{J} \Delta \ve{x} \|^2.
+      \end{align*}
+      This tells us to solve the normal equation:
+      \begin{align*}
+        \msf{J}^T \msf{W}^T \msf{W} \msf{J} \Delta \ve{x}
+        = \msf{J}^T \msf{W}^T \msf{W} \msf{r}
+      \end{align*}
+      in each step of the iteration.
+      
+    \item If we use Levenberg-Marquardt, we solve
+      \begin{align*}
+        (\msf{J}^T \msf{W}^T \msf{W} \msf{J}  + \lambda \mrm{diag}(\msf{J}^T \msf{W}^T \msf{W} \msf{J})) \Delta \ve{x}
+        = \msf{J}^T \msf{W}^T \msf{W} \msf{r}
+      \end{align*}
+      in each step.
+  \end{itemize}
+  
+  \section{Robust Least Squares}
+  
+  \begin{itemize}
+    \item The ordinary least squares that we have been discussed
+      is not robust against the presence of outliers. 
+      
+    \item This is a result of the objective function 
+      $E_{LS} = \sum_i \| \ve{r}_i \|^2$
+      increases indefinitely with the size of the residuals.
+      As a result,  an outlier with large residual can screw up the process.
+      
+    \item Robust approach tries to replace the square of the
+      norm function with a less rapidly increasing {\bf penalty function}
+      $\rho(\ve{\|r\|})$. Its derivative $\psi(\| \ve{r} \|)
+      = d \rho(\| \ve{r} \|) / d\| \ve{r} \|$ is called
+      the {\bf influence function}.        
+      
+    \item Using the new penalty function, we now minimize
+    $$E_{RLS} = \sum_i \rho(\| \ve{r}_i \| )
+    = \sum_i \rho(\| \ve{b}_i - \ve{f}(\ve{a}_i; \ve{x}) \| )$$
+    instead of the sum of squares.
+    The parameter that minimizes the above objective
+    function is called the {\bf M-estimate}.
+    
+    \item To find the parameter $\ve{x}$, we solve the equation:
+      $$\frac{\partial E_{RLS}}{\partial \ve{x}} = \ve{0}.$$
+    
+      We have that
+      \begin{align*}
+        \frac{\partial E_{RLS}}{\partial \ve{x}}
+        &= \sum_i \frac{\partial \rho(\| \ve{r}_i \|)}{\partial \ve{x}}
+        = \sum_i \frac{d \rho(\| \ve{r}_i \|)}{d \| \ve{r}_i \|}
+          \frac{\partial \| \ve{r}_i \|}{\partial \ve{x}}
+        = \sum_i \frac{d \rho(\| \ve{r}_i \|)}{d \| \ve{r}_i \|}
+          \frac{\ve{r}_i^T}{\| \ve{r}_i \|} \frac{\partial \ve{r}_i }{\partial \ve{x}}
+        = \sum_i \bigg( \frac{1}{\| \ve{r}_i \|} \frac{d \rho(\| \ve{r}_i \|)}{d \| \ve{r}_i \|} \bigg) \ve{r}_i^T \frac{\partial \ve{r}_i }{\partial \ve{x}}\\
+        &= \sum_i \bigg( \frac{1}{\| \ve{r}_i \|} \frac{d \rho(\| \ve{r}_i \|)}{d \| \ve{r}_i \|} \bigg)
+          \frac{\partial \| \ve{r}_i \|^2 }{\partial \ve{x}}\\
+        &= \sum_i w(\| \ve{r}_i \|)
+          \frac{\partial \| \ve{r}_i \|^2 }{\partial \ve{x}}
+      \end{align*}
+      where $w(r) = \frac{1}{r}\frac{d \rho(r)}{dr}$ is called
+      the {\bf weight function}.
+      
+    \item Pretending that $w(\| \ve{r}_i \|)$ is constant for all
+      $i$, we have that any $\ve{x}$ that satisfies
+      \begin{align*}
+        \sum_i w(\| \ve{r}_i \|)
+          \frac{\partial \| \ve{r}_i \|^2 }{\partial \ve{x}} = \ve{0}
+      \end{align*}
+      yields a local minimum of the error function
+      \begin{align*}
+        E_{IRLS} = \sum_i w(\| \ve{r}_i \|) \| \ve{r}_i \|^2.
+      \end{align*}
+      Of course, $w(\| \ve{r}_i \|)$ depends on $\ve{x}$, but the
+      above simplification suggests the following 
+      {\bf iteratively reweighted least squares} algorithm:
+      \begin{itemize}
+        \item Start with an initial guess $\ve{x}^{(0)}$.
+        \item Loop until convergence.
+        \begin{itemize}
+          \item Compute the weight 
+            $w_i = w(\| \ve{r}^{(k)} \| ) = w(\| \ve{b}_i - \ve{f}(\ve{a}_i; \ve{x}^{(k)}) \|)$ for all $i$.
+          \item Solve the weighted least square problem
+            \begin{align*}
+              \mbox{minimize }\sum_i w_i \| \ve{r}_i^{(k+1)} \|^2
+              = \sum_i w_i \| \ve{b}_i - \ve{f}(\ve{a}_i; \ve{x}^{(k+1)}) \|^2
+            \end{align*}
+            to get $\ve{x}^{(k+1)}.$
+        \end{itemize}
+      \end{itemize}
+            
+    \item Here are some popular influence functions:
+      \begin{itemize}
+        \item $L_2$: $\psi(r) = r$.
+        \item $L_1$: $\psi(r) = \mathrm{sgn}(r)$.
+        \item Huber:
+          \begin{align*}
+            \psi(r) = \begin{cases}
+              |r|, & |r| < \varepsilon\\
+              \varepsilon, & |r| \geq \varepsilon
+            \end{cases}            
+          \end{align*}
+        \item Tukey's biweight:
+          \begin{align*}
+            \psi(r) = \begin{cases}
+              r (1 - r^2 / \varepsilon^2)^2, & |r| < \varepsilon\\
+              0, & |r| \geq \varepsilon
+            \end{cases}
+          \end{align*}
+      \end{itemize}
+    \item Note that the $L_2$ and $L_1$ norms are not, well, robust.
+      The more robust ones (Huber and Tukey's biweight) include
+      a parameter $\varepsilon$ which limits the influence of outliers.
+      
+    \item The $\varepsilon$ is supposed to be chosen to be set to
+      the variance of the inliers. However, estimating the variance
+      from the residuals of all the pairs would contaminate
+      the variance with the large residual of the outlier
+      
+    \item An effective way to compute the $\varepsilon$ parameter is
+      to use the {\bf median absolute deviation} (MAD):
+      \begin{align*}
+        MAD = \mathrm{median}(\| \ve{r}_1 \|, \| \ve{r}_2 \|, \dotsc, \| \ve{r}_n \|).
+      \end{align*}
+      We typically set $\varepsilon = 1.438 \times MAD$.
+      
+    \item It is unclear to me if we compute $\varepsilon$ only once
+       before the first iteration of if we recompute it in every
+       iteration. Literature, though, suggests that $\varepsilon$ is problem
+       dependent, which means we know it before we start optimizing.)      
+  \end{itemize}
+  
+  \section{Back Propagation}
+\end{document}

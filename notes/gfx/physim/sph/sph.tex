@@ -1,0 +1,248 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{epstopdf}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\likelihood}{\mathcal{L}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\new}{\mathrm{new}}
+\newcommand{\Arg}{\mathrm{Arg\,}}
+\newcommand{\Log}{\mathrm{Log\,}}
+\newcommand{\RE}{\mathrm{Re\,}}
+\newcommand{\IM}{\mathrm{Im\,}}
+\newcommand{\Res}{\mathrm{Res}}
+\newcommand{\pv}{\mathrm{p.v.}}
+\newcommand*{\horzbar}{\rule[.5ex]{2.5ex}{0.5pt}}
+\newcommand{\Real}{\mathbb{R}}
+
+\title{Smoothed Particle Hydrodynamics Note}
+\author{Pramook Khungurn}
+
+\begin{document}
+	\maketitle
+
+  \section{2D Kernel Functions}
+  \begin{itemize}
+    \item M\"uller~\etal~\cite{Muller:2003} uses three kernel functions to do SPH. For anything but pressure and viscocity, they use the following kernel:
+    \begin{align*}
+      W_{\mathrm{poly6}}(r, h) = \frac{315}{64\pi h^6}
+      \begin{cases}
+        (h^2 - r^2)^3 & 0 \leq r \leq h \\
+        0 & \mathrm{otherwise}
+      \end{cases}.      
+    \end{align*}
+    For pressure, the following kernel is used:
+    \begin{align*}
+      W_{\mathrm{spiky}} = \frac{15}{\pi h^6}
+      \begin{cases}
+        (h-r)^3 & 0 \leq r \leq h\\
+        0 & \mathrm{otherwise}
+      \end{cases}
+    \end{align*}
+    Lastly, for viscosity
+    \begin{align*}
+      W_{\mathrm{viscosity}}(r, h) = \frac{15}{2\pi h^3}
+      \begin{cases}
+        -\frac{r^3}{2h^3} + \frac{r^2}{h^2} + \frac{h}{2r} - 1 & 0 \leq r \leq h\\
+        0 & \mathrm{otherwise}
+      \end{cases}
+    \end{align*}
+
+    \item The above kernels were constructed for the 3D case. We shall derive kernels with the same properties for the 2D cases.
+
+    \item For the first kernel, let us say that we want to use $W(r,h) = A(h^2 - r^2)^2$. Since the kernel has to integrate to one on the whole plane, we have that
+    \begin{align*}
+      1 &= \int_{0}^h \int_{0}^{2\pi} A (h^2 - r^2)^2 r \,\dee \theta \dee r\\
+      A &= \bigg(\int_{0}^h \int_{0}^{2\pi} (h^2 - r^2)^2 r \,\dee \theta \dee r\bigg)^{-1}.
+    \end{align*}
+    Now,
+    \begin{align*}
+      \int_{0}^h \int_{0}^{2\pi} (h^2 - r^2)^2 r \,\dee \theta \dee r
+      &= 2\pi \int_{0}^h (h^4 - 2h^2 r^2 + r^4) r \, \dee r
+      = 2\pi \int_{0}^h h^4 r - 2h^2 r^3 + r^5  \, \dee r\\
+      &= 2\pi \bigg[ h^4 \frac{r^2}{2} - 2h^2 \frac{r^4}{4} + \frac{r^6}{6} \bigg]_{0}^h
+      = 2\pi \bigg( \frac{h^6}{2} - \frac{h^6}{2} + \frac{h^6}{6} \bigg)\\
+      &= \frac{\pi h^6}{3}.
+    \end{align*}
+    Therefore, $A = 3/(\pi h^6)$. Therefore, the normal kernel should be:
+    \begin{align*}
+      W(r,h) = \frac{3}{\pi h^6}
+      \begin{cases}
+        (h^2 - r^2)^2 & 0 \leq r \leq h \\
+        0 & \mathrm{otherwise}
+      \end{cases}. 
+    \end{align*}
+
+    \item For the pressure kernel, we shall use the kernel of the form $W_{\mathrm{pressure}}(h,r) = A(h-r)^2$. We have that:
+    \begin{align*}
+      A 
+      &= 2\pi \int_{0}^h (h-r)^2r \, \dee r
+      = 2 \pi \int_{0}^h (h^2 - 2hr + r^2)r \, \dee r
+      = 2 \pi \int_{0}^h h^2 r - 2hr^2 + r^3 \, \dee r\\
+      &= 2 \pi \bigg[ h^2 \frac{r^2}{2} - 2h \frac{r^3}{3} + \frac{r^4}{4} \bigg]_0^h
+      = 2\pi \bigg( \frac{h^4}{2} - \frac{2h^4}{3} + \frac{h^4}{4} \bigg)\\
+      &= 2\pi \frac{h^4}{12} = \frac{\pi h^4}{6}.
+    \end{align*}
+    Therefore, 
+    \begin{align*}
+      W_{\mathrm{pressure}}(r,h) = \frac{6}{\pi h^4}
+      \begin{cases}
+        (h - r)^2 & 0 \leq r \leq h \\
+        0 & \mathrm{otherwise}
+      \end{cases}. 
+    \end{align*}
+
+    \item Before we derive the last kernel, we derive some useful facts:
+    \begin{align*}
+      \frac{\partial r}{\partial x} 
+      = \frac{\partial \sqrt{x^2 + y^2}}{\partial x} 
+      = \frac{\dee \sqrt{x^2 + y^2}}{\dee (x^2 + y^2)} \frac{\partial (x^2 + y^2)}{\partial x}
+      = \frac{2x}{2\sqrt{x^2 + y^2}}  = \frac{x}{r}.
+    \end{align*}
+    As a result, we also have that $\partial r / \partial y = y / r$.
+
+    \item Now,
+    \begin{align*}
+      \frac{\partial^2 f(r)}{\partial x^2} 
+      &= \frac{\partial}{\partial x} \bigg( \frac{\partial f(r)}{\partial x} \bigg)\\
+      &= \frac{\partial}{\partial x} \bigg( f'(r) \frac{x}{r} \bigg)\\
+      &= \frac{\partial f'(r)}{\partial x} \frac{x}{r} + \frac{f'(r)}{r} - f'(r)x \cdot \frac{1}{r^2} \cdot \frac{x}{r}\\
+      &= f''(r) \frac{x^2}{r^2} + \frac{f'(r)}{r} \bigg( 1 - \frac{x^2}{r^2} \bigg)
+    \end{align*}
+    So,
+    \begin{align*}
+      \nabla^2 f(r) 
+      &= \frac{\partial^2 f(r)}{\partial x^2} + \frac{\partial^2 f(r)}{\partial y^2}\\
+      &= \frac{f''(r)}{r^2}(x^2 + y^2) + \frac{f'(r)}{r}\bigg( 2 - \frac{x^2 + y^2}{r^2}\bigg)\\
+      &= \frac{f''(r)}{r^2} r^2 + \frac{f'(r)}{r}\bigg( 2 - \frac{r^2}{r^2}\bigg)\\
+      &= f''(r) + \frac{f'(r)}{r}.
+    \end{align*}
+
+    \item Unfortunately, the viscosity kernel proposed in the paper only works in 3D. There's no function of the same form that works for the 2D case. So, instead, we use Monaghan's kernel:
+    \begin{align*}
+      W(r, h) = \frac{\sigma}{h^v}
+      \begin{cases}
+        1 - \frac{3}{2}q^2 + \frac{3}{4}q^3 & 0 \leq q \leq 1\\
+        \frac{1}{4}(2 - q)^3 & 1 \leq q \leq 2\\
+        0 & \mathrm{otherwise}
+      \end{cases}      
+    \end{align*}
+    where
+    \begin{itemize}
+      \item $q = 2r/h$
+      \item $\sigma$ is a constant with value $4/3$, $40/(7\pi)$, and $8/\pi$ for 1-, 2-, and 3-dimensional system, respectively, and
+      \item $v$ is the number of dimensions of the system.
+    \end{itemize}
+
+  \end{itemize}
+
+  \section{The Monaghan Kernel}
+  
+  \begin{itemize}
+    \item Monaghan proposes the following kernel:
+    \begin{align*}
+      W(r, h) = \frac{\sigma}{h^v}
+      \begin{cases}
+        1 - \frac{3}{2}q^2 + \frac{3}{4}q^3 & 0 \leq q \leq 1\\
+        \frac{1}{4}(2 - q)^3 & 1 \leq q \leq 2\\
+        0 & \mathrm{otherwise}
+      \end{cases}
+    \end{align*}
+    where
+    \begin{itemize}
+      \item $q = 2r/h$
+      \item $\sigma$ is a constant with value $4/3$, $40/(7\pi)$, and $8/\pi$ for 1-, 2-, and 3-dimensional system, respectively, and
+      \item $v$ is the number of dimensions of the system.
+    \end{itemize}
+
+    \item We shall write it in terms of $r$.
+    \begin{align*}
+      W(r, h) = \frac{\sigma}{h^v}
+      \begin{cases}
+        1 - 6r^2/h^2 + 6r^3/h^3 & 0 \leq r \leq h/2\\
+        2 - 6r/h + 6r^2/h^2 - 2r^3/h^3 & h/2 \leq r \leq h\\
+        0 & \mathrm{otherwise}
+      \end{cases}
+    \end{align*}.
+
+    \item We shall check the normalization constant for the 2D case:
+    \begin{align*}
+      2\pi \int_0^h W(r,h)\, \dee r
+      &= 2\pi \bigg(\int_0^{h/2} (1 - 6r^2/h^2 - 6r^3/h^3)r \, \dee r + \int_{h/2}^h 2 - 6r/h + 6r^2/h^2 - 2r^3/h^3\, \dee r\bigg)\\
+      &= \frac{\sigma}{h^v} \frac{7\pi h^2}{40}.
+    \end{align*}
+    So, $v = 2$ and $\sigma = 40/(7\pi)$.
+
+    \item The gradient is given by:
+    \begin{align*}
+      \nabla W(\ve{r}, h) 
+      &= \frac{\ve{r}}{r} W'(r)\\
+      &= \frac{\ve{r}}{r} \frac{\sigma}{h^v} \begin{cases}
+        -12 r / h^2 + 18r^2 /h^3 & 0 \leq r \leq h/2\\
+        - 6/h + 12r/h^2 - 6r^2/h^3 & h/2 \leq r \leq h\\
+        0 & \mathrm{otherwise}
+      \end{cases}\\
+      &= \ve{r} \frac{\sigma}{h^v} \begin{cases}
+        -12/ h^2 + 18r /h^3 & 0 \leq r \leq h/2\\
+        -6/(hr) + 12/h^2 - 6r/h^3 & h/2 \leq r \leq h\\
+        0 & \mathrm{otherwise}
+      \end{cases}.
+    \end{align*}
+
+    \item We have that
+    \begin{align*}
+      W''(r) = \frac{\sigma}{h^v} \begin{cases}
+        -12/ h^2 + 36r /h^3 & 0 \leq r \leq h/2\\
+        12/h^2 - 12r/h^3 & h/2 \leq r \leq h\\
+        0 & \mathrm{otherwise}
+      \end{cases}
+    \end{align*}
+    So, the Laplacian is given by:
+    \begin{align*}
+      \nabla^2 W(r) = W''(r) + W'(r)/r = \frac{\sigma}{h^v} \begin{cases}
+        -24/ h^2 + 54r /h^3 & 0 \leq r \leq h/2\\
+        -6/(hr) + 24/h^2 - 18r/h^3 & h/2 \leq r \leq h\\
+        0 & \mathrm{otherwise}
+      \end{cases}.
+    \end{align*}
+  \end{itemize}
+
+  \bibliographystyle{plain}
+  \bibliography{sph} 
+
+\end{document}
