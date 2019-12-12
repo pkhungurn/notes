@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>Differentiable Rasterization</title>
+
+    <!-- Bootstrap -->
+    <link href="../../../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../../../css/theme.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+      TeX: { equationNumbers: {autoNumber: "AMS"} } 
+    });
+    </script>
+    <script type="text/javascript"
+            src="../../../MathJax/MathJax.js?config=TeX-AMS_HTML-full">
+    </script>
+
+    <script type="text/javascript" src="../../../js/jquery-3.4.1.min.js"></script>    
+    <script type="text/javascript" src="../../../js/bigfoot.min.js"></script>    
+
+    <link rel="stylesheet" type="text/css" href="../../../css/bigfoot-default.css">    
+
+</head>
+<body>
+<div class="container">
+    <span style="visibility: hidden;">
+        \(
+        \def\sc#1{\dosc#1\csod}
+        \def\dosc#1#2\csod{{\rm #1{\small #2}}}
+
+        \newcommand{\dee}{\mathrm{d}}
+        \newcommand{\Dee}{\mathrm{D}}
+        \newcommand{\In}{\mathrm{in}}
+        \newcommand{\Out}{\mathrm{out}}
+        \newcommand{\pdf}{\mathrm{pdf}}
+        \newcommand{\Cov}{\mathrm{Cov}}
+        \newcommand{\Var}{\mathrm{Var}}
+
+        \newcommand{\ve}[1]{\mathbf{#1}}
+        \newcommand{\mrm}[1]{\mathrm{#1}}
+        \newcommand{\etal}{{et~al.}}
+        \newcommand{\sphere}{\mathbb{S}^2}
+        \newcommand{\modeint}{\mathcal{M}}
+        \newcommand{\azimint}{\mathcal{N}}
+        \newcommand{\ra}{\rightarrow}
+        \newcommand{\mcal}[1]{\mathcal{#1}}
+        \newcommand{\X}{\mathcal{X}}
+        \newcommand{\Y}{\mathcal{Y}}
+        \newcommand{\Z}{\mathcal{Z}}
+        \newcommand{\x}{\mathbf{x}}
+        \newcommand{\y}{\mathbf{y}}
+        \newcommand{\z}{\mathbf{z}}
+        \newcommand{\tr}{\mathrm{tr}}
+        \newcommand{\sgn}{\mathrm{sgn}}
+        \newcommand{\diag}{\mathrm{diag}}
+        \newcommand{\Real}{\mathbb{R}}
+        \newcommand{\sseq}{\subseteq}
+        \newcommand{\ov}[1]{\overline{#1}}
+        \)
+    </span>
+
+    <br>
+    <h1>Differentiable Rasterization</h1>
+    <hr>
+
+    <p>At the point I started writing this note, the news about <a href="https://papers.nips.cc/paper/9156-learning-to-predict-3d-objects-with-an-interpolation-based-differentiable-renderer">Nvidia's NeurIPS 2019 paper</a> have made it to <a href="https://gizmodo.com/nvidia-taught-an-ai-to-instantly-generate-fully-texture-1840323132?fbclid=IwAR1glw5wMaBKhDbvu__z4WjVBw_PiA6kbyGSeYLE_kG-gea5vu1p-WhoS0E">the mass media</a>. They have successfully extracted fully textured meshes from single photographs. While the results are not detailed or accurate enough for media production, THIS IS A BIG DEAL. I feel this is a watershed moment where 3D modeling will become automatic. It is thus imparative to study it as soon as possible as it will definitely become important for future research and survival.</p>
+
+    <p>The Nvidia paper relies on the ability to render 3D models and, at the same time, compute the gradients of the rendered images with respect to the model parameters. As with normal rendering, there are two main algorithms for differentiable renderings: ray tracing and the graphics pipeline. Differentiable ray/path tracing are being actively developed by the graphics community; for example, by Tzu-Mao Li <a href="#fn_li_2018_0">[Li et al., 2018]</a> and Wenzel's group <a href="#fn_nimier-david_2019_0">[Nimer-David et al. 2019]</a> <a href="#fn_loubet_2019_0">[Loubet et al. 2019]</a>.</p>
+
+    <div class="footnotes">
+        <ul>
+            <li class="footnote" id="fn_li_2018_0">
+                <p align="left">
+                    Tzu-Mao Li, Miika Aittala, Frédo Durand, Jaakko Lehtinen. 
+                    <b>Differentiable Monte Carlo Ray Tracing through Edge Sampling.</b>
+                    SIGGRAPH Asia 2018.
+                    <a href="https://people.csail.mit.edu/tzumao/diffrt/">[Project]</a>
+                </p>
+            </li>
+            <li class="footnote" id="fn_nimier-david_2019_0">
+                <p align="left">
+                     Merlin Nimier-David, Delio Vicini, Tizian Zeltner, and Wenzel Jakob.
+                     <b>Mitsuba 2: A Retargetable Forward and Inverse Renderer.</b>
+                     SIGGRAPH Asia 2019.
+                     <a href="https://rgl.epfl.ch/publications/NimierDavidVicini2019Mitsuba2">[Project]</a>
+                </p>
+            </li>
+            <li class="footnote" id="fn_loubet_2019_0">
+                <p align="left">
+                     Guillaume Loubet, Nicolas Holzschuch, and Wenzel Jakob.
+                     <b>Reparameterizing discontinuous integrands for differentiable rendering.</b>
+                     SIGGRAPH Asia 2019.
+                    <a href="https://rgl.epfl.ch/publications/Loubet2019Reparameterizing">[Project]</a> 
+                </p>
+            </li>
+        </ul>
+    </div>
+
+    <p>However, I know first hand that ray tracing is seriously a slow process. So, I'd like to study the other algorithm, rasterization, first. There are 4 main papers that deal with this subject:</p>
+
+    <ul>
+        <li>
+            Loper and Black's <b>OpenDR: An Appproximate Differentiable Renderer.</b> (EECV 2014) <a href="http://files.is.tue.mpg.de/black/papers/OpenDR.pdf">[PDF]</a>
+        </li>
+        <li>
+            Kato et al.'s <b>Neural 3D Mesh Renderer.</b> (CVPR 2018) <a href="http://openaccess.thecvf.com/content_cvpr_2018/papers/Kato_Neural_3D_Mesh_CVPR_2018_paper.pdf">[PDF]</a>
+        </li>
+        <li>
+            Liu et al.'s <b>Soft Rasterizer: A Differentiable Renderer for Image-based 3D Reasoning.</b> (ICCV 2019) <a href="https://arxiv.org/abs/1904.01786">[arXiv]</a>
+        </li>
+        <li>
+            Chen et al.'s <b>Learning to Predict 3D Objects with an Interpolation-based Differentiable Renderer.</b> (NeurIPS 2019) <a href="https://papers.nips.cc/paper/9156-learning-to-predict-3d-objects-with-an-interpolation-based-differentiable-renderer">[Paper]</a> (This is the Nvidia paper.)
+        </li>
+    </ul>
+
+    <p>In this note, I will try to explain to myself the last 3 papers. I will look at the code to clarify any points that I do not understand by just reading the papers alone.</p>
+
+    <h2>Kato et al. (CVPR 2018)</h2>
+    <hr>
+
+    <ul>
+        <li>
+            The fundamental problem of getting gradients of rasterized image is that rasterization involves discrete operations.
+
+            <ul>
+                <li>
+                    Whether a pixel is covered by a triangle is a strictly binary operation, and so the gradient is zero almost everywhere except at the decision boundary.
+                </li>
+            </ul>
+        </li>
+
+        <li>
+            All papers, then, must propose a way to compute the gradients that have more support and are more continuous.
+        </li>
+
+        <li>
+            For Kato et al.'s paper, a 3D mesh consists of a set of vertices $\{  \ve{v}_1^o, \ve{v}_2^o, \dotsc, \ve{v}_{N_v}^o \}$ and $\{ \ve{f}_1, \ve{f}_2, \dotsc, \ve{f}_{N_f} \}$. Here: 
+            <ul>                
+                <li>$N_v$ is the number of vertices.</li>
+                <li>$N_f$ is the number of faces.</li>
+                <li>The superscript $o$ stands for "object space."</li>
+                <li>$\ve{v}_i^o \in \Real^3$ represents the object space position of the $i$th vertex.</li>
+                <li>$\ve{f}_j \in \mathbb{N}^3$ represents the indices of the three vertices of the $j$th triangle face.</li>
+            </ul>
+        </li>
+
+        <li>To render an object, each vertex $\ve{v}^o_i$ in object space is transformed into a position in screen space $\ve{v}^s_i \in \Real^2$. This transformation is fully differentiable.</li>
+
+        <li>Given $\{ \ve{v}_i^s \}$ and $\{ \ve{f}_j \}$, we sample the pixels and decide whether it falls into the triangle or not. Since this decision is a discrete operation, the color is not differentiable.</li>        
+    </ul>
+
+    <h3>Approximate Gradient</h3>
+
+    <ul>
+        <li>Consider a single vertex $\ve{v}_i = \ve{v}_i^s \in \Real^2$. Let $x_i$ denote the $x$-coordinate of the vertex.</li>
+
+        <li>We are interested in a pixel with color $P_j$ and how it varies with $x_i$. That is, we think of $P_j$ as a function $I_j(x_i)$. We wish to approximate $\partial I_j(x_i) / \partial x_i$.</li>
+    </ul>
+
+    <h4>Pixel is outside a triangle.</h4>
+    <ul>
+        <li>Suppose first that $P_j$ is outside the face. Let $x_0$ be the current value of $x_i$. Let us assume that, if $x_i$ moves from $x_0$ to the right to $x_1$, the center of the pixel $P_j$ goes into the triangle. At this point, the color $I_j(x_i)$ suddenly turns to $I_{ij}$.</li>
+
+        <li>Let $\delta_i^x$ be the distance traveled by $x_i$. That is, $\delta_i^x = x_1 - x_0.$ </li>
+
+        <li>Let $\delta_i^I$ be the change in color: $\delta_j^I = I_j(x_0) - I_j(x_1).$</li>
+
+        <li>We can see that the partial derivative $\frac{\partial I_j(x_i)}{\partial x_i}$ is zero almost everywhere because $I_j$ suddenly changes.</li>
+
+        <li>The paper replaces the sudden change with a gradual change between $x_0$ and $x_1$ using linear interpolation. That is, $$ \frac{\partial I_j}{\partial x_i} = \frac{\delta_j^I}{\delta_i^x} $$ when $x_i$ goes from $x_0$ to $x_1$.</li>
+
+        <li>What should the derivative at $x_0$ be? The paper propose using the gradient of the loss $\delta_j^P$ that is back-propagated to $P_j$ to decide the value.
+            <ul>
+                <li>If $\delta_j^P$ is positive, it means that increasing $P_j$ would increase the loss. So, to minimize the loss, then $P_j$ should be come darker.</li>
+
+                <li>If $\delta_j^P$ is negative, it means that increasing $P_j$ would decrease the loss. So, to minimize the loss, then $P_j$ should be brighter.</li>
+            </ul>
+        </li>
+
+        <li>Now, consider the sign of $\delta_j^I$.
+            <ul>
+                <li>If $\delta_j^I > 0$, $P_j$ becomes brighter by moving $x_i$ from $x_0$ to $x_1$.</li>
+
+                <li>If $\delta_j^I > 0$, $P_j$ becomes darker by moving $x_i$ from $x_0$ to $x_1$.</li>
+            </ul>
+        </li>
+
+        <li>As a result, the gradient should not flow if $\delta_j^P \delta_j^I \geq 0$. This covers two cases:
+            <ul>
+                <li>$\delta_j^P \geq 0$ ($P_j$ should be darker) and $\delta_j^I \geq 0$ ($P_j$ will be brighter if $x_i$ moves to $x_1$).</li>
+
+                <li>$\delta_j^P \leq 0$ ($P_j$ should be brighter) and $\delta_j^I \leq 0$ ($P_j$ will be darker if $x_i$ moves to $x_1$).</li>
+            </ul>
+        </li>
+
+        <li>So, we may define the derivative at $x_i = x_0$ as:
+            \begin{align*}
+            \frac{\partial I_j(x_i)}{\partial x_i} \Bigg|_{x_i = x_0}
+            &= \begin{cases}
+            \delta_j^I / \delta_i^x,
+            & \delta_j^P \delta_j^I < 0 \\
+            0,
+            & \delta_j^P \delta_j^I \geq 0
+            \end{cases}
+            \end{align*}
+        </li>
+
+        <li>Note that the above computation only concerns the gradient. The forward rasterization is still discrete.</li>
+
+        <li>The derivative with respect to $y_i$ can be derived in the same way.</li>
+    </ul>
+
+    <h4>Pixel is inside a triangle.</h4>
+
+
+    <h2>Liu et al. (ICCV 2019)</h2>
+    <hr>
+
+    <h2>Chen et al. (NeurIPS 2019)</h2>
+    <hr>
+    
+    <hr>
+    <div class="page-header"></div>
+    <p>Last modified: 2019/12/11</p>    
+</div>
+
+<script type="text/javascript">
+$.bigfoot();
+</script>
+
+</body>
+</html>
