@@ -195,7 +195,7 @@
             <ul>
                 <li>If $\delta_j^I > 0$, $P_j$ becomes brighter by moving $x_i$ from $x_0$ to $x_1$.</li>
 
-                <li>If $\delta_j^I > 0$, $P_j$ becomes darker by moving $x_i$ from $x_0$ to $x_1$.</li>
+                <li>If $\delta_j^I < 0$, $P_j$ becomes darker by moving $x_i$ from $x_0$ to $x_1$.</li>
             </ul>
         </li>
 
@@ -222,13 +222,206 @@
         <li>Note that the above computation only concerns the gradient. The forward rasterization is still discrete.</li>
 
         <li>The derivative with respect to $y_i$ can be derived in the same way.</li>
+
+        <li>Lastly, if it is not possible to move $x_i$ so that the triangle would cover $P_j$, then we define $\partial I_j(x_i) / \partial x_i$ to be $0$.</li>
     </ul>
 
     <h4>Pixel is inside a triangle.</h4>
 
+    <ul>
+        <li>Now, consider the case where $P_j$ is inside the triangle.</li>
+
+        <li>Again, assume now that $x_i = x_0$. Assume also that
+            <ul>
+                <li>If we move $x_i$ to the left to $x_1^a$, then $P_j$ would cease to be inside the triangle. At that point, the color changes to $I_{ij}^b$.</li>
+
+                <li>If we move $x_i$ to the right to $x_1^b$, then $P_j$ would cease to be inside the triangle. At that point, the color changes to $I_{ij}^a$.</li>
+            </ul>
+            (Note: The $a$, $b$ super/subscripting might be confusing. It is, however, consistent in the sense that $a$ is always on the left side, and $b$ is always on the right side.)
+        </li>
+
+        <li>
+            Let:
+            \begin{align*}
+                \delta_j^{I^a} &= I_j(x_1^a) - I_j(x_0) \\
+                \delta_j^{I^b} &= I_j(x_1^b) - I_j(x_0) \\
+                \delta_x^a &= x_1^a - x_0 \\
+                \delta_x^b &= x_1^b - x_0.
+            \end{align*}
+            We can now define the gradients as follows:
+            \begin{align*}
+                \frac{\partial I_j(x_i)}{\partial x_i}
+                = \begin{cases}
+                \delta_j^{I^a} / \delta_x^a, & x_1^a \leq x_i < x_0 \\
+                \delta_j^{I^b} / \delta_x^b, & x_0 < x_i \leq x_1^b
+                \end{cases}
+            \end{align*}
+            For the case where $x_i = x_0$, we have:
+            \begin{align*}
+                \frac{\partial I_j(x_i)}{\partial x_i} \Bigg|_{x_i=x_0}
+                &= \frac{\partial I_j(x_i)}{\partial x_i} \Bigg|_{x_i=x_0}^a 
+                   + \frac{\partial I_j(x_i)}{\partial x_i} \Bigg|_{x_i=x_0}^b \\
+                \frac{\partial I_j(x_i)}{\partial x_i} \Bigg|_{x_i=x_0}^a
+                &= \begin{cases}
+                    \delta_j^{I^a} / \delta_x^a, & \delta_j^P \delta_j^{I^a} < 0 \\
+                    0, & \delta_j^P \delta_j^{I^a} \geq 0
+                \end{cases} \\
+                \frac{\partial I_j(x_i)}{\partial x_i} \Bigg|_{x_i=x_0}^b
+                &= \begin{cases}
+                    \delta_j^{I^b} / \delta_x^b, & \delta_j^P \delta_j^{I^b} < 0 \\
+                    0, & \delta_j^P \delta_j^{I^b} \geq 0
+                \end{cases}.
+            \end{align*}
+        </li>
+    </ul>
+
+    <h3>Rasterization of Multiple Faces</h3>
+
+    <ul>
+        <li>The rasterization only renders the front-most face for each pixel.</li>
+        
+        <li>In the backward pass, the renderer computes the points on each triangle that the pixel $P_j$ would cross if the position $x_i$ were to move. (There's one point in the case when $P_j$ is outside the triangle and two points when $P_j$ is inside the triangle.) If any of these points are not drawn because they are occluded, the renderer would not compute the gradient.</li>
+    </ul>
+
+    <h3>Texturing</h3>
+
+    <ul>
+        <li>One of the more puzzling thing about this paper is that it uses a texture cube of size $s_t \times s_t \times s_t$ instead of a texture image. Each triangle has its own texture cube.</li>
+
+        <li>Even more puzzling is the way texture coordinate is computed. The paper uses "centroid coordinate system," which I have never heard of before. The map goes like this: if $\ve{p}$ can be expressed as $w_1 \ve{v}_1 + w_2 \ve{v}_2 + w_3 \ve{v}_3$, then the texture coordinate of $\ve{p}$ is $(w_1, w_2, w_3)$. It does look like barycentric coordinates, and if it is barycentric coordinates, then you don't need the whole three dimensions of textures.
+        </li>
+    </ul>
+
+    <h3>Lighting and Shading</h3>
+
+    <ul>
+        <li>The triangles all have a simple ambient+diffuse shading model.</li>
+
+        <li>The scene is illuminated by a single light source.</li>
+
+        <li>The paper does not give sufficient details on how the gradients of these parameters are computed, nor does it details how the pixel intensity gradient calculation would be computed in light of the shading calculation.</li>
+    </ul>
+
+    <h3>Overall Computation</h3>
+
+    <ul>
+        <li>To compute the gradient for each pixel, one has to loop through all the triangles. For each triangle, one has to go through the three vertices and their two coordinates.</li>
+
+        <li>In the paper, the authors optimized a shape that starts from an isotropic sphere of $642$ vertices. Only the coordinates are moved. The topology does not change.</li>
+    </ul>
 
     <h2>Liu et al. (ICCV 2019)</h2>
     <hr>
+
+    <ul>
+        <li>The paper claims that previous works (Kato et al. included) are hacky. The forward pass is the same as the standard graphics pipeline while the backward pass uses hand-crafted gradients that are not real gradients of the forward function.</li>
+
+        <li>The paper instead propose a forward pass that is truly differentiable.</li>
+
+        <li>The trick is to turn all operations that are not differentiable to ones that are:
+            <ul>
+                <li>The test of whether a pixel is inside a triangle or not is changed to a soft test based on the distance between the pixel and the triangle.</li>
+
+                <li>The depth test is changed to an operation similar to softmax where the weights are computed based on the $z$-coordinate.</li>
+            </ul>
+        </li>
+    </ul>
+
+    <h3>Soft Rasterization Pipeline</h3>
+
+    <ul>
+        <li>The input to the rasterizer are as follows:
+            <ul>
+                <li>$\ve{P}$ is the camera transformation.</li>
+                <li>$\ve{L}$ is the lighting in the scene.</li>
+                <li>$\ve{M}$ is the triangle mesh.</li>
+                <li>$\ve{A}$ is the per-vertex appearance parameters (including color, material properties, etc.)</li>
+            </ul>
+        </li>
+
+        <li>From the input, the rasterizer can calculate:
+            <ul>
+                <li>$\ve{N}$: the normal vector at fragment</li>
+                <li>$\ve{C}$: the color of each fragment</li>
+                <li>$\ve{U}$: the image-space coordinate of each vertex</li>
+                <li>$\ve{Z}$: the view-dependent depth of each fragment</li>
+            </ul>
+        </li>
+
+        <li>The problem is that the final pixel values are not differentiable with respect to $\ve{U}$ and $\ve{Z}$ due to the rasterization operation.</li>
+
+        <li>To make the whole rasterization operation differentiable, the paper proposes compute the color in two steps:
+            <ul>
+                <li>First, a probability map $\mathcal{D}_j$ is computed for every triangle $f_j$ (where $f$ stands for "face"). The maps gives the probability that a given pixel is inside $f_j$.</li>
+                <li>Then, the color maps and the probability maps are aggregated with an aggregate function $\mathcal{A}(\cdot)$.</li>
+            </ul>
+        </li>
+    </ul>
+
+    <h4>Probability Map Computation</h4>
+
+    <ul>
+        <li>Consider pixel $p_i$, we define the probability map $\mathcal{D}_j^i$ that indicates the probability that $p_i$ is inside $f_j$ as follows:
+            \begin{align*}
+                \mathcal{D}_j^i = \mathrm{sigmoid}\bigg( \delta_j \cdot \frac{d^2(i,j)}{\sigma} \bigg).
+            \end{align*}
+        </li>
+        Here,
+        <ul>
+            <li>$\sigma$ is the positive scalar that controls the sharpness of the probability map. The less $\sigma$ is, the sharper the map. The paper sets $\sigma = 10^{-4}$.</li>
+
+            <li>$\delta_j^i$ is the sign indicator: $\delta_j^i = 1$ if $p_i \in f_j$ and $-1$ otherwise.</li>
+
+            <li>$d(i,j)$ is the distance from $p_j$ to the closest edge of $f_j$. The paper uses the Euclidean distance.</li>
+        </ul>
+    </ul>
+
+    <h4>Aggregation Function</h4>
+
+    <ul>
+        <li>For each triangle $f_j$, we can compute the color map $C_j$ by interpolating the colors of the three vertices (i.e., Gourad shading). For pixels that are outside the triangle, the colors are computed by clipping the barycentric coordinates to the $[0,1]$ range.</li>
+
+        <li>The aggregation function $\mathcal{A}$ merges the color maps $\{ C_j \}$ based on $\{ \mathcal{D}_j \}$ and the depth map $\{ z_j \}$.</li>
+
+        <li>There are two variants of the aggregation function:
+            <ul>
+                <li>$\mathcal{A}_S$ is used when one wants to reimplement the standard graphics pipeline.</li>
+                <li>$\mathcal{A}_O$ is used when one only wants to generated the silhoutte images. Here, we don't care about shading. We only care about whether a pixel is occupied by a triangle or not.</li>
+            </ul>
+        </li>f
+
+        <li>
+            For $\mathcal{A}_S$, we set the color $I^i$ of Pixel $p_i$ as:
+            \begin{align*}
+                I^i 
+                = \mathcal{A}_S(\{C_j\}, \{ \mathcal{D}_j \}, \mathcal{z_j})
+                = w_b^i C_b + \sum_j w_j^i C_j^i.
+            \end{align*}
+            Here, $C_b$ is the background color. The weights $w_j^i$ satisfies $w_b^i + \sum_j w_j^i = 1$ and are given by:
+            \begin{align*}
+                w_j^i = \frac{\mathcal{D}_j^i \exp(z_j^i/\gamma)}{\exp(\epsilon/\gamma) + \sum_k \mathcal{D}_k^i \exp(z_k^i/\gamma) }
+            \end{align*} 
+            where 
+            <ul>
+                <li>$z_j^i$ denotes the normalized inverse depth of the point on $f_j$ whose projection is $p_i$;</li>
+                <li>$\epsilon$ is a small constant for the background color;</li>
+                <li>$\gamma$ controls the sharpness of the operation.</li>
+            </ul>
+            The paper sets $\gamma = 10^{-4}$ Naturally, we have from the above definition that:
+            \begin{align*}
+                w_j^b = \frac{\exp(\epsilon/\gamma)}{\exp(\epsilon/\gamma) + \sum_k \mathcal{D}_k^i \exp(z_k^i/\gamma) }.
+            \end{align*} 
+        </li>
+
+        <li>
+            For $\mathcal{A}_O$, we define it as:
+            \begin{align*}
+                I^i = \mathcal{A}_O(\{ \mathcal{D}_j \}) = 1 - \prod_j (1 - \mathcal{D}_j^i).
+            \end{align*}
+        </li>
+
+        <li>Honestly, I do like this approach much more than Kato et al.'s paper.</li>
+    </ul>
 
     <h2>Chen et al. (NeurIPS 2019)</h2>
     <hr>
