@@ -425,7 +425,81 @@
 
     <h2>Chen et al. (NeurIPS 2019)</h2>
     <hr>
-    
+
+    <ul>
+        <li>They call their approach DIB-R.</li>
+
+        <li>Rasterization is a combination of:
+            <ul>
+                <li>local interpolation and</li>
+                <li>global aggregation.</li>
+            </ul>
+        </li>
+
+        <li>The paper classify pixels into two types:
+            <ul>
+                <li><b>Foreground pixels</b> are covered by at least one face.  A foreground pixel's value as a weighted interpolation of relevant vertex attributes of the face that encloses it.</li>
+
+                <li><b>Background pixels</b> are not covered by any face. A background pixel is still participates in the rasterization process. Its value is defined through a distance-based aggregation process of global face interformation. This allows the gradients from background pixels to be propagated to parameters of all faces.</li>
+            </ul>
+        </li>
+
+        <li>The paper can optimize the parameters of an initial sphere mesh to match conditioning inputs. This allows it to perform both shape and texture recovery from images.</li>
+    </ul>
+
+    <h3>DIB-R: Differentiable Interpolation-based Renderer</h3>
+
+    <ul>
+        <li>In a graphics pipeline, there are three main types of shaders: vertex, rasterization, and fragment shaders.</li>
+
+        <li>Operations of vertex and fragment shaders are mainly differentiable. The rasterization shader is not differentiable.</li>
+    </ul>
+
+    <h4>Foreground Pixels</h4>
+
+    <ul>
+        <li>Consider a foreground pixel that is covered by one or more faces.</li>
+
+        <li>First, the depth test is performed to identified the face that should cover this pixel.</li>
+
+        <li>Let us say that the pixel value is $\ve{p}_i$. It is covered by face $f_j$ with vertices $\ve{v}_0$, $\ve{v}_1$, and $\ve{v}_2$. Moreover, let us suppose that each vertex has an associated scalar value, and let us call them $u_0$, $u_1$, and $u_2$.</li>
+
+        <li>The interpolated value $I_i$ of the pixel is given by interpolating with the barycentric coordinates:
+            $$I_i = w_0 u_0 + w_1 u_1 + w_2 u_2.$$
+            where the weights $w_k$ are computed using a differentiable function $\Omega_k$ as
+            $$w_k = \Omega_k(\ve{v}_0, \ve{v}_1, \ve{v}_2, \ve{p}_i).$$
+            The paper provides a differentiable reformulation of $\Omega_k$ in its supplementary material.
+        </li>
+    </ul>
+
+    <h4>Background Pixels</h4>
+        
+    <ul>
+        <li>The paper defines a distance-related probability $A_{i'}^j$, that softly assignes Face $f_j$ to Pixel $p_{i'}$ as:
+            \begin{align*}
+                A_{i'}^j = \exp\bigg( - \frac{ d(p_{i'}, f_j ) }{\delta} \bigg)
+            \end{align*}
+            where $d(p_{i'}, f_j)$ is the distance between $p_{i'}$ and $f_j$, and $\delta$ is a hyperparameter that controls the smoothness of the probability. (The more the softer.)
+        </li>
+
+        <li>
+            The probabilisitic influence of all faces to a particular pixel is defined as:
+            \begin{align*}
+                A_{i'} = 1 - \prod_j (1 - A_{i'}^j).
+            \end{align*}
+            This value indicates how much the pixel is covered by a face. In other words, this is the alpha channel.
+        </li>
+
+        <li>
+            Thus, the only background pixel errors that can be propagated back to the mesh parameters are alpha channel errors. That is, the feedback through background pixels are for coverage, not color. 
+        </li>
+    </ul>
+
+    <h3>My Thoughts</h3>
+
+    <ul>
+        <li>This paper seems to be simpler and more efficient than the Liu et al. paper. However, I liked Liu et al. paper better because it's very clean, and there's no hack.</li>
+    </ul>
     <hr>
     <div class="page-header"></div>
     <p>Last modified: 2019/12/11</p>    
