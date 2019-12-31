@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>View Synthesis with Multi-Plane Images</title>
+
+    <!-- Bootstrap -->
+    <link href="../../../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../../../css/theme.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+      TeX: { equationNumbers: {autoNumber: "AMS"} } 
+    });
+    </script>
+    <script type="text/javascript"
+            src="../../../MathJax/MathJax.js?config=TeX-AMS_HTML-full">
+    </script>
+
+    <script type="text/javascript" src="../../../js/jquery-3.4.1.min.js"></script>    
+    <script type="text/javascript" src="../../../js/bigfoot.min.js"></script>    
+
+    <link rel="stylesheet" type="text/css" href="../../../css/bigfoot-default.css">    
+
+</head>
+<body>
+<div class="container">
+    <span style="visibility: hidden;">
+        \(
+        \def\sc#1{\dosc#1\csod}
+        \def\dosc#1#2\csod{{\rm #1{\small #2}}}
+
+        \newcommand{\dee}{\mathrm{d}}
+        \newcommand{\Dee}{\mathrm{D}}
+        \newcommand{\In}{\mathrm{in}}
+        \newcommand{\Out}{\mathrm{out}}
+        \newcommand{\pdf}{\mathrm{pdf}}
+        \newcommand{\Cov}{\mathrm{Cov}}
+        \newcommand{\Var}{\mathrm{Var}}
+
+        \newcommand{\ve}[1]{\mathbf{#1}}
+        \newcommand{\mrm}[1]{\mathrm{#1}}
+        \newcommand{\etal}{{et~al.}}
+        \newcommand{\sphere}{\mathbb{S}^2}
+        \newcommand{\modeint}{\mathcal{M}}
+        \newcommand{\azimint}{\mathcal{N}}
+        \newcommand{\ra}{\rightarrow}
+        \newcommand{\mcal}[1]{\mathcal{#1}}
+        \newcommand{\X}{\mathcal{X}}
+        \newcommand{\Y}{\mathcal{Y}}
+        \newcommand{\Z}{\mathcal{Z}}
+        \newcommand{\x}{\mathbf{x}}
+        \newcommand{\y}{\mathbf{y}}
+        \newcommand{\z}{\mathbf{z}}
+        \newcommand{\tr}{\mathrm{tr}}
+        \newcommand{\sgn}{\mathrm{sgn}}
+        \newcommand{\diag}{\mathrm{diag}}
+        \newcommand{\Real}{\mathbb{R}}
+        \newcommand{\sseq}{\subseteq}
+        \newcommand{\ov}[1]{\overline{#1}}
+        \)
+    </span>
+
+    <br>
+    <h1>View Synthesis with Multi-Plane Image</h1>
+    <hr>
+
+    <p>In the last 2 years, Google (in particular <a href="http://www.cs.cornell.edu/~snavely/">Noah</a> and his colleages) published a series of papers dealing with view systhesis from a few phographs. These papars are:
+    </p>
+
+    <ul>
+        <li>Zhou et al.'s <a href="http://people.eecs.berkeley.edu/~tinghuiz/papers/siggraph18_mpi_lowres.pdf">Stereo Magnification: Learning view synthesis using multiplane images</a> (SIGGRAPH 2018)</li>
+        <li>Flynn et al.'s <a href="https://augmentedperception.github.io/deepview/">DeepView: View synthesis with Learned Gradient Descent</a> (CVPR 2019)</li>
+        <li>Srinivasan et al.'s <a href="">Pushing the Boundaries of View Extrapolation</a></li>
+    </ul>
+
+    <p>There are two things that these papers have in common:</p>
+
+    <ul>
+        <li>They use the same representation for the 3D scene to be rendered: the <b>muliplane image</b> (MPI). The good thing about this representation is that it can be rendered in real time.</li>
+
+        <li>They use deep learning to infer an MPI from input photographs.</li>
+    </ul>
+
+    <p>I became interested in the MPI because it offers a lightweight 3D representation. Moreover, controllable 2.5D characters created for software such as <a href="http://live2d.com">Live2D</a> or <a href="https://emote.mtwo.co.jp/">E-mote</a> are basically layered images. Hence, it might be possible to use MPI to represent controllable characters and have a neural network infer models from illustrations.</p>
+
+    <h2>Zhou et al. (SIGGRAPH 2018)</h2>
+    <hr>
+
+    <ul>
+        <li>The problem this paper deals with is <b>stereo magnification</b>.
+            <ul>
+                <li>Given two photos taking by two cameras that are located very near each other (such as the two cameras of some iPhone models), render the scene captured by the photographs from different view points that are along the line connecting the cameras whose displacements are outside the line between the two points. </li>
+
+                <li>The paper has achieved magnification by 6-7 times.</li>
+            </ul>
+        </li>
+
+        <li>The input are two input images $I_1$ and $I_2$ with know camera parameters. The output is the MPI representing the scene captured by the photographs.</li>
+
+        <li>The MPI is then used to perform view systhesis, thereby magnifying the range of views that can be rendered.</li>
+    </ul>
+
+    <h3>Multiplane Image</h3>
+
+    <ul>
+        <li>An MPI is a set of fronto-parallel planes at a fixed range of depths with respect to a reference coordinate frame.</li>
+
+        <li>Formally, it is a collectiosn of RGBA layers $\{ (C_1, \alpha_1), (C_2, \alpha_2), \dotsc, (C_D, \alpha_D) \}$ where $D$ is the number of planes.</li>
+
+        <li>To render from an MPI, we just render the layers from back to front using standard alpha blending.</li>
+    </ul>
+
+    <h3>Network Architecture</h3>
+
+    <ul>
+        <li>In addition to the input images $I_1$ and $I_2$, the network takes as input the camera parameters $c_1 = (p_1, k_1)$ and $c_2 = (p_2, k_2)$, where $p_i$ denotes the camera extrinsics (position and orientation) and $k_i$ denotes the intrinsics (focus length, distortion, etc.).</li>
+
+        <li>The reference coordinate frame is the frame of the first image. That is, $p_1$ is fixed to the identify pose.</li>
+
+        <li>The training set consists of tuples $\langle I_1, I_2, I_t, c_1, c_2, c_t \rangle$. Here, $I_t$ is the ground truth image of a novel view, and $c_t$ is its camera parameters.</li>
+
+        <li>The goal is to train a network that takes $\langle I_1, I_2, c_1, c_2 \rangle$ and produces an MPI that, when rendered from $c_t$, produces $I_t$.</li>
+
+        <li>In the first step of the inferrence, </li>
+    </ul>
+
+    <h2>Flynn et al. (CVPR 2019)</h2>
+    <hr>
+
+    <h2>Srinivasan et al. (CVPR 2019)</h2>
+    <hr>
+    
+    <hr>
+    <div class="page-header"></div>
+    <p>Last modified: 2019/12/31</p>    
+</div>
+
+<script type="text/javascript">
+$.bigfoot();
+</script>
+
+</body>
+</html>
