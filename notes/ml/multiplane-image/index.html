@@ -134,7 +134,14 @@
 
         <li>The goal is to train a network that takes $\langle I_1, I_2, c_1, c_2 \rangle$ and produces an MPI that, when rendered from $c_t$, produces $I_t$.</li>
 
-        <li>In the first step of the inferrence, </li>
+        <li>In the first step of the inferrence, we compute the plane sweep volume (PSV) of $I_2$ when it is reprojected to $I_1$'s camera.
+            <ul>
+                <li>I seriously don't know how to compute the PSV.</li>
+                <li>The volume contains $D$ fixed depth planes that coincide with the depth planes of the output of the network.</li>
+                <li>Let us denote these image planes with $\{ \hat{I}_2^1, \hat{I}_2^2, \dotsc, \hat{I}_2^D \}$.</li>
+                <li>The images are concatenated with $I_1$ into a single volume of dimension $H \times W \times 3(D+1)$.</li>
+            </ul>
+        </li>
     </ul>
 
     <h2>Flynn et al. (CVPR 2019)</h2>
