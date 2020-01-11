@@ -297,8 +297,33 @@
 
         <li>The authors found a large collection of usable videos. One category of usable videos is real estate footage.</li>
 
-        <li>The authors collected over 7,000 videos clips of length from 1 to 10 seconds.</li>
+        <li>The authors manually collected 1,500 real estate videos.</li>
+
+        <li>Then, they process the videos as follows:
+            <ul>
+                <li>They ran ORB-SLAM2 system on the video to estimate:
+                    <ul>
+                        <li>Camera parameters for each frame.</li>
+                        <li>Sparse 3D reconstruction of the scene for each frame.</li>
+                    </ul>
+                </li>
+                <li>
+                    The way they apply the system has a lot of steps. This results in the videos being divided into shots based on when the results of ORB-SLAM2 degrade.
+                </li>
+                <li>The input frames that are fetch to ORB-SLAM2 are of low resolutions for speed.</li>
+            </ul>
+        </li>
+
+        <li>
+            The authors then ran a standard structure-from-motion pipeline on the high resolution frames, using the ORB-SLAM2 outputs as initial conditions. This gets them 3D scenes and camera parameters with higher fidelity.
+        </li>
+
+        <li>The authors then normalize the scale of the scenes (because this cannot be determined with certainty at all and because the MPI have planes as fixed depths).</li>
+
+        <li>After filtering and clipping of special effects, the paper then sames the clips for training data.</li>
     </ul>
+
+    <p>More info about the results can be found in the paper. Mainly, the advantage of having the MPI representation are consistent frames when interpolating. This stands in contrast with the <a href="http://cseweb.ucsd.edu/~viscomp/projects/LF/papers/SIGASIA16/">previous work</a> which computes a new frame from scratch for each new camera parameter.</p>
 
     <h2>Flynn et al. (CVPR 2019)</h2>
     <hr>
