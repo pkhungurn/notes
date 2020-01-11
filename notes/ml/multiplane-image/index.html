@@ -123,7 +123,9 @@
         <li>To render from an MPI, we just render the layers from back to front using standard alpha blending.</li>
     </ul>
 
-    <h3>Network Architecture</h3>
+    <h3>The Network</h3>
+
+    <h4>Network Input</h4>
 
     <ul>
         <li>In addition to the input images $I_1$ and $I_2$, the network takes as input the camera parameters $c_1 = (p_1, k_1)$ and $c_2 = (p_2, k_2)$, where $p_i$ denotes the camera extrinsics (position and orientation) and $k_i$ denotes the intrinsics (focus length, distortion, etc.).</li>
@@ -136,12 +138,166 @@
 
         <li>In the first step of the inferrence, we compute the plane sweep volume (PSV) of $I_2$ when it is reprojected to $I_1$'s camera.
             <ul>
-                <li>I seriously don't know how to compute the PSV.</li>
                 <li>The volume contains $D$ fixed depth planes that coincide with the depth planes of the output of the network.</li>
                 <li>Let us denote these image planes with $\{ \hat{I}_2^1, \hat{I}_2^2, \dotsc, \hat{I}_2^D \}$.</li>
                 <li>The images are concatenated with $I_1$ into a single volume of dimension $H \times W \times 3(D+1)$.</li>
             </ul>
         </li>
+
+        <li>According to the <a href="https://github.com/google/stereo-magnification/">released source code</a>, the PSV is computed as follows (relevant code segments <a href="https://github.com/google/stereo-magnification/blob/f2041f80ed8c340173a6048375ba900201c1f1e7/geometry/projector.py#L190">[1]</a>, <a href="https://github.com/google/stereo-magnification/blob/f2041f80ed8c340173a6048375ba900201c1f1e7/geometry/projector.py#L129">[2]</a>):
+            <ul>
+                <li>For each depth $d$, treat $I_2$ as it is a flat plane at depth $d$.</li>
+                <li>Render the flat plane using the camera setting of $I_1$.</li>
+            </ul>
+        </li>
+    </ul>
+
+    <h4>Network Output</h4>
+
+    <ul>
+        <li>The straightforward output format would be $D$ RGBA images. However, the paper uses a smaller representation to reduce overparameterization.</li>
+
+        <li>The representation contains two color images:
+            <ul>
+                <li>The <b>foreground image</b> is just $I_1$.</li>
+                <li>The <b>background image</b> $\hat{I}_b$ captures the appearance of hidden surfaces. It is predicted by the network.</li>
+            </ul>
+            Now, for each depth plane $d$, the color image $C_d$ is computed as a per-pixel average of the foreground and background image: $$ C_d = w_d \odot I_1 + (1- w_d) \odot \hat{I}_b$$ where $\odot$ denotes the element-wise product. The blending weight $w_d$ is predicted by the network.
+        </li>
+
+        <li>To recap, the network outputs the following:
+            <ul>
+                <li>The background image $\hat{I}_b$</li>
+                <li>The alpha channel image $\alpha_d$ for each depth $d$.</li>
+                <li>The blending weight $w_d$ for each depth $d$.</li>
+            </ul>
+            The total number of parameters is $H \times W \times (2D+3)$ if there are $D$ depth planes.
+        </li>
+    </ul>
+
+    <h4>Differentiable View Synthesis</h4>
+
+    <ul>
+        <li>Given the MPI representation of a scene, we may synthesis a novel view image $\hat{I}_t$ given camera target parameter $c_t$. This is done using the following two operations:
+            <ol>
+                <li>planar transformation, and</li>
+                <li>alpha composition.</li>
+            </ol>
+        Both of these operations are differentiable. The second one is obviously so. It is left to show that the first one is differentiable.
+        </li>
+
+        <li>
+            Let the MPI plane to be transformed (i.e., the source) be given by $\ve{n} \cdot \ve{x} + a$ where $\ve{n}$ is the plane normal, $\ve{x} = (u_s, v_s, w_s, 1)^T$ be the source pixel coordinate, and $a$ be the plane offset. 
+        </li>
+
+        <li>Since the source plane is fronto-parallel to the reference camera, we have that $\ve{n} = (0,0,1)^T$ and $a = -d_s$ where $d_s$ is the depth of the source plane. </li>
+
+        <li>Let the transformation from the source camera to the target camera be represented by the rotation $R$ and translation $\ve{t}$. Let the source and target camera intrinsics be denoted by $k_s$ and $k_t$, respectively. Then, for each pixel $(u_t, v_t)$ in the target image plane, we hae that:
+            \begin{align*}
+                \begin{bmatrix}
+                    u_s \\
+                    v_s \\
+                    1
+                \end{bmatrix}
+                \sim
+                k_s 
+                \bigg(
+                R^T + \frac{R^T \ve{t} \ve{n} R^T }{a - \ve{n} R^T \ve{t}} k_t^{-1} 
+                \bigg)
+                \begin{bmatrix}
+                u_t \\
+                v_t \\
+                1
+                \end{bmatrix}
+            \end{align*}
+        (Again, due to my lack of computer vision knowledge, I don't know whether this equation is correct. Like, the type does not even check.)
+        </li>
+
+        <li>
+            As a result, for each $(u_t, v_t)$ in the target image plane, we can find the corresponding $(u_s,v_s)$ in the source image plane. Since $(u_s, v_s)$ might not be an exact pixel coordinate, the paper use bilinear interpolation on the 4-grid neighbor pixels.
+        </li>
+    </ul>
+
+    <h4>Objective</h4>
+
+    <ul>
+        <li>Let $f_\theta$ denote the network where $\theta$ is the network parameters. Let $\mathcal{R}$ denote the rendering pipeline. The process of computing an MPI and rerender with respect to a target camera parameters is given by:
+            \begin{align*}
+                \hat{I}_t := \mathcal{R}\big( f_\theta(I_1, I_2, c_1, c_2), c_t \big).
+            \end{align*}
+        </li>
+
+        <li>
+            Finding the optimal network parameter is solving the following optimization problem:
+            \begin{align*}
+                \min_\theta \sum_{\langle I_1, I_2, I_t, c_1, c_2, c_t \rangle} 
+                \mathcal{L}\Big( \mathcal{R}\big( f_\theta(I_1, I_2, c_1, c_2), c_t \big), I_t \Big)
+            \end{align*}
+            where $\mathcal{L}$ denotes the loss between the generated view and the ground truth.
+        </li>
+
+        <li>For the loss, the paper uses the content loss of the perceptual loss <a href="#fn_johnson_2016_0">[Johnson et al. 2016]</a>:
+            \begin{align*}
+                \mathcal{L}(\hat{I}_t, I_t) = \sum_l \lambda_l \| \phi_l(\hat{I}_t) - \phi_l(I_t) \|_1.
+            \end{align*}
+
+            <div class="footnotes"><ul><li class="footnote" id="fn_johnson_2016_0"><p align="left">
+            Justin Johnson, Alexandre Alahi, Li Fei-Fei.
+            <b>Perceptual Losses for Real-Time Style Transfer and Super-Resolution.</b>
+            ECCV 2016.
+            <a href="https://cs.stanford.edu/people/jcjohns/eccv16/">[Project]</a>
+            <a href="https://arxiv.org/abs/1603.08155">[arXiv]</a>
+            </p></li></ul></div>
+
+        where $\{ \phi_l \}$ is the set of VGG19 layers (<tt>conv1_2</tt>, <tt>conv2_2</tt>, <tt>conv3_2</tt>, <tt>conv4_2</tt>, and <tt>conv5_2</tt>), and $\{ \lambda_l \}$ is the set of hyperparameters which are set to the inverse of the number of units in the corresponding layers. 
+        </li>
+    </ul>
+
+    <h4>Implementation Details</h4>
+
+    <ul>
+        <li>The paper uses $D = 32$.</li>
+        <li>The near plane is at $1$m and the far plane is at $100$m.</li>
+        <li>The depths are $D$ equally spaced planes in the inverse depth parameters between the near plane and the far plane.</li>
+        <li>The paper uses an encoder-decoder architecture.
+            <ul>
+                <li>The encoder follows the design of VGG19.</li>
+                <li>The decoder consists of deconvolution layers with skip connections from lower layers to capture fine texture details.</li>
+                <li>Dilated convolutions are used in intermediate layers to capture large scene contexts.</li>
+                <li>Each layer is followed by ReLU nonlinearity and then layer normalization (instead of batch normalization). The exception is the last layer whose non-linearity is $\tanh$, and there's no normalization.</li>
+            </ul>
+        </li>
+        <li>Training details:
+            <ul>
+                <li>Training algorithm is ADAM.</li>
+                <li>Number of iterations = 600k.</li>
+                <li>Learning rate = $2 \times 10^{-4}$.</li>
+                <li>$\beta_1 = 0.9$, $\beta_2 = 0.999$.</li>
+                <li>Batch size = 1.</li>
+                <li>The image and the MPI has resolution of $1024 \times 756$.</li>
+            </ul>
+        </li>
+    </ul>
+
+    <h3>Data</h3>
+
+    <ul>
+        <li>The paper created training data from YouTube videos shot from a moving camera.</li>
+
+        <li>Videos that can be used as training data must have the following properties:
+            <ul>
+                <li>The subject matter must be a static scene.</li>
+                <li>The camera must be moving.</li>
+                <li>There must be minimal artifacts such as motion blur and rolling-shutter distortion.</li>
+                <li>There must not be any editing effects such as titles and overlays.</li>
+            </ul>
+        </li>
+
+        <li>One must also be able to estimate camera parameters for each shot of the videos.</li>
+
+        <li>The authors found a large collection of usable videos. One category of usable videos is real estate footage.</li>
+
+        <li>The authors collected over 7,000 videos clips of length from 1 to 10 seconds.</li>
     </ul>
 
     <h2>Flynn et al. (CVPR 2019)</h2>
