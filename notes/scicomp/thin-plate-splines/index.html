@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>Thin-Plate Splines</title>
+
+    <!-- Bootstrap -->
+    <link href="../../../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../../../css/theme.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+      TeX: { equationNumbers: {autoNumber: "AMS"} } 
+    });
+    </script>
+    <script type="text/javascript"
+            src="../../../MathJax/MathJax.js?config=TeX-AMS_HTML-full">
+    </script>
+
+    <script type="text/javascript" src="../../../js/jquery-3.4.1.min.js"></script>    
+    <script type="text/javascript" src="../../../js/bigfoot.min.js"></script>    
+
+    <link rel="stylesheet" type="text/css" href="../../../css/bigfoot-default.css">    
+
+</head>
+<body>
+<div class="container">
+    <span style="visibility: hidden;">
+        \(
+        \def\sc#1{\dosc#1\csod}
+        \def\dosc#1#2\csod{{\rm #1{\small #2}}}
+
+        \newcommand{\dee}{\mathrm{d}}
+        \newcommand{\Dee}{\mathrm{D}}
+        \newcommand{\In}{\mathrm{in}}
+        \newcommand{\Out}{\mathrm{out}}
+        \newcommand{\pdf}{\mathrm{pdf}}
+        \newcommand{\Cov}{\mathrm{Cov}}
+        \newcommand{\Var}{\mathrm{Var}}
+
+        \newcommand{\ve}[1]{\mathbf{#1}}
+        \newcommand{\mrm}[1]{\mathrm{#1}}
+        \newcommand{\etal}{{et~al.}}
+        \newcommand{\sphere}{\mathbb{S}^2}
+        \newcommand{\modeint}{\mathcal{M}}
+        \newcommand{\azimint}{\mathcal{N}}
+        \newcommand{\ra}{\rightarrow}
+        \newcommand{\mcal}[1]{\mathcal{#1}}
+        \newcommand{\X}{\mathcal{X}}
+        \newcommand{\Y}{\mathcal{Y}}
+        \newcommand{\Z}{\mathcal{Z}}
+        \newcommand{\x}{\mathbf{x}}
+        \newcommand{\y}{\mathbf{y}}
+        \newcommand{\z}{\mathbf{z}}
+        \newcommand{\tr}{\mathrm{tr}}
+        \newcommand{\sgn}{\mathrm{sgn}}
+        \newcommand{\diag}{\mathrm{diag}}
+        \newcommand{\Real}{\mathbb{R}}
+        \newcommand{\sseq}{\subseteq}
+        \newcommand{\ov}[1]{\overline{#1}}
+        \)
+    </span>
+
+    <br>
+    <h1>Thin-Plate Splines</h1>
+    <hr>
+
+    <p>This document is written as I study thin-plate splines. The main sources are <a href="https://www.geometrictools.com/Documentation/ThinPlateSplines.pdf">David Eberly's notes</a>.</p>
+
+    <h2>Overview</h2>
+
+    <ul>
+        <li>Recall a <b>cubic spline</b>.
+            <ul>
+                <li>Piecewise cubic polynomial.</li>
+                <li>Exactly interpolate a sequence of data points $(x_1, f(x_1))$, $(x_2, f(x_2))$, $\dotsc$, $(x_m, f(x_m))$.</li>
+                <li>Has continuous secord-order derivatives.</li>
+                <li>The second derivatives at the endpoints are zero.</li>                
+            </ul>
+        </li>
+        
+        <li>
+            The concept can be generalize to two dimensions. In this case it is called a <b>thin-plate spline</b>.
+            <ul>
+                <li>Interpolates $(x_i, y_i, f(x_i, y_i))$.</li>
+                <li>Represents a think metal sheet that is contrained not to move at the sample points $(x_i, y_i)$.</li>
+            </ul>
+        </li>
+        
+        <li>The construction of a thin-plate spline is based on choosing a function that minimizes an integral that represents the bending energy of a surface.</li>
+        
+        <li>The concept can be generalized to mulitple dimensions. We would like to choose a function $f(\ve{x})$ that exactly interpolates the data points $(\ve{x}_i, y_i)$ and minimizes the bending energy:
+        \begin{align*}
+            E[f] = \int_{\Real^n} |D^2 f|^2\ \dee X
+        \end{align*}
+        where $D^2 f$ is the matrix of second-order partial derivatives of $f$ (i.e., the Hessian matrix):
+        \begin{align*}
+            D^2 f &=
+            \begin{bmatrix}
+                \frac{\partial^2 f}{(\partial x_1)^2}
+                & \frac{\partial^2 f}{\partial x_1 \partial x_2}
+                & \cdots
+                & \frac{\partial^2 f}{\partial x_1 \partial x_n} 
+                \\
+                \frac{\partial^2 f}{\partial x_2 \partial x_1}
+                & \frac{\partial^2 f}{(\partial x_2)^2}
+                & \cdots
+                & \frac{\partial^2 f}{\partial x_2 \partial x_n} 
+                \\
+                \vdots &
+                \vdots &
+                \ddots &
+                \vdots 
+                \\
+                \frac{\partial^2 f}{\partial x_n \partial x_1}
+                & \frac{\partial^2 f}{\partial x_n \partial x_2}
+                & \cdots
+                & \frac{\partial^2 f}{(\partial x_n)^2}
+            \end{bmatrix},
+        \end{align*}
+        and $|D^2 f|^2$ is the sum of squares of the matrix's entries (i.e., the sequare of the Frobenius norm). Lastly, $\dee X = \dee x_1 \dee x_2 \dotsb \dee x_n$.
+        </li>        
+
+        <li>We can also reformulate the problem so that we can trade off smoothness with how much the function in interpolating the points. In this case, the energy becomes:
+        \begin{align*}
+            E[f] = \sum_{i=1}^m  (f(\ve{x}_i) - y_i))^2 + \lambda \int_{\Real^n} |D^2 f|^2\ \dee X.
+        \end{align*}
+        Here, $\lambda > 0$ is a smoothing parameter.
+        </li>
+    </ul>
+
+    <h2>Calculus of Variation</h2>
+
+    <h3>Functionals of $f$ and $f'$</h3>
+
+    <ul>
+        <li>Let $f$ be a function of $x$.</li>
+
+        <li>Consider an energy function that is an integral involving a function $F$ that depends on $x$, $f$, and $f'$:
+        \begin{align*}
+            E[f] = \int_{a}^b F(x, f, f')\  \dee x
+        \end{align*}
+        </li>
+
+        <li>The <b>arclength</b> of $f$ is an example of such an energy function:
+        \begin{align*}
+            E[f] = \int_a^b \sqrt{1 + (f'(x))^2}\ \dee x.
+        \end{align*}
+        </li>
+
+        <li>Our goal is find $f$ where $E[f]$ is minimum.</li>
+
+        <li><b>Calculus of variation</b> allows us to minimize the energy. It basically allows us to take directional derivatives where the directions are functions instead of vectors.</li>
+
+        <li>Consider $E$ as $f$ varies in the direction of another function $g$:
+        \begin{align*}
+        \phi(t) = E[f + tg] = \int_a^b F(x, f+tg, f' + tg')\  \dee x.
+        \end{align*}        
+        Assume further that $g(a) = g(b) = 0$.
+        </li>
+
+        <li>If $f$ is the minimum, then we expect that $\phi(t) = E[f + tg] \geq E[f] = \phi(0)$ for $t$ near zero. So, $\phi(0)$ is a minimum, and so $\phi'(0) = 0$ with respect to $t$.</li>        
+        <li>Now,
+        \begin{align*}
+        \phi'(t)
+        &= \frac{\dee}{\dee t} \int_{a}^b F(x, f+tg, f'+tg')\ \dee x \\
+        &= \int_{a}^b \frac{\dee}{\dee t} F(x, f+tg, f'+tg')\ \dee x.
+        \end{align*}
+        Applying the chain rule, we have
+        \begin{align*}
+        \frac{\dee}{\dee t} F(x, f+tg, f'+tg')
+        &= 
+        \frac{\partial F}{\partial x} \frac{\dee x }{\dee t}
+        + \frac{\partial F}{\partial (f + tg)} \frac{\dee (f+tg)}{\dee t}
+        + \frac{\partial F}{\partial (f' + tg')} \frac{\dee (f'+tg')}{\dee t} \\
+        &= \frac{\partial F}{\partial (f + tg)} g
+        + \frac{\partial F}{\partial (f' + tg')} g'
+        \end{align*}
+        because $\dee x / \dee t = 0$. Setting $t = 0$, we have that:
+        \begin{align*}
+        \frac{\dee}{\dee t} F(x, f+tg, f'+tg') \bigg|_{t=0}
+        &= \frac{\partial F}{\partial f} g
+        + \frac{\partial F}{\partial f'} g'
+        \end{align*}
+        So,
+        \begin{align*}
+        \phi'(0) = \int_a^b \frac{\partial F}{\partial f} g + \frac{\partial F}{\partial f'} g'\  \dee x.
+        \end{align*}
+        </li>
+
+        <li>We will now simplify the second term of the integrand above. This is done by applying integration by parts to
+        \begin{align*}
+        \int_{a}^b \frac{\partial F}{\partial f'} g'\  \dee x.
+        \end{align*}
+        Set $u = \partial F / \partial f'$ and $v = g$. We have that $\dee v = g' \dee x$. Since $\int u\ \dee v = uv - \int v\  \dee u$, we have that:
+        \begin{align*}
+        \int_{a}^b \frac{\partial F}{\partial f'} g'\  \dee x
+        &= \frac{\partial F}{\partial f'} g \bigg|_a^b - \int_a^b  \frac{\dee}{\dee x} \bigg( \frac{\partial F}{\partial f'} \bigg)g \ \dee x.
+        \end{align*}
+        Because we assumed $g(a) = g(b) = 0$, we have that:
+        \begin{align*}
+        \int_{a}^b \frac{\partial F}{\partial f'} g'\  \dee x
+        &= - \int_a^b \frac{\dee}{\dee x} \bigg( \frac{\partial F}{\partial f'} \bigg)g \ \dee x.
+        \end{align*}
+        Plugging the above result back to the expression for $\phi'(0)$, we have that:
+        \begin{align*}
+        \phi'(0) = \int_a^b \bigg[ \frac{\partial F}{\partial f} - \frac{\dee}{\dee x} \bigg( \frac{\partial F}{\partial f'} \bigg) \bigg]g \  \dee x
+        \end{align*}
+        </li>
+
+        <li>Setting $\phi'(0) = 0$, we have:
+        \begin{align*}
+        0 = \int_a^b \bigg[ \frac{\partial F}{\partial f} - \frac{\dee}{\dee x} \bigg( \frac{\partial F}{\partial f'} \bigg) \bigg]g \  \dee x.
+        \end{align*}
+        The above equation is true for all function $g$ if and only if the integrand is identically $0$. So,
+        \begin{align*}
+        \frac{\partial F}{\partial f} - \frac{\dee}{\dee x} \bigg( \frac{\partial F}{\partial f'} \bigg)
+        = 0.
+        \end{align*}
+        This is called the <b>Euler-Lagrange equation</b>.
+        </li>
+    </ul>
+
+    <h3>Functionals of $f$, $f'$, and $f''$</h3>
+
+    <ul>
+        <li>Now, let us say that $F$ is a function of up to the second-order derivative of $f$.</li>
+
+        <li>Let $g$ be the directional change function again. We have that the analogue of the $f$ yielding the minimal energy is:
+        \begin{align*}
+        0 = \int_a^b 
+        \frac{\partial F}{\partial f} g 
+        + \frac{\partial F}{\partial f'} g'
+        + \frac{\partial F}{\partial f''} g''
+        \ \dee x
+        \end{align*}
+        </li>
+
+        <li>Let $g(a) = g(b) = g'(a) = g'(b) = 0$. We can rewrite the above equation as:
+        \begin{align*}
+        0 = \int_a^b 
+        \bigg[
+        \frac{\partial F}{\partial f} 
+        - \frac{\dee}{\dee x} \bigg( \frac{\partial F}{\partial f'} \bigg)
+        + \frac{\dee^2}{\dee^2 x} \bigg( \frac{\partial F}{\partial f''} \bigg)
+        \bigg]
+        g
+        \ \dee x
+        \end{align*}
+        </li>
+
+        <li>The above gives the following analogue of the Euler-Laplace equation:
+        \begin{align*}
+        \frac{\partial F}{\partial f} 
+        - \frac{\dee}{\dee x} \bigg( \frac{\partial F}{\partial f'} \bigg)
+        + \frac{\dee^2}{\dee^2 x} \bigg( \frac{\partial F}{\partial f''} \bigg) = 0.
+        \end{align*}
+        </li>
+    </ul>
+
+    <h3>Euler-Langrage Equations for Multivariate $f$</h3>
+
+    <ul>
+        <li>Consider the function of the form $f(x_1, \dotsc, x_n)$.</li>
+
+        <li>In the first-order case, the functional $F$ is of the form $F(x_1, \dotsc, x_n, f_{x_1}, \dotsc, f_{x_n})$ where $f_{x_i} = \partial f / \partial x_i$. The Euler-Lagrange equation is given by:
+        \begin{align*}
+        \frac{\partial F}{\partial f} - \sum_{i=1}^n \frac{\partial}{\partial x_i} \bigg( \frac{\partial F}{\partial f_{x_i}} \bigg) = 0.
+        \end{align*}
+        </li> 
+
+        <li>In the second-order case, the functional $F$ is of the form $F(x_1, \dotsc, x_n, f_{x_1}, \dotsc, f_{x_n}, f_{x_1 x_1}, f_{x_1 x_2}, \dotsc, f_{x_n x_n})$ where $f_{x_i x_j} = \frac{\partial^2 f}{\partial x_i \partial x_j}$. The Euler-Lagrange equation is given by:
+        \begin{align*}
+        \frac{\partial F}{\partial f}
+        - \sum_{i=1}^n \frac{\partial}{\partial x_i} \bigg( \frac{\partial F}{\partial f_{x_i}} \bigg)
+        + \sum_{i=1}^n \sum_{j=1}^n
+        \frac{\partial}{\partial x_i} \frac{\partial}{\partial x_j}
+        \bigg( \frac{\partial F}{\partial f_{x_i x_j}} \bigg)
+        = 0.
+        \end{align*}
+        </li>
+    </ul>
+
+    <h2>Thin-Plate Splines</h2>
+
+    <h3>1D Case</h3>
+
+    <ul>
+        <li>The functional for the bending energy in the 1D case is given by $F(x,f,f',f'') = (f'')^2$. So, invoking the Euler-Lagrange equation, we have:
+        \begin{align*}
+        \frac{\partial (f'')^2}{ \partial f}
+        - \frac{\dee}{\dee x}\bigg( \frac{\partial (f'')^2}{ \partial f'} \bigg)
+        + \frac{\dee^2}{\dee x^2}\bigg( \frac{\partial (f'')^2}{ \partial f''} \bigg)
+        & = 0 \\
+        \frac{\dee^2}{\dee x^2} (2f'') &= 0 \\
+        f^{(4)}(x) &= 0.
+        \end{align*}
+        This means that the function should resemble cubic polynomials.
+        </li>        
+
+        <li>However, we also have the constraints that $f(x_i) = y_i$. If all these points lie on a cubic polynomial, then we are done. In general, though, this is not possible, so we will settle for the next best thing: the 4th-order derivative should be zero everywhere except at the $x_i$'s. At these points, we allow the 4th derivative to be discontinuous.</li>
+
+        <li>The <b>Green's function</b> $G(x,s)$ is a solution to the equation $Lf = \delta(x - s)$ where $L$ is a linear differential operator and $\delta(\cdot)$ is the Dirac delta function.</li>
+
+        <li>Here, we have a linear operator $L = \dee^4 / \dee x^4$. So, a Green function $G(x,s)$ would have zero 4th order derivative everywhere except at $s$. For this operator, the Green function is:
+        \begin{align*}
+        G(x,s) = \frac{1}{12} |x-s|^3.
+        \end{align*}
+        </li>
+
+        <li>So, the thin-plate spline that we want is a linear combination of the Green functions, one for each data point. We may also add a constant term and a linear term because adding them does not change the bending energy. Hence, the spline has the following form:
+        \begin{align*}
+        f(x) 
+        = \sum_{i=1}^m a_i G(x,x_i) + b_0 + b_1 x
+        = \sum_{i=1}^m \frac{a_i}{12} |x-x_i|^3 + b_0 + b_1 x.
+        \end{align*}        
+        </li>
+
+        <li>The form above has $m+2$ unknowns. The constraints $f(x_i) = y_i$ gives us $m$ linear constraints. The other two constraints are:
+        \begin{align*}
+        \sum_{i=1}^m a_i &= 0 \\
+        \sum_{i=1}^m a_i x_i &= 0.
+        \end{align*}
+        I don't actually know how they are derived because I don't have access to the paper that introduces it <a href="#fn_meinguet">[Meinguet 1979]</a>. Now that we have $m+2$ linear equations and $m+2$ unknowns, we can solve for it.
+        </li>
+    </ul>
+
+    <div class="footnotes">
+        <ul>
+            <li class="footnote" id="fn_meinguet">
+                Jean Meinguet.
+                <b>Multivariate interpolation at arbitrary points made simple.</b>
+                <i>Journal of Applied Mathematics and Physics (ZAMP)</i>, vol. 30, pp. 292-304, 1979.
+            </li>
+        </ul>
+    </div>
+
+    <h3>2D Case</h3>
+
+    <ul>
+        <li>The functinal for the bending energy is given by:
+            $F = (f_{x_1x_1})^2 + (f_{x_1 x_2})^2 + (f_{x_2 x_1})^2 + (f_{x_2 x_2})^2$.
+        </li>
+
+        <li>Applying the Euler-Lagrange equation, we have:
+            \begin{align*}
+            0 
+            &= 
+            \frac{\partial^2}{\partial x_1^2}(2 f_{x_1 x_1})
+            + \frac{\partial^2}{\partial x_1 \partial x_2}(2 f_{x_1 x_2})
+            + \frac{\partial^2}{\partial x_2 \partial x_1}(2 f_{x_2 x_1})
+            + \frac{\partial^2}{\partial x_2^2}(2 f_{x_2 x_2}) \\
+            &= f_{x_1 x_1 x_1 x_1}
+            + f_{x_1 x_2 x_1 x_2}
+            + f_{x_2 x_1 x_2 x_1}
+            + f_{x_2 x_2 x_2 x_2} \\
+            &= \Delta^2 f
+            \end{align*}
+            where $\Delta^2$ is the operator:
+            \begin{align*}
+            \Delta^2 = \sum_{i=1}^n \sum_{j=1}^n \frac{\partial^4}{\partial x_i^2 \partial x_j^2}.
+            \end{align*}
+            This is equivalent to the Laplace operator, $\Delta = \sum_{i=1}^n \partial^2/(\partial x_i^2)$, being applied twice.
+        </li>
+
+        <li>The equation $\Delta^2 f = 0$ is called the <b>biharmonic equation</b>.</li>
+
+        <li>The Green's function for the above operator is given by:
+        \begin{align*}
+        G(\ve{x}, \ve{s}) = \frac{u^2 \ln u}{8\pi}
+        \end{align*}
+        where $u = \| \ve{x} - \ve{s} \|$.
+        </li>
+
+        <li>So, the thin-plate spline has the form:
+        \begin{align*}
+        f(\ve{x}) 
+        &= b_0 + b_1 x_1 + b_2 x_2 + \sum_{i=1}^m a_i G(\ve{x}, \ve{x_i}) \\
+        &= b_0 + b_1 x_1 + b_2 x_2 + \sum_{i=1}^m \frac{a_i}{8\pi} \| \ve{x} - \ve{x_i} \|^2 \ln \| \ve{x} - \ve{x}_ i\|.
+        \end{align*}
+        </li>
+
+        <li>Let
+            <ul>
+                <li>$M$ be the matrix whose $(i,j)$ entries are $G(\ve{x}_i, \ve{x}_j)$.</li>
+                <li>$\ve{a} = (a_1, a_2, \dotsc, a_m)$.</li>
+                <li>$\ve{y} = (y_1, y_2, \dotsc, y_m)^T$.</li>
+                <li>$\ve{b} = (b_0, b_1, b_2)^T$.</li>
+                <li>$N$ be the $m \times 3$ matrix whose $i$th row is $\begin{bmatrix}1 & \ve{x}_i^T \end{bmatrix}$.</li>
+            </ul>
+            Then, we have that:
+            \begin{align*}
+            \ve{y} = M\ve{a} + N\ve{b}.
+            \end{align*}
+            This gives $m$ equations with $m+3$ unknowns. The 3 more constraints come from $N^T  \ve{a} = \ve{0}$. The solutions are given by:
+            \begin{align*}
+            \ve{b} &= (N^T M^{-1} N)^{-1} N^T M^{-1} \ve{y}, \\
+            \ve{a} &= M^{-1}(\ve{y} - N \ve{b}).
+            \end{align*}
+        </li>
+    </ul>
+
+    <h2>Application: Image Warping</h2>
+
+    <ul>
+        <li>Let's say a (grayscale) image is a function $I(x,y)$ that maps coordinates $(x,y)$ to an intensity.</li>
+
+        <li>Suppose we have a set of $m$ landmarks $(x_1, y_1)$, $(x_2, x_2)$, $\dotsc$, $(x_m, y_m)$ that we want to move to new positions $(\tilde{x}_1, \tilde{y}_1)$, $(\tilde{x}_2, \tilde{y}_2)$, $\dotsc$, $(\tilde{x}_m, \tilde{y}_m)$. In other words, we want to generate a deformed image $\tilde{I}(x,y)$ such that $\tilde{I}(\tilde{x}_i, \tilde{y}_i) = I(x_i, y_i)$ for all $i$.</li>
+
+        <li>The solution is to create two thin-plate splines $f$ and $g$ such that:
+        \begin{align*}
+            f(\tilde{x}_i, \tilde{y}_i) &= x_i, \\
+            g(\tilde{x}_i, \tilde{y}_i) &= y_i
+        \end{align*}
+        for all $i$. Then, we may define:
+        \begin{align*}
+        \tilde{I}(\tilde{x}, \tilde{y}) = I(f(\tilde{x},\tilde{y}), g(\tilde{x}, \tilde{y})).
+        \end{align*}
+        </li>
+    </ul>
+
+    <hr>
+    <div class="page-header"></div>
+    <p>Last modified: 2020/01/18</p>    
+</div>
+
+<script type="text/javascript">
+$.bigfoot();
+</script>
+
+</body>
+</html>
