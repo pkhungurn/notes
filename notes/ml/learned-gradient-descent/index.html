@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>Learned Gradient Descent</title>
+
+    <!-- Bootstrap -->
+    <link href="../../../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../../../css/theme.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+      TeX: { equationNumbers: {autoNumber: "AMS"} } 
+    });
+    </script>
+    <script type="text/javascript"
+            src="../../../MathJax/MathJax.js?config=TeX-AMS_HTML-full">
+    </script>
+
+    <script type="text/javascript" src="../../../js/jquery-3.4.1.min.js"></script>    
+    <script type="text/javascript" src="../../../js/bigfoot.min.js"></script>    
+
+    <link rel="stylesheet" type="text/css" href="../../../css/bigfoot-default.css">    
+
+</head>
+<body>
+<div class="container">
+    <span style="visibility: hidden;">
+        \(
+        \def\sc#1{\dosc#1\csod}
+        \def\dosc#1#2\csod{{\rm #1{\small #2}}}
+
+        \newcommand{\dee}{\mathrm{d}}
+        \newcommand{\Dee}{\mathrm{D}}
+        \newcommand{\In}{\mathrm{in}}
+        \newcommand{\Out}{\mathrm{out}}
+        \newcommand{\pdf}{\mathrm{pdf}}
+        \newcommand{\Cov}{\mathrm{Cov}}
+        \newcommand{\Var}{\mathrm{Var}}
+
+        \newcommand{\ve}[1]{\mathbf{#1}}
+        \newcommand{\mrm}[1]{\mathrm{#1}}
+        \newcommand{\etal}{{et~al.}}
+        \newcommand{\sphere}{\mathbb{S}^2}
+        \newcommand{\modeint}{\mathcal{M}}
+        \newcommand{\azimint}{\mathcal{N}}
+        \newcommand{\ra}{\rightarrow}
+        \newcommand{\mcal}[1]{\mathcal{#1}}
+        \newcommand{\X}{\mathcal{X}}
+        \newcommand{\Y}{\mathcal{Y}}
+        \newcommand{\Z}{\mathcal{Z}}
+        \newcommand{\x}{\mathbf{x}}
+        \newcommand{\y}{\mathbf{y}}
+        \newcommand{\z}{\mathbf{z}}
+        \newcommand{\tr}{\mathrm{tr}}
+        \newcommand{\sgn}{\mathrm{sgn}}
+        \newcommand{\diag}{\mathrm{diag}}
+        \newcommand{\Real}{\mathbb{R}}
+        \newcommand{\sseq}{\subseteq}
+        \newcommand{\ov}[1]{\overline{#1}}
+
+        \DeclareMathOperator*{\argmax}{arg\,max}
+        \DeclareMathOperator*{\argmin}{arg\,min}
+        \)
+    </span>
+
+    <br>
+    <h1>Learned Gradient Descent</h1>
+    <hr>
+
+    <p>This note is written as I try to learn about "learned gradient descent," which is to learn an iterative-update-based optimizer that can be used to solve specific instances of optimization problems. I became interested in this technique because I attempted to read the <a href="https://augmentedperception.github.io/deepview/">DeepView paper</a> by Flynn et al.</p>
+
+    <p>The goal of the DeepView paper is to solve for a scene representation (so called the multi-plane image) given multiple photographs of the same scene from different camera angles. One can cast this problem into an optimization problem where one seeks to find the best parameters for the scene representation that, when rendered, give rise to images that are the closest to the photographs. Then, one can run an optimization algorithm on these parameters. However, instead of using a hand-coded optimizer, the paper chose to learn its own optimization algorithm from many problem instances. The algorithm works much like gradient descent: in each iteration, it adds updates to the scene representation parameters. However, the learned algorithm would take larger steps and converge faster, requiring us to run it on the problem instance for a handful of time steps. This is the interesting bit of the approach.</p>
+
+    <p>The main source for the material of this node is the <a href="https://arxiv.org/pdf/1606.04474v1.pdf">Learning to Learn by Gradient Descent by Gradient Descent</a> paper by Andrychowicz et al. I also used materials from <a href="https://pytorch.org/tutorials/intermediate/char_rnn_classification_tutorial.html">a Pytorch RNN tutorial</a> and a <a href="https://colah.github.io/posts/2015-08-Understanding-LSTMs/">popular article about LSTM</a> by Chris Olah.</p>
+
+    <h2>Settings</h2>
+
+    <ul>
+        <li>We are interested in finding a parameter vector $\theta$ that minimizes $f(\theta)$ for a function $f$ that belongs to a class $\mathcal{F}$.</li>
+
+        <li>One can solve this problem by gradient descent, which is an iterative update algorithm with the following update rule:
+            \begin{align*}
+                \theta_{t+1} &:= \theta_t - \alpha_t \nabla f(\theta_t).
+            \end{align*}
+        </li>
+
+        <li>The machine learning algorithm has come up with many more algorithms with fancier update rules. These include momentum, Nesterov momentum, Adagrad, Adadelta, RMSProp, Adam, etc.</li>
+
+        <li>Andrychowicz et al. proposes a more general update rule where the update is computed by a learned function $g$ with its own parameters $\phi$:
+            \begin{align*}
+                \theta_{t+1} &:= \theta_t + g(\theta_t, \nabla f(\theta_t), \phi, t).
+            \end{align*}            
+        </li>
+
+        <li>The goal is then to learn parameter vector $\phi$ so that $g$ works well on functions from class $\mathcal{F}$.</li>
+
+        <li>We have that the parameter vector $\theta_t$ at time step $t$ is a function of $f$ and $\phi$. So, we may indicate this by writing $\theta_t(f,\phi)$.</li>
+
+        <li>Now, suppose we only run the optimizer up to $T$ time steps. Then, the function value $f(\theta_T)$ tells us how good the parameter $\theta_T$ is. As a result, finding a good optimizer that works well on general optimizee functions can be casted as the following optimization problem:
+            \begin{align*}
+            \argmin_{\phi}\ E_{f \in \mathcal{F}}\Big[ f\big( \theta_T(f, \phi) \big) \Big].
+            \end{align*}
+        </li>
+
+        <li>We can generalize the above loss by also taking into account the function values at steps before $T$ as well:
+            \begin{align*}
+            \argmin_{\phi}\ E_{f \in \mathcal{F}}\bigg[ \sum_{i=1}^T w_t f\big( \theta_t(f, \phi) \big) \bigg]
+            \end{align*}
+            where the $w_t$'s are positive weights. If we set $w_T$ to $1$ and other $w_t$'s to $0$, we got the problem we talked about earlier.
+        </li>
+
+        <li>For convenience, let us define $\mathcal{L}(\phi)$ to be the loss we want to mimimize in the above problem:
+            \begin{align*}
+                \mathcal{L}(\phi) = E_{f \in \mathcal{F}}\bigg[ \sum_{i=1}^T w_t f\big( \theta_t(f, \phi) \big) \bigg].
+            \end{align*}
+        </li>
+    </ul>
+
+    <h2>Using recurrent neural networks</h2>
+
+    <ul>
+        <li>For easier discussion, let $g_t$ be the update on Step $t$. The update rule becomes just: $\theta_{t+1} := \theta_t + g_t$.</li>
+
+        <li>Andrychowicz et al.'s $g$ is a recurrent neural network $m$ to implement the optimizer $g$. The network maintains its internal state called $h_t$, which it takes as input at each step. It outputs both $g_t$ and $h_{t+1}$:
+            \begin{align*}
+                \begin{bmatrix} g_t \\ h_{t+1} \end{bmatrix} := m(\theta_t, \nabla f(\theta_t), h_t, \phi).
+            \end{align*}
+        </li>
+
+        <li>Now that we have defined the loss function $\mathcal{L}(\phi)$, we can find the gradient $\partial \mathcal{L}(\phi) / \partial \phi$, which means we can use the gradient-based algorithms to optimize for $\phi$.</li>
+
+        <li>We can now see that the weights $w_t$ at $t < T$ have become important. If only $w_T \neq 0$, then only the gradients from the final step is used to update the parameters, making the optimization process inefficient. By making earlier $w_t$'s non-zero, we have allowed the network to use information from the intermediate steps.</li>
+
+        <li>The paper proposes that $m$ be a small neural network that operates on all coordinates of $\theta$ independently.</li>
+
+        <li>Moreover, it also suggests implementing $m$ with an LSTM network.</li>
+
+        <li>One of the problems that can crop up is that different coordinates of $\nabla f(\theta_t)$ might have very different magnitudes. The paper proposes preprocessing the gradients as  follows before feeding it to $m$:
+            \begin{align*}
+                \tilde{\nabla} := \begin{cases}
+                    \Big(\frac{\log |\nabla|}{p}, \sgn(\nabla) \Big), & |\nabla| \geq e^{-p} \\
+                    (-1, e^p \nabla), & \mathrm{otherwise}
+                \end{cases}.
+            \end{align*}
+        where $\nabla$ denotes a component of the gradient. The constant $p$ is a hyperparameter. The paper uses $p=10$.
+        </li>
+    </ul>
+    
+    <hr>
+    <div class="page-header"></div>
+    <p>Last modified: 2020/01/28</p>    
+</div>
+
+<script type="text/javascript">
+$.bigfoot();
+</script>
+
+</body>
+</html>
