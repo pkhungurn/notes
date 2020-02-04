@@ -84,7 +84,7 @@
 
     <p>The goal of the DeepView paper is to solve for a scene representation (so called the multi-plane image) given multiple photographs of the same scene from different camera angles. One can cast this problem into an optimization problem where one seeks to find the best parameters for the scene representation that, when rendered, give rise to images that are the closest to the photographs. Then, one can run an optimization algorithm on these parameters. However, instead of using a hand-coded optimizer, the paper chose to learn its own optimization algorithm from many problem instances. The algorithm works much like gradient descent: in each iteration, it adds updates to the scene representation parameters. However, the learned algorithm would take larger steps and converge faster, requiring us to run it on the problem instance for a handful of time steps. This is the interesting bit of the approach.</p>
 
-    <p>The main source for the material of this node is the <a href="https://arxiv.org/pdf/1606.04474v1.pdf">Learning to Learn by Gradient Descent by Gradient Descent</a> paper by Andrychowicz et al. I also used materials from <a href="https://pytorch.org/tutorials/intermediate/char_rnn_classification_tutorial.html">a Pytorch RNN tutorial</a> and a <a href="https://colah.github.io/posts/2015-08-Understanding-LSTMs/">popular article about LSTM</a> by Chris Olah.</p>
+    <p>The main source for the material of this node is the <a href="https://arxiv.org/pdf/1606.04474v1.pdf">Learning to Learn by Gradient Descent by Gradient Descent</a> paper by Andrychowicz et al.</p>
 
     <h2>Settings</h2>
 
