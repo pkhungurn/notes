@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>Image Translation through Landmarks</title>
+
+    <!-- Bootstrap -->
+    <link href="../../../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../../../css/theme.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+      TeX: { equationNumbers: {autoNumber: "AMS"} } 
+    });
+    </script>
+    <script type="text/javascript"
+            src="../../../MathJax/MathJax.js?config=TeX-AMS_HTML-full">
+    </script>
+
+    <script type="text/javascript" src="../../../js/jquery-3.4.1.min.js"></script>    
+    <script type="text/javascript" src="../../../js/bigfoot.min.js"></script>    
+
+    <link rel="stylesheet" type="text/css" href="../../../css/bigfoot-default.css">    
+
+</head>
+<body>
+<div class="container">
+    <span style="visibility: hidden;">
+        \(
+        \def\sc#1{\dosc#1\csod}
+        \def\dosc#1#2\csod{{\rm #1{\small #2}}}
+
+        \newcommand{\dee}{\mathrm{d}}
+        \newcommand{\Dee}{\mathrm{D}}
+        \newcommand{\In}{\mathrm{in}}
+        \newcommand{\Out}{\mathrm{out}}
+        \newcommand{\pdf}{\mathrm{pdf}}
+        \newcommand{\Cov}{\mathrm{Cov}}
+        \newcommand{\Var}{\mathrm{Var}}
+
+        \newcommand{\ve}[1]{\mathbf{#1}}
+        \newcommand{\mrm}[1]{\mathrm{#1}}
+        \newcommand{\etal}{{et~al.}}
+        \newcommand{\sphere}{\mathbb{S}^2}
+        \newcommand{\modeint}{\mathcal{M}}
+        \newcommand{\azimint}{\mathcal{N}}
+        \newcommand{\ra}{\rightarrow}
+        \newcommand{\mcal}[1]{\mathcal{#1}}
+        \newcommand{\X}{\mathcal{X}}
+        \newcommand{\Y}{\mathcal{Y}}
+        \newcommand{\Z}{\mathcal{Z}}
+        \newcommand{\x}{\mathbf{x}}
+        \newcommand{\y}{\mathbf{y}}
+        \newcommand{\z}{\mathbf{z}}
+        \newcommand{\tr}{\mathrm{tr}}
+        \newcommand{\sgn}{\mathrm{sgn}}
+        \newcommand{\diag}{\mathrm{diag}}
+        \newcommand{\Real}{\mathbb{R}}
+        \newcommand{\sseq}{\subseteq}
+        \newcommand{\ov}[1]{\overline{#1}}
+        \)
+    </span>
+
+    <br>
+    <h1>Image Translation through Landmarks</h1>
+    <hr>
+
+    <p>This article covers three papers:</p>
+
+    <ul>
+        <li>
+        Jakab et al.'s <i>Unsupervised Learning of Object Landmarks through Conditional Image Generation</i> (NuerIPS 2018) <a href="https://papers.nips.cc/paper/7657-unsupervised-learning-of-object-landmarks-through-conditional-image-generation">[LINK]</a>
+    </li>
+    <li>
+        Siarohin et al.'s <i>Animating Arbitrary Objects via Deep Motion Transfer</i> (CVPR 2019) 
+        <a href="http://www.stulyakov.com/papers/monkey-net.html">[LINK]</a>
+    </li>
+    <li>
+        Siarohin et al.'s <i>First Order Motion Model for Image Animation</i> (NIPS 2019) <a href="https://papers.nips.cc/paper/8935-first-order-motion-model-for-image-animation">[LINK]</a>
+    </li>    
+    </ul>
+
+    <p>Ultimately, what is achieved is the task of animating an image using the movement that comes from a video sequence. The last paper is notatble because it generates a very convincing animation using an interesting method.</p>
+
+    <p>At the core of these papers is a way to extract landmark in images without labelled data. This, in general, should be useful in my future research.</p>
+
+    <h2>Jakab et al. (NeurIPS 2018)</h2>
+
+    <ul>
+        <li>The problem the paper tries to solve is landmark detection: given an image, output coordinates of points that correspond to landmars (the nose, the eyes, and the mouth of a face) in the image.</li>
+
+        <li>The paper does so without requiring labelled images.</li>
+
+        <li>The training data the paper uses are pairs of images of the same object. The images are different due to:
+            <ul>
+                <li>The images might be taken from different viewpoints.</li>
+                <li>The object is deformable, and it has different shapes in the two images.</li>
+                <li>The second image is obtained from the first image by some kind of image transformations such as warping.</li>
+            </ul>
+        </li>
+
+        <li>The training data can be obtained through several means:
+            <ul>
+                <li>Take two different frames from a video.</li>
+                <li>Programmatically warping images.</li>
+            </ul>
+        </li>
+
+        <li>The key insight of the paper is that positions of landmarks should be useful to the task of translating the first image in the pair to the second. So, the paper attempts to solve the following proxy task: <i>Given two images $\ve{x}$ and $\ve{x}'$ of the same object, extract the landmark positions of $\ve{x}'$ and then try to regenerate $\ve{x}'$ from $\ve{x}$ and the landmark positions of $\ve{x}'$.</i>
+        </li>
+
+        <li>More specifically:
+            <ul>
+                <li>Let $\mathcal{X} = \mathbb{R}^{C \times H \times W}$ denote the set of images.</li>
+
+                <li>Let $\ve{x}, \ve{x}' \in \mathcal{X}$. Call $\ve{x}$ the <i>source image</i> and $\ve{x}'$< the <i>target image</i>.</li>
+
+                <li>Let $\Omega$ denote the domain of the pixel. In other words, $\Omega = [0,H] \times [0,W]$.</li>
+                
+                <li>Let $\mathcal{Y} = \Omega^K$ denote the set of $K$-tuple of points in $\Omega$. These are the domain of the landmarks.</li>
+
+                <li>We are interested in learning a mapping $\Phi(\ve{x}) = \ve{y} \in \mathcal{Y}$ that maps images to $K$ landmark positions.</li>
+
+                <li>For convenience, let $\ve{y} = (u_1, u_2, \dotsc, u_K)$ where $u_i \in \Omega$. Let us further denote $u_i$ by $(u^{(1)}_i, u^{(2)}_i)$.</li>
+
+                <li>To learn $\Phi$ in an unsupervised manner, we learn another mappin $\Psi: \mathcal{X} \times \mathcal{Y} \rightarrow \mathcal{X}$ such that $\Psi(\ve{x}, \ve{y}') = \Psi(\ve{x}, \Phi(\ve{x}')) = \ve{x}'$.
+                    <ul>
+                        <li>In other words, $\Psi$ reconstructs the target image $\mathcal{x}'$ from the source image $\ve{x}$ and the detected landmarks $\ve{y}' = \Phi(\ve{x}')$ of the target image.</li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+
+        <li>The paper learns $\Phi$ and $\Psi$ joinly to solve the following minimization problem:
+            \begin{align*}
+                \min_{\Phi, \Psi} E_{\ve{x}, \ve{x}'} [\mathcal{L}(\ve{x}', \Psi(\ve{x}, \Phi(\ve{x}')))].
+            \end{align*}
+        </li>
+
+        <li>To force $\Phi$ to extract landmarks, the paper forces the network to output $K$ positional outputs with a three step process:
+            <ol>
+                <li>The network is forced to output $K$ heatmaps. Let us denote the $k$th heatmap by $S_k(\ve{x})$. The pixel value at coordinate $u$ of the heapmap is denoted by $S_k(\ve{x})[u] = S_k(\ve{x})[u^{(1)}, u^{(2)}]$.</li>
+
+                <li>The network is then computes the position of the lardmark by (1) turning the heatmaps into a probability distribution over $\Omega$ by applying the softmax function and (2) computing the expected value of the positions with this probability distribution:
+                    \begin{align*}
+                    u_k = \frac{\int_\Omega u \exp(S_k(\ve{x})[u]) \ \dee u}{\int_\Omega \exp(S_k(\ve{x})[u]) \ \dee u}.
+                    \end{align*}
+                While we use integrals to formulate the above expression, they become sums over the pixels in real implementations.
+                </li>
+
+                <li>Lastly, the network converts the positions into renderings of a 2D Gaussian with a fixed standard deviation $\sigma$:
+                    \begin{align*}
+                    \Phi_k(\ve{x})[u] = \frac{1}{\sqrt{2\pi}\sigma} \exp\bigg( \frac{-\| u - u_k \|^2}{2 \sigma^2} \bigg).
+                    \end{align*}
+                Note that the end result is the tensor $\Phi(\ve{x}) \in \mathbb{R}^{K \times H \times W}$. This is equivalent to the coordinates and is more readily usable by the network $\Psi$.
+                </li>
+            </ol>
+        </li>
+
+        <li>The loss function for the generator network is the perceptual content loss:
+        \begin{align*}
+            \mathcal{L}(\ve{x}', \tilde{\ve{x}}')
+            &= \sum_l \alpha_l \| \Gamma_l(\ve{x}') - \Gamma_l(\tilde{\ve{x}}') \|_2^2
+        \end{align*}
+        where $\Gamma_l$ denots the $l$-th used subnetwork of VGG-19, and $\alpha_l$ is the weight of the loss term involving $\Gamma_l$.
+            <ul>
+                <li>The paper uses the <tt>input</tt>, <tt>conv1_2</tt>, <tt>conv2_2</tt>, <tt>conv3_2</tt>, <tt>conv4_2</tt>, and <tt>conv5_2</tt>.</li>
+
+                <li>The weights $\alpha_l$s are updated online during training using the technique in <a href="http://openaccess.thecvf.com/content_ICCV_2017/papers/Chen_Photographic_Image_Synthesis_ICCV_2017_paper.pdf">Chen and Kultun paper</a>.</li>
+            </ul>
+        </li>
+
+        <li>Now, for the details of the network architectures:
+            <ul>
+                <li><b>The landmark detector network ($\Phi$).</b>
+                    <ul>
+                        <li>The networks consist of a series of blocks.</li>
+                        <li>Each block has two convolutional layers. It also doubles the number of channels of the previous block.</li>
+                        <li>All layers use a $3 \times 3$ kernel.
+                            <ul>
+                                <li>The exception is the very first layer, which uses a $7 \times 7$ kernel.</li>
+                            </ul>
+                        </li>
+                        <li>The first layer of each block downsamples the image by a factor of two with a stride 2 convolution.
+                            <ul>
+                                <li>Again, the exception is the very first layer, which does not downsample.</li>
+                            </ul>
+                        </li>
+                        <li>I think the first layer of each block also doubles the number of channels. The second layer probably preserves the dimension of the input.
+                            <ul>
+                                <li>The very first layer, though, just change the number of channels from 3 to 32.</li>
+                            </ul>
+                        </li>
+                        <li>The downsampling blocks continue until the feature tensor has spetial dimension of $16 \times 16$.
+                            <ul>
+                                <li>Let $H = W = 2^n$. Then, there must be $n-3$ blocks (because the first layer does not downsample). The output tnesor is of dimension $16 \times 16 \times (32 \cdot 2^{n-3}).$</li>
+                            </ul>
+                        </li>
+                        <li>The train of blocks is then followed by a $1 \times 1$ convolution that changes the number of channels to $K$.</li>
+                        <li>The above tensor is then used to render 2D Gaussian with $\sigma = 0.1$ on $K$ $16 \times 16$ images.</li>
+                    </ul>
+                </li>
+                <li><b>The image generation network ($\Psi$).</b>
+                    <ul>
+                        <li>The image generation network receives two inputs.
+                            <ul>
+                                <li>The source image $\ve{x}$.</li>
+                                <li>The detected landmarks $\mathcal{y}' = \Phi(\ve{x}')$ in the form of rendered images of Gaussians.</li>
+                            </ul>
+                        </li>
+
+                        <li>First, the network converts the source image $\ve{x}$ into a feature tensor $\ve{z}$ of size $16 \times 16 \times C$ where $C = 32 \cdot 2^{n-3}$. This is done using a new network with the same architecture as the series of blocks in the landmark detector network.</li>
+
+                        <li>Then, $\ve{z}$ and $\ve{y}'$ are concatenated in the channel dimension. The output is then pass to a decoder network.</li>
+
+                        <li>The decoder network consists of a sequence of blocks. Each block has two convolutional layers.</li>
+
+                        <li>The input to each block, except the very first block, is upsampled by a factor of 2 using bilinear interpolation.</li>
+
+                        <li>The each block halves the number of channels. I don't know which convolutional layer does it, but I would presume the first one.
+                            <ul>
+                                <li>However, the number of channels is maintained to be at least 32 until the end of the sequence.</li>
+                            </ul>
+                        </li>
+
+                        <li>The sequence of blocks continues until the spetial dimension matches that of the input.</li>
+
+                        <li>Lastly, a final convolution layer changes the number of channels to $3$ so as to produce an image.</li>
+
+                        <li>Btw, almost all layers use the $3 \times 3$ convolutional filter.</li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+    </ul>
+
+    <h2>Siarohin et al. (CVPR 2019)</h2>
+
+    <ul>
+        <li>While Jakab et al. focuses on landmark detection, this paper focus on the motion transfer problem. It uses detected landmarks to pass information about the object's pose.</li>
+
+        <li>The input consists of a <i>source image</i> whose movement is to be copied from that of a <i>driving video</i>.</li>
+
+        <li>Training data for Monkey-Net are two frames from videos of the same objects, just like the Jakab et al. paper.</li>
+
+        <li>The network the paper discribes, called Monkey-Net (MOviNg KEYpoint), has three main modules:
+        <ul>
+            <li>The <b>Keypoint Detector</b> takes the source image and a frame from the driving video and extract sparse keypoints (landmarks) for the two images.</li>
+
+            <li>The <b>Dense Motion Prediction Network</b> translates the sparse keypoints into an optical flow map.</li>
+
+            <li>The <b>Motion Transfer Network</b> combines the source image and the optical flow map to produce the target image.</li>
+        </ul>
+        </li>
+
+        <li>More formally:
+        <ul>
+            <li>Let $\ve{x}$ and $\ve{x}'$ be two frames of dimension $3 \times H \times W$.</li>
+
+            <li>Let $\mathcal{X}$ be the domain of the video frames. In other words, $\mathcal{X} = \Real^{3 \times H \times W}.$</li>
+
+            <li>Let $\mathcal{U}$ denote the $H \times W$ lattice (i.e., the set of pixels).</li>
+
+            <li>The paper jointly learns a keypoint detector $\Delta$ together with a generator network $G$ so that $G$ should be able to reconstruct $\ve{x}'$ from $\Delta(\ve{x})$, $\Delta(\ve{x}')$, and $\ve{x}$.</li>
+
+            <li>The paper adds a third network $M$ that estimates the optical flow $\mathcal{F} \in \Real^{2 \times H \times W}$ which tells us, if we were to reconstruct $\ve{x}'$ from $\ve{x}$, where would one copy each pixel of $\ve{x}'$ from. $M$ computes the optical flow from $\Delta(\ve{x})$, $\Delta(\ve{x}')$, and $\ve{x}$.</li>
+
+            <li>The paper adds $M$ for two reasons:
+            <ul>
+                <li>This forces $\Delta$ to predict keypoint locations that capture not only the object structure but also motion.</li>
+
+                <li>The Motion Transfer Network is implemented with standard encoder-decoder architecture. As a result, it cannot deal with large motions well.</li>
+            </ul>
+            </li>
+        </ul>
+        </li>
+    </ul>
+
+    <h3>Keypoint Detection Network</h3>
+    <ul>
+        <li>The paper uses U-Net to compute $K$ heatmaps $\tilde{H}_k \in [0,1]^{H \times W}$, one for each keypoint.
+            <ul>
+            <li>The last layer of this part uses softmax to turn a raw feature map output to a probability distribution over $\mathcal{U}$.</li>
+            </ul>
+        </li>
+
+        <li>The paper the computes the keypoint locations by computing the expected value of the pixel coordinates according to the probability in the heatmap:
+        \begin{align*}
+            h_k = \sum_{p \in \mathcal{U}} \tilde{H}_k[p] p.
+        \end{align*}
+        However, the paper also computes the covariance matrix of the Gaussian:
+        \begin{align*}
+            \Sigma_k = \sum_{p \in \mathcal{U}} \tilde{H}_k[p] (p - h_k) )( p - h_k)^T.
+        \end{align*}
+        The paper does so because it hopes the covariance matrix would give information about the keypoint's orientation.
+        </li>
+
+        <li>Then, for each heatmap, a 2D Gaussian with mean $\ve{h}_k$ and covariance $\Sigma_k$ is rendered:
+        \begin{align*}
+            H_k[p] = \frac{1}{\alpha} \exp(- (p - h_k)^T \Sigma_k^{-1}(p - h_k))
+        \end{align*}
+        where $\alpha$ is a normalization constant.
+        </li>
+
+        <li>The above process is applied to both $\ve{x}$ and $\ve{x}$', resulting in two sets of $K$ keypoint heatmaps $H = \{ H_k \}_{k=1}^K$ and $H' = \{ H_k' \}_{k=1}^K$</li>
+    </ul>
+    
+    <h3>Motion Transfer Network</h3>
+    
+    <ul>
+        <li>The motion transfer network reconstructs $\ve{x}'$ from $\ve{x}$, $\Delta(\ve{x}) = H$, and $\Delta{\ve{x}'} = H'$.</li>
+
+        <li>The overall architecture of the network is a U-Net, but with a twist.</li>
+
+        <li>First, $\ve{x}$ is passed to a standard encoder composed of convolutions and average pooling. Let $\ve{\xi}_r \in \Real^{C_r \times H_r \times W_r}$ denote the output of the $r$th block of then encoder network (which has $R$ encoding blocks).</li>
+
+        <li>The paper then uses the optical flow map $\mathcal{F}$ of align the features $\ve{\xi}_r$ with $\ve{x}'$. In other words, it uses bilinear sampling function $f_w$ to "warp" the feature map:
+        \begin{align*}
+            \ve{x}_r' = f_w(\ve{\xi}_r, \mathcal{F}).
+        \end{align*}
+        In order to carry out this operation, $\mathcal{F}$ is downsampled to $H_r \times W_r$ via nearest neighbor interpolation.
+        </li>
+
+        <li>These $\ve{\xi}'_r$ would then be shipped through the above the valley of the U shape to the decoder part of the U-Net instead of $\ve{\xi}_r$.</li>
+
+        <li>However, encoding motion with $\mathcal{F}$ alone led to problems when training the network because the parameters of $\Delta$ are faraway from the loss function. To remedy this, the input to the decoder also includes $\dot{H} = H' - H$.
+        <ul>
+            <li>Similar to $\ve{\xi}'_r$ the paper computes $\dot{H}_r$ by downsampling $\dot{H}$ to $H_r \times W_r$.</li>
+
+            <li>The skip connection carries the concatenation between $\ve{\xi}'_r$ and $H_r$.</li>
+        </ul>
+        </li>
+    </ul>
+
+    
+    <h3>Dense Motion Prediction Network</h3>
+    <ul>
+        <li>The network's job is to predict $\mathcal{F}$ from $\ve{x}$, $\Delta(\ve{x})$ and $\Delta(\ve{x}')$.</li>
+
+        <li>The paper adopts a part-based formulation. It makes the assumption that each keypoint is located on an object that is locally rigid.</li>
+
+        <li>In other words, consider the $k$th keypoint. It is located at $h_k$ in $\ve{x}$ and $h_k'$ in $\ve{x}'$. As result, the (inverse) optical flow map around $h_k'$ should be $\dot{h}_k = h_k - h_k'$.</li>
+
+        <li>More concretely, the paper estimate masks $M_k \in \Real^{H \times W} for $0 \leq k \leq K$. The <i>coarse</i> optical flow is given by:
+        \begin{align*}
+        \mathcal{F}_{\mathrm{coarse}} = M_0 \otimes \rho([0,0]) + \sum_{k=1}^{K} M_k \otimes \rho(\dot{h}_k).
+        \end{align*}
+        Here,
+        <ul>
+            <li>$\otimes$ denotes element-wise multiplication.</li>
+            <li>$\rho(\cdot)$ is the function that outputs a $\Real^{2 \times H \times K}$ image obtained by repeating the vector that is the input of the function over the entire image.</li>
+        </ul>
+        Note that $\rho([0,0])$ is the <i>backgound</i> flow image where nothing moves, and $M_0$ is the mask for the background.
+        </li>
+
+        <li>The network also predicts another flow $\mathcal{F}_{\mathrm{residual}}$, which rerves to augments the coarse optical flow, from scratch.</li>
+
+        <li>The final optical flow is given by:
+        \begin{align*}
+        \mathcal{F} = \mathcal{F}_{\mathrm{coarse}} + \mathcal{F}_{\mathrm{residual}}.
+        \end{align*}
+        </li>
+
+        <li>The architecture of this network is still a U-Net.</li>
+
+        <li>However, there's a misalignment between the input and the output of U-Net. The input $\ve{x}$ is align with itself, but the output $\mathcal{F}$ is aligned with $\ve{x}'$. This misalignment can degrade U-Net performance.</li>
+
+        <li>Hence, instead of providing $\ve{x}$ to the network, the network instead warps $\ve{x}$ using the constant optical flow map $\rho(\dot{h}_k)$:
+        \begin{align*}
+            \ve{x}_k = f_w(\ve{x}, \rho(\dot{h}_k)).
+        \end{align*}
+        Each of $\ve{x}_k$ gives an image of $\ve{x}$ which is locally aligned with $\ve{x}'$ around the keypoint $h'_k$. The paper then feeds all the $\ve{x}_k$s, concatenated with $\dot{H}$, as input to the U-Net.
+        </li>
+    </ul>
+
+    <h3>Training</h3>
+
+    <ul>
+        <li>All the networks are trained end-to-end as if they are one network.</li>
+
+        <li>The loss used is a combination of an adversarial and the feature matching loss.</li>
+
+        <li><b>Adversarial Loss</b>
+        <ul>
+            <li>The discriminator $D$ takes as input $H'$ concatenated with either the real image $\ve{x}'$ or the generated image $\hat{\ve{x}}'$.</li>
+
+            <li>The adversarial loss is the least-square GAN loss (LSGAN):
+            \begin{align*}
+                \mathcal{L}^D_{\mathrm{gan}} 
+                &= E_{\ve{x}'} [(D(\ve{x}', H') - 1)^2] + E_{\ve{x},\ve{x}'} [D(\hat{\ve{x}}', H')^2] \\
+                \mathcal{L}^G_{\mathrm{gan}} 
+                &= E_{\ve{x},\ve{x}'} [(D(\hat{\ve{x}}', H') - 1)^2]
+            \end{align*}
+            </li>
+
+            <li>The keypoint locations $H'$ are provided to the discriminator to help it focus on moving parts and not on the background.</li>
+
+            <li>When training the generator, gradient should not be propagated through $H'$ to prevent the generator from generating spurious landmark locations to fool the discriminator.</li>
+        </ul>
+        </li>
+
+        <li><b>Fetaure Matching Loss</b>
+        <ul>
+            <li>The feature matching loss encourages the output images $\hat{\ve{x}}'$ and $\ve{x}'$ to yield similar feature representations.</li>
+
+            <li>The features used are the intermediate layers of the discriminator $D$.
+            \begin{align*}
+            \mathcal{L}_{\mathrm{rec}} E_{\ve{x}, \ve{x}'} \bigg[ \sum_{i} \| D_i(\hat{\ve{x}}', H') - D_i(\ve{x}',H') \|_1 \bigg]
+            \end{align*}
+            where $D_i$ denots the output of the $i$th layer of the discriminator. $D_0$ denotes the discriminator input.
+            </li>
+            
+            <li>It seems that the paper uses all the layers of the discriminator except the last for the feature matching loss.</li>
+        </ul>
+
+        <li>The total loss is given by:
+        \begin{align*}
+        \mathcal{L}_{\mathrm{tot}} = \lambda_{\mathrm{rec}} \mathcal{L}_{\mathrm{rec}} + \mathcal{L}^G_{\mathrm{gan}}.
+        \end{align*}
+        The paper uses $\lambda_{\mathrm{rec}} = 10$.
+        </li>
+    </ul>
+
+    <h3>Generation Procedure</h3>
+
+    <ul>
+        <li>At test time, the network receives a driving video and an image.</li>
+
+        <li>To generate the $t$th frame, we use the keypoint estimation network $\Delta$ to estimate:
+        <ul>
+            <li>the keypoints $\{h_k^s\}$ of the source image,</li>
+            <li>the keypoints $\{h_k^1\}$ of the first frame of the driving video, and</li>
+            <li>the keypoints $\{h_k^t\}$ of the $t$th frame of the driving video.</li>
+        </ul>
+        </li>
+
+        <li>The source keypoints are then transfered using the displacements between $\{h_k^t\}$ and  $\{h_k^1\}$:
+        \begin{align*}
+            {h_k^s}' = h_k^s - (h_k^t - h_k^1).
+        \end{align*}
+        </li>
+
+        <li>Both $\{h_k^t\}$ and $\{{h_k^s}'\}$ are then encoded as heatmaps. Then, the heatmaps are then passed to the dense motion prediction network and the motion transfer network, respectively.</li>
+
+        <li>One limitation of the system is that the first frame of the video and the source image must be similar.</li>
+    </ul>
+    
+    <h2>Siarohin et al. (NeurIPS 2019)</h2>
+    
+    <hr>
+    <div class="page-header"></div>
+    <p>Last modified: 2020/02/20</p>    
+</div>
+
+<script type="text/javascript">
+$.bigfoot();
+</script>
+
+</body>
+</html>
