@@ -178,7 +178,7 @@
             <ul>
                 <li>The paper uses the <tt>input</tt>, <tt>conv1_2</tt>, <tt>conv2_2</tt>, <tt>conv3_2</tt>, <tt>conv4_2</tt>, and <tt>conv5_2</tt>.</li>
 
-                <li>The weights $\alpha_l$s are updated online during training using the technique in <a href="http://openaccess.thecvf.com/content_ICCV_2017/papers/Chen_Photographic_Image_Synthesis_ICCV_2017_paper.pdf">Chen and Kultun paper</a>.</li>
+                <li>The weights $\alpha_l$s are updated online during training using the technique in <a href="http://openaccess.thecvf.com/content_ICCV_2017/papers/Chen_Photographic_Image_Synthesis_ICCV_2017_paper.pdf">Chen and Koltun paper</a>.</li>
             </ul>
         </li>
 
@@ -458,10 +458,360 @@
     </ul>
     
     <h2>Siarohin et al. (NeurIPS 2019)</h2>
+
+    <ul>
+        <li>The paper extends the previous paper in two ways:
+            <ul>
+                <li>Each landmark is augmented with a <i>local affine transformation.</i></li>
+
+                <li>The network also models occlusions.</li>
+            </ul>
+        </li>
+
+        <li>The source image is denoted by $\ve{S} \in \Real^{3 \times H \times W}$.</li>
+
+        <li>The driving video is denoted by $\mathcal{D}$, and a frame of this video is denoted by $\ve{D}$. Each frame is an element of $\Real^{3 \times H \times W}$.</li>
+
+        <li>The network is composed to two main modules:
+        <ul>
+            <li>The <b>motion estimation module</b> predicts a dense motion field (i.e., backward optical flow) from a frame $\ve{D}$ to the source image $\ve{S}$.
+            <ul>
+                <li>It is used to align the features of $\ve{S}$ to those of $\ve{D}$.</li>
+
+                <li>The output is modeled by a function $\hat{\mathcal{T}}_{\ve{S} \leftarrow \ve{D}}: \Real^2 \rightarrow \Real^2$ that maps each pixel location in $\ve{D}$ to a pixel location in $\ve{S}$. This is used to align features computed from $\ve{S}$ to those of $\ve{D}$.</li>
+
+                <li>The network also outputs an occlusion mask $\hat{\mathcal{O}}_{\ve{S} \leftarrow \ve{D}}$, which indicates which parts of $\ve{D}$ can be constructed by copying pixels of the source image and which parts have to be inpainted.</li>
+            </ul>
+            </li>
+
+            <li>The <b>image generation module</b> warps the source image according to $\hat{\mathcal{T}}_{\ve{S} \leftarrow \ve{D}}$ and inpaint pixels that are occluded according to $\hat{\mathcal{O}}_{\ve{S} \leftarrow \ve{D}}$.</li>
+        </ul>
+        </li>
+
+        <li>To predict $\hat{\mathcal{T}}_{\ve{S} \leftarrow \ve{D}}$, the paper proceeds in two steps:
+        <ol>
+            <li>An encoder-decoder network approximates a <i>coarse</i> transformation $\mathcal{T}_{\ve{S} \leftarrow \ve{D}}$.
+            <ul>
+                <li>The paper assumes there is an abstract reference frame $\ve{R}$. It then estimate two transformations:
+                <ul>
+                    <li>from $\ve{R}$ to $\ve{S}$: $\mathcal{T}_{\ve{S} \leftarrow \ve{R}}$.</li>
+                    <li>from $\ve{R}$ to $\ve{D}$: $\mathcal{T}_{\ve{D} \leftarrow \ve{R}}$.</li>
+                </ul>
+                This frame is an abstract concept that is never explicitly computed. It is there to make it possible to process $\ve{D}$ and $\ve{S}$ independently. With the frame, we can write $\mathcal{T}_{\ve{S} \leftarrow \ve{D}} = \mathcal{T}_{\ve{S} \leftarrow \ve{R}} \circ \mathcal{T}_{\ve{D} \leftarrow \ve{R}}^{-1}.$
+                </li>
+
+                <li>Both $\mathcal{T}_{\ve{S} \leftarrow \ve{R}}$ and $\mathcal{T}_{\ve{D} \leftarrow \ve{R}}$ are estimated by a collection of affine transformations around $K$ keypoints.</li>
+
+                <li>The locations of the keypoints in $\ve{D}$ and $\ve{S}$ are separately predicted by an encoder-decoder network.</li>
+
+                <li>The motion in each neighborhood around a keypoint is approximated using an affine transformation.
+                <ul>
+                    <li>So, the encoder-decoder network also outputs the parameters of the affine transformation in addition to the keypoint locations.</li>
+                </ul>
+                </li>
+
+                <li>The $\mathcal{T}_{\ve{S} \leftarrow \ve{R}}$ and $\mathcal{T}_{\ve{D} \leftarrow \ve{R}}$, aproximated as above, are then combined to yield a coarse transformation $\mathcal{T}_{\ve{S} \leftarrow \ve{D}}$, which is still modeled by $K$ local affine transformations.</li>
+            </ul>
+            </li>
+            
+            <li>A dense motion network uses $\mathcal{T}_{\ve{S} \leftarrow \ve{R}}$ to synthesize to the dense motion field $\hat{\mathcal{T}}_{\ve{S} \leftarrow \ve{D}}$. This network also outputs the occlusion mask $\hat{\mathcal{O}}_{\ve{S} \leftarrow \ve{D}}.$</li>
+        </ol>
+        </li>
+    </ul>
+
+    <h3>Computing the Coarse Transformation</h3>
+
+    <ul>
+        <li>Computing $\mathcal{T}_{\ve{S} \leftarrow \ve{D}}$ involves computing $\mathcal{T}_{\ve{S} \leftarrow \ve{R}}$ and $\mathcal{T}_{\ve{R} \leftarrow \ve{D}}$.</li>
+
+        <li>Given a frame $\ve{X}$, the transformation $\mathcal{T}_{\ve{X} \leftarrow \ve{R}}$ is approximated with first order Taylor series expansions of $K$ keypoints $p_1$, $p_2$, $\dotsc$, $p_K$ where the keypoints are in the frame $\ve{R}$. We have that, around $p_k$:
+        \begin{align*}
+            \mathcal{T}_{\ve{X} \leftarrow \ve{R}}(p)
+            &= \sum_{k=1}^K \bigg[ \mathcal{T}_{\ve{X} \leftarrow \ve{R}}(p_k)
+            + \bigg( \frac{\dee}{\dee p} \mathcal{T}_{\ve{X} \leftarrow \ve{R}}(p) \bigg|_{p=p_k} \bigg) (p-p_k) + o(\| p - p_k \|) \bigg].
+        \end{align*}
+        As a result, the motion function $\mathcal{T}_{\ve{X} \leftarrow \ve{R}}$ is represented (perhaps piecewisely) by its values at $p_k$s and the Jacobians around these values:
+        \begin{align*}
+            \mathcal{T}_{\ve{X} \leftarrow \ve{R}}
+            \approx
+            \Bigg\{ \bigg\{ \mathcal{T}_{\ve{X} \leftarrow \ve{R}}(p_k), \frac{\dee}{\dee p} \mathcal{T}_{\ve{X} \leftarrow \ve{R}}(p) \bigg|_{p=p_k} \bigg\}, \dotsc, \bigg\{ \mathcal{T}_{\ve{X} \leftarrow \ve{R}}(p_K), \frac{\dee}{\dee p} \mathcal{T}_{\ve{X} \leftarrow \ve{R}}(p) \bigg|_{p=p_K} \Bigg\}.
+        \end{align*}
+        </li>
+
+        <li>However, we also need to estimate $\mathcal{T}_{\ve{R}\leftarrow\ve{X}} = \mathcal{T}_{\ve{X}\leftarrow\ve{R}}^{-1}.$ To do so, we need to assume that $\mathcal{T}_{\ve{X}\leftarrow\ve{R}}$ is locally bijective in the neighborhood of each keypoint (which is standard practice).</li>
+
+        <li>Coming back to $\mathcal{T}_{\ve{S} \leftarrow \ve{D}}$:.
+        <ul>
+            <li>For convenience, let $z_k$ denote the $k$th keypoint in the $\ve{D}$ frame. In other words, $z_k = \mathcal{T}_{\ve{D}\leftarrow\ve{R}}(p_k).$</li>
+
+            <li>We now need to estimate $\mathcal{T}_{\ve{S} \leftarrow \ve{D}}$ around each $z_k$.</li>
+
+            <li>We rewrite $\mathcal{T}_{\ve{S} \leftarrow \ve{D}}$ as $\mathcal{T}_{\ve{S} \leftarrow \ve{R}} \circ \mathcal{T}_{\ve{D} \leftarrow \ve{R}}^{-1}$.</li>
+
+            <li>This allows us to estimate $\mathcal{T}_{\ve{S} \leftarrow \ve{D}}$ in two steps:
+            <ul>
+                <li>Estimate $\mathcal{T}_{\ve{D} \leftarrow \ve{R}}^{-1} = \mathcal{T}_{\ve{R} \leftarrow \ve{D}}$ around each $z_k$.</li>
+
+                <li>Estimate $\mathcal{T}_{\ve{S} \leftarrow \ve{R}}$ around $p_k = \mathcal{T}_{\ve{R} \leftarrow \ve{D}}(z_k)$.</li>
+
+                <li>Using the first order Taylor series expansion, we have that, near $z_k$:
+                \begin{align*}
+                \mathcal{T}_{\ve{S} \leftarrow \ve{D}}(z)
+                &= \mathcal{T}_{\ve{S} \leftarrow \ve{D}}(z_k)
+                + \bigg( \frac{\dee}{\dee p} \mathcal{T}_{\ve{S} \leftarrow \ve{D}}(z) \bigg|_{z=z_k} \bigg) (z-z_k) + o(\| z - z_k \|).
+                \end{align*}
+                </li>
+
+                <li>For the $0$th order term, we have:
+                \begin{align*}
+                \mathcal{T}_{\ve{S} \leftarrow \ve{D}}(z_k)
+                &= \mathcal{T}_{\ve{S} \leftarrow \ve{R}} \circ \mathcal{T}_{\ve{R} \leftarrow \ve{D}}(z_k) \\
+                &= \mathcal{T}_{\ve{S} \leftarrow \ve{R}} \circ \mathcal{T}_{\ve{D} \leftarrow \ve{R}}^{-1}(z_k) \\
+                &= \mathcal{T}_{\ve{S} \leftarrow \ve{R}} \circ \mathcal{T}_{\ve{D} \leftarrow \ve{R}}^{-1} \circ \mathcal{T}_{\ve{D} \leftarrow \ve{R}} (p_k) \\
+                &= \mathcal{T}_{\ve{S} \leftarrow \ve{R}} (p_k).
+                \end{align*}
+                </li>
+
+                <li>The first order term is approximated as:
+                \begin{align*}
+                \frac{\dee}{\dee z} \mathcal{T}_{\ve{S} \leftarrow \ve{D}}(z) \bigg|_{z=z_k}
+                &= \bigg( \frac{\dee}{\dee p} \mathcal{T}_{\ve{S} \leftarrow \ve{R}}(p) \bigg|_{p=p_k} \bigg)
+                \bigg( \frac{\dee}{\dee z} \mathcal{T}_{\ve{R} \leftarrow \ve{D}}(z) \bigg|_{z=z_k} \bigg) \\
+                &= \bigg( \frac{\dee}{\dee p} \mathcal{T}_{\ve{S} \leftarrow \ve{R}}(p) \bigg|_{p=p_k} \bigg)
+                \bigg( \frac{\dee}{\dee z} \mathcal{T}_{\ve{D} \leftarrow \ve{R}}^{-1}(z) \bigg|_{z=z_k} \bigg).
+                \end{align*}
+                Because we have assume that $\mathcal{T}_{\ve{R} \leftarrow \ve{D}}$ is locally bijective around $z_k$, the inverse function theorem tells us that:
+                \begin{align*}
+                \frac{\dee}{\dee z} \mathcal{T}_{\ve{R} \leftarrow \ve{D}}(z) \bigg|_{z=z_k}
+                = \frac{\dee}{\dee z} \mathcal{T}_{\ve{D} \leftarrow \ve{R}}^{-1}(z) \bigg|_{z=z_k}
+                = \bigg( \frac{\dee}{\dee p} \mathcal{T}_{\ve{D} \leftarrow \ve{R}}(z) \bigg|_{p=p_k} \bigg)^{-1}.
+                \end{align*}
+                So,
+                \begin{align*}
+                \frac{\dee}{\dee z} \mathcal{T}_{\ve{S} \leftarrow \ve{D}}(z) \bigg|_{z=z_k}
+                &= \bigg( \frac{\dee}{\dee p} \mathcal{T}_{\ve{S} \leftarrow \ve{R}}(p) \bigg|_{p=p_k} \bigg)
+                \bigg( \frac{\dee}{\dee p} \mathcal{T}_{\ve{D} \leftarrow \ve{R}}(p) \bigg|_{p=p_k} \bigg)^{-1}.
+                \end{align*}
+                </li>
+
+                <li>
+                As a result,
+                \begin{align*}
+                \mathcal{T}_{\ve{S} \leftarrow \ve{D}}(z)
+                \approx
+                \mathcal{T}_{\ve{S} \leftarrow \ve{R}}(p_k)
+                + \bigg( \frac{\dee}{\dee p} \mathcal{T}_{\ve{S} \leftarrow \ve{R}}(p) \bigg|_{p=p_k} \bigg)
+                \bigg( \frac{\dee}{\dee p} \mathcal{T}_{\ve{D} \leftarrow \ve{R}}(p) \bigg|_{p=p_k} \bigg)^{-1}
+                (z - \mathcal{T}_{\ve{D} \leftarrow \ve{R}}(p_k)).
+                \end{align*}
+                </li>
+            </ul>
+            </li>
+        </ul>
+        </li>
+
+        <li>
+        Now, the problem now becomes how to compute $\mathcal{T}_{\ve{X} \leftarrow \ve{R}}(p_k)$ and the Jacobians around $p_k$.
+        <ul>
+            <li>$\mathcal{T}_{\ve{X} \leftarrow \ve{R}}(p_k)$ is computed using the same algorithm as in Siarohin et al.'s CVPR 2019 paper.
+            <ul>
+                <li>For each keypoint $k$, the encoder-decoder network computes a heatmap.</li>
+
+                <li>The heatmap is then turned into a probability distribution by applying the softmax function.</li>
+
+                <li>The expected value of the pixel positions according to the above probability distribution gives the location $p_k$.</li>
+            </ul>
+            </li>
+
+            <li>To compute the Jacobian $\frac{\dee}{\dee p} \mathcal{T}_{\ve{X}\leftarrow \ve{R}}(p)|_{p=p_k}$:
+            <ul>
+                <li>Note first that it is a $2 \times 2$ matrix, which contains 4 entries.</li>
+
+                <li>The encoder-decoder network also outputs 4 more heatmaps, corresponding to each entry of the matrix.</li>
+
+                <li>An entry is computed as the weighted average of the corresponding heatmap.
+                <ul>
+                    <li>The weight is the probability distribution used to computed the keypoint location.</li>
+                </ul>
+                </li>
+            </ul>
+            </li>    
+        </ul>
+        </li>
+    </ul>
+
+    <h3>Computing the Dense Optical Flow</h3>
+
+    <ul>
+        <li>The dense (backward) optical flow $\hat{\mathcal{T}}_{\ve{S} \leftarrow \ve{D}}$ is computed with a convolutional network $P$, which takes as input:
+        <ul>
+            <li>the source image $\ve{S}$, and</li>
+            <li>a collection of local affine transformations $\mathcal{T}_{\ve{S} \leftarrow \ve{D}}$.</li>
+        </ul>
+        </li>
+
+        <li>$P$ has U-Net architecture. Therefore, it is important for the input image $\ve{S}$ to be aligned with the frame of the output, which is that of $\ve{D}$.</li>
+
+        <li>To create inputs that are aligned with $\ve{D}$, the paper uses the $K$ affine transformations in $\mathcal{T}_{\ve{S} \leftarrow \ve{D}}$ to compute $K$ source images $\ve{S}^1$, $\ve{S}^2$, $\dotsc$, $\ve{S}^K$. The paper also use $\ve{S}^0 = \ve{S}$ as the background.</li>
+
+        <li>For each keypoint $p_k$, the paper also compute a heatmap $\ve{H}_k$ which encodes the keypoints in the form that is easily usable by $P$. It is defined as the different between two rendering of Gaussians centering at the keypoints:
+        \begin{align*}
+        \ve{H}_k(z) 
+        &= \exp\bigg( \frac{-\|\mathcal{T}_{\ve{D} \leftarrow \ve{R}}(p_k) -z\|^2}{\sigma^2} \bigg) - \exp\bigg( \frac{-\|\mathcal{T}_{\ve{S} \leftarrow \ve{R}}(p_k) -z\|^2}{\sigma^2} \bigg).
+        \end{align*}
+        The paper uses $\sigma = 0.1$.
+        </li>
+
+        <li>The heatmaps $\{\ve{H}_k\}$ and the transformed images $\{\ve{S}_k\}$ are concatenated and give as input of $P$.</li>
+
+        <li>Now, $P$ outputs $K+1$ masks $\ve{M}_0$, $\ve{M}_1$, $\dotsc$, $\ve{M}_{K}$.</li>
+
+        <li>The final dense motion field is given by:
+        \begin{align*}
+        \hat{\mathcal{T}}_{\ve{D} \leftarrow \ve{S}}
+        &= M_0 \otimes z + \sum_{k=1}^K \ve{M}_k \otimes \Big( \mathcal{T}_{\ve{S} \leftarrow \ve{R}}(p_k) + J_k\big(z - \mathcal{T}_{\ve{D}\leftarrow \ve{R}}(p_k) \big) \Big)
+        \end{align*}
+        where
+        \begin{align*}
+        J_k = \bigg( \frac{\dee}{\dee p} \mathcal{T}_{\ve{S} \leftarrow \ve{R}}(p) \bigg|_{p=p_k} \bigg)
+        \bigg( \frac{\dee}{\dee p} \mathcal{T}_{\ve{D} \leftarrow \ve{R}}(p) \bigg|_{p=p_k} \bigg)^{-1}.
+        \end{align*}
+        </li>
+
+        <li>One difference I noticed between this NIPS 2019 paper and the previous CVPR 2019 paper is that there's no residual term ($\mathcal{F}_{\mathrm{residual}}$).</li>
+
+        <li>Also, $P$ also output the occlusion map $\hat{\mathcal{O}}_{\ve{S} \leftarrow \ve{D}}$. This comes naturally by adding a layer to the output of $P$.</li>
+    </ul>
+
+    <h3>Output Image Generation</h3>
+
+    <ul>
+        <li>This time, the image generation network $G$ is not a U-Net. The paper uses the encoder-decoder architecture of <a href="https://arxiv.org/pdf/1603.08155.pdf">Johnson et at.'s paper.</a>
+        <ul>
+            <li>It has two downsampling blocks, six residual blocks, and two up-sample blocks.</li>
+        </ul>
+        </li>
+
+        <li>The source image $\ve{S}$ is fed through the two downsampling blocks. Let $\ve{\xi} \in \Real^{C' \times H', \times W'}$ be the output of the last downsampling block.</li>
+
+        <li>The paper warps each $\ve{\xi}$ with $\hat{\mathcal{T}}_{\ve{D} \leftarrow \ve{S}}$ (downsampled with nearest neighbor sampling to $H
+        ' \times W'$ resolution) in order to make the features align with $\ve{D}$. Moreover, the paper also multiplies the output with the mask $\hat{\mathcal{O}}_{\ve{S} \leftarrow \ve{D}}$ to mask out the feature map regions that should be inpainted. In other words, we compute:
+        \begin{align*}
+            \ve{\xi}' = \hat{\mathcal{O}}_{\ve{S} \leftarrow \ve{D}} \otimes f_w(\ve{\xi}, \hat{\mathcal{T}}_{\ve{D} \leftarrow \ve{S}}).
+        \end{align*}
+        Then, $\ve{\xi}'$ is then fed to the next stage of the neural network.
+        </li>
+    </ul>
+
+    <h3>Training Losses</h3>
+
+    <ul>
+        <li>The paper uses two losses:
+        <ul>
+            <li>Perceptual content loss based on <a href="https://arxiv.org/pdf/1603.08155.pdf">Johnson et al.'s paper</a>.</li>
+
+            <li>Equivariance constraint loss.</li>
+        </ul>
+        </li>
+
+        <li>For the perceptual loss: 
+        <ul>
+            <li>The implementation is ased on the implementation by <a href="https://tcwang0509.github.io/vid2vid/paper_vid2vid.pdf">Wang et al.</a></li>
+
+            <li>Let $\ve{D}$ denote a frame of the driving video. Let $\hat{\ve{D}}$ denote the generated frame.</li>
+
+            <li>The reconstruction loss is given by:
+            \begin{align*}
+                \mathcal{L}_{\mathrm{rec}}(\hat{\ve{D}}, \ve{D})
+                = \sum_{i=1}^I \frac{1}{P_i} \| N_i(\hat{\ve{D}}) - N_i(\ve{D}) \|_1.
+            \end{align*}
+            where $N_i$ is the $i$th used layer of the VGG-19 network, and $P_i$ denote the number of elements in the output of the $i$th layer. The paper does not tell what layers of VGG-19 it uses, but it seems there are 5 used layers.
+            </li>
+
+            <li>The paper also proposes applying the loss on downsampled versions of $\hat{\ve{D}}$ and $\ve{D}$. There are four resolutions, so there are 20 loss terms in generate.</li>
+        </ul>
+        </li>
+    </ul>
+
+    <h4>Imposing Equivariance Constraint</h4>
+
+    <ul>
+        <li>The equivariance constraint forces the keypoint extractor to predict consistent keypoints with respect to known geometric transformations.
+        <ul>
+            <li>In other words, if image $\ve{X}$ undergoes a known transformation $T$, then the keypoints extracted from $\ve{X}$ should also undergo the same transformation too.</li>
+        </ul>
+        </li>
+
+        <li>However, the keypoint extractor of the paper does not only output keypoint locations but also the Jacobians. The formulation of the equivariance constraint must be extended to Jacobians in order for it to be able to be enforced.</li>
+
+        <li>Assume that the input image $\ve{X}$ undergoes a known spatial transformation $\mathcal{T}_{\ve{X} \leftarrow \ve{Y}}$.
+        <ul>
+            <li>This can be an affine transformation or a thin-place spline deformation.</li>
+
+            <li>After this transformation, we obtain a new image $\ve{Y}$.</li>
+        </ul>
+        </li>
+
+        <li>Using the keypoint estimation network, we get a set of local approximations for $\mathcal{T}_{\ve{X} \leftarrow \ve{R}}$ and $\mathcal{T}_{\ve{Y} \rightarrow \ve{R}}$.</li>
+
+        <li>The equivariance constraint can now be written as:
+        \begin{align*}
+            \mathcal{T}_{\ve{X} \leftarrow \ve{R}}
+            &\equiv \mathcal{T}_{\ve{X} \leftarrow \ve{Y}} \circ \mathcal{T}_{\ve{Y} \leftarrow \ve{R}}.
+        \end{align*}
+        This means that:
+        \begin{align}
+            \mathcal{T}_{\ve{X} \leftarrow \ve{R}}(p_k)
+            &\equiv \mathcal{T}_{\ve{X} \leftarrow \ve{Y}} \circ \mathcal{T}_{\ve{Y} \leftarrow \ve{R}}(p_k) \label{point-constraint} \\
+            \bigg( \frac{\dee}{\dee p}  \ve{T}_{\ve{X} \leftarrow \ve{R}}(p) |_{p = p_k} \bigg)
+            &\equiv \bigg( \frac{\dee}{\dee p}  \mathcal{T}_{\ve{X} \leftarrow \ve{R}}(p) |_{p = \mathcal{T}_{\ve{Y}\leftarrow\ve{R}}(p_k)} \bigg) \bigg( \frac{\dee}{\dee p}  \mathcal{T}_{\ve{Y} \leftarrow \ve{R}}(p) |_{p = p_k} \bigg) \label{jacobian-constraint}
+        \end{align}
+        </li>
+
+        <li>The constraint \eqref{point-constraint} can be enforced by computing the $L_1$ difference between the keypoint locations of $\ve{X}$ and the transformed keypoint locations of $\ve{Y}$.</li>
+
+        <li>The constraint \eqref{jacobian-constraint} needs more care. If we just minimize the difference between the matrices on both sizes, it would force the Jacobian to zero and lead to numerical problems. So, the paper enforces the following equivalent constraint instead:
+        \begin{align*}
+            I 
+            &\equiv 
+            \bigg( \frac{\dee}{\dee p}  \ve{T}_{\ve{X} \leftarrow \ve{R}}(p) |_{p = p_k} \bigg)^{-1}
+            \bigg( \frac{\dee}{\dee p}  \mathcal{T}_{\ve{X} \leftarrow \ve{R}}(p) |_{p = \mathcal{T}_{\ve{Y}\leftarrow\ve{R}}(p_k)} \bigg) 
+            \bigg( \frac{\dee}{\dee p}  \mathcal{T}_{\ve{Y} \leftarrow \ve{R}}(p) |_{p = p_k} \bigg)
+        \end{align*}
+        where $I$ is the $2\times 2$ identity matrix.
+        </li>
+
+        <li>The paper uses the same weight for the equivariance constraint loss as the weight for the perceptual content loss.</li>
+
+        <li>However, it is unclear how this loss is actually used. The paper does not tell exactly where this loss fits into the whole training scheme. (However, it does specify how to sample random thin-plate spline deformation.)</li>
+    </ul>
+
+    <h3>Transferring Motion at Test Time</h3>
+
+    <ul>
+        <li>At test time, we have a source image $\ve{S}$ and frames of the driving videos $\ve{D}_1$, $\dotsc$, $\ve{D}_T$. We would like to compute $\ve{S}_t$ for $1 \leq t \leq T$.</li>
+
+        <li>The paper assumes that $\ve{S}$ and $\ve{D}_1$ are roughly aligned. So, we shall write $\ve{S}$ as $\ve{S}_1$.</li>
+
+        <li>Rather than trying to compute $\mathcal{T}_{\ve{S}_1 \leftarrow \ve{D}_t}$, the paper transfer the relative motion between $\ve{D}_1$ and $\ve{D}_t$ to $\ve{S}_1$. In other words:
+        \begin{align*}
+            \mathcal{T}_{\ve{S}_1 \leftarrow \ve{S}_t}
+            \approx \mathcal{T}_{\ve{S}_1 \leftarrow \ve{R}}(p_k) + J_k(z - \mathcal{T}_{\ve{S}_1 \leftarrow \ve{R}} + \mathcal{T}_{\ve{D}_1 \leftarrow \ve{R}} - \mathcal{T}_{\ve{D}_t \leftarrow \ve{R}})
+        \end{align*}
+        with
+        \begin{align*}
+            J_k 
+            &= \bigg( \frac{\dee}{\dee p}  \ve{T}_{\ve{D}_1 \leftarrow \ve{R}}(p) |_{p = p_k} \bigg)
+            \bigg( \frac{\dee}{\dee p}  \ve{T}_{\ve{D}_t \leftarrow \ve{R}}(p) |_{p = p_k} \bigg)^{-1}
+        \end{align*}
+        </li>
+
+        <li>In other words, the paper only transfer relative motion between frames, which would help preserve the original object's shape.</li>
+    </ul>
     
     <hr>
     <div class="page-header"></div>
-    <p>Last modified: 2020/02/20</p>    
+    <p>Last modified: 2020/02/25</p>    
 </div>
 
 <script type="text/javascript">
@@ -470,3 +820,4 @@ $.bigfoot();
 
 </body>
 </html>
+
