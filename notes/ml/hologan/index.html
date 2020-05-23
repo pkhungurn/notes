@@ -204,6 +204,20 @@
         The paper said they use $\lambda_{\mathrm{style}} = \lambda_{\mathrm{style}} = 1$ for all experiments.
         </li>
     </ul>
+
+    <h2>Implementation</h2>
+
+    <ul>
+        <li>See the <a href="http://openaccess.thecvf.com/content_ICCV_2019/supplemental/Nguyen-Phuoc_HoloGAN_Unsupervised_Learning_ICCV_2019_supplemental.pdf">supplementary material</a> for the details of the network architectures.</li>
+
+        <li>The latent vector is sampled form the uniform distribution of $[-1,1]^m$.</li>
+
+        <li>Depending on the dataset, the size of the latent vectors $m$ is either 128 or 200.</li>
+
+        <li>The paper says that it starts with a template of size $4 \times 4 \times 4 \times 512$ when the output is $64 \times 64$. Otherwise, it starts with a template of size $16 \times 16 \times 16 \times 64$.</li>
+
+        <li>The style discriminator is implemented with an MLP with sigmoid activation unit at the last output. The mean and standard deviation of $\ve{\Psi}_l$ are computed scross batch and spatial dimensions.</li>
+    </ul>
     
     <hr>
     <div class="page-header"></div>
