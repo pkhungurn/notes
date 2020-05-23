@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>Papers on Face Image Manipulations</title>
+
+    <!-- Bootstrap -->
+    <link href="../../../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../../../css/theme.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+      TeX: { equationNumbers: {autoNumber: "AMS"} } 
+    });
+    </script>
+    <script type="text/javascript"
+            src="../../../MathJax/MathJax.js?config=TeX-AMS_HTML-full">
+    </script>
+
+    <script type="text/javascript" src="../../../js/jquery-3.4.1.min.js"></script>    
+    <script type="text/javascript" src="../../../js/bigfoot.min.js"></script>    
+
+    <link rel="stylesheet" type="text/css" href="../../../css/bigfoot-default.css">    
+
+</head>
+<body>
+<div class="container">
+    <span style="visibility: hidden;">
+        \(
+        \def\sc#1{\dosc#1\csod}
+        \def\dosc#1#2\csod{{\rm #1{\small #2}}}
+
+        \newcommand{\dee}{\mathrm{d}}
+        \newcommand{\Dee}{\mathrm{D}}
+        \newcommand{\In}{\mathrm{in}}
+        \newcommand{\Out}{\mathrm{out}}
+        \newcommand{\pdf}{\mathrm{pdf}}
+        \newcommand{\Cov}{\mathrm{Cov}}
+        \newcommand{\Var}{\mathrm{Var}}
+
+        \newcommand{\ve}[1]{\mathbf{#1}}
+        \newcommand{\mrm}[1]{\mathrm{#1}}
+        \newcommand{\etal}{{et~al.}}
+        \newcommand{\sphere}{\mathbb{S}^2}
+        \newcommand{\modeint}{\mathcal{M}}
+        \newcommand{\azimint}{\mathcal{N}}
+        \newcommand{\ra}{\rightarrow}
+        \newcommand{\mcal}[1]{\mathcal{#1}}
+        \newcommand{\X}{\mathcal{X}}
+        \newcommand{\Y}{\mathcal{Y}}
+        \newcommand{\Z}{\mathcal{Z}}
+        \newcommand{\x}{\mathbf{x}}
+        \newcommand{\y}{\mathbf{y}}
+        \newcommand{\z}{\mathbf{z}}
+        \newcommand{\tr}{\mathrm{tr}}
+        \newcommand{\sgn}{\mathrm{sgn}}
+        \newcommand{\diag}{\mathrm{diag}}
+        \newcommand{\Real}{\mathbb{R}}
+        \newcommand{\sseq}{\subseteq}
+        \newcommand{\ov}[1]{\overline{#1}}
+        \DeclareMathOperator*{\argmax}{arg\,max}
+        \DeclareMathOperator*{\argmin}{arg\,min}
+        \)
+    </span>
+
+    <br>
+    <h1>Papers on Face Image Manipulations</h1>
+    <hr>
+
+    <p>The only over-arching theme of this note is that all the papers deal with face manipulation.</p>
+
+    <h2>CONFIG [Kowalski et al. 2020]</h2>
+    <hr>
+
+    <ul>
+        <li>Kowalski et al. <b>CONFIG: Controllable Neural Face ImageGeneration.</b> <a href="https://arxiv.org/pdf/2005.02671.pdf">[LINK]</a></li>
+
+        <li>The model proposed by this paper has the following capabilities:
+        <ul>
+            <li>It can generate face images from latent codes.</li>
+
+            <li>Certain attributes of the face images can be manipulated by changing certain parts of the latent code.</li>
+
+            <li>Attributes that can be manipulated include:
+            <ul>
+                <li>Face rotation angle</li>
+                <li>Presence of facial hair</li>
+                <li>Degree of eye opening</li>
+                <li>Face rotation angle</li>
+                <li>How blonde the hair is</li>
+                <li>Lighting</li>
+            </ul>
+            </li>
+        </ul>
+        </li>
+
+        <li>The training process is also interesting. It uses synthetic data (fully annotated 3D renderings of faces) in tandem with unlabelled face images.
+        <ul>
+            <li>Real images come from the <a href="https://github.com/NVlabs/ffhq-dataset">FFHQ</a> dataset (70,000 images at 1024 $\times$ 1024).</li>
+
+            <li>The authors generated a synthetic face dataset called SynthFace, containing 30,000 images also at 1024 $\times$ 1024.</li>
+        </ul>
+        </li>        
+    </ul>
+
+    <h3>The Networks</h3>
+
+    <ul>
+        <li>Let $\mathcal{I}_S$ denote the set of synthetic images and $\mathcal{I}_R$ the set of real images. We use $I_S$ and $I_R$ to denote arbitrary elements of the two sets, respectively.</li>
+
+        <li>A synthetic image is specified by a parameter vector $\theta \in \Theta \subseteq \Real^m$. It is factorized into $k$ parts:
+        \begin{align*}
+            \theta = (\theta_1, \theta_2, \dotsc, \theta_k) \in \Real^{m_1} \times \Real^{m_2} \times \dotsb \times \Real^{m_k} = \Real^m.
+        \end{align*}
+        Each $\theta_i$ corresponds to semantically meaningful input of the graphics pipeline.
+        </li>
+
+        <li>Let $\mathcal{Z}$ denote the set of latent vectors. A latent code is denoted by $z$. We shall denote a "real" latent code with $z_R$ and the "synthetic" latent code with $z_S$.</li>
+
+        <li>On the generation side, the network consists of three networks:
+        <ul>
+            <li>The <b>generator</b> $G: \mathcal{Z} \rightarrow \mathcal{I}_R \cup \mathcal{I}_S$.</li>
+
+            <li>The <b>synthetic encoder</b> $E_S: \Theta \rightarrow \mathcal{Z}$.
+            <ul>
+                <li>$E_S$ must maps each $\theta_i$ to a separate output $z_i$, thereby partitioning $z$ into $k$ parts.</li>
+            </ul>
+            </li>
+
+            <li>The <b>real encoder</b> $E_R: \mathcal{I}_R \rightarrow \mathcal{Z}$.</li>
+        </ul>
+
+        <li>Image manipulation is thus done by modifying a desired part $z_i$ of the latent code, before feeding it to the generator $G$.</li>
+
+        </li>
+
+        <li>To train the generating networks above, the paper deploy three discriminator:
+        <ul>
+            <li>The <b>real discriminator</b> $D_R$, which decidees whether an image comes from the real image training set.</li>
+
+            <li>The <b>synthetic discriminator</b> $D_S$, which decides whether an image comes from the synthetic image training set.</li>
+
+            <li>The <b>domain discriminator</b> $D_{DA}$, which decides whether a latent code looks like a synthetic latent code. The subscript $DA$ probably stands for the "domain adversarial" loss.</li>
+        </ul>
+        </li>
+
+        <li>The domain discriminator, along with its associated domain adversarial loss, is there to ensure that the sets $E_R(\mathcal{I}_R)$ and $E_S(\Theta)$ are similar to each other.</li>
+    </ul>
+
+    <h3>Loss Functions</h3>
+
+    <ul>
+        <li>To make the generated synthetic image $G(E_S(\theta))$ as close as possible to the ground truth image $I_S(\theta)$ as possible, the paper uses two <b>perceptual content losses</b> <a href="https://arxiv.org/abs/1603.08155">[Johnson et al. 2016]</a>
+        <ul>
+            <li>The first is based on VGG-19 trained on ImageNet. Let us call this $\mathcal{L}_{perc}$. The layers used are <tt>conv_1_2</tt>, <tt>conv_2_2</tt>, <tt>conv_3_4</tt>, and <tt>conv_4_4</tt>.</li>
+
+            <li>The second is based on <a href="https://www.robots.ox.ac.uk/~vgg/publications/2015/Parkhi15/">VGGFace</a>. Let us call this $\mathcal{L}_{face}$.</li>
+        </ul>
+        </li>
+
+        <li>The perceptual loss above could not, however, preserve eye gaze directions of synthetic images. The paper thus add an <b>eye loss</b> just for this:
+        \begin{align*}
+            \mathcal{L}_{eye}
+            = w_M \sum M \otimes (I_{S}(\theta) - G(E_S(\theta)))
+        \end{align*}
+        where
+        <ul>
+            <li>$M$ is a pixel-wise binary mask that denotes the iris, and</li>
+            <li>$w_M = (1 + |M|_1)^{-1}$.</li>
+        </ul>
+        (WTF is this? How do you apply a sum to an image? Why is this not a norm?) If it were me, it would define it as:
+        \begin{align*}
+            \mathcal{L}_{eye}(\theta)
+            = w_M \| M \otimes (I_{S}(\theta) - G(E_S(\theta))) \|_1
+        \end{align*}
+        </li>
+
+        <li>As a standard practice, the paper also uses <b>adversarial losses</b>, which is the standard non-saturating GAN loss in the original paper:
+        \begin{align*}
+            \mathcal{L}_{GAN,D}(D, x, y) &= -\log D(x) - \log (1 - D(y)),\\
+            \mathcal{L}_{GAN,G}(D, y) &= -\log D(y).
+        \end{align*}
+        Here, $\mathcal{L}_{GAN,D}(D, x, y)$ is used to train the discriminator, and $\mathcal{L}_{GAN,G}$ is used to train the generator.
+        </li>
+    </ul>
+
+    <h3>Training Procedure</h3>
+
+    <ul>
+        <li>The procedure is divided into two stages.</li>
+
+        <li>In the first stage:
+        <ul>
+            <li>All the networks except $E_R$ are trained.</li>
+            <li>During this stage, the real latent code $z_R$ is sampled from the standard normal distribution $\mathcal{N}(0,1)$.</li>
+            <li>$E_S$ and $G$ are trained with the following loss:
+            \begin{align*}
+            \mathcal{L}^{(1)} := &- E_{z_R \sim \mathcal{N}(0,1)} [ \log D_R(G(z_R)) ] \\
+            &- E_{\theta \sim \Theta} [ \log D_S(G(E_S(\theta))) ] \\
+            &+ \lambda_{perc} E_{\theta \sim \Theta} [\mathcal{L}_{prec}(I_S(\theta), G(E_S(\theta)))] \\
+            &+ \lambda_{eye} E_{\theta \sim \Theta} [ \mathcal{L}_{eye}(\theta)]\\            
+            &- E_{\theta \sim \Theta} [\log D_{DA}(E_S(\theta))]
+            \end{align*}
+            </li>
+            <li>The discriminators are trained with the following loss functions:
+            \begin{align*}
+            \mathcal{L}_{D_R}^{(1)} &:= 
+            -E_{I_R \sim \mathcal{I}_R} [\log D_R(I_R)] 
+            - E_{z_R \sim \mathcal{N}(0,1)} [\log(1-D_R(G(z_R)))] \\
+            \mathcal{L}_{D_S}^{(1)} &:= 
+            -E_{\theta \sim \Theta} [\log D_S(I_S(\theta))] 
+            - E_{\theta \sim \Theta} [\log(1-D_S(G(E_S(\theta))))] \\
+            \mathcal{L}_{D_{DA}}^{(1)} &:=
+            -E_{z_R \sim \mathcal{N}(0,1)} [\log D_{DA}(z_R)] - E_{\theta \sim \Theta} [log(1 - D_{DA}(E_S(\theta)))]
+            \end{align*}
+            </li>
+
+            <li>The novel bit is the use of the domain discriminator $D_{DA}$. It is trained to make the distribution of $E_S(\theta)$ as closed as possible to $\mathcal{N}(0,1)$. In this way, the space for the real and synthetic latent codes would be forced to intersect.</li>
+        </ul>
+        </li>
+
+        <li>In the second stage:
+        <ul>
+            <li>In the second stage, we train $E_R$ in addition to the other networks.</li>
+
+            <li>When training the generators, we sample $z_R$ by sampling $I_R$ and then evaluating $E_R(I_R)$. The loss used is as follows:
+            \begin{align*}
+            \mathcal{L}^{(2)}
+            := 
+            &- E_{I_R \sim \mathcal{I}_R} [ \log D_R(G(E_R(I_R))) ] \\
+            &+ \lambda_{perc} E_{I_R \sim \mathcal{I}_R} [\mathcal{L}_{prec}(I_R, G(E_R(I_R)))] \\
+            &- E_{\theta \sim \Theta} [ \log D_S(G(E_S(\theta))) ] \\
+            &+ \lambda_{perc} E_{\theta \sim \Theta} [\mathcal{L}_{prec}(I_S(\theta), G(E_S(\theta)))] \\
+            &+ \lambda_{eye} E_{\theta \sim \Theta} [ \mathcal{L}_{eye}(\theta)]\\
+            &- E_{\theta \sim \Theta} [\log D_{DA}(E_S(\theta))] \\
+            &+ E_{I_R \sim \mathcal{I}_R} [\log (1 - D_{DA}(E_R(I_R)))]
+            \end{align*} 
+            </li>
+
+            <li>The paper mentions that the goal of the $E_{I_R \sim \mathcal{I}_R} [\log (1 - D_{DA}(E_R(I_R)))]$ is to bring the distribution of $E_R(I_R)$ closer to that of $E_S(\theta)$.</li>
+
+            <li>However, I found that the writing confusing because:
+            <ul>
+                <li>The paper defined the adversarial generator loss term as:
+                \begin{align*}
+                \mathcal{L}_{GAN,G}(D, y) &= \log D(y),
+                \end{align*}
+                dropping the minus sign. If you minimize this function, it will encourages $D(y)$ to be as close as $0$ as possible, which is not something we want to do.
+                </li>
+
+                <li>Then, when the paper introduce the $\log (1 - D_{DA}(E_R(I_R)))$ term to $\mathcal{L}^{(2)}$, it does not use the minus sign too. If you assume that this is the result of the same type of error as in the previous item, then the authors might have wanted to introduce $-\log (1 - D_{DA}(E_R(I_R)))$ instead. If you minimize this, it encourages $D_{DA}(E_R(I_R))$ to become zero, which is definitely not what we want.</li>
+
+                <li>Now, if you think about $\log (1 - D_{DA}(E_R(I_R)))$ with the positive sign, then why don't they use $\log D_{DA}(E_R(I_R))$, which has non-saturating gradient, instead?</li>
+            </ul>
+            </li>
+
+            <li>Since the paper does not mention anything about the loss functions for the discriminators, I presume that they are unchanged from the last step.</li>
+
+            <li>The paper also mentions increasing the weight $\lambda_{perc}$ in the second step.</li>
+        </ul>
+
+        </li>
+    </ul>
+
+    <h3>At Test Time</h3>
+
+    <ul>
+        <li>Given a real image $I_R$, we can use $E_R$ to compute the latent code $z_R = E_R(I_R)$.</li>
+
+        <li>However, the paper mentioned that, while $G(E_R(I_R))$ is similar to $I_R$ as a whole, its identity would not be the same as that of $I_R$.</li>
+
+        <li>To manipulate $I_R$, the paper proposes find-tuning the generator on it. To do so, the paper introduces $\hat{z}_R$, which is initialized to $z_R$. Then, it minimizes the following function:
+        \begin{align*}
+        \mathcal{L}_{ft} :=
+        & - \log D_R(G(\hat{z}_R)) \\
+        & + \log(1 - D_{DA}(\hat{z}_R)) \\
+        & + \lambda_{perc} \mathcal{L}_{perc} (G(\hat{z}_R), I_R) \\
+        & + \lambda_{perc} \mathcal{L}_{face} (G(\hat{z}_R), I_R).
+        \end{align*}
+        The optimization updates both the weights of $G$ and the vector $\hat{z}_R$. After the fine-tuning process, we then manipulate $\hat{z}_R$ instead of $z_R$.
+        </li>
+
+        <li>After we have embedded a real image to find a latent code $z$ (which can be further fine-tuned to preserve identity better), we can manipulate the semantics of the image by swapping any part, $z_i$, with ones obtained from other embeddings.</li>
+
+        <li>Here's another way to manipulate the image. Given a real image $I_R$, we use $E_R$ to map it to $z_R$. Then, we can find
+        \begin{align*}
+        \theta = \argmin_{\tilde{\theta}} \| z_r - E_S(\tilde{\theta}) \|^2
+        \end{align*}
+        Then, we can manipulate $\theta$ to change the relevant parts as we want.
+        </li>
+    </ul>
+
+    <h3>Implementation</h3>
+
+    <ul>
+        <li></li>
+    </ul>
+
+    <p>
+    <hr>
+    <div class="page-header"></div>
+    <p>Last modified: 2020/05/23</p>    
+</div>
+
+<script type="text/javascript">
+$.bigfoot();
+</script>
+
+</body>
+</html>
