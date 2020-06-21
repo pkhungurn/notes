@@ -81,6 +81,173 @@
 
     <p>The only over-arching theme of this note is that all the papers deal with face manipulation.</p>
 
+    <h2>X2Face [Wiles et al. 2018]</h2>
+    <hr>
+
+    <ul>
+        <li><b>Objective:</b> To control the post and epxression of a given face image, using another face or other modality (e.g., pose code).</li>
+
+        <li><b>Contributions:</b>
+        <ol>
+            <li>A network, <b>X2Face</b>, that controls a <b>source</b> face using another face in a <b>driving</b> frame to produce a <b>generated</b> frame. The identity of the generated frame is that of the source frame, but the post and the expression is that of the driving frame.</li>
+
+            <li>A method for training X2Face in a self-supervised fashion, using a large collection of video data.</li>
+
+            <li>Showing that the generation method can be driven by other modalities such as audio or pose codes, <b>without any further training of the network</b>.</li>
+        </ol>
+        </li>
+
+        <li>The goal of the paper is to explore whether it is possible to control faces without an explicit face representation.</li>
+
+        <li>The <b>source</b> face is instantiated from a single or multiple <b>source</b> frames, which are extracted from the same face track.</li>
+
+        <li>The <b>driving vector</b> may come from multiple modalities:
+        <ul>
+            <li>A <b>driving frame</b> from the same or another video face track.</li>
+            <li>Pose information (i.e., pose code).</li>
+            <li>Audio information.</li>
+        </ul>
+        </li>
+
+        <li>The network is trained in a self-supervised manner using pairs of <b>source</b> and <b>driving</b> frames.</li>
+
+        <li>The network has two subnetworks.
+        <ul>
+            <li>The <b>embedding network</b> learns an embedded face representation from the source face, which is efffectively face frontalization.</li>
+
+            <li>The <b>driving network</b> learns how to map from the embedded face to the <b>generarted</b> frame, using the information from the driving vector.</li>
+        </ul>
+        </li>
+
+        <li>The paper also proposes:
+        <ul>
+            <li>A method for linearly regressing from a set of labels or features to the driving vector.</li>
+
+            <li>How the embedded face representation can be used for video face editing.</li>
+        </ul>
+        </li>        
+    </ul>    
+
+    <h3>Architecture</h3>
+
+    <ul>
+        <li>The X2Face network takes two inputs:
+        <ul>
+            <li>A <b>source</b> frame, which goes to the <b>embedding network</b>.</li>
+
+            <li>A <b>driving</b> frame, which goes to the <b>driving network</b>.</li>
+        </ul>
+        </li>
+
+        <li>The <b>embedding network</b>.
+        <ul>
+            <li>The embedding network learns a bilinear sampler (i.e., an optical flow) to determine how to map from the source frame to a face representation.</li>
+
+            <li>The architecture is based on U-Net and pix2pix.</li>
+
+            <li>The output is a 2-channel image, which encodes the flow.</li>
+        </ul>
+        </li>
+
+        <li>The <b>driving network</b>.
+        <ul>
+            <li>The driving network takes a driving frame as input and learns an optical flow to produce the generated frame.</li>
+
+            <li>It has an encoder-decoder architecture.</li>
+
+            <li>The latent embedding must encode post/expression/zoom/other factors of variation.</li>
+        </ul>
+        </li>
+    </ul>
+
+    <h3>Training</h3>
+
+    <ul>
+        <li>There are two stages of training.</li>
+
+        <li>In the first stage:
+        <ul>
+            <li>The process uses sonly a pixelwise L1 loss between the generated and the driving frame.</li>
+            
+            <li>It is sufficient to train the network such that the driving frame results in eoncding of expression and pose.</li>
+
+            <li>However, face shape expression leeks through the driving vector.</li>
+        </ul>
+        </li>
+
+        <li>In the second stage:
+        <ul>
+            <li>Identity loss functions are applied to enforce that the identity is the same between the generated and the source frame irrespective of the identity of the driving frame.</li>
+
+            <li>Three frames are used as inputs:
+            <ul>
+                <li>One source frame $s_A$ of identity $A$.</li>
+
+                <li>A driving frame $d_A$ of identity $A$.</li>
+
+                <li>Another driving frame $d_R$ of a random identity.</li>
+            </ul>
+            </li>
+
+            <li>Running the frames through the network gives two generated frames $g_{d_A}$ and $g_{d_R}$, which should both be of identity $A$.</li>
+
+            <li>The process imposes two identity losses: $\mathcal{L}_{\mathrm{identity}}(d_A, g_{d_A})$ and $\mathcal{L}_{\mathrm{identity}}(d_A, g_{d_R})$.</li>
+
+            <li>$\mathcal{L}_{\mathrm{identity}}$ is implemented using a network pre-trained for identity: the 11-layer VGG network trained on the VGG-Face dataset.</li>
+
+            <li>To measure the the similarity of the images in feature spaces by comparing appropriate layers of the VGG network:
+            <ul>
+                <li>For $\mathcal{L}_{\mathrm{identity}}(d_A, g_{d_A})$, we have that $g_{d_A}$ should have the same identiy, pose, and expression as $d_A$. So, the process uses the L1 loss and the L1 content loss on the Conv2-5 and Conv7 layers between $g_{d_A}$ and $d_A$.</li>
+
+                <li>For $\mathcal{L}_{\mathrm{identity}}(d_A, g_{d_R})$, we have that $g_{d_R}$ should have the identity of $s_A$, but the pose and expression of $d_R$. As a result, the process cannot use the straight L1 loss. So, it uses the L1 content loss on the Conv6-7 layer between $g_{d_A}$ and $s_A$.</li>
+            </ul>
+            </li>
+        </ul>
+        </li>
+    </ul>
+
+    <h3>Controlling image generation with pose code</h3>
+
+    <ul>
+        <li>The paper describes how to control faces with audio, but I'm not interested in that.</li>
+
+        <li>Controlling image generation with a pose code is done by learning a forward mapping $f_{p \rightarrow v}$ from head pose $p$ to the driving vector $v$.</li>
+
+        <li>However, this is an ill-posed problem because the driving vector encodes more than just pose.</li>
+
+        <li>The paper solves this problem through vector arithmetic.
+        <ul>
+            <li>First, it drives the source frame with itself, which results in a driving vector $v^{source}_{emb}$.</li>
+
+            <li>Then, it modifies the vector to remove the pose of the source frame and incorporates the new driving pose:
+            \begin{align*}
+                v^{driving}_{emb}
+                = v^{source}_{emb}
+                + v^{\Delta pose}_{emb}
+                = v^{source}_{emb} + f_{p \rightarrow v}(p_{driving} - p_{source})
+            \end{align*}
+            </li>
+        </ul>        
+
+        <li>However, the dataset that the trained the network with (VoxCeleb) does not come with the ground truth head pose. So, an additional mapping $f_{v \rightarrow p}$ is needed.
+        <ul>
+            <li>It is implemented with a fully connected layer with bias.</li>
+
+            <li>The training loss is an L1 loss.</li>
+
+            <li>The training pairs $(v,p)$ are obtained using an annotated dataset with image to pose labels $p$; $v$ is obtained by passing the image through the encoder of the driving network.</li>
+        </ul>
+        </li>
+
+        <li>$f_{p \rightarrow v}$
+        <ul>
+            <li>Implemented using a fully connected layer with bias, followed by batch-norm.</li>
+
+            <li>After we trained $f_{v \rightarrow p}$, this function can be learned direcly on VoxCeleb.</li>
+        </ul>
+        </li>        
+    </ul>
+
     <h2>CONFIG [Kowalski et al. 2020]</h2>
     <hr>
 
@@ -305,7 +472,27 @@
     <h3>Implementation</h3>
 
     <ul>
-        <li></li>
+        <li>The generator $G$ is based on HoloGAN <a href="https://arxiv.org/abs/1904.01326">[Nguyen-Phuoc et al. 2019]</a>.
+        <ul>
+            <li>The architecture allows one to specify the camera angle directly.</li>
+
+            <li>Using this architecture introduces modifications to the general training procedure previously introduced. Two more loss terms are introduced, and a part of the latent vector must be dealt with separately.</li>
+        </ul>        
+        </li>
+
+        <li>The model parameter $\theta$ is divided into $k$ parts.
+        <ul>
+            <li>One part is the camera angle, which is not encoded.</li>
+
+            <li>The other $k-1$ parts are encoded separately, each with its own multi-layer perception $E_{S_i}$. Each perceptron has 2 hidden layers who dimensions are equal to the the dimensions of $\theta_i$.</li>
+
+            <li>The real image encoder $E_R$ is a ResNet-50 pretrained on ImageNet.</li>
+
+            <li>The domain discriminator is a 4-layer MLP.</li>
+
+            <li>See more details in the supplementary sections of the paper. It is quite complicated and ugly.</li>
+        </ul>
+        </li>
     </ul>
 
     <p>
