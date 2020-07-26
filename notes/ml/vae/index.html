@@ -390,36 +390,52 @@
             <li>Second, consider the term $E_{\ve{z} \sim q(\ve{z}|\ve{x})} [\log p(\ve{x}|\ve{z})]$. We note that $\ve{z}$ is a deterministic function of $\xi'$, so:
             \begin{align*}
                 E_{\ve{z} \sim q(\ve{z}|\ve{x})} [\log p(\ve{x}|\ve{z})]
-                &= E_{\xi \sim \N(\ve{0},I)} [\log p(\ve{x}|\mu_E(\ve{x}) + \sigma_E(\ve{x}) \otimes \xi' )]
-                \approx \log p(\ve{x}|\mu_E(\ve{x}) + \sigma_E(\ve{x}) \otimes \xi'_0 )
+                &= E_{\xi \sim \N(\ve{0},I)} [\log p(\ve{x}|\mu_E(\ve{x}) + \sigma_E(\ve{x}) \otimes \xi' )].
             \end{align*}
-            where $\xi_0'$ is a vector resulting from sampling $\N(\ve{0},I)$ once.
-            <ul>
-                <li>Rewriting the expectation wrt $\ve{z} \sim q(\ve{z}|\ve{x})$ into an expectation wrt $\xi \sim \N(\ve{0},I)$ is called the <b>reparameterization trick</b>. It allows us to create a deterministic network by treating the randomness $\xi'$ as an input.</li>
-            </ul>
+            
+            <li>With the rewriting above, we have that:
+            \begin{align*}
+                \mrm{ELBO}(\ve{x}) 
+                &= 
+                    E_{\xi \sim \N(\ve{0},I)} [\log p(\ve{x}|\mu_E(\ve{x}) + \sigma_E(\ve{x}) \otimes \xi' )]
+                    +  D_{KL}( \N(\mu_E(\ve{x}), \Sigma_E(\ve{x})) \| \N(\ve{0}, I))
+                \\
+                &= E_{\xi \sim \N(\ve{0},I)} [
+                        \log p(\ve{x}|\mu_E(\ve{x}) + \sigma_E(\ve{x}) \otimes \xi' )
+                        +  D_{KL}( \N(\mu_E(\ve{x}), \Sigma_E(\ve{x})) \| \N(\ve{0}, I))
+                    ].
+            \end{align*}
+            Note that we can slide the divergence $D_{KL}( \N(\mu_E(\ve{x}), \Sigma_E(\ve{x})) \| \N(\ve{0}, I)$ inside the expectation $E_{\xi \sim \N(\ve{0},I)}[\cdot]$ because it is a constant with respect to $\xi$.</li>
+
+            <li>Now, because inside the expectation operator is an expression that involves no integral, let us define:
+            \begin{align*}
+            \widetilde{\mrm{ELBO}}(\ve{x}, \xi') 
+            = \log p(\ve{x}|\mu_E(\ve{x}) + \sigma_E(\ve{x}) \otimes \xi' )
+            +  D_{KL}( \N(\mu_E(\ve{x}), \Sigma_E(\ve{x})) \| \N(\ve{0}, I)), 
+            \end{align*}
+            which gives
+            \begin{align*}
+            \mrm{ELBO}(\ve{x})
+            = E_{\xi \sim \N(\ve{0},I)} [ \widetilde{\mrm{ELBO}}(\ve{x}, \xi') ].
+            \end{align*}
             </li>
         </ul>
         </li>
 
-        <li>With the reparameterization trick above, let us define
+        <li>Let us get back to the original optimization problem. We can now transform it as follows:
         \begin{align*}
-            \mrm{ELBO}(\ve{x}, \xi') = \log p(\ve{x} | \mu_E(\ve{x}) + \sigma_E(\ve{x}) \otimes \xi') - D_{KL}(q(\ve{z}\|\ve{x})\| p(\ve{z}))
+            \argmin_\theta\ E_{\ve{x} \sim p_{\data}(\ve{x})}[ -\mrm{ELBO}(\ve{x})]
+            = \argmin_\theta\ E_{\ve{x} \sim p_{\data}(\ve{x})}\Big[ -E_{\xi \sim \N(\ve{0},I)} [ \widetilde{\mrm{ELBO}}(\ve{x}, \xi') ] \Big]
+            = \argmin_\theta\ E_{\ve{x} \sim p_{\data}(\ve{x}), \xi \sim \N(\ve{0},I)}[ -\widetilde{\mrm{ELBO}}(\ve{x}, \xi') ].
         \end{align*}
-        The function above satisfies:
-        \begin{align*}
-            E_{\xi' \sim \N(\ve{0},1)} [\mrm{ELBO}(\ve{x}, \xi')] = \mrm{ELBO}(\ve{x}).
-        \end{align*}
-        So, our optization problem becomes:
-        \begin{align*}
-            \argmin_{\theta}\ E_{\ve{x} \sim p_{\data}(\ve{x})} [-\mrm{ELBO}(\ve{x})]
-            = \argmin_{\theta}\ E_{\ve{x} \sim p_{\data}(\ve{x})} \Big[- E_{\xi' \sim \N(\ve{0},1)} [\mrm{ELBO}(\ve{x}, \xi')] \Big]
-            = \argmin_{\theta}\ E_{\ve{x} \sim p_{\data}(\ve{x}), \xi' \sim \N(\ve{0},1)} [-\mrm{ELBO}(\ve{x}, \xi')].
-        \end{align*}        
+        The nice thing about the above expression is that $\widetilde{\mrm{ELBO}}(\ve{x}, \xi')$ is a deterministic function of its parameters, and so can be implemented with a neural network that takes $\ve{x}$ and $\xi'$ as inputs.
         </li>
+
+        <li>Rewriting the functions so that the source of randomness (in our case, $\xi$) becomes an explicit input is called the <b>reparameterization trick</b>. It helps us define a deterministic neural network that can be used to compute the objective function.</li>
 
         <li>Now, the above problem tries to find parameters $\theta$ of the decoder $D$ while the encoder $E$ is left fixed. The nice thing about VAE is that there's nothing stopping us from optimizing for the parameters $\phi$ of $E$ at the same time! Ultimately, the optimization problem becomes:
         \begin{align*}
-        \argmin_{\theta, \phi}\ E_{\ve{x} \sim p_{\data}(\ve{x}), \xi' \sim \N(\ve{0},1)} [-\mrm{ELBO}(\ve{x}, \xi')].
+        \argmin_{\theta, \phi}\ E_{\ve{x} \sim p_{\data}(\ve{x}), \xi' \sim \N(\ve{0},1)} [-\widetilde{\mrm{ELBO}}(\ve{x}, \xi')].
         \end{align*}        
         </li>
 
@@ -431,6 +447,51 @@
             <li>Update $\theta$ and $\phi$ with the gradients. (Can use any gradient-based algorithm; e.g. Adam, RMSProp, etc.)</li>
             <li>Repeat the 4 steps above until satisfied.</li>
         </ol>
+        </li>
+
+        <li>To deepen our understanding, let us write down the computational graph to compute the loss function $-\widetilde{\mrm{ELBO}}(\ve{x}, \xi')$.
+        <center><a href="loss-function-comp-graph.png"><img src="loss-function-comp-graph.png" width="800"></a></center>
+        It is interesting to note that the decoded image is ever sampled at any point in the computation of the loss function. 
+        </li>
+
+        <li>At test time, to generate a sample, we would sample $\ve{z}$ from the normal distribution. From it we would compute $\mu_D(\ve{z})$. However, I think we can just return $\mu_D(\ve{z})$ as the generated sample because sampling from $\N(\mu_D(\ve{z}), \sigma_D(\ve{z}))$ would give us noisy data. This is especially undesirable if we talk about images.</li>
+    </ul>
+
+    <h2>Another Interpretation</h2>
+
+    <ul>
+        <li>In the paper, the VAE seems to be drived from heavy use of probability and information theory machinery. I found this totally unintuitive. An alternative interpretation would afford us a deeper understanding, which can lead to further improvements.</li>
+
+        <li>To ease our thinking, let's assume for a moment that the decoder $D$ and the encoder $E$ are deterministic and only output a single output, just like a normal autoencoder.
+        </li>
+
+        <li>Now, let's look what the behavior of the VAE should be with respect to the real data.</li>
+
+        <li>First, for each real data item $\ve{x}$ coming from $p_{\data}$, we want $D(E(\ve{x})) = \ve{x}$ because, well, $E$ and $D$ should form an autoencoder. The loss term
+        \begin{align*}
+            E_{\ve{x} \sim p_{\data}(x)} \Big[ E_{\ve{z} \sim q(\ve{z}|\ve{x})} [ \log p(\ve{x}|\ve{z}) ] \Big]
+        \end{align*}
+        ensures that $\ve{x}$ should be likely to emerge at the end of the pipeline if we start with encoding $\ve{x}$. As a result, <b>this term is basically a reconstruction loss. The term gives meaning to the action of the decoder.</b>
+        </li>
+
+        <li>Second, let's look at the distribution of $E(\ve{x})$ where $\ve{x}$ is sampled from $p_{\data}$. It is clear that we want this distribution to be as close to $\N(\ve{0},I)$ as possible. The thinking goes like this:
+        <ol>
+            <li>If the reconstruction term above works well, then $D$ should be able to turn latent code $\ve{z}$ that distributes like $E(\ve{x})$ into real data.</li>
+
+            <li>If we force the distribution of $E(\ve{x})$ to be as close as possible to $\N(\ve{0},I)$, then sampling $\ve{z} \sim \N(\ve{0},I)$ and computing $D(\ve{z})$ should get us something similar to the real data.</li>
+        </ol>
+        Here, the loss term
+        \begin{align*}
+            D_{KL}(\N(\mu_E(\ve{x}), \sigma_E(\ve{x})) \| N(\ve{0},I))
+        \end{align*}
+        tries to enfore this by making sure that all the conditional distribution $q(\ve{z}|\ve{x})$ looks like $N(\ve{0},I)$. Because the conditional distribution $q(\ve{z}|\ve{x})$ with respect to each $\ve{x}$ looks like $N(\ve{0},I)$, the marginal distribution of $\ve{z}$ as a whole should also look like $N(\ve{0},I)$ because the marginal distribution can be thought of being made up from the conditional distributions. Hence, <b>this loss term gives meaning to the prior distribution</b> $p(\ve{z})$.
+        </li>
+
+        <li>From the discussion above, one can spot that
+        \begin{align*}
+            D_{KL}(\N(\mu_E(\ve{x}), \sigma_E(\ve{x})) \| N(\ve{0},I))
+        \end{align*}
+        might be an overkill. This is because, in the end, we only want the overall distribution of $D(\ve{x})$ to be close to $\N(\ve{0},I)$. It's not necessary to make sure that all the conditional distributions $q(\ve{z}|\ve{x})$ be close to $\N(\ve{0},I)$. (I'm pretty sure that someone has noticed this, and there might be a paper about this out already.)
         </li>
     </ul>
 
