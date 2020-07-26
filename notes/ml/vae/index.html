@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>Variation Autoencoder</title>
+
+    <!-- Bootstrap -->
+    <link href="../../../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../../../css/theme.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+      TeX: { equationNumbers: {autoNumber: "AMS"} } 
+    });
+    </script>
+    <script type="text/javascript"
+            src="../../../MathJax/MathJax.js?config=TeX-AMS_HTML-full">
+    </script>
+
+    <script type="text/javascript" src="../../../js/jquery-3.4.1.min.js"></script>    
+    <script type="text/javascript" src="../../../js/bigfoot.min.js"></script>    
+
+    <link rel="stylesheet" type="text/css" href="../../../css/bigfoot-default.css">    
+
+</head>
+<body>
+<div class="container">
+    <span style="visibility: hidden;">
+        \(
+        \def\sc#1{\dosc#1\csod}
+        \def\dosc#1#2\csod{{\rm #1{\small #2}}}
+
+        \newcommand{\dee}{\mathrm{d}}
+        \newcommand{\Dee}{\mathrm{D}}
+        \newcommand{\In}{\mathrm{in}}
+        \newcommand{\Out}{\mathrm{out}}
+        \newcommand{\pdf}{\mathrm{pdf}}
+        \newcommand{\Cov}{\mathrm{Cov}}
+        \newcommand{\Var}{\mathrm{Var}}
+
+        \newcommand{\ve}[1]{\mathbf{#1}}
+        \newcommand{\mrm}[1]{\mathrm{#1}}
+        \newcommand{\etal}{{et~al.}}
+        \newcommand{\sphere}{\mathbb{S}^2}
+        \newcommand{\modeint}{\mathcal{M}}
+        \newcommand{\azimint}{\mathcal{N}}
+        \newcommand{\ra}{\rightarrow}
+        \newcommand{\mcal}[1]{\mathcal{#1}}
+        \newcommand{\X}{\mathcal{X}}
+        \newcommand{\Y}{\mathcal{Y}}
+        \newcommand{\Z}{\mathcal{Z}}
+        \newcommand{\x}{\mathbf{x}}
+        \newcommand{\y}{\mathbf{y}}
+        \newcommand{\z}{\mathbf{z}}
+        \newcommand{\tr}{\mathrm{tr}}
+        \newcommand{\sgn}{\mathrm{sgn}}
+        \newcommand{\diag}{\mathrm{diag}}
+        \newcommand{\Real}{\mathbb{R}}
+        \newcommand{\sseq}{\subseteq}
+        \newcommand{\ov}[1]{\overline{#1}}
+        \DeclareMathOperator*{\argmax}{arg\,max}
+        \DeclareMathOperator*{\argmin}{arg\,min}
+
+        \newcommand{\data}{\mathrm{data}}
+        \newcommand{\N}{\mathcal{N}}
+        \)
+    </span>
+
+    <br>
+    <h1>Variational Autoencoder</h1>
+    <hr>
+
+    <p>This note is an exposition on the variational autoencoder. This is a rewrite of the <a href="vae.pdf">[PDF]</a> note. I added some new ways to derive the algorithm that I found natural to the way I think.</p>
+
+    <h2>Generative Modeling</h2>
+
+    <ul>
+        <li>The overall goal of the VAE paper is to create a <b>generative model</b>.</li>
+
+        <li>We have a domain of data $\mathcal{X} \subseteq \mrm{R}^n$ whose elements are denoted by $\ve{x}$.
+            <ul>
+                <li>Typically, $\ve{x}$ is an image, and $\mathcal{X}$ is the set of images we are interested in; for example, the set of cat images.</li>                
+            </ul>
+        </li>
+
+        <li>We assume that there's a random process that generates elements in $\mathcal{X}$. Let us denote the probability distribution of this random process as $p_{\data}$.</li>
+
+        <li>We want to create a random process, whose probability distribution we shall denote by $p$, such that $p$ is similar to $p_{\data}$.</li>
+
+        <li>In this age of deep learning, this random process typically involves sampling a random vector and feed it to a deep neural network.</li>
+
+        <li>This neural network would be characterized by a set of parameters $\theta$.</li>
+
+        <li>The question is to find $\theta$ such that $p$ is as close as possible to $p_{\data}$.</li>
+
+        <li>Difference between two probability distribution can be measured by the <b>Kullback-Leibler divergance</b>:
+        \begin{align*}
+            D_{KL}(p_{\data}\| p) 
+            &= E_{\ve{x} \sim p_{\data}(\ve{x})}\bigg[ \log \frac{p_{\data}(\ve{x})}{p(\ve{x})} \bigg] \\
+            &= \int_{\ve{z}} p_{\data}(\ve{x}) \log \frac{p_{\data}(\ve{x})}{p(\ve{x})}\,\dee \ve{x} \\
+            &= \int_{\ve{z}} p_{\data}(\ve{x}) \log \frac{1}{p(\ve{x})}\,\dee \ve{x} + \int_{\ve{z}} p_{\data}(\ve{x}) \log p_{\data(\ve{x})}\,\dee \ve{x} \\
+            &= - \int_{\ve{z}} p_{\data}(\ve{x}) \log p(\ve{x})\,\dee \ve{x} + \int_{\ve{z}} p_{\data}(\ve{x}) \log p_{\data(\ve{x})}\,\dee \ve{x} \\
+            &= - \int_{\ve{z}} p_{\data}(\ve{x}) \log p(\ve{x})\,\dee \ve{x} - \int_{\ve{z}} p_{\data}(\ve{x}) \log \frac{1}{p_{\data(\ve{x})}}\,\dee \ve{x} \\
+            &= - \int_{\ve{z}} p_{\data}(\ve{x}) \log p(\ve{x})\,\dee \ve{x} - H(p_{\data}) \\
+            &= - E_{\ve{x} \sim p_{\data(\ve{x})}} [\log p(\ve{x})] - H(p_{\data})
+        \end{align*}
+        where $H(p_{\data})$ is the <b>entropy</b> of the probability distribution $p_{\data}$. (Actually, the entropy is only defined with respect to a random variable, but we abuse the notation here. See more details in <a href="../../math/info-theory-primer/info-theory-primer.pdf">my notes on information theory</a>.)
+        </li>
+
+        <li>We want the $p$ and $p_{\data}$ to be as similar as possible, so we should be minimizing the divergence above. In other words, we solve for:
+        \begin{align*}
+            \argmin_{\theta}\ D_{KL}(p_{\data}\|p)
+            &= \argmin_{\theta}\ \big({-E_{\ve{x} \sim p_{\data(\ve{x})}} [\log p(\ve{x})]} - H(p_{\data}) \big)
+        \end{align*}
+        </li>
+        Because $H(p_{\data})$ is the probability of the data distribution, it does not depend on $\theta$, and so can be thought of as a constant that cannot be optimized. As a result,
+        \begin{align*}
+            \argmin_{\theta}\ D_{KL}(p_{\data}\|p)
+            = \argmin_{\theta}\ {-E_{\ve{x} \sim p_{\data(\ve{x})}} [\log p(\ve{x})]} 
+            = \argmax_{\theta}\ {E_{\ve{x} \sim p_{\data(\ve{x})}} [\log p(\ve{x})]}.
+        \end{align*}
+        So, making $p$ as close as possible to $p_\data$ is equivalent to maximizing $E_{\ve{x} \sim p_{\data(\ve{x})}} [\log p(\ve{x})]$, typically called the <b>log-likelihood</b>. Hence, this process is called <b>maximum likelihood estimation </b> (MLE).
+
+        <li>Operationally, we are given a dataset $\{\ve{x_1}, \ve{x_2}, \dotsc, \ve{x_N}\}$ where each element is sampled independently from $p_{\data}$. So,
+        \begin{align*}
+            E_{\ve{x} \sim p_{\data(\ve{x})}} [\log p(\ve{x})]
+            &\approx \frac{1}{N} \sum_{i=1}^N \log p(\ve{x}_i).
+        \end{align*}
+        As a result, the effective optimization function we solve is given by:
+        \begin{align*}
+            \argmax_{\theta}\ \frac{1}{N} \sum_{i=1}^N \log p(\ve{x}_i),
+        \end{align*}
+        or, equivalvently,
+        \begin{align*}
+            \argmin_{\theta}\ {-\frac{1}{N} \sum_{i=1}^N \log p(\ve{x}_i)}.
+        \end{align*}
+        Personally, I prefer the minimization problem because we do minimization in machine learning.
+        </li>
+    </ul>
+
+    <h2>Latent Variable Model</h2>
+
+    <ul>
+        <li>The kind of generative model that the VAE paper tries to create is a <b>latent variable model</b>.</li>
+
+        <li>In particular, the VAE paper employs the following process:
+        <ol>
+            <li>Sample a <b>latent code</b> $\ve{z} \in \Real^m$ from the normal distribution $\N(\ve{0}, I)$.
+            <ul>
+                <li>Here, $\N(\mu, \Sigma)$ denote the normal (i.e., multi-variate Gaussian) with mean $\mu$ and covariance matrix $\Sigma$.</li>
+                <li>Its probability distribution function is given by:
+                \begin{align*}
+                    p_{\N(\mu, \Sigma)}(\ve{y}) = \frac{1}{\sqrt{(2\pi)^k \det \Sigma}} \exp\bigg({-\frac{1}{2}} (\ve{y}-\mu)^T \Sigma^{-1} (\ve{y} - \mu) \bigg).
+                \end{align*}
+                </li>
+                where $k$ is the number of dimensions of $\ve{y}$.
+            </ul>
+            </li>
+            
+            <li>Feed $\ve{z}$ to a neural network $D$, which we call the <b>decoder</b>. The network spits out two vectors $\mu_D(\ve{z})$ and $\sigma_D(\ve{z})$.
+            <ul>
+                <li>Both vectors belong to $\Real^n$.</li>
+                <li>In other words, they have the same dimensionality as an $\ve{x}$.</li>
+            </ul>
+            </li>
+
+            <li>Create $\ve{x}$ by sampling from the normal distribution $\N(\mu_D(\ve{z}), \diag(\sigma_D(\ve{z})))$.
+            <ul>
+                <li>$\diag(\ve{v})$ denotes the diagonal matrix where the diagonal elements are the elements of $\ve{v}$.</li>
+                <li>This can be done by sampling $\xi \in \Real^n$ from $\N(\ve{0},I)$ and then compute $\ve{x} = \mu_D(\ve{z}) + \sigma_D(\ve{z}) \otimes \xi$.</li>
+                <li>Here, $\otimes$ denotes element-wise multiplication</li>
+            </ul>
+            </li>
+        </ol>
+        </li>
+
+        <li>From the above process, we can write down several probabilities:
+        <ul>
+            <li>First, the probability $p(\ve{z})$ of sampling a particular latent code $\ve{z}$. This is just:
+            <ul>
+            \begin{align*}
+                p(\ve{z}) = \frac{\exp(-\|\ve{z}\|^2 /2 )}{\sqrt{(2\pi)^k}}
+            \end{align*}
+            </ul>
+            </li>
+
+            <li>Second, the probability $p(\ve{x}|\ve{z})$ of sampling a particular $\ve{x}$ given that we have sampled $\ve{z}$ in the previous step:
+            \begin{align*}
+                p(\ve{x}|\ve{z}) = \frac{1}{\sqrt{(2\pi)^k \det \Sigma_D(\ve{z})}} \exp\bigg({-\frac{1}{2}} (\ve{x}-\mu_D(\ve{z}))^T (\Sigma_D(\ve{z}))^{-1} (\ve{x} - \mu_D(\ve{z})) \bigg)
+            \end{align*}
+            where $\Sigma_D(\ve{z})$ is used to denote $\diag(\sigma_D(\ve{z}))$.
+            </li>
+
+            <li>Third, the joint probability $p(\ve{x},\ve{z})$ is given by $p(\ve{x}|\ve{z})p(\ve{z})$.
+            <ul>
+                <li>We shall not write down the full expression, but let us commit to memory now that it has a closed-form expression.</li>
+            </ul>
+            </li>
+
+            <li>Lastly, the marginal probability $p(\ve{x})$ is given by:
+            \begin{align*}
+                p(\ve{x}) = \int_{\ve{z}} p(\ve{x},\ve{z}) \,\dee\ve{z} = \int_{\ve{z}} p(\ve{x}|\ve{z})p(\ve{z}) \,\dee\ve{z}.
+            \end{align*}
+            </li>
+        </ul>
+        </li>
+
+        <li>The marginal probability is important because we want to optimize $-E_{\ve{x} \sim p_{\data}(\ve{x})} [\log p(x)]$. To make optimization possible, we need an efficient way to evaluate $p(\ve{x})$ or $\log p(\ve{x})$.</li>        
+    </ul>
+
+    <h2>Monte Carlo Integration and Importance Sampling</h2>
+
+    <ul>
+        <li>Before we go ahead with what the VAE paper does, let's talk about how we would normally evaluate the integral that is $p(\ve{x})$. This would give us an idea on why the VAE paper does what it does.</li>
+
+        <li>Say, you are tasked an integral $\int_{\ve{z}} f(\ve{z}) \,\dee\ve{z}$.</li>
+
+        <li>Using the method of <b>Monte Carlo integration</b>:
+        <ul>
+            <li>You choose a probability distribution $\tilde{p}$ over the domain of $\ve{z}$.</li>
+            <li>You then samples $\ve{z}_1, \ve{z}_2, \dotsc, \ve{z}_K$ independently according to $\tilde{p}$.</li>
+            <li>You compute $$\frac{1}{K} \sum_{i=1}^K \frac{f(\ve{z}_i)}{\tilde{p}(\ve{z}_i)}$$ and give this as an approximation of the value of the integral.</li>
+        </ul>
+        </li>
+
+        <li>The reason Monte Carlo integration works is because we can rewrite the integral as follows:
+        \begin{align*}
+            \int_\ve{z} f(\ve{z})\,\dee\ve{z}
+            = \int_\ve{z} \tilde{p}(\ve{z}) \frac{ f(\ve{z}) }{ \tilde{p}(\ve{z}) } \,\dee\ve{z}
+            = E_{\ve{z} \sim \tilde{p}(\ve{z})} \bigg[ \frac{ f(\ve{z}) }{ \tilde{p}(\ve{z}) } \bigg]
+            = \lim_{K \rightarrow \infty} \frac{1}{K} \sum_{i=1}^K \frac{f(\ve{z}_i)}{\tilde{p}(\ve{z}_i)}.
+        \end{align*}        
+        </li>
+
+        <li>The takeaway from this is that Monte Carlo integration involves writing $\int_\ve{z} f(\ve{z})\,\dee\ve{z}$ as $E_{\ve{z} \sim \tilde{p}(\ve{z})} [ f(\ve{z}) / \tilde{p}(\ve{z}) ]$.</li>
+
+        <li>The choice of $\tilde{p}$ is very important here. Choosing $\tilde{p}$ that approximates $f(\ve{z})$ well would allow us to get a very accurate estimate of the integral with a small number of samples.</li>
+
+        <li>The act of judiciously choosing $\tilde{p}$ so that the estimate is accurate after using few examples is called <b>importance sampling</b>.</li>
+
+        <li>Let's get back to the problem we have at hand and try to compute $\int_{\ve{z}} p(\ve{x}|\ve{z})p(\ve{z}) \,\dee\ve{z}$.</li>
+
+        <li>What would be the best $\tilde{p}(\ve{z})$ that we can choose for the above integral?</li>
+
+        <li>The answer is $\tilde{p}(\ve{z}) = p(\ve{z}|\ve{x})$, the so-called <b>posterior probability</b>. This is because, by Bayes' rule:
+        \begin{align*}
+            p(\ve{z}|\ve{x}) = \frac{p(\ve{x}|\ve{z}) p(\ve{z})}{p(\ve{x})}.
+        \end{align*}
+        So,
+        \begin{align*}
+            p(\ve{x}) = \frac{p(\ve{x}|\ve{z}) p(\ve{z})}{p(\ve{z}|\ve{x})}.
+        \end{align*}
+        In fact, if we sample $\ve{z}_1, \ve{z}_2, \dotsc, \ve{z}_K$ according to $p(\ve{z}|\ve{x})$, all of $\frac{p(\ve{x}|\ve{z}_i)p(\ve{z}_i)}{p(\ve{z}_i|\ve{x})}$ would evaluate to the same value of $p(\ve{x})$. So, using only one sample would give us the right ansnwer.
+        </li>
+
+        <li>The problem is, however, that we don't know how to compute $p(\ve{z}|\ve{x})$.</li>
+    </ul>
+
+    <h2>Variational Bayesian Method</h2>
+
+    <ul>
+        <li>The <b>variational Bayesian method</b> approximates $p(\ve{z}|\ve{x})$ with a <b>variational distribution</b> $q(\ve{z}|\ve{x})$ which we explicitly choose so that we know to compute it.
+        <ul>
+            <li>The VAE paper says $q(\ve{z}|\ve{x})$ is constructed with a neural network that takes $\ve{x}$ as its input.</li>
+            <li>The network's parameters are optimized as we optimized the parameters of the decoder $D$.</li>
+            <li>More on this later. Let us talk about $q(\ve{z}|\ve{x})$ without restricting its form first.</li>
+        </ul>
+        </li>
+
+        <li>Suppose we have any $q(\ve{z}|\ve{x})$ at all. Then, we can use $q(\ve{z}|\ve{x})$ in the importance sampling process. This give:
+        \begin{align*}
+        \log p(\ve{x}) 
+        = \log \int_{z} p(\ve{x}|\ve{z}) p(\ve{z})\,\dee\ve{z} 
+        = \log E_{\ve{z} \sim q(\ve{z}|\ve{x})} \bigg[ \frac{p(\ve{x}|\ve{z})p(\ve{z})}{q(\ve{z}|\ve{x})} \bigg].
+        \end{align*}
+        </li>
+
+        <li>The expression $\log E_{\ve{z} \sim q(\ve{z}|\ve{x})} \bigg[ \frac{p(\ve{x}|\ve{z})p(\ve{z})}{q(\ve{z}|\ve{x})} \bigg]$ is not workable. So, we will try to transform it by moving the log inside the expectation.</li>
+
+        <li>To do so, we use <b>Jensen's inequality</b>: for any concave function $f$ and any random variable $X$, it is true that: $$f(E[X]) \geq E[f(X)].$$</li>
+
+        <li>Because the logarithm is a concave function, we have that:
+        \begin{align*}
+        \log p(\ve{x}) 
+        &= \log E_{\ve{z} \sim q(\ve{z}|\ve{x})} \bigg[ \frac{p(\ve{x}|\ve{z})p(\ve{z})}{q(\ve{z}|\ve{x})} \bigg]\\
+        &\geq E_{\ve{z} \sim q(\ve{z}|\ve{x})} \bigg[ \log \frac{p(\ve{x}|\ve{z})p(\ve{z})}{q(\ve{z}|\ve{x})} \bigg] \\
+        &= E_{\ve{z} \sim q(\ve{z}|\ve{x})} [ \log p(\ve{x}|\ve{z}) ]  + E_{\ve{z} \sim q(\ve{z}|\ve{x})} \bigg[ \log \frac{p(\ve{z})}{q(\ve{z}|\ve{x})} \bigg] \\
+        &= E_{\ve{z} \sim q(\ve{z}|\ve{x})} [ \log p(\ve{x}|\ve{z}) ]  - E_{\ve{z} \sim q(\ve{z}|\ve{x})} \bigg[ \log \frac{q(\ve{z}|\ve{x})}{p(\ve{z})} \bigg] \\
+        &= E_{\ve{z} \sim q(\ve{z}|\ve{x})} [ \log p(\ve{x}|\ve{z}) ]  - D_{KL}(q(\ve{z}|\ve{x})\|p(\ve{z})).
+        \end{align*}
+        </li>
+
+        <li>The expression $E_{\ve{z} \sim q(\ve{z}|\ve{x})} [ \log p(\ve{x}|\ve{z}) ]  - D_{KL}(q(\ve{z}|\ve{x})\|p(\ve{z}))$ is called the <b>evidence lower bound</b> (ELBO).
+        <ul>
+            <li>For convenience, let us denote it by $\mrm{ELBO}(\ve{x})$.</li>
+        </ul>
+        </li>
+
+        <li>The variational Bayes method says to find the parameter $\theta$ of $p(\ve{x})$ by optimizing the ELBO instead of trying to work on $\log p(\ve{x})$. More concretely, our original problem is to find the solution to
+        \begin{align*}
+            \argmin_{\theta}\ {-E_{\ve{x}~p_{\data}(\ve{x})} [\log p(\ve{x})]}.
+        \end{align*}
+        We instead solve for
+        \begin{align*}
+            \argmin_{\theta}\ {-E_{\ve{x}~p_{\data}(\ve{x})} [\mrm{ELBO}(\ve{x})]}
+        \end{align*}
+        instead.
+        </li>
+
+        <li>While the ELBO is not exactly the log-likelihood, it has the advantage that we evaluate all the terms in it because we can choose $q(\ve{z}|\ve{x})$ so that we know how to compute all of its terms.</li>
+
+        <li>So, how accurate is using the ELBO rather than the log-likelihood? We can get an answer through some manipulations. First, let us start by noting that $q(\ve{z}|\ve{x})$ is a probability distribution, so it must integrate to $1$ over the domain of $z$. Hence, we can write:
+        \begin{align*}
+            \log p(\ve{x}) = \Big(\log p(\ve{x})\Big) \times 1 = \log p(\ve{x}) \bigg( \int_{\ve{z}} q(\ve{z}|\ve{x})\, \dee\ve{z} \bigg)
+        \end{align*}
+        Now, $\log p(x)$ has no dependence on $z$, so we can treat it like a constant and slide it inside the integral sign.
+        \begin{align*}
+            \log p(\ve{x}) 
+            &= \int_{\ve{z}} q(\ve{z}|\ve{x}) \log p(\ve{x})\, \dee\ve{z} \\
+            &= E_{\ve{z} \sim q(\ve{z}|\ve{x})} [\log p(\ve{x})] \\
+            &= E_{\ve{z} \sim q(\ve{z}|\ve{x})} \bigg[\log \frac{p(\ve{x}|\ve{z}) p(\ve{z})}{p(\ve{z}|\ve{x})} \bigg] \\
+            &= E_{\ve{z} \sim q(\ve{z}|\ve{x})} \bigg[\log \bigg( \frac{p(\ve{x}|\ve{z}) p(\ve{z})}{p(\ve{z}|\ve{x})} \frac{q(\ve{z}|\ve{x})}{q(\ve{z}|\ve{x})} \bigg) \bigg] \\
+            &= E_{\ve{z} \sim q(\ve{z}|\ve{x})} \bigg[\log \bigg( p(\ve{x}|\ve{z}) \frac{p(\ve{z})}{q(\ve{z}|\ve{x})} \frac{q(\ve{z}|\ve{x})}{p(\ve{z}|\ve{x})} \bigg) \bigg] \\
+            &= E_{\ve{z} \sim q(\ve{z}|\ve{x})} [ \log p(\ve{x}|\ve{z})]
+            + E_{\ve{z} \sim q(\ve{z}|\ve{x})} \bigg[ \log \frac{p(\ve{z})}{q(\ve{z}|\ve{x})} \bigg]
+            + E_{\ve{z} \sim q(\ve{z}|\ve{x})} \bigg[ \log \frac{q(\ve{x}|\ve{z})}{p(\ve{z}|\ve{x})} \bigg] \\
+            &= E_{\ve{z} \sim q(\ve{z}|\ve{x})} [ \log p(\ve{x}|\ve{z})]
+            - E_{\ve{z} \sim q(\ve{z}|\ve{x})} \bigg[ \log \frac{q(\ve{z}|\ve{x})}{p(\ve{z})} \bigg]
+            + E_{\ve{z} \sim q(\ve{z}|\ve{x})} \bigg[ \log \frac{q(\ve{x}|\ve{z})}{p(\ve{z}|\ve{x})} \bigg] \\
+            &= E_{\ve{z} \sim q(\ve{z}|\ve{x})} [ \log p(\ve{x}|\ve{z})]
+            - D_{KL}(q(\ve{z}|\ve{x})\|p(\ve{z}))
+            + D_{KL}(q(\ve{z}|\ve{x})\|p(\ve{z}|\ve{x})) \\
+            &= ELBO(\ve{x}) + D_{KL}(q(\ve{z}|\ve{x})\|p(\ve{z}|\ve{x})).
+        \end{align*}
+        In other words,
+        \begin{align*}
+        ELBO(\ve{x}) = \log p(\ve{x}) - D_{KL}(q(\ve{z}|\ve{x})\|p(\ve{z}|\ve{x})).
+        \end{align*}
+        </li>
+
+        <li>So, optimizing ELBO is close to optimizing the log-likelihood if $D_{KL}(q(\ve{z}|\ve{x})\|p(\ve{z}|\ve{x}))$ is small. In other words, when $q(\ve{z}|\ve{x})$ is similar to $p(\ve{z}|\ve{x})$.</li>
+
+        <li>Our hope is that, by using a high capacity model such as a deep neural network, we can find the parameters for the network so that $q(\ve{x}|\ve{z})$ is very close to the distribution $p(\ve{x}|\ve{z})$, which is also defined by a neural network.</li>
+    </ul>
+
+    <h2>Variational Autoencoder</h2>
+
+    <ul>
+        <li>The VAE paper implements $q(\ve{z}|\ve{x})$ with a neural network E, called the <b>encoder</b>, that takes $\ve{x}$ as an input.</li>
+
+        <li>The latent code $\ve{z}$ is generated from a data vector $\ve{x}$ with the following process:
+        <ol>
+            <li>$\ve{x}$ is passed to $E$, which spits out two vectors $\mu_E(\ve{x})$ and $\sigma_E(\ve{x})$.
+            <ul>
+                <li>Both vectors belong to $\Real^m$ and so have the same dimensionality as a typical $\ve{z}$.</li>
+            </ul>
+            </li>
+
+            <li>The latent vector $\ve{z}$ is created by sampling from $\N(\mu_E(\ve{x}), \diag(\sigma_E(\ve{x}))).$
+            <ul>
+                <li>Again, this is done by sampling $\xi' \in \Real^m$ from $\N(\ve{0},I)$ and compute $\ve{z} = \mu_E(\ve{x}) + \sigma_E(\ve{x}) \otimes \xi'$.</li>
+            </ul>
+            </li>
+        </ol>
+        </li>
+
+        <li>With the above definition for $q(\ve{z}|\ve{x})$, we now show how to compute $\mrm{ELBO}(\ve{x})$.
+        <ul>
+            <li>First, $D_{KL}(q(\ve{z}\|\ve{x})\| p(\ve{z}))$ are just the KL divergence between two normal distributions:
+            \begin{align*}
+                D_{KL}(q(\ve{z}\|\ve{x})\| p(\ve{z}))
+                = D_{KL}( \N(\mu_E(\ve{x}), \Sigma_E(\ve{x})) \| \N(\ve{0}, I))
+                = \frac{\tr(\Sigma_E(\ve{x})) + \mu_E(\ve{x})^T \mu_E(\ve{x}) - m + \log \det \Sigma_E(\ve{x}) }{2}
+            \end{align*}
+            where $\Sigma_E(\ve{x})$ denotes $\diag(\sigma_E(\ve{x}))$.
+            </li>
+
+            <li>Second, consider the term $E_{\ve{z} \sim q(\ve{z}|\ve{x})} [\log p(\ve{x}|\ve{z})]$. We note that $\ve{z}$ is a deterministic function of $\xi'$, so:
+            \begin{align*}
+                E_{\ve{z} \sim q(\ve{z}|\ve{x})} [\log p(\ve{x}|\ve{z})]
+                &= E_{\xi \sim \N(\ve{0},I)} [\log p(\ve{x}|\mu_E(\ve{x}) + \sigma_E(\ve{x}) \otimes \xi' )]
+                \approx \log p(\ve{x}|\mu_E(\ve{x}) + \sigma_E(\ve{x}) \otimes \xi'_0 )
+            \end{align*}
+            where $\xi_0'$ is a vector resulting from sampling $\N(\ve{0},I)$ once.
+            <ul>
+                <li>Rewriting the expectation wrt $\ve{z} \sim q(\ve{z}|\ve{x})$ into an expectation wrt $\xi \sim \N(\ve{0},I)$ is called the <b>reparameterization trick</b>. It allows us to create a deterministic network by treating the randomness $\xi'$ as an input.</li>
+            </ul>
+            </li>
+        </ul>
+        </li>
+
+        <li>With the reparameterization trick above, let us define
+        \begin{align*}
+            \mrm{ELBO}(\ve{x}, \xi') = \log p(\ve{x} | \mu_E(\ve{x}) + \sigma_E(\ve{x}) \otimes \xi') - D_{KL}(q(\ve{z}\|\ve{x})\| p(\ve{z}))
+        \end{align*}
+        The function above satisfies:
+        \begin{align*}
+            E_{\xi' \sim \N(\ve{0},1)} [\mrm{ELBO}(\ve{x}, \xi')] = \mrm{ELBO}(\ve{x}).
+        \end{align*}
+        So, our optization problem becomes:
+        \begin{align*}
+            \argmin_{\theta}\ E_{\ve{x} \sim p_{\data}(\ve{x})} [-\mrm{ELBO}(\ve{x})]
+            = \argmin_{\theta}\ E_{\ve{x} \sim p_{\data}(\ve{x})} \Big[- E_{\xi' \sim \N(\ve{0},1)} [\mrm{ELBO}(\ve{x}, \xi')] \Big]
+            = \argmin_{\theta}\ E_{\ve{x} \sim p_{\data}(\ve{x}), \xi' \sim \N(\ve{0},1)} [-\mrm{ELBO}(\ve{x}, \xi')].
+        \end{align*}        
+        </li>
+
+        <li>Now, the above problem tries to find parameters $\theta$ of the decoder $D$ while the encoder $E$ is left fixed. The nice thing about VAE is that there's nothing stopping us from optimizing for the parameters $\phi$ of $E$ at the same time! Ultimately, the optimization problem becomes:
+        \begin{align*}
+        \argmin_{\theta, \phi}\ E_{\ve{x} \sim p_{\data}(\ve{x}), \xi' \sim \N(\ve{0},1)} [-\mrm{ELBO}(\ve{x}, \xi')].
+        \end{align*}        
+        </li>
+
+        <li>From the optimization problem above, we can write down an algorithm for training VAE as follows:
+        <ol>
+            <li>Sample $\ve{x}$ according to $p_{\data}$ and sample $\xi'$ according to $\N(\ve{0},I)$.</li>
+            <li>Compute the loss $-ELBO(\ve{x}, \xi')$.</li>
+            <li>Compute the gradients of $-ELBO(\ve{x}, \xi')$ wrt $\theta$ and $\phi$.</li>
+            <li>Update $\theta$ and $\phi$ with the gradients. (Can use any gradient-based algorithm; e.g. Adam, RMSProp, etc.)</li>
+            <li>Repeat the 4 steps above until satisfied.</li>
+        </ol>
+        </li>
+    </ul>
+
+    <p>
+    <hr>
+    <div class="page-header"></div>
+    <p>Last modified: 2020/07/26</p>    
+</div>
+
+<script type="text/javascript">
+$.bigfoot();
+</script>
+
+</body>
+</html>
