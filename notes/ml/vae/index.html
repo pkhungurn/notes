@@ -469,7 +469,7 @@
 
         <li>First, for each real data item $\ve{x}$ coming from $p_{\data}$, we want $D(E(\ve{x})) = \ve{x}$ because, well, $E$ and $D$ should form an autoencoder. The loss term
         \begin{align*}
-            E_{\ve{x} \sim p_{\data}(x)} \Big[ E_{\ve{z} \sim q(\ve{z}|\ve{x})} [ \log p(\ve{x}|\ve{z}) ] \Big]
+            E_{\ve{z} \sim q(\ve{z}|\ve{x})} [ \log p(\ve{x}|\ve{z}) ]
         \end{align*}
         ensures that $\ve{x}$ should be likely to emerge at the end of the pipeline if we start with encoding $\ve{x}$. As a result, <b>this term is basically a reconstruction loss. It gives meaning to the action of the decoder.</b>
         </li>
