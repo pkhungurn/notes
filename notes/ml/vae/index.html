@@ -314,9 +314,8 @@
         \end{align*}
         We instead solve for
         \begin{align*}
-            \argmin_{\theta}\ {-E_{\ve{x} \sim p_{\data}(\ve{x})} [\mrm{ELBO}(\ve{x})]}
-        \end{align*}
-        instead.
+            \argmin_{\theta}\ {-E_{\ve{x} \sim p_{\data}(\ve{x})} [\mrm{ELBO}(\ve{x})]}.
+        \end{align*}        
         </li>
 
         <li>While the ELBO is not exactly the log-likelihood, it has the advantage that we can evaluate all the terms in it because we can choose $q(\ve{z}|\ve{x})$ so that we know how to compute all of its terms.</li>
