@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>GAN-Autoencoder Hybrids</title>
+
+    <!-- Bootstrap -->
+    <link href="../../../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../../../css/theme.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+      TeX: { equationNumbers: {autoNumber: "AMS"} } 
+    });
+    </script>
+    <script type="text/javascript"
+            src="../../../MathJax/MathJax.js?config=TeX-AMS_HTML-full">
+    </script>
+
+    <script type="text/javascript" src="../../../js/jquery-3.4.1.min.js"></script>    
+    <script type="text/javascript" src="../../../js/bigfoot.min.js"></script>    
+
+    <link rel="stylesheet" type="text/css" href="../../../css/bigfoot-default.css">    
+
+</head>
+<body>
+<div class="container">
+    <span style="visibility: hidden;">
+        \(
+        \def\sc#1{\dosc#1\csod}
+        \def\dosc#1#2\csod{{\rm #1{\small #2}}}
+
+        \newcommand{\dee}{\mathrm{d}}
+        \newcommand{\Dee}{\mathrm{D}}
+        \newcommand{\In}{\mathrm{in}}
+        \newcommand{\Out}{\mathrm{out}}
+        \newcommand{\pdf}{\mathrm{pdf}}
+        \newcommand{\Cov}{\mathrm{Cov}}
+        \newcommand{\Var}{\mathrm{Var}}
+
+        \newcommand{\ve}[1]{\mathbf{#1}}
+        \newcommand{\mrm}[1]{\mathrm{#1}}
+        \newcommand{\etal}{{et~al.}}
+        \newcommand{\sphere}{\mathbb{S}^2}
+        \newcommand{\modeint}{\mathcal{M}}
+        \newcommand{\azimint}{\mathcal{N}}
+        \newcommand{\ra}{\rightarrow}
+        \newcommand{\mcal}[1]{\mathcal{#1}}
+        \newcommand{\X}{\mathcal{X}}
+        \newcommand{\Y}{\mathcal{Y}}
+        \newcommand{\Z}{\mathcal{Z}}
+        \newcommand{\x}{\mathbf{x}}
+        \newcommand{\y}{\mathbf{y}}
+        \newcommand{\z}{\mathbf{z}}
+        \newcommand{\tr}{\mathrm{tr}}
+        \newcommand{\sgn}{\mathrm{sgn}}
+        \newcommand{\diag}{\mathrm{diag}}
+        \newcommand{\Real}{\mathbb{R}}
+        \newcommand{\sseq}{\subseteq}
+        \newcommand{\ov}[1]{\overline{#1}}
+        \DeclareMathOperator*{\argmax}{arg\,max}
+        \DeclareMathOperator*{\argmin}{arg\,min}
+
+        \newcommand{\data}{\mathrm{data}}
+        \newcommand{\N}{\mathcal{N}}
+        \)
+    </span>
+
+    <br>
+    <h1>GAN-Autoencoder Hybrids</h1>
+    <hr>
+
+    <p>There are many papers that try to combine GANs and autoencoders, be it the plain version or the VAE. I'm interested in these papers because, if we succeed in training one, we get an efficient GAN projection which we can reuse for other purposes later.</p>
+
+    <h2>Adversarial Latent Autoencoder (CVPR 2020)</h2>
+    <hr>
+
+    <ul>
+        <li>Here's the <a href="https://arxiv.org/abs/2004.04467">[LINK].</a></li>
+
+        <li>For this paper, we use the following notation:
+        <ul>
+            <li>The space of images is denoted by $\mathcal{X}$. An element of this space is denoted by $\ve{x}$.</li>
+            <li>The space of latent codes is denoted by $\mathcal{Z}$. An element of this space is denoted by $\ve{z}$.
+            <ul>
+                <li>This is the space that we impose a simple prior distribution such as $\N(\ve{0}, I)$ on.</li>
+            </ul>
+            </li>
+        </ul>
+        </li>
+    </ul>
+
+    <h3>Background: StyleGAN</h3>
+    <ul>
+        <li>I think this paper is heavily influenced by the <a href="https://github.com/NVlabs/stylegan">StyleGAN</a> paper.</li>
+
+        <li>In the StyleGAN paper:
+        <ul>
+            <li>They say there should be another space of latent code</li>
+            <ul>
+                <li>They call this space $\mathcal{W}$. An element of this space is denoted by $\ve{w}$.</li>
+                <li>To avoid confusion, let us call $\ve{z}$ the <b>input latent code</b> and $\ve{w}$ the <b>intermediate latent code</b>.</li>
+                <li>Predictably, $\mathcal{Z}$ is called the <b>input latent space</b> and $\mathcal{W}$ the <b>intermediate latent space</b>.</li>    
+            </ul>
+            </li>
+
+            <li>They introduce a generator architecture where the overall generator $\mathtt{G}$ is decomposed into two subnetworks.
+            <ul>
+                <li>The <b>non-linear mapping network</b> $F: \mathcal{Z} \rightarrow \mathcal{W}$.</li>
+                
+                <li>The <b>image generator network</b> $G: \mathcal{W} \times \Xi \rightarrow \mathcal{X}$.
+                <ul>
+                    <li>Here, $\Xi$ is the space of random noise. An element of $\Xi$ is denoted by $\xi$, which is introduced to make the generated images more random.</li>
+                </ul>            
+                </li>
+            </ul>
+            </li>
+
+            <li>A sample is generated by the following process:
+            <ol>
+                <li>Sample $\ve{z}$ from $\mathcal{Z}$ and $\xi$ from $\Xi$.</li>
+                <li>Compute $\ve{x} = G(F(\ve{z}), \xi)$.</li>
+            </ol>
+            </li>
+
+            <li>$G$ generates images from a fixed input. The image that $G$ generates is primary controlled by the <i>style parameters</i> that control <a href="https://arxiv.org/abs/1703.06868">AdaIN</a> units that are present in the network. The style parameters are derived from $\ve{w} = F(\ve{z})$.</li>
+
+            <li>The paper found that $\mathcal{W} = \{ F(\ve{z})\ |\ \ve{z} \in \mathcal{Z} \}$ is more disentangled than $\mathcal{Z}$ in the sense that:
+            <ol>
+                <li>It is much more linearly separable.</li>
+                <li>The "perceptual path lengths" when interpolating between two latent codes in $\mathcal{W}$ are shorter than when interpolating between two latent codes in $\mathcal{Z}$. (See the StyleGAN paper for details on how the perceptual path lenght is defined.)</li>
+            </ol>
+            </li>
+        </ul>
+        </li>
+    </ul>
+
+    <h3>Network Structure</h3>
+    <ul>        
+        <li>The overall structure of an <b>adversarial latent autoencoder</b> (ALAE) is that of a GAN. We have a generator $\mathtt{G}$ and a discriminator $\mathtt{D}$.</li>
+
+        <li>The generator follows the design of the StyleGAN paper: $\mathtt{G}(\ve{z}, \xi) = G(F(\ve{z}), \xi)$.</li>
+
+        <li>The discriminator $\mathtt{D}$ is decomposed into to modules:
+        <ul>
+            <li>The <b>encoder</b> $E: \mathcal{X} \rightarrow \mathcal{W}$.</li>
+            <li>The <b>latent discriminator</b> $D: \mathcal{W} \rightarrow \Real$.</li>
+        </ul>
+        The overall discriminator is defined by $\mathtt{D}(\ve{x}) = D(E(\ve{x})).$
+        </li>
+        
+        <li>An interesting thing is that the discriminator now works by looking if the immediate latent code looks real or not.</li>
+
+        <li>What the ALAE can do that normal GANs cannot do is projecting real data samples into the space of images it generates. That is, if we have an image $\ve{x}$, we can reconstruct the image with the ALAE as follow:
+        $$\ve{x}' = G(E(\ve{x}), \xi)$$
+        where $\xi$ is a random vector from $\Xi$.</li>
+
+        <li>I think we can use $\ve{x}'$ for other tasks; for example, filling holes or improving image quality. More research needs to be done on this, of course.</li>
+    </ul>
+
+    <h3>Loss Functions</h3>
+    <ul>
+        <li>Predictably, the paper use the standard GAN training objective:
+        \begin{align*}
+            \min_{F,G} \max_{E,D} 
+            E_{\ve{x} \sim p_{\data}(\ve{x})} [ \mrm{SoftPlus}(\mathtt{D}(\ve{x})) ] 
+            + E_{\ve{z} \sim \N(\ve{0},I), \xi \sim \Xi} [ \mrm{SoftPlus}(- \mathtt{D}(\mathtt{G}(\ve{z},\xi))) ] 
+        \end{align*}
+        where $\mrm{SoftPlus}(t) = \log(1 + e^t)$, which is a smooth version of the ReLU function. (In effect, they used a smoothed hinge loss.)
+        </li>
+
+        <li>The ALAE combines a GAN with an autoencoder by <b>imposing an autoencoder structure on the intermediate latent codes</b>. That is, for all input latent code $\ve{z}$ and random vector $\xi$, it should be that
+        \begin{align*}
+            F(\ve{z}) \approx E(G(F(\ve{z}), \xi)).
+        \end{align*}
+        So, they add another objective:
+        \begin{align*}
+            \min_{G,E} E_{\ve{z} \sim \N(\ve{0},I), \xi \sim \Xi} \| F(\ve{z}) - E(G(F(\ve{z}), \xi)) \|_2^2.
+        \end{align*}
+        Note that the minimization is only over $G$ and $E$, indicating that they should autoencode the intermediate latent space. I think this frees $F$ to produce a mapping that disentagle the $\mathcal{Z}$ space without having to worry about what the distribution might look like, other than that the mapping should produce realistic images in the end. 
+        </li>
+
+        <li>It is interesting that the paper chooses to impose the reconstruction loss on the intermediate latent space. This is a good idea because doing so on the image space results in poor image quality (e.g., using L1 or L2 loss results in blurry image, and using perceptual loss would get you artifacts).</li>
+    </ul>
+
+    <h3>Training Procedure</h3>
+
+    <ul>
+        <li>In each training iteration, there would be three steps to update the parmeters:
+        <ul>
+            <li>First, the GAN loss for the discriminator would be evaluated, and the gradient would be used to update the parameters of $E$ and $D$.</li>
+            <li>Second, the GAN loss for the generator would be evaluated, and the gradient would be used to update the parameters of $F$ and $G$.</li>
+            <li>Third, the reconstruction loss would be evaluated, and the gradient would be used to update the parameters of $G$ and $E$.</li>
+        </ul>
+        </li>
+    </ul>
+
+    <h3>StyleALAE</h3>
+
+    <ul>
+        <li>Another contribution of the paper is the design of an ALAE architecture based on the StyleGAN architecture.</li>
+
+        <li>For StyleALAE, they use the same architecture for $F$ and $G$ as in the StyleGAN paper.</li>
+
+        <li>$D$ is an MLP with 3 layers.</li>
+
+        <li>The novel bit is the architecture for $E$, which is depicted in the image below:
+        <center><img src="style-alae-architecture.png"></center>
+        <ul>
+            <li>The design is symmetric to the image generator $G$.</li>
+
+            <li>The input image $\ve{x}$ would go through a series of downsampling modules, which will reduce the image size to $4 \times 4$ finally.</li>
+
+            <li>In each module, there are two instance normalization (IN) layers that would extract style information.</li>
+
+            <li>The extracted style information would then be linearly transformed and added to form the intermediate latent vector $\ve{w}$.</li>
+        </ul>        
+        </li>
+    </ul>
+
+    <h2>Adversarial Autoencoder</h2>
+    <hr>
+
+    <p>
+    <hr>
+    <div class="page-header"></div>
+    <p>Last modified: 2020/07/26</p>    
+</div>
+
+<script type="text/javascript">
+$.bigfoot();
+</script>
+
+</body>
+</html>
