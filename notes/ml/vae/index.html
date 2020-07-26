@@ -225,7 +225,7 @@
     <ul>
         <li>Before we go ahead with what the VAE paper does, let's talk about how we would normally evaluate the integral that is $p(\ve{x})$. This would give us an idea on why the VAE paper does what it does.</li>
 
-        <li>Say, you are tasked an integral $\int_{\ve{z}} f(\ve{z}) \,\dee\ve{z}$.</li>
+        <li>Say, you are tasked to evaluate an integral $\int_{\ve{z}} f(\ve{z}) \,\dee\ve{z}$.</li>
 
         <li>Using the method of <b>Monte Carlo integration</b>:
         <ul>
@@ -319,7 +319,7 @@
         instead.
         </li>
 
-        <li>While the ELBO is not exactly the log-likelihood, it has the advantage that we evaluate all the terms in it because we can choose $q(\ve{z}|\ve{x})$ so that we know how to compute all of its terms.</li>
+        <li>While the ELBO is not exactly the log-likelihood, it has the advantage that we can evaluate all the terms in it because we can choose $q(\ve{z}|\ve{x})$ so that we know how to compute all of its terms.</li>
 
         <li>So, how accurate is using the ELBO rather than the log-likelihood? We can get an answer through some manipulations. First, let us start by noting that $q(\ve{z}|\ve{x})$ is a probability distribution, so it must integrate to $1$ over the domain of $z$. Hence, we can write:
         \begin{align*}
