@@ -310,11 +310,11 @@
 
         <li>The variational Bayes method says to find the parameter $\theta$ of $p(\ve{x})$ by optimizing the ELBO instead of trying to work on $\log p(\ve{x})$. More concretely, our original problem is to find the solution to
         \begin{align*}
-            \argmin_{\theta}\ {-E_{\ve{x}~p_{\data}(\ve{x})} [\log p(\ve{x})]}.
+            \argmin_{\theta}\ {-E_{\ve{x} \sim p_{\data}(\ve{x})} [\log p(\ve{x})]}.
         \end{align*}
         We instead solve for
         \begin{align*}
-            \argmin_{\theta}\ {-E_{\ve{x}~p_{\data}(\ve{x})} [\mrm{ELBO}(\ve{x})]}
+            \argmin_{\theta}\ {-E_{\ve{x} \sim p_{\data}(\ve{x})} [\mrm{ELBO}(\ve{x})]}
         \end{align*}
         instead.
         </li>
@@ -471,7 +471,7 @@
         \begin{align*}
             E_{\ve{x} \sim p_{\data}(x)} \Big[ E_{\ve{z} \sim q(\ve{z}|\ve{x})} [ \log p(\ve{x}|\ve{z}) ] \Big]
         \end{align*}
-        ensures that $\ve{x}$ should be likely to emerge at the end of the pipeline if we start with encoding $\ve{x}$. As a result, <b>this term is basically a reconstruction loss. The term gives meaning to the action of the decoder.</b>
+        ensures that $\ve{x}$ should be likely to emerge at the end of the pipeline if we start with encoding $\ve{x}$. As a result, <b>this term is basically a reconstruction loss. It gives meaning to the action of the decoder.</b>
         </li>
 
         <li>Second, let's look at the distribution of $E(\ve{x})$ where $\ve{x}$ is sampled from $p_{\data}$. It is clear that we want this distribution to be as close to $\N(\ve{0},I)$ as possible. The thinking goes like this:
