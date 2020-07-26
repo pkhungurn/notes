@@ -342,11 +342,11 @@
             &= E_{\ve{z} \sim q(\ve{z}|\ve{x})} [ \log p(\ve{x}|\ve{z})]
             - D_{KL}(q(\ve{z}|\ve{x})\|p(\ve{z}))
             + D_{KL}(q(\ve{z}|\ve{x})\|p(\ve{z}|\ve{x})) \\
-            &= ELBO(\ve{x}) + D_{KL}(q(\ve{z}|\ve{x})\|p(\ve{z}|\ve{x})).
+            &= \mrm{ELBO}(\ve{x}) + D_{KL}(q(\ve{z}|\ve{x})\|p(\ve{z}|\ve{x})).
         \end{align*}
         In other words,
         \begin{align*}
-        ELBO(\ve{x}) = \log p(\ve{x}) - D_{KL}(q(\ve{z}|\ve{x})\|p(\ve{z}|\ve{x})).
+        \mrm{ELBO}(\ve{x}) = \log p(\ve{x}) - D_{KL}(q(\ve{z}|\ve{x})\|p(\ve{z}|\ve{x})).
         \end{align*}
         </li>
 
@@ -442,8 +442,8 @@
         <li>From the optimization problem above, we can write down an algorithm for training VAE as follows:
         <ol>
             <li>Sample $\ve{x}$ according to $p_{\data}$ and sample $\xi'$ according to $\N(\ve{0},I)$.</li>
-            <li>Compute the loss $-ELBO(\ve{x}, \xi')$.</li>
-            <li>Compute the gradients of $-ELBO(\ve{x}, \xi')$ wrt $\theta$ and $\phi$.</li>
+            <li>Compute the loss $-\mrm{ELBO}(\ve{x}, \xi')$.</li>
+            <li>Compute the gradients of $-\mrm{ELBO}(\ve{x}, \xi')$ wrt $\theta$ and $\phi$.</li>
             <li>Update $\theta$ and $\phi$ with the gradients. (Can use any gradient-based algorithm; e.g. Adam, RMSProp, etc.)</li>
             <li>Repeat the 4 steps above until satisfied.</li>
         </ol>
