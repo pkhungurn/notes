@@ -230,8 +230,147 @@
         </li>
     </ul>
 
-    <h2>Adversarial Autoencoder</h2>
+    <h2>Adversarial Autoencoder (ICLR 2016) </h2>
     <hr>
+
+    <ul>
+        <li>Paper: <a href="https://arxiv.org/pdf/1511.05644.pdf">[LINK]</a></li>        
+
+        <li>The goal of the paper is the same as the VAE paper: generative modeling. However, they also show applications in other tasks, but I'm not interested in those tasks currently.</li>
+
+        <li>The paper constructs an autoencoder that has an encoder $E$ and a decoder $D$.</li>
+
+        <li>For this paper, we will use the notation I used in the <a href="../vae/index.html">VAE note</a>.
+        <ul>
+            <li>$\ve{z}$ denotes a latent code.</li>
+
+            <li>$\ve{x}$ denotes a data vector.</li>
+
+            <li>$p(\ve{z})$ denotes the prior distribution of the latent code. This is often $\N(\ve{0},I)$.</li>
+
+            <li>$p(\ve{x}|\ve{z})$ is the decoding distribution. This is the distribution that results from feeding the decoder $\ve{z}$ and let it sample a $\ve{x}$.</li>
+
+            <li>$q(\ve{z}|\ve{x})$ is the encoding distribution. This is the distribution that results from feeding the encoder $\ve{x}$ and let it sample a $\ve{z}$.</li>
+        </ul>
+        </li>
+
+        <li>All of the the encoding distributions define a marginal distribution of the latent codes:
+        \begin{align*}
+            q(\ve{z}) = \int_{\ve{x}} q(\ve{z}|\ve{x}) p_{\data}(\ve{x})\,\dee\ve{x}.
+        \end{align*}
+        </li>
+
+        <li>An <b>adversarial autoencder</b> (AAE) is an autoencoder that is trained so that $q(\ve{z})$ is contrained to match an arbitrary $p(\ve{z})$. It does so by using adversarial training to force $q(\ve{z})$ to match $p(\ve{z})$.</li>
+
+        <li>Under the GAN framework, the encoder $E$ serves as the generator. It now has to achieve two goals:
+        <ol>
+            <li>To generate a latent code $\ve{z}$ that the decoder can use to reconstruct $\ve{x}$.</li>
+            <li>To generate a latent code $\ve{z}$ that looks like it comes from sampling the prior distribution $p(\ve{z})$.</li>
+        </ol>
+        </li>
+
+        <li>Training has two phases in each iteration.
+        <ol>
+            <li><b>Reconstruction phase.</b> We update the encoder and the decoder to minimize the reconstruction loss:
+            \begin{align*}
+                E_{\ve{x} \sim p_{\data}(x), \ve{z} \sim q(\ve{z}|\ve{x})} [-\log p(\ve{x}|\ve{z})].
+            \end{align*}
+            </li>
+
+            <li><b>Regularization phase.</b> We update the encoder and the discriminator to optimize the GAN losses. Let $\tilde{D}$ denote the discriminator. We minimize:
+            \begin{align*}
+                \mathcal{L}_{\tilde{D}} &= E_{\ve{z} \sim p(\ve{z})} [-\log \tilde{D}(\ve{z})] + E_{\ve{x} \sim p_{\data}(\ve{x}), z \sim q(\ve{z}|\ve{x})} [-\log (1 - \tilde{D}(\ve{z}))] \\
+                \mathcal{L}_{E} &= E_{\ve{x} \sim p_{\data}(\ve{x}), z \sim q(\ve{z}|\ve{x})} [-\log \tilde{D}(\ve{z})].
+            \end{align*}
+            </li>
+        </ol>
+        </li>
+
+        <li>There are several ways to implement the encoder.
+        <ul>
+            <li>Use a deterministic function.</li>
+            <li>Use a Gaussian posterior like the VAE paper.</li>
+            <li>Training the decoder as a <b>universal posterior approximator</b>.
+            <ul>
+                <li>Suppose the encoder is a function $E(\ve{x}, \xi)$ where $\xi$ denotes a random noise vector.</li>
+                
+                <li>We have that:
+                \begin{align*}
+                    q(\ve{z}|\ve{x}) = \int_{\ve{z}} q(\ve{z}|\ve{x},\xi) p(\xi)\, \dee\xi.
+                \end{align*}
+                So,
+                \begin{align*}
+                    q(\ve{z}) = \int_{\ve{x}} \int_{\ve{z}} q(\ve{z}|\ve{x},\xi) p(\xi) p_{\data}(\ve{x}) \, \dee\xi \dee\ve{x}.
+                \end{align*}
+                </li>
+
+                <li>Now, $q(\ve{z}|\ve{x})$ does not have to be a Gaussian like in the previous item. We can choose any distribution as long as (1) we know how to efficiently sample it, and (2) the reparameterization trick can be used to write the encoder as a determinisfunction $f(\ve{x}, \xi)$.</li>
+            </ul>
+            </li>
+        </ul>
+        </li>
+
+        <li>The paper observed that a deterministic decoder does not have an extra source of randomness like the other methods. So, $q(\ve{z})$ might not be smooth. However, they obtained similar test results after trying a lot of combinations, so they reported results with only the deterministic encoder.</li>
+
+        <li>I said in my <a href="../vae/index.html">VAE note</a> that the KL divergence term in the ELBO is an overkill because it tries to match the encoding distribution $q(\ve{z}|\ve{x})$ of all $\ve{x}$ to the prior $p(\ve{z})$. However, what we really want is to match the marginal distribution $q(\ve{z})$ to $p(\ve{z})$. The AAE paper tries to do this exactly through adversarial training.</li>
+    </ul>
+
+    <h2>Autoencoding GANs</h2>
+    <hr>
+
+    <ul>        
+        <li>This is a <a href="https://arxiv.org/pdf/2004.05472.pdf">paper</a> by <a href="https://www.linkedin.com/in/conor-lazarou-85a851159/?originalSubdomain=ca">Conor Lazarou</a> who seems to be a practicing data scientist with no publication track records.</li>
+
+        <li>The paper does introduce a nice and simple idea, but it needs more evaluation. The author only evaluates the algorithm on an anime face dataset (<a href="https://www.kaggle.com/soumikrakshit/anime-faces">this one</a>). This paper definitely needs more work.</li>
+
+        <li>The construction of the <b>autoencoding GANs</b> (AEGAN) requires 4 networks:
+        <ul>
+            <li>The encoder $E: \mathcal{X} \rightarrow \mathcal{Z}$.</li>
+            <li>The generator $G: \mathcal{Z} \rightarrow \mathcal{X}$.</li>
+            <li>The data discriminator $D_{\mathcal{X}}: \mathcal{X} \rightarrow \Real$.</li>
+            <li>The latent code discriminator $D_{\mathcal{Z}}: \mathcal{Z} \rightarrow \Real$.</li>
+        </ul>
+        </li>
+
+        <li>The main ideas of the paper are:
+        <ol>
+            <li>Impose adversarial losses on 4 objects:
+            <ul>
+                <li>The generated samples $\{ G(\ve{z})\ |\ \ve{z} \sim p(\ve{z}) \}$.</li>
+                <li>The reconstructed samples $\{ G(E(\ve{x})) \ |\ \ve{x} \sim p_\data(\ve{x}) \}$.</li>
+                <li>The encoded latent codes $\{ E(\ve{x}) \ |\ \ve{x} \sim p_\data(\ve{x}) \}$</li>
+                <li>The reconstructed latent codes $\{ E(G(\ve{z})) \ |\ \ve{z} \sim p(\ve{z}) \}$</li>
+            </ul>
+            All the networks that are involved with creating these objects should receive guidance from the discriminators ( $D_{\mathcal{X}}$ and  $D_{\mathcal{Z}}$) of the appropriate domains. This process result the following losses:
+            \begin{align*}
+                \mathcal{L}_{D_\mathcal{X}}
+                &= E_{\ve{x} \sim p_{\data}(\ve{x})} [-\log(D_\mathcal{X}(\ve{x}))]
+                + E_{\ve{z} \sim p(\ve{z})} [-\log(1- D_\mathcal{X}(G(\ve{z})))]
+                + E_{\ve{x} \sim p_{\data}(\ve{x})} [-\log(1- D_\mathcal{X}(G(E(\ve{x}))))] \\
+                \mathcal{L}_{D_\mathcal{Z}}
+                &= E_{\ve{z} \sim p(\ve{z})} [-\log(D_\mathcal{Z}(\ve{z}))]
+                + E_{\ve{x} \sim p_\data(\ve{x})} [-\log(1- D_\mathcal{Z}(E(\ve{x})))]
+                + E_{\ve{z} \sim p(\ve{z})} [-\log(1- D_\mathcal{Z}(E(G(\ve{z}))))] \\
+                \mathcal{L}_{G,E} 
+                &= E_{\ve{z} \sim p(\ve{z})}[ -\log(D_{\mathcal{X}}(G(\ve{z})))]
+                + E_{\ve{x} \sim p_\data(\ve{x})}[ -\log(D_{\mathcal{X}}(G(E(\ve{x}))))]
+                + E_{\ve{x} \sim p_\data(\ve{x})}[ -\log(D_{\mathcal{Z}}(E(\ve{x})))]
+                + E_{\ve{z} \sim p(\ve{z})}[ -\log(D_{\mathcal{Z}}(E(G(\ve{z}))))]
+            \end{align*}
+            </li>
+
+            <li>Impose reconstruction losses on the reconstructed samples and latent codes:
+            \begin{align*}
+                \mathcal{L}_{\mrm{recon}} 
+                &= E_{\ve{x} \sim p_\data(\ve{x})} [ \| \ve{x} - G(E(\ve{x})) \|_1 ]
+                + E_{\ve{z} \sim p(\ve{z})} [ \| \ve{z} - E(G(\ve{z})) \|_1 ]
+            \end{align*}
+            </li>
+        </ol>
+        </li>
+
+        <li>The paper compares the AEGAN with the vanilla GAN and the AAE. The author found that the AEGAN yielded better sampled and reconstructed images than the AAE.</li>
+    </ul>
 
     <p>
     <hr>
