@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>A Primer on Hilbert Spaces</title>
+
+    <!-- Bootstrap -->
+    <link href="../../../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../../../css/theme.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+      TeX: { equationNumbers: {autoNumber: "AMS"} } 
+    });
+    </script>
+    <script type="text/javascript"
+            src="../../../MathJax/MathJax.js?config=TeX-AMS_HTML-full">
+    </script>
+
+    <script type="text/javascript" src="../../../js/jquery-3.4.1.min.js"></script>    
+    <script type="text/javascript" src="../../../js/bigfoot.min.js"></script>    
+
+    <link rel="stylesheet" type="text/css" href="../../../css/bigfoot-default.css">    
+
+</head>
+<body>
+<div class="container">
+    <span style="visibility: hidden;">
+        \(
+        \def\sc#1{\dosc#1\csod}
+        \def\dosc#1#2\csod{{\rm #1{\small #2}}}
+
+        \newcommand{\dee}{\mathrm{d}}
+        \newcommand{\Dee}{\mathrm{D}}
+        \newcommand{\In}{\mathrm{in}}
+        \newcommand{\Out}{\mathrm{out}}
+        \newcommand{\pdf}{\mathrm{pdf}}
+        \newcommand{\Cov}{\mathrm{Cov}}
+        \newcommand{\Var}{\mathrm{Var}}
+
+        \newcommand{\ve}[1]{\mathbf{#1}}
+        \newcommand{\mrm}[1]{\mathrm{#1}}
+        \newcommand{\etal}{{et~al.}}
+        \newcommand{\sphere}{\mathbb{S}^2}
+        \newcommand{\ra}{\rightarrow}
+        \newcommand{\mcal}[1]{\mathcal{#1}}
+        \newcommand{\X}{\mathcal{X}}
+        \newcommand{\Y}{\mathcal{Y}}
+        \newcommand{\Z}{\mathcal{Z}}
+        \newcommand{\x}{\mathbf{x}}
+        \newcommand{\y}{\mathbf{y}}
+        \newcommand{\z}{\mathbf{z}}
+        \newcommand{\tr}{\mathrm{tr}}
+        \newcommand{\sgn}{\mathrm{sgn}}
+        \newcommand{\diag}{\mathrm{diag}}
+        \newcommand{\Real}{\mathbb{R}}
+        \newcommand{\sseq}{\subseteq}
+        \newcommand{\ov}[1]{\overline{#1}}
+        \DeclareMathOperator*{\argmax}{arg\,max}
+        \DeclareMathOperator*{\argmin}{arg\,min}
+
+        \newcommand{\data}{\mathrm{data}}
+        \newcommand{\N}{\mathcal{N}}
+        \newcommand{\Hil}{\mathcal{H}}
+        \newcommand{\Vec}{\mathcal{V}}
+        \newcommand{\Comp}{\mathbb{C}}
+        \)
+    </span>
+
+    <br>
+    <h1>A Primer on Hilbert Spaces</h1>
+    <hr>
+
+    <p>This note is written as I read materials on basic properties of Hilbert spaces. The material comes from the book <a href="https://www.amazon.com/Introduction-Hilbert-Cambridge-Mathematical-Textbooks/dp/0521337178/ref=sr_1_3?dchild=1&keywords=hilbert+space&qid=1596870525&sr=8-3">"An Introduction to Hilbert Space"</a> by Nicholas Young and <a href="https://www.math.ucdavis.edu/~hunter/book/pdfbook.html">"Applied Analysis"</a> by John Hunter and Bruno Nachtergaele.</p>
+
+    <h2>1 Inner Product Spaces</h2>
+
+    <ul>
+        <li><b>Definition 1.1.</b> An <b>inner product</b> on a complex vector space $V$ is a mapping
+        \begin{align*}
+            \langle \cdot, \cdot \rangle: V \times V \ra \Comp
+        \end{align*}
+        such that, for all $x, y, z \in V$ and all $\lambda \in \Comp$:
+        <ol>
+            <li>$\langle x,y \rangle = \ov{ \langle y,x \rangle }$,</li>
+            <li>$\langle \lambda x, y \rangle = \lambda \langle x, y \rangle$,</li>
+            <li>$\langle x + y, z \rangle = \langle x, z \rangle + \langle y, z \rangle,$ and</li>
+            <li>$\langle x, x \rangle > 0$ when $x \neq 0$.</li>
+        </ol>
+        </li>
+
+        <li><a name="inner-product-prop"><b>Theorem 1.2.</b></a> It can be shown that the following properties also hold:
+        <ol>
+            <li>$\langle x, y+z \rangle = \langle x, y \rangle + \langle x, z \rangle$,</li>
+            <li>$\langle x, \lambda y \rangle = \ov{\lambda} \langle x, y \rangle$,</li>
+            <li>$\langle x, 0 \rangle = 0 = \langle 0, x \rangle$,</li>
+            <li>$x = 0$ if and only if $\langle x, x \rangle = 0$, and</li>
+            <li>if $\langle x, z \rangle = \langle y, z \rangle$ for all $z \in V$, then $x = y$.</li>
+        </ol>
+
+        <p><i>Proof.</i> (1) and (2) should be trivial. For (3), we have that
+        \begin{align*}
+            \langle x, 0 \rangle
+            = \langle x, x - x \rangle
+            = \langle x, x \rangle - \langle x, x \rangle
+            = 0.
+        \end{align*}
+        Furthurmore, we have that $\langle 0, x \rangle = \ov{\langle x, 0 \rangle} = \ov{0} = 0$
+        </p>
+
+        <p>For (4), we can use (3) to show that $\langle 0, 0 \rangle = 0$. By the definition of the dot product, we have that if $x \neq 0$, then $\langle x, x \rangle \neq 0$.</p>
+
+        <p>For (5), $\langle x, z \rangle = \langle y, z \rangle$ implies that $\langle x-y, z \rangle = 0$. Since this holds for all $z$, it also holds of $z = x-y$. This means $\langle x-y, x-y \rangle = 0$, which means $x - y = 0$; in other words $x = y$. $\square$</p>
+        </li>
+
+        <li><b>Definition 1.3.</b> An <b>inner product space</b> is a tuple $(V, \langle \cdot, \cdot \rangle)$ where $V$ is a complex vector space and $\langle \cdot, \cdot \rangle$ is an inner product on $V$.</li>
+
+        <li><b>Definition 1.4.</b> A <b>norm</b> of a vector $x$ in an inner product space is defined to be $\sqrt{\langle x, x \rangle}$ and is written as $\| x \|$.</li>
+
+        <li><b>Theorem 1.5.</b> For any $x$ in an inner product space $V$ and any $\lambda \in \Comp$,
+        <ol>
+            <li>$\| x \| \geq 0$ and $\| x \| = 0$ if and only if $x = 0$.</li>
+            <li>$\| \lambda x \| = |\lambda| \| x \|$.</li>
+        </ol>
+
+        <p><i>Proof.</i> For (1), by the definition of the inner product $\langle x, x \rangle \geq 0$ and $\langle x, x \rangle = 0$ iff $x = 0$. Taking the square root of both sides, we have that $\| x\| \geq 0$ and $\| x \| = 0$ iff $x = 0$.</p>
+
+        <p>For (2), we have that
+        \begin{align*}
+        \| \lambda x \| 
+        = \sqrt{\langle \lambda x, \lambda x \rangle}
+        = \sqrt{ \lambda \ov{\lambda} \langle x, x \rangle }
+        = \sqrt{ |\lambda|^2 \langle x, x \rangle }
+        = |\lambda| \sqrt{ \langle x, x \rangle }
+        = |\lambda| \| x \|
+        \end{align*}
+        as required $\square$.
+        </p>
+        </li>
+
+        <li><b>Theorem 1.6 (Cauchy-Schwarz inequality).</b> For any inner product space $V$ and for any $x, y \in V$, we have that
+        \begin{align*}
+        | \langle x, y \rangle| \leq \| x \| \| y \|.
+        \end{align*}
+        Moreover, $| \langle x, y \rangle| = \| x \| \| y \|$ if and only if $x$ and $y$ are linearly dependent.
+
+        <p><i>Proof.</i> Observe that the inequality holds strictly if $x = 0$ or $y = 0$. This falls into the linearly dependent case. So, from now on, assume that $x \neq 0$ and $y \neq 0$.</p>
+
+        <p>Suppose that $x$ and $y$ are linearly dependent. Then, we can find $\lambda \in \Comp$ such that $x = \lambda y$. We have that:
+        \begin{align*}
+        |\langle x, \lambda y \rangle| 
+        &= |\langle x, \lambda x \rangle |
+        = | \ov{\lambda} \langle x, x \rangle | 
+        = |\lambda| | \langle x, x \rangle | \\
+        &= |\lambda| \| x \|^2 
+        = \| x \| (|\lambda| \| x \|) 
+        = \| x \| ( \| \lambda x \|)  \\
+        &= \| x \| \|y \|.
+        \end{align*}
+        </p>
+
+        <p>Next, suppose that $x$ and $y$ are not linearly independent. We must show that the equality holds strictly.</p>
+
+        <p>Let us first deal with the case where $\langle x, y \rangle = 0$. Because we assumed that $x = \neq 0$ and $y \neq 0$, it follows that $\| x \| > 0$ and $\| y \| > 0$. So, $\| x \| \| y \| > 0 = \langle x, y \rangle$.</p>
+
+        <p>Now, assume that $\langle x, y \rangle \neq 0$. Since $x$ and $y$ are linearly independent, it follows that that $x + \lambda y \neq 0$ for any $\lambda \in \Comp$. So, we have that:
+        \begin{align*}
+        0 
+        &< \langle x + \lambda y , x + \lambda y \rangle \\
+        &= \langle x , x \rangle 
+        + \langle x , \lambda y \rangle
+        +  \langle \lambda y , x \rangle
+        + \langle \lambda y , \lambda y \rangle\\
+        &= \langle x , x \rangle 
+        + \ov{\lambda} \langle x , y \rangle
+        +  \lambda \langle y , x \rangle
+        + \lambda \ov{\lambda} \langle  y , y \rangle \\
+        &= \| x \|^2 
+        + \ov{\lambda} \langle x , y \rangle
+        + \lambda \ov {\langle x, y} \rangle
+        + |\lambda|^2 \| y \|^2 \\
+        &= \| x \|^2 
+        + \ov{\lambda} \langle x , y \rangle
+        + \ov{\ov{\lambda} \langle x, y \rangle}
+        + |\lambda|^2 \| y \|^2 \\
+        &= \| x \|^2 
+        + 2\Re(\ov{\lambda} \langle x , y \rangle)
+        + |\lambda|^2 \| y \|^2.
+        \end{align*}        
+        For any real number $t$, we can set
+        \begin{align*}
+        \lambda = t \frac{\langle x , y \rangle}{|\langle x , y \rangle|}.
+        \end{align*}
+        This gives:
+        \begin{align*}
+            0
+            &< \| x \|^2 
+            + 2 \Re\Bigg( t \frac{\ov{\langle x , y \rangle}}{|\langle x , y \rangle|} \langle x , y \rangle \Bigg)
+            + \left| t \frac{\ov{\langle x , y \rangle}}{|\langle x , y \rangle|} \right|^2  
+            \| y \|^2 \\
+            &= \| x \|^2
+            + 2 \Re\Bigg( t \frac{|\langle x, y \rangle|^2}{|\langle x , y \rangle|} \Bigg)
+            + t^2 \frac{|\langle x , y \rangle|^2}{|\langle x , y \rangle|^2} \| y \|^2 \\
+            &= \| x \|^2
+            + 2 t |\langle x , y \rangle|
+            + t^2 \| y \|^2
+        \end{align*}
+        for all $t \in \Real$. In other words, the quadratic polynomail $\| x \|^2 + 2 t |\langle x , y \rangle| + t^2 \| y \|^2$ has no real roots. As a result, its discriminant must be negative. In other words,
+        \begin{align*}
+            4 |\langle x, y \rangle |^2 - 4 \| x\| ^2 \| y \|^2 < 0, 
+        \end{align*}
+        which implies that $|\langle x, y \rangle | < \| x \| \| y \|$. $\square$.
+        </p>
+        </li>
+
+        <li><b>Theorem 1.7 (triangle inequality).</b> For any inner product space $V$ and $x, y \in V$, we have that
+        \begin{align*}
+        \| x + y \| \leq \| x \| + \| y \|.
+        \end{align*}
+
+        <p><i>Proof.</i> We have that
+        \begin{align*}
+        \| x + y \|^2 
+        &= \langle x+y, x+y \rangle \\
+        &= \| x \|^2 + 2\Re(\langle x, y \rangle) + \| y \|^2 \\
+        &\leq \| x \|^2 + 2|\langle x, y \rangle| + \| y \|^2 \\
+        &\leq \| x \|^2 + 2\| x \| \| y \| + \| y \|^2 \\
+        &= (\| x \| + \| y \|)^2.
+        \end{align*}
+        So, $\| x + y \| \leq \| x \| + \| y \|$. $\square$
+        </p>
+        </li>
+
+        <li><b>Theorem 1.8 (parallelogram law)</b> For any inner product space $V$ and $x, y \in V$, we have that
+        \begin{align*}
+        \| x + y \|^2 + \| x - y \|^2 = 2\| x \|^2 + 2 \| y \|^2.
+        \end{align*}
+
+        <p><i>Proof.</i> We have that
+        \begin{align*}
+        \| x + y \|^2  
+        &= \| x \|^2 + \langle x, y \rangle + \langle y, x \rangle + \| y \|^2,\\
+        \| x - y \|^2  
+        &= \| x \|^2 - \langle x, y \rangle - \langle y, x \rangle + \| y \|^2.
+        \end{align*}
+        Adding the two equations together, we get the desired result. $\square$
+        </p>
+        </li>
+
+        <li><b>Theorem 1.9 (polarization identity).</b> For any inner product space $V$ and $x, y \in V$, we have that:
+        \begin{align*}
+        4\langle x,y \rangle = \| x + y\|^2 - \| x - y \|^2 + i\| x + iy \|^2 - i \| x - iy \|^2.
+        \end{align*}
+        If $\langle x,y \rangle$ is always real, then
+        \begin{align*}
+        4\langle x,y \rangle = \| x + y\|^2 - \| x - y \|^2.
+        \end{align*}
+
+        <p><i>Proof.</i> Algebra. $\square$</p>
+        </li>
+    </ul>
+
+    <h2>2 Normed Spaces</h2>
+
+    <ul>
+        <li><b>Definition 2.1.</b> Let $E$ be a real or complex vector space. A <b>norm</b> on $E$ is a mapping $\| \cdot \|: E \ra \Real$ which satisfies the following properties: for all $x, y \in E$ and any (real or complex) scalar $\lambda$, 
+        <ul>
+            <li>$\| x \| > 0$ if $x \neq 0$;</li>
+            <li>$\| \lambda x \| = |\lambda| \| x\|$; and</li>
+            <li>$\| x+y \| \leq \| x \| + \| y \|$.</li>
+        </ul>
+        </li>
+
+        <li><b>Definition 2.2.</b> A <b>normed space</b> is a pair $(E, \| \cdot \|)$ where $E$ is a vector space and $\| \cdot \|$ is a norm on $E$.</li>
+
+        <li><b>Definition 2.3.</b> A <b>metric</b> on a set $M$ is function $d(\cdot, \cdot): M \times M \ra \Real$ that satisfies the following properties: for all $x,y,z \in X$,
+        <ol>
+            <li>$d(x,y) = 0$ iff $x = y$;</li>
+            <li>$d(x,y) = d(y,x)$;</li>
+            <li>$d(x,y) \leq d(x,z) + d(z,y).$</li>
+        </ol>
+        A <b>metric space</b> is a tuple $(M,d)$ where $M$ is a set and $d$ is a metric on $M$.
+        </li>
+
+        <li><b>Corollary 2.4.</b> For any metric $d$ on $X$ and $x,y \in X$, we have that $d(x,y) \geq 0$.
+
+        <p><i>Proof.</i> $0 = d(x,y) \leq d(x,y) + d(y,x) = 2d(x,y)$. So, $d(x,y) \geq 0$.</p>
+        </li>
+
+        <li><b>Theorem 2.5.</b> For any normed space $E$, the function $d(x,y) = \| x - y\|$ is a metric.        
+        <p><i>Proof.</i> For (1), if $x \neq y$, we have that $x-y \neq 0$, and so $d(x,y) = \| x - y \| > 0$. If $x = y$, then $x - y = 0$, and so $d(x,y) = \| x - y \| = \| 0 \|$. Now, $\| 0 \| = \| 2 \cdot 0 \| = 2\| 0 \|$, which implies that $\| 0 \| = 0$.</p>
+
+        <p>For (2), we have that $$d(x,y) = \| x - y \| = \| -(y-x) \| = |-1|\| y - x \| = |y-x| = d(y,x).$$</p>
+
+        <p>For (3), we have that:
+        \begin{align*}
+        d(x,y) 
+        = \| x - y\|
+        = \| (x - z) + (z - y) \|
+        \leq \| x - z \| + \| z - y \|
+        = d(x,z) + d(z,y).
+        \end{align*}
+        </p>
+
+        <p>We have shown all the three properties, so we conclude that $d(x,y)$ is a metric. $\square$</p>
+        </li>
+
+        <li><b>Theorem 2.6.</b> For any normed space, the norm is a continous function.
+
+        <p><i>Proof.</i> The precise statement we want to show is the following: "For any $\varepsilon > 0$, there exists $\delta > 0$ such that $| \| x \| - \| y \| | < \varepsilon$ whenever $\| x - y \| < \delta$."</p>
+
+        <p>From the definition of the norm, we have that:
+        \begin{align*}
+            \| x + (y-x) \| &\leq \| x\| + \| y - x \| \\
+            \| y \| &\leq \| x\| + \| x - y \| \\
+            \| y \| - \| x \| &\leq \| x - y \|
+        \end{align*}
+        Moreover,
+        \begin{align*}
+            \| y + (x-y) \| &\leq \| y \| + \| x - y \| \\
+            \| x \| &\leq \| y \| + \| x - y \|\\
+            \| x \| - \| y \| &\leq \| x - y \|.
+        \end{align*}
+        It follows that
+        \begin{align*}
+            | \| x \| - \| y \| | \leq \| x - y \|.
+        \end{align*}
+        As a result, we can choose $\delta = \varepsilon / 2$ to make the statement we want to prove true. $\square$
+        </p>
+        </li>
+
+        <li><b>Theorem 2.7.</b> In a normed space $E$, the vector space operations (vector addition and scalar multiplication) are continuous.
+
+        <p><i>Proof.</i> The book by Young shows that multiplication by scalar is a continuous as a function of signature $\mathbb{F} \times E \ra E$ where $\mathbb{F}$ is the field in question ($\Real$ or $\Comp$). It is done by using the definition of continuity that uses the concept of open neighborhood, which side-steps defining a matrix on $\mathbb{F} \times E$ altogether.</p>
+
+        <p>Here, we shall do the same for addition. Let $(x_1, x_2) \in E$. We would like to show that, "for any $\varepsilon > 0$, there exists an open neighborhood $N$ around $(x_1, x_2)$ such that, for all $(x_3, x_4) \in N$, we have that $\| (x_1 + x_2) - (x_3 + x_4) \| < \varepsilon$."</p>
+
+        <p>To do so, let
+        \begin{align*}
+        N_1 &= \{ x_1' \in E : \| x_1 - x_1' \| < \varepsilon / 2 \}\\
+        N_2 &= \{ x_2' \in E : \| x_2 - x_2' \| < \varepsilon / 2 \}.\\
+        \end{align*}
+        Then, $N_1 \times N_2$ is an open neighborhood of $(x_1, x_2) \in E \times E$. Now, we have that, for any $(x_3, x_4) \in N_1 \times N_2$:
+        \begin{align*}
+            \| (x_1 + x_2) - (x_3 + x_4) \|
+            &= \| (x_1 - x_3) + (x_2 - x_4) \|  \\
+            &\leq \| x_1 - x_3 \| + \| x_2 - x_4 \|\\
+            &< \frac{\varepsilon}{2} + \frac{\varepsilon}{2} \\
+            &= \varepsilon.
+        \end{align*}
+        So, addition is a continuous function of signature $E \times E \ra E$. $\square$
+        </p>        
+        </li>
+
+        <li><b>Theorem 2.8.</b> For any inner product space $V$, the inner product is a continuous function from $V \times V$ to $\Comp$.
+
+        <p><i>Proof.</i> We can use Theorem 1.9 to write the inner product in terms of the norm, addition, and multiplication by scalar. All of these operations are continuous, so must be the inner product. $\square$</p>
+        </li>
+    </ul>
+
+    <h2>3 Banach Spaces</h2>    
+
+    <ul>
+        <li><b>Definition 3.1.</b> Let $(M,d)$ be a metric space. A sequence $(x_i)_{i=1}^\infty$ in $M$ is a <b>Cauchy sequence</b> if, for every $\varepsilon > 0$, there exists an integer $K$ such that $i,j \geq K$ implies that $d(x_i, x_j) < \varepsilon$.</li>
+
+        <li><b>Definition 3.2.</b> A sequence $(x_i)_{i=1}^\infty$ in $M$ is <b>convergent</b> if it has a limit. In other words, there exists $x \in M$ such that, for every $\varepsilon > 0$, there exists an integer $K$ such that, for all $i \geq K$, we have that $d(x_i, x) < \varepsilon$.</li>
+
+        <li><b>Lemma 3.3.</b> A convergent sequence is a Cauchy sequence.
+
+        <p><i>Proof.</i> Let $(x_i)_{i=1}^\infty$ be a sequence that converges to $x$. Given $\varepsilon > 0$, we can find integer $N$ such that, for all $i,j \neq N$, we have that $d(x_i,x) < \varepsilon / 2$ and $d(x_j,x) < \varepsilon / 2$. So, we have that
+        \begin{align*}
+            d(x_i, x_j)
+            \leq d(x_i, x) + d(x, x_j)
+            = d(x_i, x) + d(x_j, x)
+            < \varepsilon / 2 + \varepsilon / 2 = \varepsilon.        
+        \end{align*}
+        As a result, the sequence is also Cauchy. $\square$
+        </p>
+        </li>
+
+        <li><b>Definition 3.4.</b> A metric space $(M,d)$ is <b>complete</b> if all Cauchy sequences in $M$ converges to a limit in $M$. In other words, in a complete metric space, a sequence is convergence if and only if it is Cauchy.</li>
+
+        <li>We state without proof that the real numbers $\Real$ and the complex numbers $\Comp$ are complete metric spaces according to the metric $d(x,y) = |x-y|$.</li>
+
+        <li><b>Definition 3.4.</b> A <b>Banach space</b> is a normed space that is a complete metric space under the metric $d(x,y) = \| x - y \|$.</li>
+
+        <li>It follows that $\Real$ and $\Comp$ are Banach spaces. So are all the finite dimensional real and complex vector spaces $\Real^n$ and $\Comp^n$ where the inner products are defined as:
+        \begin{align*}
+            \langle \ve{x}, \ve{y} \rangle
+            = \langle (x_1, x_2, \dotsc, x_n), (y_1, y_2, \dotsc, y_n) \rangle
+            = \sum_{i=1}^n x_i \ov{y_i},
+        \end{align*}
+        which induces the norm
+        \begin{align*}
+            \| \ve{x} \| 
+            = \| (x_1, x_2, \dotsc, x_n) \|
+             = \bigg(\sum_{i=1} x_i \ov{x_i}\bigg)^{1/2} = \bigg( \sum_{i=1}^n |x_i|^2\bigg)^{1/2}.
+        \end{align*}
+        Observe that if $\| x \| \leq c$, then $|x_i| \leq c$ as well for any $1 \leq i \leq n$. So, if $(\ve{x}_i)_{i=1}^n$ in $\Comp^n$ is a Cauchy sequence, then the sequence of each of its components is a Cauchy sequence in $\Comp$. Because the components converge, the whole vector converges.
+        </li>
+    </ul>
+
+    <a name="l2-space"><h2>3.1 The Space $\ell^2$</h2></a>
+
+    <ul>
+        <li>Let us give an example of a Banach space which is different from the standard finite dimensional real and complex vector spaces.</li>        
+        
+        <li><b>Definition 3.4.</b> Let $\ell^2$ denote the set of the infinite sequences $x = (x_1, x_2, \dotsc) = (x_i)_{i=1}^n$ where (1) each $x_i \in \Comp$, and (2) it is true that $\sum_{i=1}^\infty |x_i|^2$ is convergent and finite. Also, let us define addition and multiplication by scalar in $\ell^2$ as follows:
+        \begin{align*}
+            x + y &= (x_i + y_i)_{i=1}^\infty \\
+            \lambda x &= (\lambda x_i)_{i=1}^\infty
+        \end{align*}
+        for all $x,y \in \ell^2$ and $\lambda \in \Comp$.
+        </li>
+
+        <li><b>Theorem 3.6 (Cauchy test).</b> An infinite seires $\sum_{i=1}^\infty x_i$ where $x_i \in \Comp$ is convergent if and only if, for every $\varepsilon > 0$, there exists an integer $N$ such that, for every $n_2 \geq n_1 \geq N$, we have that $| \sum_{i=n_1}^{n_2} x_i| < \varepsilon$.
+
+        <p><i>Proof.</i> Define $y_j = \sum_{i=1}^j x_i$. We have that the series is convergent iff the sequence $(y_i)_{i=1}^\infty$ is convergent. Because $\Comp$ is complete, $(y_i)_{i=1}^\infty$ is convergent iff it is Cauchy. The statement of the lemma follows from rewriting $y_{n_2} - y_{n_1}$ as a sum of the series terms. $\square$</p>
+        </li>
+        
+        <li><b>Lemma 3.7.</b> $\ell^2$ is closed under addition and multiplication by scalar, so it is a vector space.
+
+        <p><i>Proof.</i> To show that $\ell^2$ is closed under addition, we show that $\sum_{i=1}^\infty |x_i + y_i|^2$ is convergent with the Cauchy test. For any $n_2 \geq n_1$, 
+        \begin{align*}
+            \sum_{i=n_1}^{n_2} |x_i + y_i|^2
+            &= \sum_{i=n_1}^{n_2} |x_i|^2 + 2\Re(x_i\ov{y_i}) + |y_i|^2 \\ 
+            &\leq \sum_{i=n_1}^{n_2} |x_i|^2 + 2|x_i||y_i| + |y_i|^2.
+        \end{align*}
+        Because $(|x_i| - |y_i|)^2 \geq 0$, we have that
+        \begin{align*}
+        0 &\leq (|x_i| - |y_i|)^2 \\
+        0 &\leq |x_i|^2 -2|x_i||y_i| + |y_i|^2 \\
+        2|x_i||y_i| &\leq |x_i|^2 + |y_i|^2.
+        \end{align*}
+        As a result,
+        \begin{align*}
+            \sum_{i=n_1}^{n_2} |x_i + y_i|^2
+            &\leq \sum_{i=n_1}^{n_2} 2|x_i|^2 + 2|y_i|^2
+            = 2\sum_{i=n_1}^{n_2} |x_i|^2 + 2\sum_{i=n_1}^{n_2} |y_i|^2.
+        \end{align*}
+        Because $\sum_{i=1}^{\infty} |x_i|^2$ and $\sum_{i=1}^{\infty} |x_i|^2$ are convergence, we can choose an integer $N$ so that, for all $n_2 \geq n_1 \geq N$, both $\sum_{i=n_1}^{n_2} |x_i|^2$ and $\sum_{i=n_1}^{n_2} |y_i|^2$ are less than $\varepsilon / 4$ for any positive real number $\varepsilon$. This implies that $\sum_{i=n_1}^{n_2} |x_i + y_i|^2 < \varepsilon$, which means $\sum_{i=1}^{\infty} |x_i + y_i|^2$ is convergence, and $x+y \in \ell^2$.
+        </p>
+
+        <p>For $\lambda x$, observe that
+        \begin{align*}
+        \sum_{i=n_1}^{n_2} |\lambda x_i|^2
+        &= |\lambda| \sum_{i=n_1}^{n_2} |x_i|^2.
+        \end{align*}
+        As a result, we may choose $N$ such that $\sum_{i=n_1}^{n_2} |x_i|^2 < \varepsilon / |\lambda|$ and proceed with the proof in the same way as in the proof for addition. We conclude that $\lambda x \in \ell^2$ as well. $\square$
+        </p>
+        </li>
+
+        <li><b>Lemma 3.8.</b> The function 
+        \begin{align*}
+        \langle x, y \rangle = \sum_{i=1}^\infty x_i \ov{y_i}
+        \end{align*}
+        is well-defined and is an inner product on $\ell^2$.
+
+        <p><i>Proof.</i> To show that the function is well defined, we have to show that $\sum_{i=0}^\infty x_i \ov{y_i}$ is convergent for all $x, y \in \ell^2$ with the Cauchy test. We will show that, for every $\varepsilon > 0$, there exists an integer $N$ such that, for all $n_2 \geq n_1 \geq N$, $|\sum_{i=n_1}^{n_2} x_i \ov{y_i}| < \varepsilon$.</p>
+
+        <p>Observe that, for any $n_1$ and $n_2$, 
+        \begin{align*}
+        \bigg| \sum_{i=n_1}^{n_2} x_i \ov{y_i} \bigg|
+        \leq \sum_{i=n_1}^{n_2} |x_i| |y_i|
+        \leq \bigg( \sum_{i=n_1}^{n_2} |x_i|^2 \bigg)^{1/2} \bigg( \sum_{i=n_1}^{n_2} |y_i|^2 \bigg)^{1/2}.        
+        \end{align*}
+        Because $\sum_{i=1}^\infty |x_i|^2$ and $\sum_{i=1}^\infty |y_i|^2$ are convergent, we can find $N$ such that, for all $n_2 \geq n_1 \geq N$, $\sum_{i=1}^\infty |y_i|^2$ and $\sum_{i=1}^\infty |y_i|^2$ are both less then $\varepsilon$. As a result,
+        \begin{align*}
+        \bigg| \sum_{i=n_1}^{n_2} x_i \ov{y_i} \bigg| < \varepsilon^{1/2} \varepsilon^{1/2}  = \varepsilon.
+        \end{align*}
+        As result, $\langle x, y \rangle = \sum_{i=1}^\infty x_i \ov{y_i}$ is convergent for all $x,y \in \ell^2$.
+        </p>
+
+        <p>Next, we need to check the four properties of the inner product in Definition 1.1. We have that        
+        \begin{align*}
+        \langle x, y \rangle 
+        &= \sum_{i=1}^\infty x_i \ov{y_i}
+        = \sum_{i=1}^\infty \ov{ y_i \ov{x_i} }
+        = \ov{\sum_{i=1}^\infty y_i \ov{x_i}}
+        = \ov{\langle y, x \rangle} \\
+        \langle \lambda x, y \rangle 
+        &= \sum_{i=1}^\infty \lambda x_i \ov{y_i}
+        = \lambda \sum_{i=1}^\infty x_i \ov{y_i}
+        = \lambda \langle \lambda x, y \rangle \\
+        \langle x + y, z \rangle 
+        &= \sum_{i=1}^\infty (x_i + y_i) \ov{z_i}
+        = \sum_{i=1}^\infty x_i \ov{z_i}
+        + \sum_{i=1}^\infty y_i \ov{z_i}
+        = \langle x , z \rangle + \langle y , z \rangle.
+        \end{align*}
+        </p>
+        Lastly, if $x \neq 0$, then $x_j \neq 0$ for some $x_j$. So, $\langle x, x \rangle = \sum_{i=1}^\infty x_i \ov{x_i} \geq x_j \ov{x_j} = |x_j|^2 > 0.$ We now conclude that $\langle x, x \rangle$ is an inner product on $\ell^2$. $\square$
+        </li>
+
+        <li><b>Theorem 3.9.</b> $\ell^2$ is a complete metric space with the norm defined by the dot product above.
+
+        <p><i>Proof.</i> Let $(x^k)_{k=1}^\infty$ be a Cauchy sequence in $\ell^2$. Note that each $x^k$ is a sequence: $x^k = (x_n^k)_{n=1}^\infty$.</p>
+
+        <p>We first find a candidate limit $a = (a_i)_{i=1}^\infty$. Let's write down a first few elements in the sequence:
+        \begin{align*}
+            x^1 &= (x^1_1, x^1_2, x^1_3, \dotsc, x^1_n, \dotsc) \\
+            x^2 &= (x^2_1, x^2_2, x^2_3, \dotsc, x^2_n, \dotsc) \\
+            x^3 &= (x^3_1, x^3_2, x^3_3, \dotsc, x^3_n, \dotsc) \\
+            &\qquad \vdots \\
+            x^k &= (x^k_1, x^k_2, x^k_3, \dotsc, x^k_n, \dotsc) \\
+            &\qquad \vdots \\
+        \end{align*}
+        Consider a sequence of a fixed column $(x^k_n)_{k=1}^\infty$ for a fixed value of $n$. We have that this must be a Cauchy sequence in $\Comp$. The reason for this is that $(x^k)_{k=1}^\infty$ is a Cauchy. This means that, for any $\varepsilon > 0$, we can find integer $K$ such that, for all $i, j \geq K$, we have that $\| x^i - x^j \| < \varepsilon$. This also implies that $| x^i_n - x^j_n | < \varepsilon$ as well.
+        </p>
+
+        <p>Since $(x^k_n)_{k=1}^\infty$ is Cauchy and $\Comp$ is complete, $(x^k_n)_{k=1}^\infty$ converges to a limit $a_n \in \Comp$. Let $a = (a_n)_{n=1}^\infty$.</p>
+
+        <p>We must now show that $a \in \ell^2$. That is, we want to show that $\sum_{n=1}^\infty |a_n|^2$ is convergent. First, because $(x^k)_{k=1}^\infty$ is Cauchy, then for any $\delta > 0$, there exists a $K$ such that for all $i, j \geq N$, we have that
+        $\| x^i - x^j \| < \delta$. In other words,
+        \begin{align*}
+            \bigg( \sum_{n=1}^\infty |x^i_n - x^j_n |^2 \bigg)^{1/2} &< \delta  \\
+            \sum_{n=1}^\infty |x^i_n - x^j_n |^2 &< \delta^2.
+        \end{align*}
+        In particular, we have that:
+        \begin{align*}
+        \sum_{n=1}^M |x^i_n - x^j_n |^2 \leq \sum_{n=1}^\infty |x^i_n - x^j_n |^2 &< \delta^2
+        \end{align*}
+        for any positive integer $M$. Since this is true for all $i \geq N$, we can take the limit as $i$ approaches $\infty$ to have:
+        \begin{align*}
+        \sum_{n=1}^M |a_n - x^j_n |^2 &< \delta^2.
+        \end{align*}
+        Again, the above expression is true for all integer $M$, we have that
+        \begin{align*}
+        \sum_{n=1}^\infty |a_n - x^j_n |^2 &< \delta^2.
+        \end{align*}
+        This means that $a - x^j$ is a member of $\ell^2$. As a result, $a$ is also a member of $\ell^2$ because $\ell^2$ is closed under addition.
+        </p>
+
+        <p>Lastly, we must show that $(x^k)_{k=1}^n$ converges to $a$. However, we just showed that, for any constant $\delta$, we can choose $N$ such that $\| a_n - x^j | < \delta^2$ for all $j \geq N$. Setting $\delta = \sqrt{\varepsilon}$, we get the statement that the limit of $(x^k)_{k=1}^n$ is $a$.</p>
+
+        <p>All in all, we have shown that any Cauchy sequence $(x^k)_{k=1}^n$ converges to an element in $\ell^2$, which makes $\ell^2$ complete. $\square$</p>
+        </li>
+    </ul>
+
+    <h3>3.2 Subspaces of Banach Spaces</h3>
+
+    <ul>
+        <li>An infinite dimensional vector space might not be closed. To see this, let $\ell_0$ denote the vector space of infinite tuples $\ve{x} = (x_i)_{i=1}^\infty$ where $x_i \in \Comp$ such that only a finite number of terms are non-zero. It is clear that (1) $\ell_0 \subseteq \ell^2$, and (2) $\ell_0$ is closed under addition and multiplication by scalar, so it is a linear subspace. However, let
+        \begin{align*}
+        x^k = \bigg( 1, \frac{1}{2}, \frac{1}{3}, \dotsc, \frac{1}{k}, 0, 0, 0, \dotsc \bigg).
+        \end{align*}
+        The sequence $(x^k)_{k=1}^\infty$ has a limit in $\ell^2$, but the limit is not in $\ell_0$ because it contains infinitely many non-zero terms.
+        </p>
+        </li>
+
+        <li><b>Defintion 3.10.</b> Let $A$ be a subset of a complete metric space $M$. The <b>closure</b> of $A$, denoted by $\mrm{clos}\, A$ is the set $A$ together with all its limit points.</li>
+
+        <li><b>Theorem 3.11.</b> Let $F$ be a subspace of a Banach space $E$. Then, the closure of $F$ is a subspace of $E$.
+
+        <p><i>Proof.</i> Let $x,y \in \mrm{clos}\,F$. Then, there exists sequences $(x_i)_{i=1}^n$ and $(y_i)_{i=1}^n$ in $F$ such that $\lim_{x\ra\infty} x_i = x$ and $\lim_{i\ra\infty} y_i = y$. Since $F$ is a subspace, it follows that $x_i + y_i$ and $\lambda x_i$ for any scalar $\lambda$ are also in $F$. By continuity of addition and scalar multiplication, it follows that $\lim_{i \ra \infty} (x_i+y_i) = x+y$ and $\lim_{i \ra \infty} (\lambda x_i) = \lambda x$. This means that $x+y$ and $\lambda x$ are limit points of some sequences in $F$. So, $x+y$ and $\lambda x$ are elements of $\mrm{clos}\ F.$ Hence, $\mrm{clos}\,F$ is a linear subspace. $\square$</p>
+        </li>
+
+        <li><b>Definition 3.12.</b> Let $A$ be a subset of a Banach space $E$.
+        <ul>
+            <li>The <b>linear span</b> of $A$, denoted $\mrm{lin}\, A$, is the intersection of all subspace of $E$ which contains $A$.</li>
+            <li>The <b>closed linear span</b> of $A$, denoted by $\mrm{clin}\, A$, is the intersection of all closed linear subspace of $E$ that contains $A$.</li>
+        </ul>
+        </li>
+
+        <li><b>Lemma 3.13.</b> Let $E$ be a normed space whose scalar field is $\mathbb{F}$, and let $A$ be a subset of $E$. Let $F$ denote the set of all (finite) linear combinations of elements of $A$. That is,
+        \begin{align*}
+        F = \bigg\{ \sum_{i=1}^m \lambda_i a_i : m \in \mathbb{N}, \lambda_1, \dotsc, \lambda_n \in \mathbb{F}, a_1, \dotsc, a_n \in A \bigg\}.        
+        \end{align*}
+        Then, $F = \mrm{lin}\, A$.
+
+        <p><i>Proof.</i> $F$ is a linear subspace. Since $F$ contains $A$, it follows that $\mrm{lin}\, A \subseteq F$.</p>
+
+        <p>Let $G$ be a subspace of $E$ that contains $A$. Then $G$ must contains all elements of $F$. As a result $F \subseteq G$. Since this is true for every $G$, it follows that $F \subseteq \mrm{lin}\, A$. $\square$</p>
+        </li>
+
+        <li><b>Theorem 3.14.</b> For any set $A$ that is a subset of a Banach space $E$, we have that $\mrm{clin}\, A$ is the closure of $\mrm{lin}\, A$
+
+        <p><i>Proof.</i> First, $\mrm{lin}\,A$ is a subspace of $E$. As a result of Theorem 3.11, $\mrm{clos}\,\mrm{lin}\,A$ is also a subspace of $E$, and we know that it is closed. By the definition of $\mrm{clin}\, A$, we have that $\mrm{clin}\,A \subseteq \mrm{clos}\,\mrm{lin}\,A$.</p>
+
+        <p>On the other hand, $\mrm{clin}\,A$ is a closed set that contains $A$, so it must contains $\mrm{clos}\,\mrm{lin}\,A$. As a result, $\mrm{clin}\,A \subseteq \mrm{clos}\,\mrm{lin}\,A$. $\square$</p>
+        </li>
+    </ul>
+
+    <h2>4 Hilbert Spaces</h2>
+    
+    <ul>
+        <li><b>Definition 4.1.</b> A <b>Hilbert space</b> is an inner product space which is complete under the norm defined by its inner product.</li>    
+
+        <li>Every Hilbert space is a Banach space, but the converse is not true. For example, for some norms, the parallelogram law is not true, so an inner product cannot be defined based on the norm.</li>
+
+        <li><b>Definition 4.2.</b> A subset $A$ of a real or complex vector space is <b>convex</b> if, for all $a, b \in A$, the set $\{ \lambda a + (1-\lambda) b : 0 < \lambda < 1 \}$ is contained in $A$.</li>
+
+        <li><b>Theorem 4.3 (closest point property).</b> Let $A$ be a non-empty closed convex set in a Hilbert space $H$. For any $x \in H$, there is a unique point of $A$ which is closer to $X$ than any other point in $A$. In other words, there is a unique point $y \in A$ such that
+        \begin{align*}
+            \| x - y \| = \inf_{a \in A} \| x - a \|.
+        \end{align*}
+
+        <p><i>Proof.</i> Let $M = \inf_{a\in A} \| x - a \|.$ Since $A \neq \emptyset$, we have that $M$ is finite.</p>
+
+        <p>For each $n \in \mathbb{N}$, there exists $y_n \in A$ such that
+        \begin{align*}
+            \| x - y_n \|^2 < M^2 + \frac{1}{n}.
+        \end{align*}
+        We will show that this sequence is Cauchy and so must have a limit. We have that, for any $n,m \in \mathbb{N}$,
+        \begin{align*}
+        \| x - y_n \|^2 + \| x - y_m \|^2
+        < 2M^2 + \bigg( \frac{1}{n} + \frac{1}{m} \bigg).
+        \end{align*}
+        </p>
+        Now, note that
+        \begin{align*}
+        x - y_n 
+        &= x - \bigg( \frac{y_n + y_m}{2} + \frac{y_n-y_m}{2} \bigg) 
+        =  \bigg(x - \frac{y_n + y_m}{2}\bigg) - \frac{y_n-y_m}{2},\\
+        x - y_m
+        &= x - \bigg( \frac{y_n + y_m}{2} - \frac{y_n - y_m}{2} \bigg)
+        = \bigg(x - \frac{y_n + y_m}{2}\bigg) + \frac{y_n-y_m}{2}.
+        \end{align*}
+        Applying the parallelogram law, we have that
+        \begin{align*}
+        \| x - y_n \|^2 + \| x - y_m \|^2
+        &= \left\| \bigg(x - \frac{y_n + y_m}{2}\bigg) + \frac{y_n-y_m}{2} \right\|^2 
+        + \left\| \bigg(x - \frac{y_n + y_m}{2}\bigg) - \frac{y_n-y_m}{2} \right\|^2 \\
+        &= 2\bigg\| x - \frac{y_n + y_m}{2} \bigg\|^2 + 2 \bigg\| \frac{y_n - y_m}{2} \bigg\|^2.
+        \end{align*}
+        So,
+        \begin{align*}
+        \frac{1}{2} \| y_n - y_m \|
+        &= \| x - y_n \|^2 + \| x - y_m \|^2 - 2 \bigg\| x - \frac{y_n + y_m}{2} \bigg\|^2 \\
+        \| y_n - y_m \| 
+        &= 2\| x - y_n \|^2 + 2\| x - y_m \|^2 - 4 \bigg\| x - \frac{y_n + y_m}{2} \bigg\|^2 \\
+        \| y_n - y_m \|
+        &< 4M^2 + 2\bigg( \frac{1}{n} + \frac{1}{m} \bigg) - 4 \bigg\| x - \frac{y_n + y_m}{2} \bigg\|^2.
+        \end{align*}
+        Because $A$ is complex, we have that $(y_n + y_m)/2$ is also inside $A$. This follows that $\| x - (y_n + y_m)/2 \|^2 > M^2$. Hence,
+        \begin{align*}
+        \| y_n - y_m \| < 2 \bigg( \frac{1}{n} + \frac{1}{m} \bigg).
+        \end{align*}
+        Since we can choose $n$ and $m$ high enough so that $2(1/n + 1/m)$ is lower than any positive constant $\varepsilon > 0$, it follows that the sequence $(y_i)_{i=1}^\infty$ is Cauchy. Let $y$ be the limit of this sequence.</p>
+
+        <p>Next, we shall show that $y$ is the point that attain the infemum $M$. Since $A$ is closed, $y \in A$. As a result, $\| x - y\| \geq M$. On the other hand, we have that:
+        \begin{align*}
+        \| x - y_n \| < M + \frac{1}{n}.
+        \end{align*}
+        Taking the limit as $n \ra \infty$, we have that $\| x - y\| \leq M$. It follows that $\| x - y \| = M$.
+        </p>
+
+        <p>We have shown that there's a closest point $y$. We must now show that it is unique. Let $z$ be another point in $A$ such that $\| x - z \| = M$. We have that:
+        \begin{align*}
+        \| x - y \|^2 + \| x - z \|^2
+        &= \bigg\| \bigg(x - \frac{y+z}{2} \bigg) - \frac{y-z}{2} \bigg\|^2
+        + \bigg\| \bigg(x - \frac{y+z}{2} \bigg) - \frac{y-z}{2} \bigg\|^2 \\
+        \| x - y \|^2 + \| x - z \|^2 
+        &= 2 \bigg\| x - \frac{y+z}{2} \bigg\|^2 - 2\bigg\| \frac{y-z}{2} \bigg\|^2 \\
+        \| y - z\|^2 
+        &= 2\| x - y\|^2 + 2\| x - z \|^2 - 4 \bigg\| x - \frac{y+z}{2} \bigg\|^2 \\
+        \| y - z\|^2 
+        &= 2M^2 + 2M^2  - 4 \bigg\| x - \frac{y+z}{2} \bigg\|^2.
+        \end{align*}
+        </p>
+        Since $(y+z)/2 \in A$ because $A$ is convex, we have that $\| x - (y+z)/2\|^2 \geq M^2$. Hence,
+        \begin{align*}
+        \| y - z\|^2 \leq 2M^2 + 2M^2 - 4M^2 = 0.
+        \end{align*}
+        It follows that $y = z$, and so $y$ is unique. $\square$
+        </li>
+
+        <li><b>Definition 4.3.</b> For an inner product space $V$ and $x,y \in V$, we say that $x$ is <b>perpendicular</b> to $v$ if $\langle x, y \rangle = 0$. We write this as $x \perp y$.</li>
+
+        <li><b>Definition 4.4.</b> Let $E$ be a subset of a Hilbert space $H$. The <b>orthogonal complement</b> of $E$, denoted by $E^\perp$, is the set of all vectors in $H$ that are orthogonal to all elements in $E$. In other words,
+        \begin{align*}
+            E^\perp = \{ x \in H : \forall y \in E, \langle x, y \rangle = 0 \}.
+        \end{align*}
+        </li>
+
+        <li><b>Theorem 4.5.</b> For any $E \subseteq H$, $E^\perp$ is a closed linear subspace of $H$.
+
+        <p><i>Proof.</i> It should be clear that $E^\perp$ is a linear subspace. For any convergent sequence whose elements $(x_i)_{i=1}^\infty$ are in $E^\perp$, we have that $\langle x_i, y \rangle = 0$ for any $y \in E$. Because the dot product is a continuous function in $H$, we can take the limit as $i \ra \infty$ and have $\langle x, y \rangle = 0$. It follows that $x \in E^\perp$ as well. So, $E^\perp$ is closed. $\square$</p>
+        </li>
+
+        <li><b>Lemma 4.6.</b> Let $M$ be a linear subspace of a Hilber space $H$. Then, $x \in M^\perp$ if and only if $\| x - y \| \geq \| x \|$ for all $y \in M$.
+
+        <p><i>Proof.</i> Note that, for any $y \in M$,
+        \begin{align*}
+        \| x - y \|^2 
+        = \langle x - y, x - y \rangle
+        = \| x \|^2 - 2 \Re(\langle x , y \rangle) + \| y \|^2.
+        \end{align*}
+        If $x \in M^\perp$, the $\langle x, y \rangle = 0$, and so $\|x - y \|^2 \geq \| x \|^2$, which implies $\| x - y \| \geq \|x \|$.</p>
+
+        <p>Now, assume that $\| x - y \|^2 \geq \|x\|^2$ for all $y \in M$. Since $M$ is a subspace, it follows that the condition also holds for $\lambda y$ for any $\lambda \in \Comp$. So,
+        \begin{align*}
+        \| x - \lambda y \|^2
+        &= \| x \|^2 + 2 \Re(\ov{\lambda}\langle x , y \rangle) + |\lambda|^2 \| y \|^2 \\
+        \| x - \lambda y \|^2 - \| x \|^2
+        &=  -2 \Re(\ov{\lambda}\langle x , y \rangle) + |\lambda|^2 \| y \|^2 \\
+        0 &\leq  -2 \Re(\ov{\lambda}\langle x , y \rangle) + |\lambda|^2 \| y \|^2.
+        \end{align*}
+        </p>
+
+        <p>
+        For any $\langle x, y \rangle$, we have that there's a unit complex number $u \in \Comp$ such that $u\langle x, y \rangle = |\langle x, y \rangle|.$ (If $\langle x, y \rangle = 0$, then any unit complex number will do. If $\langle x, y \rangle \neq 0$, we can take $u = \ov{\langle x, y \rangle}/| \langle x, y \rangle|$. ) Set $\lambda = tu$ for any $t > 0$. We have that
+        \begin{align*}
+        0 &\leq -2 t |\langle x, y \rangle| + t^2 \| y \|^2. \\
+        2t|\langle x, y \rangle| &\leq t^2 \| y \|^2 \\
+        |\langle x, y \rangle| &\leq \frac{t}{2} \| y \|^2.
+        \end{align*}
+        Since the above equation is true for any $t > 0$, it follows that $\langle x, y \rangle$ is identically zero for all $y \in M$. Hence, $x \in M^\perp$. $\square$
+        </p>       
+        </li>
+
+        <li><b>Theorem 4.7.</b> Let $M$ be a closed linear subspace of a Hilbert space $H$, and let $x \in H$. There exists $y \in M$ and $z \in M^\perp$ such that $x = y + z$.
+
+        <p><i>Proof.</i> Because $M$ is a subspace, $M$ is convex. Since $M$ is a closed complex set, there exists a unique point in $M$ that is the closest to $x$. Take $y$ to be this point, and let $z = x-y$. It follows that, for any $m \in M$, we have that
+        \begin{align*}
+        \| z \| = \| x - y \| \leq \| x - m \|.
+        \end{align*}
+        Take $m = y + m'$ for any other $m' \in M$. We have that
+        \begin{align*}
+        \| z \| \leq \| x - y + m' \| = \| z - m' \|
+        \end{align*}
+        for all $m' \in M$. It follows that $z \in M^\perp$ by Lemma 4.6. $\square$
+        </p>
+        </li>
+
+        <li><b>Corollary 4.8.</b> For any closed linear subspace $M$ of a Hilbert space $H$, we have that $(M^\perp)^\perp = M$.
+
+        <p><i>Proof.</i> [$M \subseteq (M^\perp)^\perp$] Let $x \in M$, it follows that $x \perp y$ for all $y \in M^\perp$. Hence $x \in (M^\perp)^\perp$.</p>
+
+        <p>[$(M^\perp)^\perp \subseteq M$] Let $x \in (M^\perp)^\perp$. By the last theorem, we can write $x = y + z$ where $y \in M$ and $z \in M^\perp$. Since $x \in (M^\perp)^\perp$, it follows that $\langle x, z \rangle = 0$. So,
+        \begin{align*}
+        0 = \langle x, z \rangle 
+        = \langle y+z, z \rangle 
+        = \| z \|^2.
+        \end{align*}
+        As a result, $z = 0$, so $x = y$ and $x \in M$. It follows that $(M^\perp)^\perp \subseteq M$. $\square$
+        </p>
+        </li>
+
+        <li><b>Definition 4.9.</b> Let $M,N$ be subspaces of vector space $V$. We say that $V$ is the <b>direct sum</b> of $M$ and $N$, written as $V = M \oplus N$, if $M \cap N = \{ 0 \}$ and every element of $V$ can be written as the sum of a member of $M$ and a member of $N$. Moreover, if $V$ is an inner product space and $\langle x, y \rangle = 0$ for all $x \in M$ and $y \in N$, then we say that $V$ is the <b>orthogonal direct sum</b> of $M$ and $N$.</li>
+
+        <li><b>Theorem 4.10.</b> Let $M$ be a closed linear subspace of a Hilbert space $H$. Then, $H = M \oplus M^\perp$.
+
+        <p><i>Proof.</i> From Theorem 4.7, every element of $H$ can be written as $x + y$ where $x \in M$ and $y \in M^\perp$ where $\langle x, y \rangle = 0$. It remains to show that $M \cap M^\perp = \{ 0 \}$. This is clear because, if $x \in M$ and $x \in M^\perp$, we have that $\langle x, x \rangle = 0$ and so $x = 0$. $\square$</p>
+        </li>
+    </ul>
+
+    <h2>5 Dual Spaces</h2>
+
+    <ul>
+        <li><b>Definition 5.1.</b> Let $E$ be a vector space over a field $\mathbb{F}$. A <b>linear functional</b> is a function $F: E \ra \mathbb{F}$ which is linear.</li>
+
+        <li><b>Definition 5.2.</b> We say that a linear functional $F$ over a normed space $(E, \| \cdot \|)$ is bounded if there exists a constant $M > 0$ such that $|F(x)| \leq M \| x \|$ for all $x \in E$.</b></li>
+
+        <li><a name="linear-functional-characterization"><b>Theorem 5.3.</b></a> Let $F$ be a linear functional in a normed space $(E, \| \cdot \|)$ over the real or complex numbers. The following statements are equivalent:
+        <ol>
+            <li>$F$ is continuous.</li>
+            <li>$F$ is continuous at $0$.</li>
+            <li>$F$ is bounded.</li>
+        </ol>
+
+        <p><i>Proof</i>. [(1) $\ra$ (2)] Suppose $F$ is continous. Then it is continuous at $0$. Take $\varepsilon = 1$. </p>
+
+        <p>[(2) $\ra$ (3)] Suppose $F$ is continuous at $0$. We have that there exists $\delta$ such that $|F(x)|  \leq 1$ if $\| x \| \leq \delta$. Now, for any $y \in E$,
+        \begin{align*}
+        |F(y)| 
+        = \left| \frac{\| y\|}{\delta} F\bigg( \frac{\delta}{\| y\|} y  \bigg) \right|
+        = \frac{\| y\|}{\delta} \left| F\bigg( \frac{\delta}{\| y\|} y  \bigg) \right|.
+        \end{align*}
+        Now, we have that:
+        \begin{align*}
+        \left\| \frac{\delta}{\|y \|} y \right\|
+        = \frac{\delta}{\|y \|} \| y \|
+        = \delta.
+        \end{align*}
+        It follows that 
+        \begin{align*}
+        \left| F\bigg( \frac{\delta}{\| y\|} y  \bigg) \right| \leq 1.
+        \end{align*}
+        As a result,
+        $|F(y)| \leq \frac{1}{\delta}\| y\|$, and so $f$ is bounded.</p>
+
+        <p>[(3) $\ra$ (1)] Suppose that $F$ is bounded. Let $x \in E$. We have that, for any $y \in E$, we have that
+        $|F(x) - F(y)| = |F(x - y)| \leq M \| x - y\|$. So, given any $\varepsilon > 0$, we can choose $\delta$ such that $\| x - y \| < \varepsilon / M$ to have $|F(x) - F(y)| \leq M \varepsilon / M = \varepsilon$. $\square$
+        </p>
+        </li>
+
+        <li><a name="riesz"><b>Theorem 5.4 (Riesz representation).</b></a> Let $H$ be a Hilbert space on the real or complex numbers and let $F$ be a continuous linear functional on $H$. Then, there is a unique $y \in H$ such that $F(x) = \langle x, y \rangle$.
+
+        <p><i>Proof.</i> If $F$ is the zero function, we can take $y = 0$. So, let us assume that $F$ is not zero. Let $M$ be the kernel of $F$. In other words,
+        \begin{align*}
+            M = \{ x : F(x) = 0 \}.
+        \end{align*}
+        We have that $M$ is a linear subspace of $M$. Moreover, $M$ is closed because $F$ is continuous. As a result, $H = M \oplus M^\perp$. Because $F$ is not the zero function, we have that $M^\perp \neq \{ 0 \}$. We will now show that $M^\perp$ is one-dimensional. Let $z$ be a element in $M^\perp$ with $F(z) = 1$. Then, we have that
+        \begin{align*}
+            x &= (x - F(x)z) + F(x)z \\
+            \langle x, z \rangle
+            &= \langle x - F(x)z, z \rangle + \langle F(x)z, z \rangle \\
+            &= \langle x - F(x)z, z \rangle + F(x) \| z\|^2
+        \end{align*}
+        Because $F(x - F(x)z) = F(x) - F(x)F(z) = 0$, we have that $x - F(x)z \in M$. As a result, $\langle x - F(x)z, z \rangle = 0$. So,
+        \begin{align*}
+        \langle x, z \rangle = F(x) \| z \|^2.
+        \end{align*}
+        This means we can take $y = z / \| z^2 \|$.
+        </p>
+
+        <p>Next, we shall show that $y$ is unique. Suppose $y'$ is such that $F(x) = \langle x, y' \rangle$ for all $x$. It follows that $0 = F(x) - F(x) = \langle x, y \rangle - \langle x, y' \rangle = \langle x, y - y' \rangle = 0$. Since this is true for all $x$, it follows that $y - y' = 0$ or $y = y'$. $\square$
+        </p>
+        </li>
+    </ul>
+
+    <p>
+    <hr>
+    <div class="page-header"></div>
+    <p>Last modified: 2020/08/08</p>    
+</div>
+
+<script type="text/javascript">
+$.bigfoot();
+</script>
+
+</body>
+</html>
