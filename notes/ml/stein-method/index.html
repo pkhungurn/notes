@@ -522,6 +522,187 @@
             <li>Loop back to the start and improve the distribution yet again.</li>
         </ul>
         </li>
+
+        <li>The algorithm in the previous section, however, is not very precise.
+        <ul>
+            <li>How are we going to keep track of the distribution $q^{(\ell)}$ as it evolves?</li>
+
+            <li>How exactly are we going to compute the expression $\beta_{q^{(\ell)}}(\ve{x}^{(\ell)}) = E_{\ve{x} \sim q^{(\ell)}(\ve{x})} [\mcal{A}_p k_{\ve{x}^{(\ell)}}(\ve{x})]?$</li>
+        </ul>
+        </li>
+
+        <li>For a practical implementation, the paper suggests keeping $n$ particles and evolving them as the process goes. In particular,
+        <ul>
+            <li>Start with an initial set of particles $\ve{x}_1^{(0)}, \ve{x}_2^{(0)}, \dotsc, \ve{x}_n^{(0)}$.</li>
+
+            <li><b>for</b> $\ell \gets 1, 2, 3, 4, \dotsc$
+                <ul>
+                    <li><b>for</b> $i \gets 1, 2, \dotsc, n$
+                    <ul>
+                        <li>Compute
+                        \begin{align*}
+                            \beta_{q^{(\ell)}, p}(\ve{x}_i^{(\ell)})
+                            = \frac{1}{n} \sum_{j=1}^n \Big( k(\ve{x}_j^{\ell}, \ve{x}^{\ell}_i) \nabla_{\ve{x}_j^{(\ell)}} \log p(\ve{x}_j^{(\ell)}) + \nabla_{\ve{x}_j^{(
+                            \ell)}} k(\ve{x}_j^{(\ell)}, \ve{x}_i^{(\ell)}) \Big)^T.
+                        \end{align*}
+                        </li>
+
+                        <li>Compute $\ve{x}_i^{(\ell)} \gets \ve{x}_i^{(\ell)} + \varepsilon^{(\ell)} \beta_{q^{(\ell)}, p}(\ve{x}_i^{(\ell)})$
+                        where $\varepsilon^{(\ell)}$ is the learning at the $\ell$th step.
+                        </li>
+                    </ul>
+                    </li>
+                </ul>
+            </li>
+        </ul>
+        </li>
+
+        <li>The two terms of the $\beta_{q^{(\ell)},p}$ function can be interpreted as follows:
+        <ul>
+            <li>The first term drives the particles towards high probability areas of $p(x)$. It particles follows the <i>smooth gradient direction</i>. That is the gradient at all the points weighted by the kernel functions.</li>
+
+            <li>The second term repels the points from one other, preventing them from collapsing into a single point.</li>
+        </ul>
+        </li>
+
+        <li>Consider the algorithm where $n=1$. We can see it is equivalent to pushing a single point towards a high probability region of $p$ if $\nabla_{\ve{x}} k(\ve{x},\ve{x}) = 0$. Hence, it is equivalent to <i>maximum a posteriori</i> (MAP) estimation via gradient descent.</li>
+
+        <li>In their experiments, the paper uses the Gaussian kernel:
+        \begin{align*}
+        k(\ve{x},\ve{x}')
+        = \exp\bigg( -\frac{1}{h} \| \ve{x} - \ve{x}' \|^2\bigg).
+        \end{align*}
+        The bandwidth parameter $h$ is taken to be the $h = \mrm{med}^2/ \log n$ where $\mrm{med}$ is the median of the pairwise distance between the current points.
+        </li>
+    </ul>
+
+    <h2>5 Training Neural Networks to Draw Samples from a Target Distribution</h2>
+
+    <ul>
+        <li><a href="https://arxiv.org/pdf/1611.01722.pdf">[Paper link]</a></li>
+
+        <li>Given a distribution with density $p(\ve{x})$ and a function $f(\eta; \xi)$ with parameter $\eta$ and random input $\xi$. Find an optimal parameter $\eta$ so that the density of the random output $\ve{x} = f(\eta, \xi)$ where $\xi \sim q_0(\xi)$ closesly matches the target distribution $p(\ve{x})$. We need to do this with the following restrictions:
+        <ul>
+            <li>We do not know the exact form of $q_0$, and we are only allow to draw random inputs from it.</li>
+
+            <li>We can only compute the output $f(\eta, \xi)$ and compute the gadients $\nabla_\eta(\eta, \xi)$.</li>
+        </ul>
+        </li>
+    </ul>
+
+    <h3>The Neural Sampler</h3>
+    <ul>
+        <li>The requirement for the algorithm is that one needs to know how to compute $p$ up to a normalization constant, which is the same as the requirement for SVGD.</li>
+
+        <li>The paper pointed out that SVGD is inefficient in several ways.
+        <ul>
+            <li>One needs to start over when a new distribution to approximate $p$ is given. In other words, it cannot learn from past experiences.</li>
+
+            <li>It can require a lot of memory to store praticles.</li>
+        </ul>
+        </li>
+
+        <li>So, instead of keeping a set of particles, the paper proposes to train a neural network $f(\eta, \xi)$ that mimics the SVGD dynamics.</li>
+
+        <li>The paper uses an incrementatl approch that updates $\eta$ along the Stein variational gradient direction.</li>
+
+        <li>At the $t$th iteration of the algorithm:
+        <ul>
+            <li>Let $\eta^t$ be the estimated parameter at the $t$th iteration.</li>
+
+            <li>Draw a batch of random input $\{ \xi_i\}_{i=1}^m$.</li>
+
+            <li>Calculate the outputs $\{ \ve{x}_i = f(\eta^t, \xi_i) \}_{i=1}^m$.</li>
+
+            <li>From the set of particles, one can use the SVGD to calculate a new versions $\{ \ve{x}'_i \}_{i=1}^m$ that moves it along the Stein variational gradient direction:
+            \begin{align*}
+                \ve{x}'_i &= \ve{x}_i + \varepsilon \Delta \ve{x}_i
+            \end{align*}
+            where
+            \begin{align*}
+                \Delta \ve{x}_i
+                &= E_{\ve{x} \sim q^t} \Big[ \Big( \nabla_{\ve{x}} k(\ve{x}, \ve{x}_i) \log p(\ve{x})  + \nabla_{\ve{x}} k(\ve{x}, \ve{x}_i) \Big)^T \Big]
+            \end{align*}
+            </li>
+
+            <li>The algorithm then would adjust the network parameters so that the output would match $\ve{x}_i$. In other words, we want:
+            \begin{align*}
+                \eta^{t+1}
+                = \argmin_{\eta} \bigg\{ \sum_{i=1}^m \| f(\eta, \xi_i) - \ve{x}_i' \|^2 \bigg\}
+            \end{align*}
+            In practice, we would update $\eta$ based on the gradient of the RHS.
+            </li>
+        </ul>
+        </li>
+
+        <li>The paper went over some derivations to derive an update rule for $\eta$. However, since we do not write the update rules ourselves in real implementsion, I will not mention those derivations.</li>
+    </ul>
+
+    <h3>SteinGAN</h3>
+
+    <ul>
+        <li>Let $\{ \ve{x}_{i,\data} \}$ denote a set of observed data.</li>
+
+        <li>The paper condiers the maximum likelihood training of energy-based model of the form:
+        \begin{align*}
+            p(\ve{x}|\theta) 
+            &= \frac{\exp(-\phi(\ve{x}, \theta))}{\Phi(\theta)}
+        \end{align*}
+        where
+        \begin{align*}
+            \Phi(\theta) = \log \int \exp(-\phi(\ve{x},\theta))\, \dee\ve{x}.
+        \end{align*}
+        $\phi(\ve{x};\theta)$ is an energy function for $\ve{x}$ given the paraemter $\theta$, and $\Phi(\theta)$ is the normalization constant.
+        </li>
+
+        <li>Let us give an example of such an energy model. In the <a href="https://arxiv.org/abs/1609.03126">Energy-based Generative Adversarial Network</a> paper, Zhao et al. proposed such an energy function that is based on autoencoding:
+        \begin{align*}
+        \phi(\ve{x}, \theta) = \| \ve{x} - D(E(\ve{x};\theta);\theta) \|^2_2.
+        \end{align*}
+        </li>
+        
+        <li>The log-likelihood of the observed data is given by:
+        \begin{align*}
+        L(\theta)         
+        &= \frac{1}{n} \sum_{i=1}^n \log p(\ve{x}_{i,data}|\theta) \\
+        &= \sum_{i=1}^n \log \bigg( \frac{\exp(-\phi(\ve{x}_{i,data},\theta))}{\Phi(\theta)} \bigg) \\
+        &\approx - \log \Phi(\theta) - \sum_{i=1}^n \phi(\ve{x}_{i,data},\theta)         
+        \end{align*}
+        </li>
+
+        <li>The first team is hard to evaluate directly. However, its <b>gradient is easy to evaluate</b>.
+        \begin{align*}
+        \nabla_{\theta} (\log \Phi(\theta))
+        &= \frac{1}{\Phi(\theta)} \nabla_{\theta} \Phi(\theta)\\
+        &= \frac{1}{\Phi(\theta)} \nabla_{\theta} \int \exp(-\phi(\ve{x},\theta))\, \dee\ve{x} \\
+        &= \frac{1}{\Phi(\theta)} \int \nabla_{\theta} \exp(-\phi(\ve{x},\theta))\, \dee\ve{x} \\
+        &= \frac{1}{\Phi(\theta)} \int \exp(-\phi(\ve{x},\theta)) \nabla_{\theta}(-\phi(\ve{x},\theta)) \, \dee\ve{x} \\
+        &= - \int \frac{\exp(-\phi(\ve{x},\theta))}{\Phi(\theta)} \nabla_{\theta}\phi(\ve{x},\theta) \, \dee\ve{x} \\        
+        &= - \int p(\ve{x}|\theta) \nabla_{\theta}\phi(\ve{x},\theta) \, \dee\ve{x} \\
+        &= - E_{\ve{x} \sim p(\ve{x}|\theta)} [\nabla_{\theta}\phi(\ve{x},\theta)] \\
+        &\approx -\frac{1}{m} \sum_{i=1}^m \nabla_{\theta}\phi(\ve{x}_i,\theta)
+        \end{align*}
+        where $\ve{x}_i$ are i.i.d. samples from $p(\ve{x}|\theta)$.
+        As a result,
+        \begin{align*}
+        \nabla_\theta L(\theta)
+        &\approx \frac{1}{m} \sum_{i=1}^m \nabla_{\theta}\phi(\ve{x}_i,\theta)
+        - \frac{1}{n} \sum_{i=1}^n \nabla_{\theta} \phi(\ve{x}_{i,data},\theta)   
+        \end{align*}
+        </li>
+
+        <li>Hence, the paper proposes to use SVGD to train a neural network $f(\eta, \xi)$ to sample examples according to $p(\ve{x}|\theta)$. Then, we can use the samples to evaluate the gradients above.</li>
+
+        <li>Because $f(\eta,\xi)$ can generate samples according to the probabily defined by $\phi(\ve{x},\theta)$, it becomes the <b>generator</b> after the training is done.</li>
+
+        <li>Let us interpret the two terms of the gradient $\nabla_\theta L(\theta)$. The paper says that they can be viewed as an adversarial game between the energy model (the discriminator) and the generator.
+        <ul>
+            <li>The second term tries to reduce the energy of real samples.</li>
+
+            <li>The first term, however, tries to increase the energy of the samples generated by the generator.</li>
+        </ul>
+        In other words,  the energy model is trying to tell real and fake examples apart. It is quite remarkable that we get this interpretation starting from minimizing the log-likelihood of the optimization.        
+        </li>
     </ul>
 
     <hr>
