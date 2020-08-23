@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>Perceptual Generative Autoencoders</title>
+
+    <!-- Bootstrap -->
+    <link href="../../../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../../../css/theme.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+      TeX: { equationNumbers: {autoNumber: "AMS"} } 
+    });
+    </script>
+    <script type="text/javascript"
+            src="../../../MathJax/MathJax.js?config=TeX-AMS_HTML-full">
+    </script>
+
+    <script type="text/javascript" src="../../../js/jquery-3.4.1.min.js"></script>    
+    <script type="text/javascript" src="../../../js/bigfoot.min.js"></script>    
+
+    <link rel="stylesheet" type="text/css" href="../../../css/bigfoot-default.css">    
+
+</head>
+<body>
+<div class="container">
+    <span style="visibility: hidden;">
+        \(
+        \def\sc#1{\dosc#1\csod}
+        \def\dosc#1#2\csod{{\rm #1{\small #2}}}
+
+        \newcommand{\dee}{\mathrm{d}}
+        \newcommand{\Dee}{\mathrm{D}}
+        \newcommand{\In}{\mathrm{in}}
+        \newcommand{\Out}{\mathrm{out}}
+        \newcommand{\pdf}{\mathrm{pdf}}
+        \newcommand{\Cov}{\mathrm{Cov}}
+        \newcommand{\Var}{\mathrm{Var}}
+
+        \newcommand{\ve}[1]{\mathbf{#1}}
+        \newcommand{\mrm}[1]{\mathrm{#1}}
+        \newcommand{\etal}{{et~al.}}
+        \newcommand{\sphere}{\mathbb{S}^2}
+        \newcommand{\modeint}{\mathcal{M}}
+        \newcommand{\azimint}{\mathcal{N}}
+        \newcommand{\ra}{\rightarrow}
+        \newcommand{\mcal}[1]{\mathcal{#1}}
+        \newcommand{\X}{\mathcal{X}}
+        \newcommand{\Y}{\mathcal{Y}}
+        \newcommand{\Z}{\mathcal{Z}}
+        \newcommand{\x}{\mathbf{x}}
+        \newcommand{\y}{\mathbf{y}}
+        \newcommand{\z}{\mathbf{z}}
+        \newcommand{\tr}{\mathrm{tr}}
+        \newcommand{\sgn}{\mathrm{sgn}}
+        \newcommand{\diag}{\mathrm{diag}}
+        \newcommand{\Real}{\mathbb{R}}
+        \newcommand{\sseq}{\subseteq}
+        \newcommand{\ov}[1]{\overline{#1}}
+        \DeclareMathOperator*{\argmax}{arg\,max}
+        \DeclareMathOperator*{\argmin}{arg\,min}
+
+        \newcommand{\data}{\mathrm{data}}
+        \newcommand{\N}{\mathcal{N}}
+        \newcommand{\Hil}{\mathcal{H}}
+        \)
+    </span>
+
+    <br>
+    <h1>Perceptual Generative Autoencoders</h1>
+    <hr>
+
+    <ul>
+        <li><a href="https://proceedings.icml.cc/static/paper_files/icml/2020/1042-Paper.pdf">[Papaer link]</a></li>
+
+        <li>This paper has been accepted to ICML 2020. It first appeared in 2019 but was rejected from ICLR 2020.</li>
+
+        <li>What this paper claims to do is to formulate a generative model that is as stable to train as a VAE but generates shaper images than VAE.</li>
+    </ul>
+
+    <h2>Methods</h2>
+
+    <ul>
+        <li>Notations for the data.
+        <ul>
+            <li>Let the domain of the data be $\Real^D$.</li>
+            <li>We denote a data element by $\ve{x}$.</li>
+            <li>Let $\mcal{D}$ denote the distribution of the data.</li>
+            <li>Let $p_\mcal{D}$ denote the probability density associated with $\mcal{D}$.</li>
+            <li>We write $\ve{x} \sim \mcal{D}$ to say that $\ve{x}$ is distributed according to $\mcal{D}$.</li>
+        </ul>
+        </li>
+
+        <li>Notation for the latent codes.
+        <ul>
+            <li>Let the domain of the latent codes be $\Real^H$.</li>
+            <li>We denote a latent code by $\ve{z}$.</li>
+        </ul>
+        </li>
+
+        <li>Notation for encoder and decoders.
+        <ul>
+            <li>The <b>encoder</b> is denoted by $f_\phi: \Real^D \ra \Real^H$ where $\phi$ is the parameters of the encoder.</li>
+            <li>The <b>decoder</b> is denoted by $g_\theta: \Real^H \ra \Real^D$ where $\theta$ is the parameters of the decoder.</li>
+        </ul>
+        </li>
+
+        <li>More notations for the latent coders.
+        <ul>
+            <li>Let $\mcal{H}$ denote the distributions of the latent code. That is,
+            \begin{align*}
+                \mcal{H} = \{ f_\phi(\ve{x}) : \ve{x} \sim \mcal{D} \}
+            \end{align*}
+            </li>
+            <li>As usual, the probability distribution associateed with $\mcal{H}$ is denoted by $p_\mcal{H}$.</li>
+        </ul>
+        </li>
+
+        <li>Notations for the reconstructed data.
+        <ul>
+            <li>Let $\ve{x}^\sharp$ denoted the reconstructed data:
+            \begin{align*}
+            \ve{x}^\sharp = g_\theta(f_\phi(\ve{x}))
+            \end{align*}
+            where $\ve{x} \sim \mcal{D}$.
+            </li>
+
+            <li>Also, let $\mcal{D}^\sharp$ denote the distribution of $\ve{x}^\sharp$.</li>
+        </ul>
+            
+        </li>
+
+        <li>Typically, an autoencoder is trained to minimize the <b>reconstruction loss</b>:
+        \begin{align*}
+        \argmin_{\phi,\theta}\ \cal{L}_r  
+        = \argmin_{\phi,\theta}\ E_{\ve{x} \sim \mcal{D}} \bigg[ \frac{1}{2} \| \ve{x}^\sharp - \ve{x} \|_2^2 \bigg] 
+        = \argmin_{\phi,\theta}\ E_{\ve{x} \sim \mcal{D}} \bigg[ \frac{1}{2} \| f_\phi(g_\theta(\ve{x})) - \ve{x} \|_2^2 \bigg].
+        \end{align*}
+        </li>
+
+        <li>Let $\mcal{H}^\sharp$ denote the distributed of reencoding of reconstructed examples:
+        \begin{align*}
+            \mcal{H}^\sharp = \{ f_\phi(g_\theta(f_\phi(\ve{x}))) : \ve{x} \sim \mcal{D} \} = \{ f_\phi(\ve{x}^\sharp) : \ve{x}^\sharp \sim \mcal{D}^\sharp \}.
+        \end{align*}
+        </li>
+
+        <li>Our goal is to create a decoder-based generative model. In other words,
+        <ul>
+            <li>We sample $\ve{z}$ from a simple distribution, namely $\N(0,I)$.</li>
+            <li>We would like the distribution
+            $\mcal{D}^\flat = \{ g_\theta(\ve{z}) : \ve{z} \sim \N(0,I) \}$
+            to be similar to $\mcal{D}$.
+            </li>                        
+            <li>The paper, however, does not try to match $\mcal{D}^\flat$ to $\mcal{D}$ directly.</li>
+            <li>Instead, it considers the distribution $\mcal{H}^\flat$ of encodings of members of $\mcal{D}^\flat$:
+            \begin{align*}
+                \mcal{H}^\flat = \{ f_\phi(\tilde{\ve{x}}) : \tilde{\ve{x}} \sim \mcal{D}^\flat \} = \{ f_\phi(g_\theta(\ve{z})) : \ve{z} \sim \N(0,I) \}.
+            \end{align*}
+            </li>
+            <li>The paper tries to match $\mcal{H}^\flat$ with $\mcal{H}^\sharp$.</li>
+            <li>It introduces a theorem to say that this is the right thing to do.</li>
+            <li><b>Theorem 1.</b> Let $\ve{z} \sim \N(0,I)$. We have that $g_\theta(\ve{z})$ is distributed according to $\mcal{D}^\sharp$ if the following preconditions hold:
+            <ol>
+                <li>$f_\phi(g_\theta(\ve{z}))$ is distributed according to $\hat{\mathcal{H}}$.</li>
+
+                <li>The parameter $\phi$ has been minimized as follows:
+                \begin{align*}
+                \phi = \argmin_{\phi'}\ \mcal{L}^{\phi'}_{lr, \N}
+                = \argmin_{\phi'}\ E_{\ve{z} \sim \N(0,I)} \bigg[ \frac{1}{2} \| f_{\phi'}(g_\theta(\ve{z})) - \ve{z} \|_2^2 \bigg].
+                \end{align*}
+                The loss function above is called the <b>latent reconstuction loss</b>.
+                </li>
+
+                <li>For all $\ve{x} \sim \mcal{D}^\flat$, we have that $E[\ve{z}|\ve{x}] \in Z(\ve{x})$ where $Z(\ve{x}) = \{ \ve{z} : g_\theta(\ve{z}) = \ve{x} \}.$</li>
+
+                <li>$f_\phi$ has enough capacity.</li>
+            </ol>
+
+
+            <p><i>Proof Sketch.</i> Since we supposed that $f_\phi$ has enough capacity and $\phi$ minimizes $E_{\ve{z} \sim \N(0,I)} \Big[ \frac{1}{2} \| f_{\phi'}(g_\theta(\ve{z})) - \ve{z} \|_2^2 \Big]$, we have that $f_\phi$ must be the Bayes' optimal regressor. In other words, for any $\ve{x} \sim \mcal{D}^\flat$, we have that $f_\phi(\ve{x}) = E[\ve{z}|\ve{x}]$.</p>
+
+            <p>Now, we shall show that different values of $\ve{x} \sim \mcal{D}^\flat$ are mapped to different values by $f_\phi$. More precisely, let $\ve{x}_1 = g_\theta(\ve{z}_1)$, $\ve{x}_2 = g_\theta(\ve{z}_2)$, and $\ve{x}_1 \neq \ve{x}_2$. It follows that $f_\phi(\ve{x}_1) = E[\ve{z}|\ve{x}_1] \in Z(\ve{x}_1)$ and $f_\phi(\ve{x}_2) = E[\ve{z}|\ve{x}_2] \in Z(\ve{x}_2)$. However, $Z(\ve{x}_1) \cap Z(\ve{x}_2) = \emptyset$ because $\ve{x}_1 \neq \ve{x}_2$. It follows that $f_\phi(\ve{x}_1) \neq f_\phi(\ve{x}_2)$.</p>
+
+            <p>Because we assume that $f_\phi(g_\theta(\ve{z}))$ is distributed according to $\mcal{H}^\sharp$. This means that $p_{\mcal{H}^\flat}(\ve{z}) = p_{\mcal{H}^\sharp}(\ve{z})$ for all $\ve{z}$. Suppose by way of contradiction that $\mcal{D}^\flat$ is not the same as $\mcal{D}^\sharp$. That is, there would be $\ve{x}$ such that $p_{\mcal{D}^\flat}(\ve{x}) \neq p_{\mcal{D}^\sharp}(\ve{x})$, and this inequality would hold in a neighborhood around $\ve{x}$. However, we have that $p_{\mcal{H}^\flat}(f_\phi(\ve{x})) = p_{\mcal{D}^\flat}(\ve{x})$ and $p_{\mcal{H}^\sharp}(f_\phi(\ve{x})) = p_{\mcal{D}^\sharp}(\ve{x})$, which would imply that $p_{\mcal{D}^\flat}(\ve{x}) = p_{\mcal{D}^\sharp}(\ve{x})$, a contradiction. $\square$</p>
+            </li>
+
+            <li>One thing to note is that, for the loss $\mcal{L}^{\phi}_{lr, \N}$, we only optmize $\phi$, not $\theta$. The paper observes that performance degrades if $\theta$ is optimized as well.</li>
+        </ul>
+        </li>
+
+        <li>For convenience, $h = f_\phi \circ g_\theta$. In other words, $h(\ve{z}) = f_\phi(g_\theta(\ve{z}))$.</li>
+
+        <li>The paper notes that it is useful to also minimize another latent reconstruction loss:
+        \begin{align*}
+            \argmin_{\phi}\ \mathcal{L}^\phi_{lr, \mathcal{H}} 
+            = \argmin_{\phi}\ E_{\ve{z} \sim \mcal{H}} \bigg[ \frac{1}{2} \|h(\ve{z}) - \ve{z}\|_2^2 \bigg]
+            = \argmin_{\phi}\ E_{\ve{x} \sim \mcal{D}} \bigg[ \frac{1}{2} \|f_\phi(g_\theta(f_\phi(\ve{x}))) - f_\phi(\ve{x})\|_2^2 \bigg].
+        \end{align*}
+        This is because it is possible that $\N(0,I)$ and $\mcal{H}$ may not overlap much.
+        </li>
+
+        <li>Hence, the basis for the perceptual generative autoencoders, the following loss function is minimized:
+        \begin{align*}
+            \mathcal{L}_{pga} = \mathcal{L}_r + \alpha \mathcal{L}^\phi_{lr,\N} + \beta \mathcal{L}^\phi_{lr,\mcal{H}}.
+        \end{align*}
+        where $\alpha$ and $\beta$ are hyperparaters.
+        </li>
+
+        <li>Note that, in the above loss function, $\mathcal{L}^r$ is a function of both $\phi$ and $\theta$, but the other two terms are functions of only $\phi$ (i.e., $\theta$ is held fixed).</li>
+    </ul>
+
+    <h2>Matching $\mcal{H}^\flat$ to $\mcal{H}^\sharp$</h2>
+
+    <ul>
+        <li>The paper offers two approaches to maching $\mcal{H}^\flat$ to $\mcal{H}^\sharp$. One is based on maximum likelihood estimation. The other is based on variational autoencoders.</li>        
+    </ul>
+
+    <h3>Maximum Likelihood Estimation Approach</h3>
+
+    <ul>
+        <li>In MLE, we minimize the following negative log-likelihood:
+        \begin{align*}
+            -E_{\ve{z}^\sharp \sim \mcal{H}^\sharp} [ \log p_{\mathcal{H}^\flat} (\ve{z}^\sharp) ]
+            = -E_{\ve{z} \sim \mcal{H}} [ \log p_{\mathcal{H}^\flat} (h(\ve{z})) ].
+        \end{align*}
+        </li>
+
+        <li>Consider the probability distribution $\mathcal{H}^\flat$. It is created with the following process:
+        <ul>
+            <li>Sample $\ve{z}$ from $\N(0,I)$.</li>
+            <li>Compute $h(\ve{z})$ and return it as a result.</li>
+        </ul>
+        Using the formula in my <a href="https://www.cs.cornell.edu/courses/cs6630/2015fa/notes/pdf-transform.pdf">Probability Density under Transformation notes</a>, we have that
+        \begin{align*}
+            p_{\mcal{H}^\flat}(h(\ve{z})) = \frac{p_{\N(0,I)}(\ve{z})}{| \det Dh(\ve{z}) |}
+        \end{align*}
+        where $Dh(\ve{z})$ denotes the Jacobian matrix of $h$ evaluated at $\ve{z}$. Rewriting, we have that:
+        \begin{align*}
+            p_{\mcal{H}^\flat}(\ve{z}^\flat) = \frac{p_{\N(0,I)}(h^{-1}(\ve{z}^{\flat}))}{| \det Dh(h^{-1}(\ve{z}^\flat)) |}
+        \end{align*}
+        Hence,
+        \begin{align*}
+            \log p_{\mcal{H}^\flat}(\ve{z}^\flat) = \log p_{\N(0,I)}(h^{-1}(\ve{z}^{\flat})) - \log | \det Dh(h^{-1}(\ve{z}^\flat)) |
+        \end{align*}
+        Note that this equation holds for any $\ve{z}$.
+        </li>
+
+        <li>Coming back to the log-likelihood, we have that
+        \begin{align*}
+            -E_{\ve{z} \sim \mcal{H}} [ \log p_{\mathcal{H}^\flat} (h(\ve{z})) ].
+            &= -E_{\ve{z} \sim \mcal{H}} [ \log p_{\N(0,I)}(h^{-1}(h(\ve{z}))) - \log | \det Dh(h^{-1}(h(\ve{z}))) | ] \\
+            &= -E_{\ve{z} \sim \mcal{H}} [ \log p_{\N(0,I)}(\ve{z}) - \log | \det Dh(\ve{z}) | ] \\
+            &= -E_{\ve{z} \sim \mcal{H}} [ \log p_{\N(0,I)}(\ve{z}) ] + E_{\ve{z} \sim \mcal{H}} [\log | \det Dh(\ve{z}) | ].
+        \end{align*}        
+        </li>
+
+        <li>Consider the first term of the expression above. Note $\ve{z}$ is $f_\phi(\ve{x})$ where $\ve{x}$ is distributed according to $\mcal{D}$. Hence,
+        \begin{align*}
+        -E_{\ve{x} \sim \mcal{D}} [ \log p_{\N(0,I)}(f_\phi(\ve{x})) ]
+        &= -E_{\ve{x} \sim \mcal{D}} \bigg[ \log \bigg( \frac{1}{\sqrt{(2\pi)^H}} \exp \bigg(-\frac{\| f_\phi(\ve{x}) \|_2^2}{2} \bigg) \bigg)\bigg]\\
+        &= \frac{1}{2} E_{\ve{x} \sim \mcal{D}} [ \| f_\phi(\ve{x}) \|_2^2] + C
+        \end{align*}
+        where $C$ is a constant. So, the paper define the following loss:
+        \begin{align*}
+            \mcal{L}_{nll}^\phi = \frac{1}{2} E_{\ve{x} \sim \mcal{D}} [ \| f_\phi(\ve{x}) \|_2^2]
+        \end{align*}
+        and minimizes it with respect to $\phi$. Note that constant can be dropped because it does not affect the value of the optimal $\phi$.
+        </li>
+
+        <li>For the second term, the paper avoids the computation of the determinant of the Jacobian by the following approximation:
+        \begin{align*}
+            E_{\ve{z} \sim \mcal{H}} [\log | \det Dh(\ve{z}) | ]
+            \approx \frac{H}{2} E_{\ve{z} \sim \mcal{H}, \delta \sim S(\epsilon)} \bigg[ \log \frac{\|h(\ve{z} + \delta) - h(\ve{z}) \|_2^2}{\|\delta\|_2^2} \bigg]
+            = \frac{H}{2} E_{\ve{z} \sim \mcal{H}, \delta \sim S(\epsilon)} \bigg[ \log \frac{\| f_\phi(g_\theta(\ve{z} + \delta)) - f_\phi(g_\theta(\ve{z})) \|_2^2}{\|\delta\|_2^2} \bigg]
+        \end{align*}
+        where $S(\epsilon)$ can be either $\N(0,\epsilon^2 I)$ or the uniform distribution on the $(H-1)$-sphere of radius $\epsilon$ for some small constant $\epsilon$. The paper shows that, as $\epsilon \ra 0$, the RHS is an upperbound of the LHS.
+        </li>
+
+        <li>The paper defines another loss function using the above approximation and minimizes it with respect to only $\theta$. The loss is given by:
+        \begin{align*}
+            \mcal{L}_{nll}^\theta = \frac{H}{2} E_{\ve{z} \sim \mcal{H}, \delta \sim S(\epsilon)} \bigg[ \log \frac{\| f_\phi(g_\theta(\ve{z} + \delta)) - f_\phi(g_\theta(\ve{z})) \|_2^2}{\|\delta\|_2^2} \bigg].
+        \end{align*}
+        It says that one should not optimize this loss with respect to $\phi$ because, if we do so, $f_\phi$ would try to ignore the difference between $g_\theta(\ve{z} + \delta)$ and $g_\theta(\ve{z})$. This is bad because, in Theorem 1, we want $f_\phi$ to map different values to different codes.
+        </li>
+
+        <li>Putting all the losses together, the paper proposes training to minimize the following loss function:
+        \begin{align*}
+            \mcal{L}_{lpga} 
+            &= \mcal{L}_{pga} + \gamma(\mcal{L}^\phi_{nll} + \mcal{L}^\theta_{nll} ) \\
+            &= \mcal{L}_r + \alpha \mcal{L}^\phi_{rl,\mcal{H}} + \beta \mcal{L}^\phi_{rl,\N} + \gamma(\mcal{L}^\phi_{nll} + \mcal{L}^\theta_{nll} ).
+        \end{align*}
+        Here the acronym "lpga" stands for <b>likelihood PGA</b>.
+        </li>
+    </ul>
+
+    <h3>VAE-Based Approach</h3>
+
+    <ul>
+        <li>In the VAE approach, we make several modifications to our setup.</li>
+
+        <li>First, the latent code needs to be sampled stochastically by the encoder, instead of being deterministically generated by encoding.
+        <ul>
+            <li>Let $\ve{z}'$ denote the latent code that is sampled.</li>
+            <li>We do not reuse $\ve{z}$ in order to preserve the semantic that $\ve{z}$ is a deterministic function of $\ve{x} \sim \mcal{D}$, but $\ve{z}'$ is stochastic.</li>
+        </ul>
+        </li>
+
+        <li>The variational distribution $q(\ve{z}'|\ve{x})$ is defined as follows:
+        \begin{align*}
+            q(\ve{z}'|\ve{x}) = \N(\ve{z}' | \mu_\phi(\ve{x}); \diag(\sigma_\phi^2(\ve{x})))            
+        \end{align*}
+        where $\mu_\phi(\ve{x}) = f_\phi(\ve{x})$, and $\sigma_\phi(\ve{x})$ is another output that the network encoder $f_\phi$ outputs.
+        </li>
+
+        <li>Instead of working with the distribution $p(\ve{x}|\ve{z}')$, we note work with the distribution $p(\ve{z}^\sharp|\ve{z}')$ where $\ve{z}^\sharp = h(\ve{z}) = f_\phi(g_\theta(f_\phi(\ve{x})))$ because we would like to match $\mcal{H}^\sharp$ to $\mcal{H}^\flat$. $p(\ve{z}^\sharp|\ve{z}')$ is defined as:
+        \begin{align*}
+            p(\ve{z}^\sharp|\ve{z}') = \N(\ve{z}^\sharp| \mu_{\phi,\theta}(\ve{z}'); \sigma^2 I)
+        \end{align*}
+        where $\mu_{\phi,\theta}(\ve{z}') = h(\ve{z}') = f_\phi(g_\theta(\ve{z}'))$ and $\sigma > 0$ is a tunable scalar. Writing this out in full, we have
+        \begin{align*}
+            p(\ve{z}^\sharp|\ve{z}') 
+            &= \frac{1}{(\sqrt{2\pi} \sigma)^H } \exp\bigg(-\frac{\| f_\phi(g_\theta(f_\phi(\ve{x}))) - f_\phi(g_\theta(z')) \|_2^2}{2\sigma^{2H}} \bigg) \\
+            &= \frac{1}{(\sqrt{2\pi} \sigma)^H } \exp\bigg(-\frac{\| f_\phi(g_\theta(f_\phi(\ve{x}))) - f_\phi(g_\theta(f_\phi(\ve{x}) + \xi \sigma_\phi^2(\ve{x}))) \|_2^2}{2\sigma^{2H}} \bigg)
+        \end{align*}
+        for some $\xi \sim \N(0,I)$. Note how similar this is to $\mcal{L}^\theta_{nll}$.
+        </li>
+
+        <li>If $\sigma$ is fixed, then the optimization process would make $\ve{z}$, $\ve{z}^\sharp$, and $\mu_{\phi,\theta}(\ve{z}')$ all close to zero. The paper proposes making $\sigma$ proportional to the magnitude of $\ve{z}$ to avoid this problem.</li>
+
+        <li>For VAE, we seek to minimize the ELBO:
+        \begin{align*}
+            \mcal{L}_{vae} 
+            = \mcal{L}_{vr} + \mcal{L}^\phi_{vkl}
+            = -E_{\ve{x} \sim \mcal{D}, \ve{z}' \sim q(\ve{z'}|\ve{x})} [ \log p(\ve{z}^\sharp|\ve{z}')]
+            + E_{\ve{x} \sim \mcal{D}} [ D_{KL}(q(\ve{z}'|\ve{x}) \| p_{\N(0,I)}(\ve{z}')) ].
+        \end{align*}
+        See <a href="../vae/index.html">my notes on VAE</a> if you forgot where these terms come from.
+        </li>
+
+        <li>Note that when optimizing $\mcal{L}_{vae}$, we change $\phi$ to minimize $\mcal{L}^\phi_{vkl}$, but we only change $\theta$ to minimize the reconstruction loss $\mcal{L}_{vr}$. If we also change $\phi$, we would be forcing the encoder to map different values of $\ve{x}$ to the same latent code, which is not a good thing.</li>
+
+        <li>All in all, the VAE-based approach minimizes the following loss function:
+        \begin{align*}
+            \mcal{L}_{vpga} = \mathcal{L}_{pga} + \eta \mathcal{L}_{vae}.
+        \end{align*}
+        The acronym "vpga" stands for <b>variational PGA</b>.
+        </li>
+    </ul>
+
+    <h3>The PGA Framework</h3>
+
+    <ul>
+        <li>The PGA algorithms contain losses that can be divided into 3 groups.
+        <ul>
+            <li><b>The reconstruction loss $\mcal{L}_r$</b>. This loss makes sure that the space of reconstructed examples $\mcal{D}^\sharp$ is similar to the space of real examples $\mcal{D}$, allowing us to apply Theorem 1.</li>
+
+            <li><b>The latent reconstruction loss $\mcal{L}^{\phi,\mcal{H}}$ and $\mcal{L}^{\phi,\mcal{N}}$.</b> This allows us to solve the problem by matching the distributions of latent codes, $\mcal{H}^\sharp$ and $\mcal{H}^\flat$, instead of matching the real data distribution, as required by Theorem 1.</li>
+
+            <li><b>The maximum likelihood loss or the VAE loss</b>. These trie to make $h = f_\phi \circ g_\theta$ maps $\N(0,I)$ to $\mcal{H}^\sharp$, which tries to satisfy the last condition of Theorem 1.</li>
+        </ul>
+        </li>
+
+        <li>The paper also mentions that the maximum likelihood loss and the VAE loss are very similar in nature and can be unified.
+        <ul>
+            <li>$\mathcal{L}^\phi_{nll}$ and $\mcal{L}^\phi_{vkl}$ both try to attract $f_\phi(\ve{x})$ to zero.</li>
+
+            <li>$\mathcal{L}^\theta_{nll}$ and $\mathcal{L}_{vr}$ both try to minimize the difference between $h(f_\phi(\ve{x}))$ and $h(f_\phi(\ve{x}) + \delta)$ where $\delta$ is some noise with zero mean.</li>
+
+            <li>In fact, all the terms can be combined to get a new loss function (the "LVPGA" loss), but the paper mentioned that this is ineffective as it requirers more hyperparameters.</li>
+        </ul>
+        </li>
+    </ul>
+
+    <hr>
+    <div class="page-header"></div>
+    <p>Last modified: 2020/08/23</p>    
+</div>
+
+<script type="text/javascript">
+$.bigfoot();
+</script>
+
+</body>
+</html>
