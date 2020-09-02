@@ -1,0 +1,619 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+\usepackage{verbatim}
+\usepackage{hyperref}
+\usepackage{CJKutf8}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\Dee}{\mathrm{D}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\Var}{\mathrm{Var}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+\newcommand{\ov}[1]{\overline{#1}}
+
+\title{Introduction to Analytical Mechanics}
+\author{Pramook Khungurn}
+
+\begin{document}
+  \maketitle
+
+  This note is written as I read \begin{CJK}{UTF8}{min}「量子力学を学ぶための解析力学入門」\end{CJK} by Yasushi Takahashi. This is a book that briefly introduces analytical mechanics for those who want to use it do to something else, which is perfect for me.
+
+  \section{Euler--Lagrange and Hamilton's Equations}
+
+  \begin{itemize}
+  	\item Sovling a problem in classical mechanics generally involves two steps.
+  	\begin{enumerate}
+  		\item Writing the equations of motion of the system.
+  		\item Solving the equations.
+  	\end{enumerate}
+
+  	\item When solving the equations of motion, it is advantageous to choose variables that simplify the problem.
+  	\begin{itemize}
+  		\item For example, change from Cartesian coordinates $(x,y,z)$ to spherical coordinates $(r,\theta,\phi)$.
+  	\end{itemize}
+
+  	\item The change of variable calculation is often cumbersome, especially when Newton's equation ($F = ma$) is used without modification.
+
+  	\item However, if we rewrite Newton's equation in another form, we can simplify the calculation by a lot.
+  	\begin{itemize}
+  		\item One of such a form is using the {\bf Lagrangian}.
+  		\item Another form is using the {\bf Hamiltonian}.
+  	\end{itemize}
+
+  	\item The Hamiltonian form is more powerful because it can perform changes of variables that the Lagrangian form cannot.
+  \end{itemize}
+
+  \subsection{Newton's Equation of Motion}
+
+  \begin{itemize}
+  	\item Consider a particle whose mass is $m$ and whose position is denoted by vector $\ve{x}$.
+
+  	\item Suppose we want to compute the trajectory of a particle under the influence of a force field defined by a potential function $V(\ve{x})$ as follows:
+  	\begin{align*}
+  		\ve{F}(\ve{x}) = -\nabla_{\ve{x}} V(\ve{x}).
+  	\end{align*}
+
+  	\item The equation of motion is given by:
+  	\begin{align*}
+  		m \frac{\dee^2 \ve{x}}{\dee t} = \ve{F}(\ve{x}).
+  	\end{align*}
+
+  	\item The above equation is in given Cartesian coordinates $\ve{x} = (x,y,z)^T$. However, we may want to work with spherical coordinates $(r,\theta,\phi)$ where
+  	\begin{align*}
+  		x &= r \sin\theta \cos\phi \\
+  		y &= r \sin\theta \sin\phi \\
+  		z &= r \cos\theta
+  	\end{align*}
+  	instead.
+
+  	\item To do so, we might write the equation of motion in its spherical coordinate form. The equations are given by:
+  	\begin{align}
+  		m \ddot{r} - mr(\dot{\theta}^2 + \dot{\phi} \sin^2 \theta) 
+  		&= -\frac{\partial V(r, \theta,\phi)}{\partial r} \label{newton-polar-1}\\
+  		\frac{\dee}{\dee t} (mr^2 \dot{\theta}) - mr^2\dot{\phi}^2 \sin \theta \cos \theta 
+  		&= -\frac{\partial V(r, \theta,\phi)}{\partial \theta} \label{newton-polar-2} \\
+  		\frac{\dee}{\dee t} (mr^2 \dot{\phi} \sin^2 \theta)
+  		&= -\frac{\partial V(r, \theta,\phi)}{\partial \phi} \label{newton-polar-3}
+  	\end{align}
+  	You can try to derive the above three equations, but I assure you that the calculation would be long and tedious.
+
+  	\item In order to simplify the calculation, it is advantageous to look for an invariance of the system.
+
+  	\item One invariance that is well know is the {\bf conservation of energy}, which says that the total energy $$E = T + V$$ stays constant with respect to time. Here, $$T = \frac{1}{2} m \| \dot{\ve{x}} \|^2 = \frac{1}{2} m (\dot{\ve{x}} \cdot \dot{\ve{x}})$$ is the kinetic energy of the particle.
+
+  	\item We can show that the time derivative of energy is indeed zero. In particular,
+  	\begin{align*}
+  		\frac{\dee E}{\dee t}
+  		&= \frac{\dee}{\dee t} (T(\dot{\ve{x}}) + V(\ve{x}))
+  		= \frac{\dee \dot{\ve{x}}}{\dee t} \cdot \frac{\partial T}{\partial \dot{\ve{x}}} + \frac{\dee\ve{x}}{\dee t} \cdot \frac{\partial V}{\partial \ve{x}}
+  		= \ddot{\ve{x}} \cdot (m\dot{\ve{x}}) + \dot{\ve{x}} \cdot \nabla_{\ve{x}} V \\
+  		&= \dot{\ve{x}} \cdot (m\ddot{\ve{x}} + \nabla_{\ve{x}} V).
+  	\end{align*}
+  	By our equation of motion, $m\ddot{\ve{x}} = - \nabla_{\ve{x}} V$, so $m\ddot{\ve{x}} + \nabla_{\ve{x}} V = 0$, and the total energy must be conserved.
+  \end{itemize}
+
+  \subsection{Lagragrian and Euler--Lagrange Equation}
+
+  \begin{itemize}
+  	\item Define the {\bf Lagragian} $L$ as:
+  	\begin{align*}
+  		L = T - V.
+  	\end{align*}
+
+  	\item Note that the Lagragian is not conserved like the energy $E$.
+
+  	\item However, we have that
+  	\begin{align*}
+  		\frac{\partial L}{\partial \ve{x}} 
+  		&= \frac{\partial }{\partial \ve{x}} (T(\dot{\ve{x}}) - V(\ve{x}))
+  		= \frac{\partial V(\ve{x})}{\partial \ve{x}}
+  		= - \nabla_{\ve{x}} V(\ve{x}) \\
+  		\frac{\partial L}{\partial \dot{\ve{x}}}
+  		&= \frac{\partial }{\partial \overline{\ve{x}}} (T(\dot{\ve{x}}) - V(\ve{x}))
+  		= \frac{\partial T(\dot{\ve{x}})}{\partial \dot{\ve{x}}}
+  		= m\dot{\ve{x}}.
+  	\end{align*}
+  	As a result,
+  	\begin{align*}
+  		\frac{\dee}{\dee t}\bigg( \frac{\partial L}{\partial \dot{\ve{x}}} \bigg) 
+  		- \frac{\partial L}{\partial \ve{x}}
+  		= m\ddot{\ve{x}} + \nabla_{\ve{x}} V = 0.
+  	\end{align*}
+
+  	\item The equation
+  	\begin{align*}
+  		\frac{\dee}{\dee t}\bigg( \frac{\partial L}{\partial \ve{x}} \bigg) - \frac{\partial L}{\partial \ve{x}} = 0
+  	\end{align*}
+  	is called the {\bf Euler--Lagrange equation}.
+
+  	\item The Euler--Lagrange equation is equivalent to Newton's law of motion in the sense that $\ve{x}$ is a solution to the EL equation iff it is a solution to Newton's equation ($\ve{F} = m\ddot{\ve{x}}$).
+
+  	\item As we shall see later, solving the EL equation is equivalent to finding a function $\ve{x}(t)$ that is a stationary point of a functinal (the ``action integral''). Takahashi gives an interesting perspective by pointing out a similarity with unconstrained function optimization. In this setting, we are given a function $f(\cdot)$, we solve for $x$ that satisfies $\dee f / \dee x = 0$. The process is the same when solving for a trajectory. It's just that the equation becomes the EL equation instead.
+  \end{itemize}
+
+  \subsection{Invariance Under Coordinate System Change}
+
+  \begin{itemize}
+  	\item A nice property of the EL equation is that its form remain the same when we use a different coordinate system.
+
+  	\item For example, the EL equation(s) under spherical coordinates would be:
+  	\begin{align*}
+  		\frac{\dee}{\dee t} \bigg( \frac{\partial L}{\partial \dot{r}} \bigg) - \frac{\partial L}{\partial r} &= 0 \\
+  		\frac{\dee}{\dee t} \bigg( \frac{\partial L}{\partial \dot{\theta}} \bigg) - \frac{\partial L}{\partial \theta} &= 0 \\
+  		\frac{\dee}{\dee t} \bigg( \frac{\partial L}{\partial \dot{\phi}} \bigg) - \frac{\partial L}{\partial \phi} &= 0.
+  	\end{align*}
+  	One can check that the equations above are the same as Equations $\eqref{newton-polar-1}$, $\eqref{newton-polar-2}$, and $\eqref{newton-polar-3}$ by hand.
+
+  	\item In order to prove invariance under coordinate system change, we shall move away from Cartesian and polar coordinates and work in {\bf generalized coordinates}. Say, the positions of particles in our system can be described by $f$ variables $q_1, q_2, \dotsc, q_f$. Here, $f$ is called the {\bf degrees of freedom} of the system.
+  	\begin{itemize}
+  		\item For example, if our system consists of only one particle, then its position can be described by 3 degrees of freedom: $(x,y,z)$ or $(r,\theta,\phi)$ or what have you. A system of $N$ independent particles would require $3N$ degrees of freedom.
+
+  		\item It is important to note that the degrees of freedom in a system of $N$ particles need not be $3N$ because {\bf it can be lower}. For example, if we have a system of $2$ particles in 3D that are contrained so that the distance between them is constant, then the system has $5$ degrees of freedom instead of the full $6$.
+  	\end{itemize}
+
+  	\item Given that the system can be described by generalized coordinates $q_1, q_2, \dotsc, q_f$, the {\bf Lagrangian} is a scalar function of the generalized coordinates and their time derivatives
+  	\begin{align*}
+  		L = L(q_1, q_2, \dotsc, q_f, \dot{q}_1, \dot{q}_2, \dotsc, \dot{q}_f),
+  	\end{align*}
+  	such that the equation of motion of the system is the following Euler--Lagrange equations:
+  	\begin{align}
+  	\frac{\dee}{\dee t} \bigg( \frac{\partial L}{\partial \dot{q}_1} \bigg) - \frac{\partial L}{\partial q_1} &= 0 \notag \\
+  	\frac{\dee}{\dee t} \bigg( \frac{\partial L}{\partial \dot{q}_2} \bigg) - \frac{\partial L}{\partial q_2} &= 0 \notag \\
+  	&\ \,\vdots \label{euler-lagrange-gc} \\
+  	\frac{\dee}{\dee t} \bigg( \frac{\partial L}{\partial \dot{q}_f} \bigg) - \frac{\partial L}{\partial q_f} &= 0. \notag
+  	\end{align}
+
+  	\item \begin{theorem} \label{lagrangian-change-of-coordiate}
+  		The Euler--Lagrange equation is invariant under coordinate system change. In other words, let $Q_1, Q_2, \dotsc, Q_f$ be another system of coordinates where we can write
+  		\begin{align*}
+  			q_1 &= q_1(Q_1, Q_2, \dotsc, Q_f),\\
+  			q_2 &= q_1(Q_1, Q_2, \dotsc, Q_f),\\
+  			&\ \,\vdots \\
+  			q_f &= q_f(Q_1, Q_2, \dotsc, Q_f).
+  		\end{align*}
+  		Then, if the system of equations $\eqref{euler-lagrange-gc}$ holds, then the following system of equations
+  		\begin{align*}
+	  	\frac{\dee}{\dee t} \bigg( \frac{\partial L}{\partial \dot{Q}_1} \bigg) - \frac{\partial L}{\partial Q_1} &= 0 \\
+	  	\frac{\dee}{\dee t} \bigg( \frac{\partial L}{\partial \dot{Q}_2} \bigg) - \frac{\partial L}{\partial Q_2} &= 0 \\
+	  	&\ \,\vdots \\
+	  	\frac{\dee}{\dee t} \bigg( \frac{\partial L}{\partial \dot{Q}_f} \bigg) - \frac{\partial L}{\partial Q_f} &= 0.
+	  	\end{align*}
+	  	also holds.
+  	\end{theorem}
+
+  	\begin{proof}
+  		First, let us take the time derivative of $q_i$. By the law of total derivative, we have that
+  		\begin{align} \label{q-time-deriv}
+  			\dot{q}_i 
+  			&= \frac{\partial q_i}{\partial Q_1} \dot{Q}_1 + \frac{\partial q_i}{\partial Q_2} \dot{Q}_2 + \dotsb + \frac{\partial q_i}{\partial Q_f} \dot{Q}_f
+  			= \sum_{j=1}^f \frac{\partial q_i}{\partial Q_j} \dot{Q}_j.
+  		\end{align}
+  		Because we can write the $q_i$'s as functions of the $Q_k$'s and the $\dot{q}_i$'s as functions of the $Q_k$'s and the $\dot{Q}_k$'s, we have that $L$ is a function of the $Q_k$'s their time derivates.
+
+  		Next, taking the partial derivative with respect to $\dot{Q}_k$ of both sides of Equation $\eqref{q-time-deriv}$, we have that
+  		\begin{align} \label{dropping-dots}
+  			\frac{\partial \dot{q}_i}{\partial \dot{Q}_k} 
+  			= \sum_{j=1}^f \frac{\partial}{\partial \dot{Q}_k} \bigg( \frac{\partial q_i}{\partial Q_j} \dot{Q}_j \bigg)
+  			= \sum_{j=1}^f \frac{\partial q_i}{\partial Q_j} \frac{\partial \dot{Q}_j }{\partial \dot{Q}_k}
+  			= \frac{\partial q_i}{\partial Q_k}.
+  		\end{align}
+  		Taking the time derivative of both sides, we have that 
+  		\begin{align} \label{dot-q-by-dot-big-Q}
+  			\frac{\dee}{\dee t}\bigg( \frac{\partial \dot{q}_i}{\partial \dot{Q}_k}  \bigg)
+  			&= \frac{\dee}{\dee t}\bigg( \frac{\partial q_i}{\partial Q_k}  \bigg)
+  			= \sum_{j=1}^f \frac{\partial}{\partial Q_j} \bigg( \frac{\partial q_i}{\partial Q_k} \bigg) \dot{Q}_j
+  			= \sum_{j=1}^f \frac{\partial^2 q_i}{\partial Q_j \partial Q_j} \dot{Q}_j.
+  		\end{align}
+
+  		On the other hand, consider Equation \eqref{q-time-deriv} again. Because each $\partial q_i / \partial Q_j$ on the RHS is a function of only $Q_1$, $Q_2$, and $Q_f$, we have that
+  		\begin{align} \label{dot-q-by-big-q}
+  		\frac{\partial \dot{q}_i}{\partial Q_k}
+  		= \frac{\partial}{\partial Q_k} \bigg( \sum_{j=1}^f \frac{\partial q_i}{\partial Q_j} \dot{Q}_j \bigg)
+  		= \sum_{j=1}^f \frac{\partial}{\partial Q_k} \bigg( \frac{\partial q_i}{\partial Q_j} \bigg) \dot{Q}_j
+  		= \sum_{j=1}^f \frac{\partial^2 q_i}{\partial Q_j \partial Q_j} \dot{Q}_j.
+  		\end{align}
+
+  		Equating \eqref{dot-q-by-dot-big-Q} and \eqref{dot-q-by-big-q}, we have that
+  		\begin{align} \label{time-deriv-qq-qq-relation}
+  			\frac{\dee}{\dee t}\bigg( \frac{\partial \dot{q}_i}{\partial \dot{Q}_k} \bigg)
+  			= \frac{\dee}{\dee t}\bigg( \frac{\partial q_i}{\partial Q_k} \bigg)
+  			= \frac{\partial \dot{q}_i}{\partial Q_k}
+  		\end{align}
+  		for any $k$.
+
+  		Let us now take the partial derivatives of $L$ with respect to $Q_k$ and $\dot{Q}_k$. First,
+  		\begin{align} \label{partial-L-partial-Q}
+  			\frac{\partial L}{\partial Q_k}
+  			= \sum_{j=1}^f \bigg( \frac{\partial L}{\partial q_j} \frac{\partial q_j}{\partial Q_k}  + \frac{\partial L}{\partial \dot{q}_j} \frac{\partial \dot{q}_j}{\partial Q_k} \bigg)
+  		\end{align}
+  		Next,
+  		\begin{align*}
+  			\frac{\partial L}{\partial \dot{Q}_k}
+  			= \sum_{j=1}^f \bigg( \frac{\partial L}{\partial q_j} \frac{\partial q_j}{\partial \dot{Q}_k}  + \frac{\partial L}{\partial \dot{q}_j} \frac{\partial \dot{q}_j}{\partial \dot{Q}_k} \bigg)
+  		\end{align*}
+  		However, because $q_j$ is a function of only $Q_1$, $\dotsc$, $Q_f$, we have that $\frac{\partial q_j}{\partial \dot{Q}_k} = 0$. As a result,
+  		\begin{align*}
+  			\frac{\partial L}{\partial \dot{Q}_k}
+  			= \sum_{j=1}^f \frac{\partial L}{\partial \dot{q}_j} \frac{\partial \dot{q}_j}{\partial \dot{Q}_k}
+  			= \sum_{j=1}^f \frac{\partial L}{\partial \dot{q}_j} \frac{\partial q_j}{\partial Q_k}.
+  		\end{align*}
+  		Here, the last part follows from Equation~\eqref{dropping-dots}. Taking the time derivative of the above equation, we have
+  		\begin{align*}
+  			\frac{\dee}{\dee t} \bigg( \frac{\partial L}{\partial \dot{Q}_k} \bigg)
+  			= \sum_{j=1}^f \frac{\dee}{\dee t} \bigg( \frac{\partial L}{\partial \dot{q}_j} \frac{\partial q_j}{\partial Q_k} \bigg)
+  			= \sum_{j=1}^f 
+  			\bigg[ 
+  			\frac{\dee}{\dee t} \bigg( \frac{\partial L}{\partial \dot{q}_j} \bigg) \frac{\partial q_j}{\partial Q_k}
+  			+  \frac{\partial L}{\partial \dot{q}_j} \frac{\dee}{\dee t} \bigg( \frac{\partial q_j}{\partial Q_k} \bigg)
+  			\bigg]
+  		\end{align*}
+  		Using \eqref{time-deriv-qq-qq-relation}, the above equations becomes
+  		\begin{align} \label{partial-L-partial-dot-Q}
+  			\frac{\dee}{\dee t} \bigg( \frac{\partial L}{\partial \dot{Q}_k} \bigg)
+  			= \sum_{j=1}^f 
+  			\bigg[ 
+  			\frac{\dee}{\dee t} \bigg( \frac{\partial L}{\partial \dot{q}_j} \bigg) \frac{\partial q_j}{\partial Q_k}
+  			+  \frac{\partial L}{\partial \dot{q}_j} \frac{\partial \dot{q}_j}{\partial Q_k}
+  			\bigg]
+  		\end{align}
+  		Subtracing \eqref{partial-L-partial-Q} from \eqref{partial-L-partial-dot-Q}, we have that
+  		\begin{align*}
+  			\frac{\dee}{\dee t} \bigg( \frac{\partial L}{\partial \dot{Q}_k} \bigg) - \frac{\partial L}{\partial Q_k}
+  			&= \sum_{j=1}^f \bigg[ 
+  			\frac{\dee}{\dee t} \bigg( \frac{\partial L}{\partial \dot{q}_j} \bigg) \frac{\partial q_j}{\partial Q_k}
+  			 -  \frac{\partial L}{\partial q_j} \frac{\partial q_j}{\partial Q_k} \bigg]
+  			= \sum_{j=1}^f \bigg[ 
+  			\frac{\dee}{\dee t} \bigg( \frac{\partial L}{\partial \dot{q}_j} \bigg) 
+  			 -  \frac{\partial L}{\partial q_j} \bigg] \frac{\partial q_j}{\partial Q_k}
+  			 = 0
+  		\end{align*}
+  		as required.
+  	\end{proof}
+
+  	\item Note that the form of the EL equation remains the same for all coordinate changes that only involves {\bf the values of the coordinates themselves}.
+  	\begin{itemize}
+  		\item In other words, if the $q_i$'s are functions of only the $Q_j$'s, then the form of the EL equation does not change.
+
+  		\item On the other hand, we cannot have the $q_i$'s be functions of both the $Q_j$'s and $\dot{Q}_j$'s and expact that the EL equation would remain the same.
+  	\end{itemize}
+  \end{itemize}
+
+  \subsection{Hamilton's Equations}
+
+  \begin{itemize}
+  	\item From the last section, we learned that the EL equation is invariant under a class of coordinate transformations. However, it is not invariant under transformations where we write $q$ as a function of both $Q$ and $\dot{Q}$.
+
+  	\item The equation of motion formulated under the Hamiltonian formalism, however, remains invariant under a larger class of transformations.
+
+  	\item To get to the Hamiltonian formalism, we rewrite Newton's equation with momentum
+  	\begin{align} \label{momentum-def}
+  		\ve{p} = m \dot{\ve{x}},
+  	\end{align}
+  	which results in
+  	\begin{align} \label{newton-with-momentum}
+  		\dot{\ve{p}} = -\nabla_{\ve{x}}V(\ve{x}).
+  	\end{align}
+
+  	\item Note that with the introdution of momentum, the one equation $m\ddot{\ve{x}} = -\nabla_{\ve{x}}V(\ve{x})$, which involves a second-order derivative, now becomes two equations \eqref{momentum-def} and \eqref{newton-with-momentum}, both involving only first order derivatives. It seems that we have traded one more equation with a reduction in the order of derivatives in the equations.
+
+  	\item Using the momentum, the total energy can be written as:
+  	\begin{align*}
+  		E = T + V = \frac{1}{2m}  \| \ve{p} \|^2 + V
+  	\end{align*}
+
+  	\item Normally, the {\bf Hamiltonian} is defined to be the total energy of the system
+  	\begin{align*}
+  		H = \frac{1}{2m}  \| \ve{p} \|^2 + V.
+  	\end{align*}
+  	However, the actual definition is actually more general. We will discuss this later.
+
+  	\item Taking the partial derivatives of $H$ with respect to $\ve{x}$ and $\ve{p}$, we have that
+  	\begin{align*}
+  		\frac{\partial H}{\partial \ve{p}} &= \frac{1}{m}\ve{p}, \\
+  		\frac{\partial H}{\partial \ve{x}} &= \nabla_{\ve{x}} V
+  	\end{align*}
+  	In other words,
+  	\begin{align*}
+  		\frac{\partial H}{\partial \ve{p}} &= \ve{x}, \\
+  		\frac{\partial H}{\partial \ve{x}} &= -\dot{\ve{p}}.
+  	\end{align*}
+  	These two equations are {\bf Hamilton's equations}.
+
+  	\item Let us show that Hamilton's equations remain unchanged under a more general class of coordinate transformations. Suppose we want to write the equations of motion in terms of $\ve{X}$ and $\ve{P}$ where
+  	\begin{align*}
+  		\ve{X} &= \alpha \ve{x} + \beta \ve{p} \\
+  		\ve{P} &= -\beta \ve{x} + \alpha \ve{p}
+  	\end{align*}
+  	where $\alpha^2 + \beta^2 = 1$. (In other words, $(\ve{X},\ve{P})$ is a ``2D rotation'' $(\ve{x}, \ve{p})$.) Note that this transformation would not preserve the EL equation because it involves mixing $\ve{x}$ with $\ve{p}$. The latter contains time derivatives of $\ve{x}$.
+
+  	We can rewrite the above equations in matrix form:
+  	\begin{align*}
+  		\begin{bmatrix}
+  			\ve{X} \\
+  			\ve{P}
+  		\end{bmatrix}
+  		&= \begin{bmatrix}
+  			\alpha & \beta \\
+  			-\beta & \alpha
+  		\end{bmatrix}
+  		\begin{bmatrix}
+  			\ve{x} \\
+  			\ve{p}
+  		\end{bmatrix} \\
+  		\begin{bmatrix}
+  			\alpha & -\beta \\
+  			\beta & \alpha
+  		\end{bmatrix}
+  		\begin{bmatrix}
+  			\ve{X} \\
+  			\ve{P}
+  		\end{bmatrix}
+  		&= 
+  		\begin{bmatrix}
+  			\alpha & -\beta \\
+  			\beta & \alpha
+  		\end{bmatrix}
+  		\begin{bmatrix}
+  			\alpha & \beta \\
+  			-\beta & \alpha
+  		\end{bmatrix}
+  		\begin{bmatrix}
+  			\ve{x} \\
+  			\ve{p}
+  		\end{bmatrix} \\
+  		\begin{bmatrix}
+  			\alpha & -\beta \\
+  			\beta & \alpha
+  		\end{bmatrix}
+  		\begin{bmatrix}
+  			\ve{X} \\
+  			\ve{P}
+  		\end{bmatrix}
+  		&= 
+  		\begin{bmatrix}
+  			1 & 0 \\
+  			0 & 1
+  		\end{bmatrix}
+  		\begin{bmatrix}
+  			\ve{x} \\
+  			\ve{p}
+  		\end{bmatrix} \\
+  		\begin{bmatrix}
+  			\alpha & -\beta \\
+  			\beta & \alpha
+  		\end{bmatrix}
+  		\begin{bmatrix}
+  			\ve{X} \\
+  			\ve{P}
+  		\end{bmatrix}
+  		&=   		
+  		\begin{bmatrix}
+  			\ve{x} \\
+  			\ve{p}
+  		\end{bmatrix}.
+  	\end{align*}
+  	In other words,
+  	\begin{align*}
+  		\ve{x} &= \alpha \ve{X} - \beta \ve{P} \\
+  		\ve{p} &= \beta \ve{X} + \alpha \ve{P}.
+  	\end{align*}
+  	This gives
+  	\begin{align*}
+  		\frac{\partial\ve{x}}{\partial \ve{P}} &= -\beta I^{3\times 3}
+  		&\frac{\partial\ve{x}}{\partial \ve{X}} &= \alpha I^{3\times 3} \\
+  		\frac{\partial\ve{p}}{\partial \ve{P}} &= \alpha I^{3\times 3}
+  		&\frac{\partial\ve{p}}{\partial \ve{X}} &= \beta I^{3\times 3}
+  	\end{align*}
+  	where $I^{3\times 3}$ is the $3 \times 3$ identity matrix. So,
+  	\begin{align*}
+  		\frac{\partial H}{\partial \ve{P}}
+  		&= \frac{\partial H}{\partial \ve{x}} \frac{\partial \ve{x}}{\partial \ve{P}} + \frac{\partial H}{\partial \ve{p}} \frac{\partial \ve{p}}{\partial \ve{P}}
+  		= -\beta \frac{\partial H}{\partial \ve{x}} + \alpha \frac{\partial H}{\partial \ve{p}} \\
+  		\frac{\partial H}{\partial \ve{X}}
+  		&= \frac{\partial H}{\partial \ve{x}} \frac{\partial \ve{x}}{\partial \ve{X}} + \frac{\partial H}{\partial \ve{p}} \frac{\partial \ve{p}}{\partial \ve{X}} 
+  		=  \alpha \frac{\partial H}{\partial \ve{x}}  + \beta \frac{\partial H}{\partial \ve{p}}.
+  	\end{align*}
+
+  	From the definition of $\ve{X}$ and $\ve{P}$, we have that
+  	\begin{align*}
+  		\dot{\ve{X}} &= \alpha \dot{\ve{x}} + \beta \dot{\ve{p}} \\
+  		\dot{\ve{P}} &= -\beta \dot{\ve{x}} + \alpha \dot{\ve{p}}.
+  	\end{align*}
+  	As a result,
+  	\begin{align*}
+  		\frac{\partial H}{\partial \ve{P}} - \dot{\ve{X}}
+  		&= -\beta \frac{\partial H}{\partial \ve{x}} + \alpha \frac{\partial H}{\partial \ve{p}} -\alpha \dot{\ve{x}} - \beta \dot{\ve{p}}
+  		= -\beta\bigg( \frac{\partial H}{\partial \ve{x}} + \dot{\ve{p}} \bigg) + \alpha \bigg( \frac{\partial H}{\partial \ve{p}} - \dot{\ve{x}} \bigg) = 0 \\
+  		\frac{\partial H}{\partial \ve{X}} + \dot{\ve{P}}
+  		&= \alpha \frac{\partial H}{\partial \ve{x}}  + \beta \frac{\partial H}{\partial \ve{p}} -\beta \dot{\ve{x}} + \alpha \dot{\ve{p}}
+  		= \alpha \bigg( \frac{\partial H}{\partial \ve{x}} + \dot{\ve{p}} \bigg) + \beta \bigg( \frac{\partial H}{\partial \ve{p}} - \dot{\ve{x}} \bigg) = 0.
+  	\end{align*}
+  	In other words,
+  	\begin{align*}
+  		\frac{\partial H}{\partial \ve{P}} &= \dot{\ve{X}} \\
+  		\frac{\partial H}{\partial \ve{X}} &= -\dot{\ve{P}}
+  	\end{align*}
+  	as required.
+
+  	\item The change of coordinates that preserve Hamilton's equations are called {\bf canonical transformations}. We will discuss this later.
+
+  	\item While it is clear right now what the relationship between the position $\ve{x}$ and the momentum $\ve{p}$ is, it might not be so clear when we define the Hamiltonian using generalized coordinates. (I mean, think of how would you expression momentum in polar coordinates.) We will discuss how to identify generalized momentum later as well.
+
+  	\item For now, let us give a definition of the Hamiltonian using the generalized coordinates and generalized momentum.
+
+  	Let the state of a system be described by generalized coordinates $q_1$, $q_2$, $\dotsc$, $q_f$ and generalized momentum $p_1$, $p_2$, $\dotsc$, $p_f$. The {\bf Hamiltonian} is a scalar function
+  	$$H = H(q_1, q_2, \dotsc, q_f, p_1, p_2, \dotsc, p_f)$$ such that the equation of motion of the system is given by the following {\bf Hamilton's equations}:
+  	\begin{align*}
+  		\frac{\partial H}{\partial \ve{p}} &= \dot{\ve{q}} \\
+  		\frac{\partial H}{\partial \ve{q}} &= -\dot{\ve{p}}.
+  	\end{align*}
+  	Here, $\ve{q} = (q_1, q_2, \dotsc, q_f)^T$ and $\ve{p} = (p_1, p_2, \dotsc, p_f)^T$.
+  \end{itemize}
+  
+  \section{Hamilton's Principle}
+
+  \begin{itemize}
+  	\item The goal of this section is to derive the Euler--Lagrange equation from the condition that it yields a stationary point of the ``action integral.'' There are two reasons for doing this.
+  	\begin{enumerate}
+  		\item First, by showing that the EL equation arises from finding a stationary point of a functional, it becomes clear that its solution is the same no matter what coordinate systems are used.
+
+  		\item Second, this fact about the EL equation is very convenient when we reason about transformations that preserve the Hamiltonian later.
+  	\end{enumerate}
+
+  	\item Let $L = L(q_1, q_2, \dots, q_f, \dot{q}_1, \dot{q}_2, \dotsc, \dot{q}_f)$ of $f$ generalized coordinate and their time derivatives. The {\bf action integral} is defined to be
+  	\begin{align*}
+  		I = I(q_1, q_2, \dots, q_f) = \int_{t_1}^{t_2} L(q_1, q_2, \dots, q_f, \dot{q}_1, \dot{q}_2, \dotsc, \dot{q}_f)\, \dee t.
+  	\end{align*}
+  	where $t_1 < t_2$ are given time values. 
+
+  	\item \begin{theorem}[Hamilton's principle] Let the values of $q_1, q_2, \dotsc, q_f$ at $t_1$ and $t_2$ be given to us as initial conditios. Then, a solution to the Euler--Lagrange equation is a stationary point of the action integral.
+  	\end{theorem}
+
+  	\begin{proof}
+  		Note that all the generalized coodinates $q_1$, $q_2$, $\dotsc$, $q_f$ are actually functions of $t$: $q_1(t)$, $q_2(t)$, $\dotsc$, $q_f(t)$. Let $\eta_1(t)$, $\eta_2(t)$, $\dotsc$, $\eta_f(t)$ be arbitrary functions with the constraints that $\eta_i(t_1) = \eta_i(t_2) = 0$ because we want to satisfy our initial conditions. Let $s$ be a scalar variable. Define
+  		\begin{align*}
+  			\phi(s) = I(q_1 + s\eta_1, q_2 + s\eta_2, \dotsc, q_f + s\eta_f).
+  		\end{align*}
+  		Consider the derivative of $\phi(s)$ with respect to $s$.
+  		\begin{align*}
+  		\frac{\dee \phi}{\dee s}  		
+  		&= \frac{\dee}{\dee s} \int_{t_1}^{t_2} L(q_1 + s\eta_1, \dotsc, q_f + s\eta_f, \dot{q}_1 + s\dot{\eta}_1, \dotsc, \dot{q}_f + s\dot{\eta}_f)\ \dee t \\
+  		&= \int_{t_1}^{t_2} \frac{\dee}{\dee s} L(q_1 + s\eta_1, \dotsc, q_f + s\eta_f, \dot{q}_1 + s\dot{\eta}_1, \dotsc, \dot{q}_f + s\dot{\eta}_f)\ \dee t \\
+  		&= \int_{t_1}^{t_2} \frac{\dee}{\dee s} L(q_1 + s\eta_1, \dotsc, q_f + s\eta_f, \dot{q}_1 + s\dot{\eta}_1, \dotsc, \dot{q}_f + s\dot{\eta}_f)\ \dee t \\
+  		&= \int_{t_1}^{t_2} \bigg( \sum_{j=1}^f \frac{\partial L}{\partial (q_j + s\eta_j)} \frac{\dee (q_j + s\eta_j)}{\dee s} + \sum_{j=1}^f \frac{\partial L}{\partial (\dot{q}_j + s\dot{\eta}_j)} \frac{\dee (\dot{q}_j + s\dot{\eta}_j)}{\dee s}\bigg)\, \dee t \\
+  		&= \int_{t_1}^{t_2} \bigg( \sum_{j=1}^f \frac{\partial L}{\partial (q_j + s\eta_j)} \eta_j + \sum_{j=1}^f \frac{\partial L}{\partial (\dot{q}_j + s\dot{\eta}_j)} \dot{\eta}_j \bigg)\, \dee t.
+  		\end{align*}
+  		Setting $s = 0$, we have
+  		\begin{align}
+  		\frac{\dee \phi}{\dee s}\bigg|_{s=0}
+  		&= \int_{t_1}^{t_2} \bigg( \sum_{j=1}^f \frac{\partial L}{\partial q_j} \eta_j + \sum_{j=1}^f \frac{\partial L}{\partial \dot{q}_j} \dot{\eta}_j \bigg)\, \dee t \notag \\
+  		&= \sum_{j=1}^f \bigg( \int_{t_1}^{t_2} \frac{\partial L}{\partial q_j} \eta_j\, \dee t \bigg) + \sum_{j=1}^f \bigg( \int_{t_1}^{t_2} \frac{\partial L}{\partial \dot{q}_j} \dot{\eta}_j \, \dee t \bigg). \label{dee-phi-dee-s-zero}
+  		\end{align}
+  		Let us simplify the second integral on the RHS. We know that
+  		\begin{align*}
+  			\frac{\dee}{\dee t} \bigg( \frac{\partial L}{\partial \dot{q}_j} \eta_j \bigg)
+  			= \frac{\dee}{\dee t} \bigg( \frac{\partial L}{\partial \dot{q}_j} \bigg) \eta_j + \frac{\partial L}{\partial \dot{q}_j} \dot{\eta}_j.
+  		\end{align*}
+  		Integrating both side from $t_1$ to $t_2$, we have that
+  		\begin{align*}	
+  		\bigg[ \frac{\partial L}{\partial \dot{q}_j} \eta_j \bigg]_{t = t_1}^{t=t_2}
+  		= \int_{t_1}^{t_2}  \frac{\dee}{\dee t} \bigg( \frac{\partial L}{\partial \dot{q}_j} \bigg) \eta_j\, \dee t
+  		+ \int_{t_1}^{t_2} \frac{\partial L}{\partial \dot{q}_j} \dot{\eta}_j\, \dee t
+  		\end{align*}
+  		Because we chose $\eta_j(t_1) = \eta_j(t_2) = 0$, we have that
+  		\begin{align*}
+  		0
+  		= \int_{t_1}^{t_2}  \frac{\dee}{\dee t} \bigg( \frac{\partial L}{\partial \dot{q}_j} \bigg) \eta_j\, \dee t
+  		+ \int_{t_1}^{t_2} \frac{\partial L}{\partial \dot{q}_j} \dot{\eta}_j\, \dee t.
+  		\end{align*}
+  		In other words,
+  		\begin{align*}
+  		\int_{t_1}^{t_2} \frac{\partial L}{\partial \dot{q}_j} \dot{\eta}_j\, \dee t 
+  		= - \int_{t_1}^{t_2}  \frac{\dee}{\dee t} \bigg( \frac{\partial L}{\partial \dot{q}_j} \bigg) \eta_j\, \dee t.
+  		\end{align*}
+  		Substituting back to \eqref{dee-phi-dee-s-zero}, we have
+  		\begin{align*}
+  		\frac{\dee \phi}{\dee s}\bigg|_{s=0}
+  		&= \sum_{j=1}^f \bigg( \int_{t_1}^{t_2} \frac{\partial L}{\partial q_j} \eta_j\, \dee t \bigg)
+  		- \sum_{j=1}^f  \bigg[ \int_{t_1}^{t_2}  \frac{\dee}{\dee t} \bigg( \frac{\partial L}{\partial \dot{q}_j} \bigg) \eta_j\, \dee t \bigg] \\
+  		&= \sum_{j=1}^f \int_{t_1}^{t_2} \eta_j \bigg[ \frac{\partial L}{\partial q_j} - \frac{\dee}{\dee t} \bigg( \frac{\partial L}{\partial \dot{q}_j} \bigg) \bigg]\, \dee t.
+  		\end{align*}
+  		At a stationary point of $I$, the LHS should be zero. In other words,
+  		\begin{align*}
+  		0 = \sum_{j=1}^f \int_{t_1}^{t_2} \eta_j \bigg[ \frac{\partial L}{\partial q_j} - \frac{\dee}{\dee t} \bigg( \frac{\partial L}{\partial \dot{q}_j} \bigg) \bigg]\, \dee t.
+  		\end{align*}
+  		The above quation holds for all choice of function $\eta_j$'s if and only if
+  		\begin{align*}
+  			\frac{\partial L}{\partial q_j} - \frac{\dee}{\dee t} \bigg( \frac{\partial L}{\partial \dot{q}_j} \bigg) = 0,
+  		\end{align*}
+  		which means the EL equations are satisfied. 
+
+  		It should be clear that, if we start from a solution where the EL equations are satisified, we can deduce that $(\dee \phi / \dee s)(0) = 0$ for all functions $\eta_j$ by the same argument This establishes the other direction of the theorem.
+  	\end{proof}
+
+  	\item It should be clear from the Hamilton's principle that  solutions to the EL equation should be the same no matter what coordinate system is used to write the EL equation because extreme values are geometric properties of the functional $I$.
+
+  	\item Note, however, if $(q_1, q_2, \dotsc, q_f)$ constitute a solution to the EL equation for a particular Lagragian $L$, then it is also a solution to the EL equation of a different Lagrangrian
+  	$$\tilde{L} = L + \frac{\dee W}{\dee t}$$
+  	where $W = W(q_1, \dotsc, q_f)$ is any arbitrary function of $q_1$, $\dotsc$, $q_f$. To see this, let
+  	\begin{align*}
+  		\widetilde{L} = L + \frac{\dee W}{\dee t}.  		
+  	\end{align*}
+  	Then,
+  	\begin{align*}
+  		\int_{t_1}^{t_2} \widetilde L\, \dee t
+  		&= \int_{t_1}^{t_2} L\, \dee t + [W]_{t=t_1}^{t=t_2}
+  		=  \int_{t_1}^{t_2} L\, \dee t + W(q_1(t_2), \dotsc, q_f(t_2)) - W(q_1(t_1), \dotsc, q_f(t_1)).
+  	\end{align*}
+  	However, the values of $q_1, \dotsc, q_f$ at $t_1$ and $t_2$ are constants because they are the initial conditions. Hence, $W(q_1(t_2), \dotsc, q_f(t_2)) - W(q_1(t_1), \dotsc, q_f(t_1))$ is a constant and has no effect on the identity of the stationary points of $\int_{t_1}^{t_2} \widetilde{L}\, \dee t$.
+
+  	\item It might seem that specifying the Lagrangian and using Hamilton's principle would allow us to derive Newton's law of motion. However, this is not the case. In fact, if we are given an arbitrary force $\ve{F}$, it is not always possible to construct an $L$ that satisfies the EL equation.
+  	\begin{itemize}
+  		\item Consider a system of two particles. If the force one particle exerts on the other does not equal to the force the latter exerts on the former (i.e., action $\neq$ reaction), then we cannot construct a Lagrangian that satisfies Hamilton's princple.
+
+  		\item When there's friction in the system, it is possible to construct a Lagrangian, but it is not simple to do so.
+  	\end{itemize}
+  	As a result, the existence of a Lagrangian that satisfies Hamilton's principle is quite special.
+
+  	\item When solving problems, if we are given an equation of motion, then just constructing the simplest Lagrangian that agrees with that equation would be the standard way to proceed. However, if none is given, then you would have to construct a Lagrangian and try to simplify it as much as possible using some first principles or symmetry of the system. Then, you would derive an equation of motion from it and check it with experiments.
+
+  	\item So, why the heck would we do physics on the Lagrangian without actually touching Newton's law? Takahashi gave 7 reasons for it.
+  	\begin{enumerate}
+  		\item With the Lagrangian, we can deal with the whole as a bunch of generalized coordinates. There's no need to deal with individual particles.
+
+  		\item All aspects of a physical system can be approximated just by approximating the Lagragian. (This is actually quite a bold claim.)
+
+  		\item The Lagrangian is much easier to work with as the EL equation only involves a first order time derivative, and its form does not change due to coordiate system change.
+
+  		\item When the variables are not independent from one another, there's a tool to deal with it. (Tadah! It's the ``Lagrange'' multipler.)
+
+  		\item The symmetry of the system and the law of conservation are made clear by the formulation.
+
+  		\item The Lagrangian can be also used in electrodynamics and particle physics.
+
+  		\item The Hamiltonian formalism is very useful in quantum mechanics.
+  	\end{enumerate}
+  \end{itemize}
+
+
+  \bibliographystyle{apalike}
+  \bibliography{intro-analytical-mechanics}  
+\end{document}
