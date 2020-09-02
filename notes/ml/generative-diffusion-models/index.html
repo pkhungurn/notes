@@ -109,7 +109,7 @@
 
         <li>Given any distribution $q(\ve{x}^{(0)})$, it is quite easy to introduce a finite, multi-step random process with the following properties:
         <ul>
-            <li>Each step of the process transforms the distribution by a little by adding noise.</li>            
+            <li>Each step of the process transforms the distribution by adding a little noise.</li>
             <li>The output of each step depends only on the output of the previous steps; i.e., it is a <b>Markov chain</b>.</li>
             <li>Each step has a simple mathematical form.</li>
             <li>At the end of the process, the distribution $q(\ve{x}^{(0)})$ generates to the standard normal distribution $\N(0,I)$ or something very close to it.</li>        
@@ -117,8 +117,9 @@
         We call this the <b>diffusion process</b> or the <b>forward process</b>. We will talk about the details of this momentarily.
         </li>
 
-        <li>The forward process should be <b>reversible</b> because each of the steps has a simple mathematical form.
+        <li>The forward process should be <b>reversible</b> because each of the steps adds only a little noise to the input.
         <ul>
+            <li>Denoising can be done by neural networks.</li>
             <li>If we can revert each step, then we can revert the whole process by chaining the reversion together.</li>
         </ul>
         </li>
