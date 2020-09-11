@@ -28,6 +28,7 @@
 \newcommand{\Var}{\mathrm{Var}}
 
 \newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\ves}[1]{\boldsymbol{#1}}
 \newcommand{\mrm}[1]{\mathrm{#1}}
 \newcommand{\etal}{{et~al.}}
 \newcommand{\sphere}{\mathbb{S}^2}
@@ -56,7 +57,7 @@
 
   This note is written as I read \begin{CJK}{UTF8}{min}「量子力学を学ぶための解析力学入門」\end{CJK} by Yasushi Takahashi. This is a book that briefly introduces analytical mechanics for those who want to use it do to something else, which is perfect for me.
 
-  \section{Euler--Lagrange and Hamilton's Equations}
+  \section{Euler--Lagrange and Hamilton's Equations} \label{sec:el-hamilton}
 
   \begin{itemize}
   	\item Sovling a problem in classical mechanics generally involves two steps.
@@ -166,7 +167,7 @@
 
   	\item The Euler--Lagrange equation is equivalent to Newton's law of motion in the sense that $\ve{x}$ is a solution to the EL equation iff it is a solution to Newton's equation ($\ve{F} = m\ddot{\ve{x}}$).
 
-  	\item As we shall see later, solving the EL equation is equivalent to finding a function $\ve{x}(t)$ that is a stationary point of a functinal (the ``action integral''). Takahashi gives an interesting perspective by pointing out a similarity with unconstrained function optimization. In this setting, we are given a function $f(\cdot)$, we solve for $x$ that satisfies $\dee f / \dee x = 0$. The process is the same when solving for a trajectory. It's just that the equation becomes the EL equation instead.
+  	\item As we shall see later, solving the EL equation is equivalent to finding a function $\ve{x}(t)$ that is a stationary point of a functional (the ``action integral''). Takahashi gives an interesting perspective by pointing out a similarity with unconstrained function optimization. In this setting, we are given a function $f(\cdot)$, we solve for $x$ that satisfies $\dee f / \dee x = 0$. The process is the same when solving for a trajectory. It's just that the equation becomes the EL equation instead.
   \end{itemize}
 
   \subsection{Invariance Under Coordinate System Change}
@@ -352,7 +353,7 @@
   	\end{align*}
   	In other words,
   	\begin{align*}
-  		\frac{\partial H}{\partial \ve{p}} &= \ve{x}, \\
+  		\frac{\partial H}{\partial \ve{p}} &= \dot{\ve{x}}, \\
   		\frac{\partial H}{\partial \ve{x}} &= -\dot{\ve{p}}.
   	\end{align*}
   	These two equations are {\bf Hamilton's equations}.
@@ -488,7 +489,7 @@
   	Here, $\ve{q} = (q_1, q_2, \dotsc, q_f)^T$ and $\ve{p} = (p_1, p_2, \dotsc, p_f)^T$.
   \end{itemize}
   
-  \section{Hamilton's Principle}
+  \section{Hamilton's Principle} \label{sec:hamilton-principle}
 
   \begin{itemize}
   	\item The goal of this section is to derive the Euler--Lagrange equation from the condition that it yields a stationary point of the ``action integral.'' There are two reasons for doing this.
@@ -596,9 +597,623 @@
   	\item When solving problems, if we are given an equation of motion, then just constructing the simplest Lagrangian that agrees with that equation would be the standard way to proceed. However, if none is given, then you would have to construct a Lagrangian and try to simplify it as much as possible using some first principles or symmetry of the system. Then, you would derive an equation of motion from it and check it with experiments.
   \end{itemize}
 
-  
+  \section{Hamiltonian from Lagrangian}
 
+  \begin{itemize}
+    \item The goal of this section is to more generally define the Hamiltonian so that it can be applied to more physical systems. This entails a more general definition of momentum.    
 
+    \item Let a physical system be described by generalized coordinates $q_1, q_2, \dotsc, q_f$. Let $L = L(q_1, \dotsc, q_f, \dot{q}_1, \dotsc, \dot{q}_f)$ be the Lagrangian of the system. We define the {\bf momentum} $p_i$ to be
+    \begin{align} \label{momentum-def}
+      p_i = \frac{\partial L}{\partial \dot{q}_i}.    
+    \end{align}
+    We also say that $p_i$ is $q_i$'s {\bf conjugated momentum}.
+
+    \item For discussions to come, let us say that we can solve the above equation for $\dot{q}_i$ and write it in terms of $q_1, \dotsc, q_f, p_1, \dotsc, p_f$.
+    \begin{itemize}
+      \item If this is not true, we can still define the Hamiltonian, but it would make the discussion more complicated.
+    \end{itemize}
+
+    \item With the definition of momentum and the restriction above, we define the {\bf Hamiltonian} as:
+    \begin{align} \label{hamiltonian-def}
+      H = H(\ve{q}, \ve{p}) = H(q_1, \dotsc, q_f, p_1, \dotsc, p_f) = \sum_{i=1}^f p_i \dot{q}_i - L.    
+    \end{align}
+    Here, we regard the $q_i$'s and the $p_i$'s as independent variables.
+
+    \item Let us perturb $q_i$ and $p_i$ by a little. Let us denote the infinitesimal perturbation of variable $a$ by $\delta a$. In other words, we can interested in the changes
+    \begin{align*}
+      q_i &\rightarrow q_i + \delta q_i \\
+      p_i &\rightarrow p_i + \delta p_i
+    \end{align*}
+    and the perturbations of other variables and functions that result from them. These perturbations can be obtained from first order approximations. Because we can write $\dot{q}_i$ as a function of $\ve{q}$ and $\ve{p}$, we have
+    \begin{align*}
+      \delta\dot{q}_i =
+      &\sum_{j=1}^f \bigg( \frac{\partial \dot{q}_i}{\partial q_j} \delta q_j + \frac{\partial \dot{q}_i}{\partial p_j} \delta p_j \bigg).
+    \end{align*}
+    Moreover, $L$ is a function of $\ve{q}$ and $\dot{\ve{q}}$, so
+    \begin{align*}
+      \delta L 
+      &= \sum_{i=1}^f \frac{\partial L}{\partial q_i} \delta q_i + \sum_{i=1}^f \frac{\partial L}{\partial \dot{q}_i} \delta \dot{q}_i \\
+      &= \sum_{i=1}^f \frac{\partial L}{\partial q_i} \delta q_i + \sum_{i=1}^f \frac{\partial L}{\partial \dot{q}_i} \bigg[ \sum_{j=1}^f \bigg( \frac{\partial \dot{q}_i}{\partial q_j} \delta q_j + \frac{\partial \dot{q}_i}{\partial p_j} \delta p_j \bigg) \bigg] \\
+      &= \sum_{i=1}^f \frac{\partial L}{\partial q_i} \delta q_i + \sum_{i=1}^f p_i \bigg[ \sum_{j=1}^f \bigg( \frac{\partial \dot{q}_i}{\partial q_j} \delta q_j + \frac{\partial \dot{q}_i}{\partial p_j} \delta p_j \bigg) \bigg].
+    \end{align*}
+    Using the definion $H = \sum_{i} p_i \dot{q}_i - L$, we have that
+    \begin{align*}
+      \delta H 
+      &= \sum_{i=1}^f \dot{q}_i \delta p_i + \sum_{i=1}^f p_i \delta \dot{q}_i - \delta L \\
+      &= \sum_{i=1}^f \dot{q}_i \delta p_i 
+      + \sum_{i=1}^f p_i \bigg[ \sum_{j=1}^f \bigg( \frac{\partial \dot{q}_i}{\partial q_j} \delta q_j + \frac{\partial \dot{q}_i}{\partial p_j} \delta p_j \bigg)\bigg] 
+      - \sum_{i=1}^f \frac{\partial L}{\partial q_i} \delta q_i 
+      - \sum_{i=1}^f p_i \bigg[ \sum_{j=1}^f \bigg( \frac{\partial \dot{q}_i}{\partial q_j} \delta q_j + \frac{\partial \dot{q}_i}{\partial p_j} \delta p_j \bigg) \bigg]\\
+      &= \sum_{i=1}^f \dot{q}_i \delta p_i       
+      - \sum_{i=1}^f \frac{\partial L}{\partial q_i} \delta q_i.      
+    \end{align*}
+    Now, because $H$ is a function of $\ve{q}$ and $\ve{p}$, we have
+    \begin{align*}      
+      \delta H 
+      = \sum_{i=1}^f \bigg( \frac{\partial H}{\partial q_i} \delta q_i + \frac{\partial H}{\partial p_i} \delta p_i \bigg)
+      = \sum_{i=1}^f \frac{\partial H}{\partial q_i} \delta q_i + \sum_{i=1}^f \frac{\partial H}{\partial p_i} \delta p_i.
+    \end{align*}
+    Comparing terms, we have
+    \begin{align*}
+      \frac{\partial H}{\partial p_i} &= \dot{q}_i \\
+      \frac{\partial H}{\partial q_i} &= -\frac{\partial L}{\partial q_i}.
+    \end{align*}    
+
+    \item Combining the above equations with the EL equation, we have
+    \begin{align*}
+      0 
+      = \frac{\partial L}{\partial q_i} - \frac{\partial}{\partial t}\bigg( \frac{\partial L}{\partial \dot{q}_i} \bigg)
+      = -\frac{\partial H}{\partial q_i} - \frac{\partial p_i}{\partial t} 
+      = -\frac{\partial H}{\partial q_i} - \dot{p}_i.
+    \end{align*}
+    In other words,
+    \begin{align*}
+      \frac{\partial H}{\partial q_i} = -\dot{p}_i.
+    \end{align*}
+
+    \item Putting the equations together, we have that
+    \begin{align*}
+      \frac{\partial H}{\partial p_i} &= \dot{q}_i \\
+      \frac{\partial H}{\partial q_i} &= -\dot{p}_i.
+    \end{align*}
+    for $i = 1, \dotsc, f$. Rewriting these in in vector forms, we have
+    \begin{align*}
+      \frac{\partial H}{\partial \ve{p}} &= \dot{\ve{q}} \\
+      \frac{\partial H}{\partial \ve{q}} &= -\dot{\ve{p}}.
+    \end{align*}
+    We call these two equations {\bf Hamilton's equations} or {\bf canonical equations of motion}.
+
+    \item Hamilton's equations are equivalent to the EL equation and Newton's law of motion. Its form is a result of introducing an extra variable so that we can write equations that only involve single first order time derivatives.
+    \begin{itemize}
+      \item The EL equations involves two time derivatives. It has $\dee / \dee t$ and $\dot{q}$.
+    \end{itemize}
+
+    \item If $\ve{q}$ and $\ve{p}$ satisfy Hamilton's equations, we say that $\ve{q}$ and $\ve{p}$ are {\bf canonical variables}.    
+
+    \item Here, we have defined the Hamiltonian from the Lagragian. Under some circumstances, it is possible to define the Lagrangian given the Hamiltonian.
+
+    \item However, there are circumstances where we cannot do so. In quantum mechanics, there are Hamiltonians associated with spins (i.e., angular momentums) of elections, but there are no associated Lagrangians. With our treatment so far, it is unclear what the Hamiltonians in this case are. We will come back to this later though.
+  \end{itemize}
+
+  \section{Canonical Transformations}
+
+  \begin{itemize}
+    \item In this section, we will discuss changes of variables that preserve Hamilton's equations. 
+
+    \item In order to do so, we will make use of the variational characterization of the Hamiltonian. In other words, we will derive something similar to Hamilton's principle for the Hamiltonian. 
+  \end{itemize}
+
+  \subsection{Hamilton's Principle and Hamilton's Equations}
+
+  \begin{itemize}
+    \item According to Equation $\eqref{hamiltonian-def}$, we define the Hamiltonian from the Lagrangian. Using the definition of $\ve{p}$ in Equation $\eqref{momentum-def}$, we can write the Hamiltoniam as a function of $\ve{q}$ and $\ve{p}$. We also see in the last section that, if the EL equation holds, then Hamilton's equations would also hold.
+
+    \item In Section~\ref{sec:hamilton-principle}, we saw that $\ve{q}$ satisfies the EL equation if and only if it is a stationary point of the action integral. We now wish to say something similar for the solutions of Hamilton's equations.
+
+    \item Now, let us say that a Hamiltonian $H = H(\ve{q},\ve{p})$ is given to us. Define
+    \begin{align*}
+      \overline{L}(\ve{q},\ve{p}) = \sum_{i=1}^f p_i \dot{q}_i - H(\ve{q},\ve{p}).
+    \end{align*}
+    The ``Lagrangian'' $\overline{L}$ is numerically the same as the Lagragian we have been discussed so far. However, it is now a function of $\ve{q}$ and $\ve{p}$ instead of that of $\ve{q}$ and $\dot{\ve{q}}$ as we have seen before.
+
+    \item Define the ``action integral'' as
+    \begin{align*}
+      \overline{I} 
+      = \int_{t_1}^{t_2} \overline{L}(\ve{q},\ve{p}) \, \dee t 
+      = \int_{t_1}^{t_2} \bigg( \sum_{i=1}^f p_i \dot{q}_i - H(\ve{q},\ve{p}) \bigg)\, \dee t 
+    \end{align*}
+    where $t_1 < t_2$ are given time constants. We also hold as initial conditions that $\ve{q}(t_1)$, $\ve{q}(t_2)$, $\ve{p}(t_1)$, and $\ve{p}(t_2)$ are fixed.
+
+    \item Let $\eta(t) = (\eta_1(t), \dotsc, \eta_f(t))^T$ and $\zeta(t) = (\zeta_1(t), \dotsc, \zeta_f(t))^T$ be vector functions such that $\eta(t_1) = \eta(t_2) = \zeta(t_1) = \zeta(t_2) = \ve{0}$. Define
+    \begin{align*}
+      \phi(s) 
+      &= \int_{t_1}^{t_2} \overline{L}(\ve{q} + s\eta, \ve{p} + s\zeta)\, \dee t \\
+      &= \int_{t_1}^{t_2} \bigg( \sum_{i=1}^f (p_i + s\zeta_i) (\dot{q}_i + s\dot{\eta}_i) - H(\ve{q} + s\eta, \ve{p} + s\zeta) \bigg)\, \dee t \\
+      &= \int_{t_1}^{t_2} \bigg( \sum_{i=1}^f (p_i \dot{q}_i + sp_i \dot{\eta}_i + s \dot{q}_i \zeta_i + s^2 \dot{\eta}_i \zeta_i) - H(\ve{q} + s\eta, \ve{p} + s\zeta) \bigg)\, \dee t.
+    \end{align*}
+    So,
+    \begin{align*}
+      \frac{\dee \phi}{\dee s}
+      &= \int_{t_1}^{t_2} \bigg( \sum_{i=1}^f (p_i \dot{q}_i + sp_i \dot{\eta}_i + s \dot{q}_i \zeta_i + s^2 \dot{\eta}_i \zeta_i) - H(\ve{q} + s\eta, \ve{p} + s\zeta) \bigg)\, \dee t \\
+      &= \int_{t_1}^{t_2} \bigg( \sum_{i=1}^f (p_i \dot{\eta}_i + \dot{q}_i \zeta_i + 2s \dot{\eta}_i \zeta_i) - \frac{\dee}{\dee s}H(\ve{q} + s\eta, \ve{p} + s\zeta) \bigg)\, \dee t \\
+      &= \int_{t_1}^{t_2} \bigg( \sum_{i=1}^f (p_i \dot{\eta}_i + \dot{q}_i \zeta_i + 2s \dot{\eta}_i \zeta_i) - \sum_{i=1}^f \frac{\partial H}{\partial(q_i + s\eta_i)}\frac{\dee (q_i + s\eta_i)}{\dee s} -\sum_{i=1}^f \frac{\partial H}{\partial(p_i + s\zeta_i)}\frac{\dee (p_i + s\zeta_i)}{\dee s} \bigg)\, \dee t.
+    \end{align*}
+    Taking $s = 0$, we have
+    \begin{align*}
+      \frac{\dee \phi}{\dee s}\bigg|_{s=0}
+      &= \int_{t_1}^{t_2} \bigg( \sum_{i=1}^f (p_i \dot{\eta}_i + \dot{q}_i \zeta_i ) - \sum_{i=1}^f \frac{\partial H}{\partial q_i}\eta_i -\sum_{i=1}^f \frac{\partial H}{\partial p_i}\zeta_i \bigg)\, \dee t
+    \end{align*}
+    Because
+    \begin{align*}
+      \frac{\dee (p_i \eta_i)}{\dee t} = \dot{p}_i \eta_i + p_i \dot{\eta_i},
+    \end{align*}
+    we have that
+    \begin{align*}
+      [p_i \eta_i]_{t=t_1}^{t=t_2}
+      &= \int_{t_1}^{t_2} \dot{p}_i \eta_i\, \dee t + \int_{t_1}^{t_2} p_i \dot{\eta}_i\, \dee t \\
+      p_i(t_2)\eta_i(t_2) - p_i(t_1)\eta_i(t_1)
+      &= \int_{t_1}^{t_2} \dot{p}_i \eta_i\, \dee t + \int_{t_1}^{t_2} p_i \dot{\eta}_i\, \dee t\\
+      0
+      &= \int_{t_1}^{t_2} \dot{p}_i \eta_i\, \dee t + \int_{t_1}^{t_2} p_i \dot{\eta}_i\, \dee t \\
+      \int_{t_1}^{t_2} p_i \dot{\eta}_i
+      &= - \int_{t_1}^{t_2} \dot{p}_i \eta_i\, \dee t.
+    \end{align*}
+    Hence,
+    \begin{align*}
+      \frac{\dee \phi}{\dee s}\bigg|_{s=0}
+      &= \int_{t_1}^{t_2} \bigg( \sum_{i=1}^f (-\dot{p}_i \eta_i + \dot{q}_i \zeta_i ) - \sum_{i=1}^f \frac{\partial H}{\partial q_i}\eta_i -\sum_{i=1}^f \frac{\partial H}{\partial p_i}\zeta_i \bigg)\, \dee t \\
+      &= \int_{t_1}^{t_2} \bigg[ -\sum_{i=1}^f \bigg( \frac{\partial H}{\partial q_i} + \dot{p}_i \bigg) \eta_i - \sum_{i=1}^f \bigg( \frac{\partial H}{\partial p_i} - \dot{q}_i \bigg) \zeta_i \bigg] \, \dee t
+    \end{align*}
+    We now note that that $(\dee \phi/\dee s)(0) = 0$ for all choice of $\eta$ and $\zeta$ if and only if
+    \begin{align*}
+      \frac{\partial H}{\partial p_i} &= \dot{q}_i \\
+      \frac{\partial H}{\partial q_i} &= -\dot{p}_i
+    \end{align*}
+    for all $i = 1,\dotsc, f$.
+
+    \item \begin{theorem} Let $H = H(\ve{q}, \ve{p})$ be a scalar function that depends on $2f$ time-varying generalized coordinates $q_1, \dotsc, q_f, p_1, \dotsc, p_f$. Let $t_1 < t_2$ be given time constants, and let the values of $\ve{q}(t_1)$, $\ve{q}(t_2)$, $\ve{p}(t_1)$, and $\ve{p}(t_2)$ be given and fixed. Then, any solutions to the Hamilton's equations above are stationary points of the action integral
+    \begin{align*}
+      \overline{I} 
+      = \int_{t_1}^{t_2} \overline{L}(\ve{q},\ve{p}) \, \dee t 
+      = \int_{t_1}^{t_2} \bigg( \sum_{i=1}^f p_i \dot{q}_i - H(\ve{q},\ve{p}) \bigg)\, \dee t.
+    \end{align*}
+    \end{theorem}
+
+    \item Note that, like in Section~\ref{sec:hamilton-principle}, the theorem still holds if we replace $\overline{L}$ by
+    \begin{align*}
+      \overline{L} + \frac{\dee W(\ve{q}, \ve{p})}{\dee t}.
+    \end{align*}
+  \end{itemize}
+
+  \subsection{Canonical Transformation}
+
+  \begin{itemize}
+    \item We are now concerned with changes of variables
+    \begin{align*}
+      q_i &= q_i(Q_1, \dotsc, Q_f, P_1, \dotsc, P_f) \\
+      p_i &= p_i(Q_1, \dotsc, Q_f, P_1, \dotsc, P_f).
+    \end{align*}
+    where we assume that the inverse transformation also exists. We are interested in identifying the kinds of transformations that would still perserve Hamilton's equations.
+
+    \item The Hamiltonian function for the new variables is in general not the same as the old one. Let us denote it by
+    \begin{align*}
+      K = K(\ve{Q}, \ve{P}).
+    \end{align*}
+    We are interested in the transformations such that Hamilton's equations
+    \begin{align*}
+      \frac{\partial K}{\partial \ve{P}} &= \dot{\ve{Q}} \\
+      \frac{\partial K}{\partial \ve{Q}} &= -\dot{\ve{P}}
+    \end{align*}
+    hold.
+
+    \item The answer are the transformations that satisfies the equation
+    \begin{align*}
+      \sum_{i=1}^f p_i \dot{q}_i - H(\ve{q},\ve{p}) = \sum_{i=1}^f P_i \dot{Q}_i - K(\ve{Q}, \ve{P}) + \frac{\dee W}{\dee t}
+    \end{align*}
+    where $W$ is an arbitrary function. We call these transformations {\bf canonical transformations.}
+
+    \item To see such a transformation work, integrate both sides from $t_1$ to $t_2$ and fix the values of $\ve{q}$ and $\ve{p}$ at these two times. The stationary points of the action integrals defined on both sides should be the same, and they should all satisfy Hamilton's equations written in terms of $H$ and $K$.
+
+    \item Let us state the result more precisely.
+    \begin{theorem}[Canonical Transformation]
+    Let $q_1, \dotsc, q_f$, $p_1, \dotsc, p_f$, $Q_1, \dotsc, Q_f$, $P_1, \dotsc, P_f$ be time-dependent variables that are related by the transformation
+    \begin{align*}
+      q_i &= q_i(Q_1, \dotsc, Q_f, P_1, \dotsc, P_f) \\
+      p_i &= p_i(Q_1, \dotsc, Q_f, P_1, \dotsc, P_f)
+    \end{align*}
+    whose inverse exists. Let $H(\ve{q},\ve{p})$ and $K(\ve{Q}, \ve{P})$ be scalar functions such that
+    \begin{align} \label{canonical-transform}
+      \sum_{i=1}^f p_i \dot{q}_i - H(\ve{q},\ve{p}) = \sum_{i=1}^f P_i \dot{Q}_i - K(\ve{Q}, \ve{P}) + \frac{\dee W}{\dee t}    
+    \end{align}
+    where $W$ is an arbitrary function. Then, for any $\ve{q}$ and $\ve{p}$ such that (1) the values $\ve{q}(t_1)$, $\ve{q}(t_2)$, $\ve{p}(t_1)$, $\ve{p}(t_2)$ are given as initial conditions and (2) the equations
+    \begin{align*}
+      \frac{\partial H}{\partial \ve{p}} &= \dot{\ve{q}} \\
+      \frac{\partial H}{\partial \ve{q}} &= -\dot{\ve{p}},
+    \end{align*}
+    hold, we have that
+    \begin{align*}
+      \frac{\partial K}{\partial \ve{P}} &= \dot{\ve{Q}} \\
+      \frac{\partial K}{\partial \ve{Q}} &= -\dot{\ve{P}}
+    \end{align*}
+    also hold.
+    \end{theorem}
+  \end{itemize}
+
+  \subsection{Generating Function}
+
+  \begin{itemize}
+    \item The function $W$ in Equation~\ref{canonical-transform} is called a {\bf generating function} in the sense that, given $W$, the change of variable can be derived. (Note: The opposite is also true.)
+
+    \item For example, suppose that $W$ is a function of $\ve{q}$ and $\ve{Q}$. Then, we have that
+    \begin{align*}
+      \frac{\dee W}{\dee t} = \sum_{i=1}^f \bigg( \frac{\partial W}{\partial q_i} \dot{q}_i + \frac{\delta W}{\partial Q_i}\dot{Q}_i \bigg).
+    \end{align*}
+    Equation~\ref{canonical-transform} becomes
+    \begin{align*}
+      \sum_{i=1}^f p_i \dot{q}_i - H(\ve{q},\ve{p}) 
+      &= \sum_{i=1}^f P_i \dot{Q}_i - K(\ve{Q}, \ve{P}) + \sum_{i=1}^f \bigg( \frac{\partial W}{\partial q_i} \dot{q}_i + \frac{\delta W}{\partial Q_i}\dot{Q}_i \bigg) \\
+       \sum_{i=1}^f \bigg( p_i - \frac{\partial W}{\partial q_i} \bigg)\dot{q}_i - H(\ve{q},\ve{p}) 
+       &= \sum_{i=1}^f \bigg( P_i + \frac{\partial W}{\partial Q_i} \bigg) + \dot{Q}_i - K(\ve{Q}, \ve{P}).
+    \end{align*}
+    We can get the equation to hold if the following equations are satisifed:
+    \begin{align*}
+      p_i &= \frac{\partial W}{\partial q_i} \\
+      P_i &= -\frac{\partial W}{\partial Q_i} \\
+      H(\ve{q},\ve{p}) &= K(\ve{Q}, \ve{P}).
+    \end{align*}
+
+    \item Note that we can derive equations similar to the above equations for other forms of $W$. There are three more forms which come from making $W$ a function of 
+    \begin{itemize}
+      \item $\ve{q}$ and $\ve{P}$,
+      \item $\ve{p}$ and $\ve{Q}$, and
+      \item $\ve{p}$ and $\ve{P}$.
+    \end{itemize}
+
+    \item However, the derivations for the other three forms are not as simple as the example above. For example, if we are given that $W$ is a function of $\ve{q}$ and $\ve{P}$. Then, we cannot simply perform the exact same computation as above. We have to rename the given $W$ as $\widetilde{W}$ and add a term to it to make the calculation work. That is, define
+    \begin{align*}
+      W = -\sum_{i=1}^f P_i Q_i + \widetilde{W}(\ve{q},\ve{P}),
+    \end{align*}
+    which gives
+    \begin{align*}
+      \frac{\dee W}{\dee t}
+      = -\sum_{i=1}^f (\dot{P}_i Q_i + P_i \dot{Q}_i)
+      + \sum_{i=1}^f \bigg( \frac{\partial \widetilde{W}}{\partial q_i} \dot{q}_i + \frac{\partial \widetilde{W}}{\partial P_i} \dot{P}_i \bigg). 
+    \end{align*}
+    Equation~\ref{canonical-transform} becomes
+    \begin{align*}
+      \sum_{i=1}^f p_i \dot{q}_i - H(\ve{q},\ve{p}) 
+      &= \sum_{i=1}^f P_i \dot{Q}_i - K(\ve{Q}, \ve{P})
+      -\sum_{i=1}^f (\dot{P}_i Q_i + P_i \dot{Q}_i)
+      + \sum_{i=1}^f \bigg( \frac{\partial \widetilde{W}}{\partial q_i} \dot{q}_i + \frac{\partial \widetilde{W}}{\partial P_i} \dot{P}_i \bigg) \\
+      \sum_{i=1}^f \bigg( p_i - \frac{\partial \widetilde{W}}{\partial q_i} \bigg) \dot{q}_i - H(\ve{q},\ve{p}) 
+      &= - K(\ve{Q}, \ve{P})
+      -\sum_{i=1}^f \bigg( Q_i - \frac{\partial \widetilde{W}}{\partial P_i} \bigg) \dot{P}_i.
+    \end{align*}
+    The above equation yields
+    \begin{align}
+      p_i &= \frac{\partial \widetilde{W}}{\partial q_i} \label{qP-p} \\
+      Q_i &= \frac{\partial \widetilde{W}}{\partial P_i} \label{qP-Q} \\
+      H(\ve{q},\ve{p}) &= K(\ve{Q}, \ve{P}) \notag.
+    \end{align}
+    This example illustrates the trick of introducing an extra term to the given function to make it possible to relate variables to one another.
+
+    \item The canonical transformation is a type of {\bf Legendre transformations}. We will talk about this later.
+
+    \item If we are given and equation of the form Equation~\ref{canonical-transform}, we can check whether it leads to a canonical transform or not by using the {\bf Poisson bracket}. We will discuss this later as well.    
+  \end{itemize}
+
+  \subsection{Identity Transformation}
+
+  \begin{itemize}
+    \item We call the coordinate change
+    \begin{align*}
+      q_i &= Q_i \\
+      p_i &= P_i
+    \end{align*}
+    the {\bf identity transformation} or the {\bf unit transformation}.
+
+    \item What is the generating function of the identity transformation?
+
+    \item Using
+    \begin{align*}
+      \widetilde{W} &= \sum_{i=1}^f P_i q_i 
+    \end{align*}
+    and
+    \begin{align*}
+      W 
+      = - \sum_{i=1}^f P_i Q_i  + \widetilde{W} 
+      = - \sum_{i=1}^f P_i Q_i  + \sum_{i=1}^f P_i q_i 
+      = - \sum_{i=1}^f P_i ( Q_i - q_i ),
+    \end{align*}
+    we have that, by Equation~\ref{qP-p} and \ref{qP-Q},
+    \begin{align*}
+      p_i 
+      &= \frac{\partial \widetilde{W}}{\partial q_i} 
+      = \frac{\partial}{\partial q_i} \bigg( \sum_{j=1}^f P_j q_j \bigg)
+      = P_j \\
+      Q_i 
+      &= \frac{\partial \widetilde{W}}{\partial P_i} 
+      = \frac{\partial}{\partial P_i} \bigg( \sum_{j=1}^f P_j q_j \bigg)
+      = q_i
+    \end{align*}
+    as required.
+  \end{itemize}
+
+  \subsection{Infinitestimal Canonical Transformation}
+
+  \begin{itemize}
+    \item Consider a canonical transformation that is very close to the identity transformation. That is, the generating function is of the form     
+    \begin{align*}
+      W = -\sum_{i=1}^f P_i Q_i + \widetilde{W}(\ve{q}, \ve{P})
+    \end{align*}
+    where
+    \begin{align*}
+    \widetilde{W}(\ve{q}, \ve{P})
+    = \sum_{i=1}^f P_i q_i + \epsilon G(\ve{q}, \ve{P}),
+    \end{align*}
+    and $\epsilon$ is an infinitesimal function and $G$ is some function.
+
+    \item For the above transformation to be canonical, we must have that
+    \begin{align*}
+      p_i &= \frac{\partial \widetilde{W}}{\partial q_i} = P_i + \epsilon \frac{\partial G(\ve{q}, \ve{P})}{\partial q_i} \\
+      Q_i &= \frac{\partial \widetilde{W}}{\partial P_i} = q_i + \epsilon \frac{\partial G(\ve{q}, \ve{P})}{\partial P_i}.
+    \end{align*}.
+
+    \item So, the change in $q_i$ and $p_i$ induced by this canonical transformation is given by:
+    \begin{align*}
+      \delta p_i &= P_i - p_i = -\epsilon \frac{\partial G(\ve{q},\ve{P})}{\partial q_i} \\
+      \delta q_i &= Q_i - q_i = \epsilon \frac{\partial G(\ve{q},\ve{P})}{\partial P_i}.
+    \end{align*}
+
+    \item The above $G$ is not very convenient to work with because $G$ is a function of $\ve{q}$ amd $\ve{P}$. We'd rather have $G$ be a function of $\ve{q}$ and $\ve{p}$ instead. So, define
+    \begin{align*}
+      \widetilde{G}(\ve{q},\ve{p}) &= G(\ve{q}, \ve{P}(\ve{q},\ve{p})).
+    \end{align*}
+    We have that
+    \begin{align*}
+      \frac{\partial\widetilde{G}}{\partial q_i}
+      &= \frac{\partial G}{\partial q_i} + \sum_{j=1}^f \frac{\partial G}{\partial P_j} \frac{\partial P_j}{\partial q_i}
+      = \frac{\partial G}{\partial q_i} + \sum_{j=1}^f \frac{\partial G}{\partial P_j} \frac{\partial (p_j + \delta p_j)}{\partial q_i}\\
+      &= \frac{\partial G}{\partial q_i} + \sum_{j=1}^f \frac{\partial G}{\partial P_j} \frac{\partial \delta p_j}{\partial q_i}
+      = \frac{\partial G}{\partial q_i} + \sum_{j=1}^f \frac{\partial G}{\partial P_j} \frac{\partial}{\partial q_i}\bigg(-\epsilon \frac{\partial G}{\partial q_j} \bigg) \\
+      &= \frac{\partial G}{\partial q_i} - \epsilon \sum_{j=1}^f \frac{\partial G}{\partial P_j} \frac{\partial^2 G}{\partial q_i \partial q_j}.
+    \end{align*}
+    As a result,
+    \begin{align*}
+      \delta p_i 
+      &= -\epsilon \frac{\partial G}{\partial q_i}
+      = -\epsilon \bigg( \frac{\partial \widetilde{G}}{\partial q_i} + \epsilon  \sum_{j=1}^f \frac{\partial G}{\partial P_j} \frac{\partial^2 G}{\partial q_i \partial q_j}  \bigg)
+      = -\epsilon \frac{\partial \widetilde{G}}{\partial q_i} + \epsilon^2  \sum_{j=1}^f \frac{\partial G}{\partial P_j} \frac{\partial^2 G}{\partial q_i \partial q_j} \\
+      &= -\epsilon \frac{\partial \widetilde{G}}{\partial q_i}
+    \end{align*}
+    because $\epsilon^2 = 0$ as $\epsilon$ is infinitesimal.
+
+    \item Note that, by the derivation similar to the above, we may show that
+    \begin{align*}
+      \delta q_i = \epsilon \frac{\partial \widetilde{G}}{\partial p_i}.
+    \end{align*}
+
+    \item As a result, we may rename $\tilde{G}(\ve{q},\ve{p})$ as $G(\ve{q},\ve{p})$ and have $G$ that is more convenient to work with.
+
+    \item We have seen that, given $G(\ve{q}, \ve{p})$, the infinitesimal changes $\delta p_i$ and $\delta q_i$ are determined. So, we call $G$ the {\bf infinitesimal generating function}.
+  \end{itemize}
+
+  \subsection{Genarating Functions of Some Infinitesimal Canonical Transformations}
+
+  \subsubsection{Translation}
+
+  \begin{itemize}
+    \item Consider a particle in 3-dimentional space whose position is given by vector $\ve{x} = (x_1,x_2,x_3)^T$ in Cartesian coordinates.
+
+    \item Suppose we transform $\ve{x}$ to $\ve{X}$ by adding a constant infinitesimal displacement $\boldsymbol{\epsilon} = (\epsilon_1, \epsilon_2, \epsilon_3)^T$. That is,
+    \begin{align*}
+      \ve{x} = \ve{x} + \boldsymbol{\epsilon}.
+    \end{align*}
+    In other words,
+    \begin{align*}
+      \delta \ve{x} = \boldsymbol{\epsilon}.
+    \end{align*}
+
+    \item The momentum of the particle in the old coordinate system is given by $$\ve{p} = m\dot{\ve{x}}.$$ The momentum under the transformed coordinate symtem is given by $$\ve{P} = m\dot{\ve{X}} = m \frac{\dee (\ve{x} + \ves{\epsilon})}{\dee t} = m\dot{\ve{x}} = \ve{p}.$$
+    So, $$\delta \ve{p} = \ve{0}.$$
+
+    \item Choosing the generativing function
+    \begin{align*}
+      \epsilon G = \sum_{i=1}^3 \epsilon_i p_i = \ves{\epsilon} \cdot \ve{p},
+    \end{align*}
+    we have that
+    \begin{align*}
+      \frac{\partial (\epsilon G)}{\partial p_i} &= \epsilon_i  = \delta q_i \\
+      -\frac{\partial (\epsilon G)}{\partial q_i} &= 0 = \delta p_i.
+    \end{align*}    
+
+    \item As a result, we may say that {\bf momentum is the infinitesimal generating function of translation}.
+  \end{itemize}
+
+  \subsubsection{Rotation}
+
+  \begin{itemize}
+    \item Consider a small rotation by an infinitesimally small angle $\epsilon$ in 2D. In other words, we transform coordinate $\ve{x} = (x_1, x_2)^T$ to $\ve{X} = (X_1, X_2)^T$ as follows:
+    \begin{align*}
+      \begin{bmatrix}
+        X_1 \\ X_2
+      \end{bmatrix}
+      =
+      \begin{bmatrix}
+        \cos \epsilon & -\sin \epsilon \\
+        \sin \epsilon & \cos \epsilon
+      \end{bmatrix}
+      \begin{bmatrix}
+        x_1 \\ x_2
+      \end{bmatrix}.
+    \end{align*}
+
+    \item When $\epsilon$ is infinitesimal, we have that
+    \begin{align*}
+      \cos \epsilon &= 1 - \frac{\epsilon^2}{2!} + O(\epsilon^4) = 1\\
+      \sin \epsilon &= \epsilon - \frac{\epsilon^3}{3!} + O(\epsilon^5) = \epsilon.
+    \end{align*}
+    So,
+    \begin{align*}
+      \begin{bmatrix}
+        X_1 \\ X_2
+      \end{bmatrix}
+      =
+      \begin{bmatrix}
+        1 & -\epsilon \\
+        \epsilon & 1
+      \end{bmatrix}
+      \begin{bmatrix}
+        x_1 \\ x_2
+      \end{bmatrix}
+      =
+      \begin{bmatrix}
+        x_1 - \epsilon x_2 \\
+        \epsilon x_1 + x_2
+      \end{bmatrix}
+    \end{align*}
+    Hence,
+    \begin{align*}
+      \delta \ve{x}
+      =
+      \begin{bmatrix}
+        X_1 \\ X_2
+      \end{bmatrix}
+      -
+      \begin{bmatrix}
+        x_1 \\ x_2
+      \end{bmatrix} 
+      =
+      \begin{bmatrix}
+        -\epsilon x_2 \\ \epsilon x_1
+      \end{bmatrix}
+      = \epsilon \begin{bmatrix}
+        -x_2 \\ x_1
+      \end{bmatrix}.
+    \end{align*}
+
+    \item For the momentum,
+    \begin{align*}
+      \delta \ve{p} 
+      = \ve{P} - \ve{p} 
+      = m \dot{\ve{X}} - m\dot{\ve{x}}
+      = m \begin{bmatrix}
+        \dot{x}_1 - \epsilon \dot{x}_2 \\
+        \epsilon \dot{x}_1 + \dot{x}_2 
+      \end{bmatrix}
+      - m \begin{bmatrix}
+        \epsilon \dot{x}_1 \\
+        \epsilon \dot{x}_2
+      \end{bmatrix}
+      = \epsilon \begin{bmatrix}
+        -m \dot{x}_2 \\
+        m \dot{x}_1
+      \end{bmatrix}
+      = \epsilon \begin{bmatrix}
+        -p_2 \\ p_1
+      \end{bmatrix}
+    \end{align*}
+
+    \item Choosing
+    \begin{align*}
+      G = x_1 p_2 - x_2 p_1,
+    \end{align*}
+    we have that
+    \begin{align*}
+      \delta x_1 &= \epsilon \frac{\partial G}{\partial p_1} = -\epsilon x_2 \\
+      \delta x_2 &= \epsilon \frac{\partial G}{\partial p_2} =  \epsilon x_1 \\
+      \delta p_1 &= -\epsilon \frac{\partial G}{\partial x_1} =- \epsilon p_2 \\
+      \delta p_2 &= -\epsilon \frac{\partial G}{\partial x_2} = \epsilon p_1,
+    \end{align*}
+    which agrees with what we derived before.
+
+    \item Now, $G = x_1 p_2 - x_2 p_1$ is the magnitude of the cross product $\ve{x} \times \ve{p}$ when we view $\ve{x}$ and $\ve{p}$ as a three dimentional vectors that lie in the $(x_1, x_2)$-plane. You may recall that $\ve{x} \times \ve{p}$ is the angular momentum.
+
+    \item In 3-dimensional space, suppose that we transform the coordinates by rotating it around an axis $\ve{e}$ by an infinitesimal angle $\epsilon$.
+
+    \item We have that the old coordinate $\ve{x} = (x_1, x_2, x_3)^T$ is changed to
+    \begin{align*}
+      \ve{X} = (X_1, X_2, X_3)^T = \ve{x} + \epsilon(\ve{e} \times \ve{x}).
+    \end{align*}
+    In other words,
+    \begin{align*}
+      \delta\ve{x} = \epsilon(\ve{e} \times \ve{x}).
+    \end{align*}
+
+    \item The velocity $\dot{\ve{X}}$ is given by:
+    \begin{align*}
+      \dot{\ve{X}} 
+      = \frac{\dee (\ve{x} + \epsilon(\ve{e} \times \ve{x}))}{\dee t}
+      = \dot{\ve{x}} + \epsilon(\ve{e} \times \dot{\ve{x}}).
+    \end{align*}
+    As a result,
+    \begin{align*}
+      m\dot{\ve{X}} 
+      &= m\dot{\ve{x}} + \epsilon(\ve{e} \times m\dot{\ve{x}})\\
+      \dot{\ve{P}} 
+      &= \ve{p} + \epsilon(\ve{e} \times \ve{p}) \\
+      \delta \ve{p} 
+      &= \epsilon(\ve{e} \times \ve{p}).
+    \end{align*}
+
+    \item Choosing
+    \begin{align*}
+      G = (\ve{x} \times \ve{p}) \cdot \ve{e},
+    \end{align*}
+    we have
+    \begin{align*}
+      \frac{\partial (\epsilon G)}{\partial x_i} 
+      = \frac{\partial (\epsilon (\ve{x} \times \ve{p}) \cdot \ve{e})}{\partial x_i} 
+      = \frac{\partial (\epsilon (\ve{p} \times \ve{e}) \cdot \ve{x})}{\partial x_i} 
+      = -\frac{\partial (\epsilon (\ve{e} \times \ve{p}) \cdot \ve{x})}{\partial x_i} 
+      = - (\epsilon(\ve{e} \times \ve{p}))[i]
+    \end{align*}
+    as a result
+    \begin{align*}
+      \frac{\partial (\epsilon G)}{\partial \ve{x}} = -\epsilon(\ve{x} \times \ve{p}) = -\delta \ve{p}.
+    \end{align*}
+    Similarly, we can show that
+    \begin{align*}
+      \frac{\partial (\epsilon G)}{\partial \ve{p}} = \delta\ve{x}.
+    \end{align*}
+
+    \item So, we can conclude that {\bf angular momentum is the infinitesimal generating function of rotation}.
+  \end{itemize}
+
+  \subsubsection{Time Evolution}
+
+  \begin{itemize}
+    \item Recall that $\ve{q}$ and $\ve{p}$ are functions of time, which we will write in this section as $\ve{q}(t)$ and $\ve{p}(t)$.
+
+    \item Consider the values of $\ve{q}$ and $\ve{p}$ at $t + \epsilon$ where $\epsilon$ is infinitesimal. Define
+    \begin{align*}
+      \ve{Q}(t) &= \ve{q}(t + \epsilon) \\
+      \ve{P}(t) &= \ve{p}(t + \epsilon).
+    \end{align*}
+    In other words, we view infinitesimal time evolution as a canonical transform. What is its generating function then?
+
+    \item By Taylor's series expansion, we have that
+    \begin{align*}
+      \delta \ve{q}(t) 
+      &= \ve{Q}(t) - \ve{q}(t)
+      = \ve{q}(t + \epsilon) - \ve{q}(t)
+      = \epsilon \dot{\ve{q}}(t)
+      = \epsilon \frac{\partial H}{\partial \ve{p}} \\
+      \delta \ve{p}(t)
+      &= \ve{P}(t) - \ve{p}(t)
+      = \ve{p}(t + \epsilon) - \ve{p}(t)
+      = \epsilon \dot{\ve{p}}(t)
+      = -\epsilon \frac{\partial H}{\partial \ve{q}}
+    \end{align*}
+
+    \item As a result, we have that {\bf the Hamilonian is the infinitesimal generating function of time evolution}.
+  \end{itemize}
+
+  \section{Poisson Bracket}
+
+  \begin{itemize}
+    \item 
+  \end{itemize}
   \bibliographystyle{apalike}
   \bibliography{intro-analytical-mechanics}  
 \end{document}
