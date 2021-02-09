@@ -454,7 +454,7 @@
         We can then approximate the integral with Monte Carlo integration.
     </ul>
 
-    <h2>2 &nbsp; Importance Sampling the Edges</h2>
+    <h2>1.2 &nbsp; Importance Sampling the Edges</h2>
 
     <ul>
         <li>The methods described above requires us to sample edges of millions of triangles in the scene.</li>
@@ -525,7 +525,324 @@
     <h2>2 &nbsp; Loubet et al. (SIGGRAPH Asia 2019)</h2>
 
     <ul>
-        <li></li>
+        <li>One of the drawbacks of the last paper is the reliance on edge sampling, which, as one can see from the algorithm in Section 1.2, is a difficult problem.</li>
+
+        <li>The Loubet et al.'s paper proposes a way to compute the gradient without edge sampling, and this is done by reparameterizing the integrand on the fly.</li>
+
+        <li>The shading integral has the form:
+        \begin{align*}
+            I = \int_{\mathcal{X}} f(\ve{x}, \Theta)\, \dee\ve{x}
+        \end{align*}
+        where the domain $\mathcal{X}$ is often the unit sphere $\mathbb{S}^2$, and $\Theta$ is the scene parameters.
+        </li>
+
+        <li>To simplify the notation, let us assume that there is only one scalar parameter $\theta \in \Real$. The integral becomes:
+        \begin{align*}
+            I = \int_{\mathcal{X}} f(\ve{x}, \theta)\, \dee\ve{x}.
+        \end{align*}
+        </li>
+
+        <li>We would like to compute
+        \begin{align*}
+            \frac{\partial I}{\partial \theta} 
+            = \frac{\partial}{\partial \theta} \int_{\mathcal{X}} f(\ve{x},\theta)\, \dee\ve{x}.
+        \end{align*}
+        </li>
+
+        <li>If $f$ and the partial derivative exists and is continuous, then we can slide the derivative operator inside the integral:
+        \begin{align*}
+            \frac{\partial}{\partial \theta} \int_{\mathcal{X}} f(\ve{x},\theta)\, \dee\ve{x}
+            &= \int_{\mathcal{X}} \frac{\partial}{\partial \theta}  f(\ve{x},\theta)\, \dee\ve{x}
+        \end{align*}
+        </li>
+
+        <li>$I$ is typically estimated using Monte Carlo integration. We sample points from $\mathcal{X}$ with probability density function $p(\ve{x},\theta)$ that can depend on $\theta$. The samples generated are thus functions of $\theta$, and we denote them by $\ve{x}_i(\theta)$ for $i = 1$,$2$,$\dotsc$. The estimate of the integral is thus given by:
+        \begin{align*}
+            I \approx E = \frac{1}{N} \sum_{i=1}^N \frac{f(\ve{x}_i(\theta),\theta)}{p(\ve{x}_i(\theta),\theta)},
+        \end{align*}
+        and the estimator for gradient is given by:
+        \begin{align}
+            \frac{\partial I}{\partial \theta}
+            \approx \frac{\partial E}{\partial \theta}
+            = \frac{1}{N} \sum_{i=1}^N \frac{\partial}{\partial \theta} \frac{f(\ve{x}_i(\theta),\theta)}{p(\ve{x}_i(\theta),\theta)}. \label{gradient-monte-carlo-estimator}
+        \end{align}
+        </li>
+
+        <li>However, the integrand $f(\ve{x},\theta)$ is often non-differentiable with respecti to $\theta$ due to visibility change. So, the above derivative sliding would be invalid.</li>
+
+        <li>The paper uses a transformation $T: \mathcal{Y} \rightarrow \ve{X}$ that removes the discontinuity with respect to $\theta$. If it exists, the integral becomes:
+        \begin{align*}
+            \int_{\mathcal{X}} f(\ve{x},\theta)\, \dee\ve{x}
+            = \int_{\mathcal{Y}} f(T(\ve{y},\theta),\theta) |\det J_{T}| \, \dee\ve{y}
+        \end{align*}
+        where $J_T$ is the Jacobian of the transformation $T$. Because the discontinuity has disappeared, we can estimate the gradient with $\eqref{gradient-monte-carlo-estimator}$.
+        </li>
+
+        <li><b>Example.</b> Consider the indicator function 
+        $\mathbb{I}_{\mathrm{condition}}$ which is $1$ when the condition is true and $0$ otherwise. Consider the integral:
+        \begin{align*}
+            I = \int_{\mathcal{X}} \mathbb{I}_{x > \theta} k(x)\, \dee x.
+        \end{align*}
+        We have that the integrand is not continuous. However, we can introduce a change of variable $y = x - \theta$, and the integral becomes:
+        \begin{align*}
+            I 
+            = \int_{\mathcal{X}} \mathbb{I}_{x > \theta} k(x)\, \dee x
+            = \int_{\mathcal{Y}} \mathbb{I}_{y > 0} k(y + \theta)\, \dee y.
+        \end{align*}
+        Now, the integral is differentiable with respect to $\theta$. So, we can do the following estimation:
+        \begin{align*}
+            \frac{\partial I}{\partial \theta}
+            = \frac{1}{N} \sum_{i=1}^N \frac{\partial}{\partial \theta} \frac{\mathbb{I}_{y > 0} k(y_i + \theta)}{p(y_i)}.
+        \end{align*}
+        </li>
+
+        <li>The change of variable above can be interpreted in two ways:
+        <ul>
+            <li>Instead of integrating a function with a discontinuity whose position depends on $\theta$, we integrate in a space where the discontinuity does not move when $\theta$ changes.</li>
+
+            <li>Actually, we perform importanace sampling using the samples $x_i(\theta) = y_i + \theta$ that follows the discontinuity.</li>
+        </ul>
+        </li>
+
+        <li>Two things to be careful for:
+        <ul>
+            <li>The transformation should not affect the primal computation of $I$. It should be designed to yield the identity mape when $\theta = \theta_0$ where $\theta_0$ refers to the concrete parameter value for which the graidents are to be evaluated.
+            <ul>
+                <li>In the example above, the transformation can be accomplished by $T(y,\theta) = y + \theta - \theta_0$.</li>
+            </ul>
+            </li>
+
+            <li>The sampling density $p$ should not depend on $\theta$. Otherwise, discontinuity would arise anew.</li>
+        </ul>
+        </li>
+    </ul>
+
+    <h3>2.1 &nbsp; Method</h3>
+
+    <h4>2.1.1 &nbsp; Removing discontinuities using rotations</h4>
+
+    <ul>
+        <li>We suppose that the integrand has small angular suppose. This is an assumption that we will correct, or rather <i>enforce</i>, in the next Section.</li>
+
+        <li>An infinestesimal change that causes a displacement of some geometry would be well approximated by a spherical rotation.
+        <ul>
+            <li>The smaller the support of the integrand, the better the approximation.</li>
+        </ul>
+        </li>
+
+        <li>We assume that there is a suitable rotation so that the change of variable:
+        \begin{align*}
+            I = \int_{\mathbb{S}^2} f(\omega, \theta)\, \dee\omega = \int_{\mathbb{S}^2} f(R(\omega, \theta), \theta)\, \dee\omega
+        \end{align*}
+        makes $f(R(\omega,\theta),\theta)$ continuous with respect to $\theta$ for each direction $\omega$.
+        <ul>
+            <li>Note that the Jacobian for this rotation is $1$.</li>
+        </ul>
+        </li>
+
+        <li>Now, we can sample the directions with probability distribution that depends on the current parameter value $p(\omega, \theta_0)$. This distribution is fixed, so there's no dependence on $\theta$ to worry about.
+        \begin{align*}
+            I \approx E = \frac{1}{N} \sum_{i=1}^N \frac{f(R(\omega_i,\theta, \theta))}{p(\omega_i, \theta_0)}.
+        \end{align*}
+        </li>
+
+        <li>The suitable rotation can be found if we know the displacement of the discontinuity with respect to the infinitesimal change of the scene parameter in question.
+        <ul>
+            <li>There's no need to know which edge is a silhouette edge.</li>
+        </ul>
+
+        <li>Within the small support of the integrand, the displacement of points on silhouette edges will closely apprximate the displacement of <i>other</i> poisitions on the associated object.</li>
+
+        <li>The rotation is computed by ray casting.
+        <ul>
+            <li>Within the support of the integrand, we cast a small number of rays (4 in paper).</li>
+
+            <li>Using information about the distance of the intersection points and the normals there, the paper applies a heuristic to select a point that is likely belongs to an occluder.
+            <ul>
+                <li>Note that the paper says it describes the heuristics in more details in the Appendix, but I still did not know the exact algorithm after reading it. This probably best be learned by reading the code.</li>
+            </ul>
+            </li>
+
+            <li>The movement of the selected point is then said to match the movement of the silhouette.</li>
+        </ul>
+        </li>
+
+        <li>We project the selected the point onto $\mathbb{S}^2$. Let us call the resulting directioin $\omega_P(\theta)$.
+        <ul>
+            <li>Note that the projection is a function of $\theta$ because the position is a function of $\theta$.</li>
+        </ul>
+        </li>
+
+        <li>Set $\omega_{P,0} = \omega_P(\theta_0)$, which is just the projection of the position of the intersection point.</li>
+
+        <li>We then compute a rotation matrix $R(\theta)$ such that:
+        \begin{align*}
+            R(\theta_0)\omega &= \omega 
+        \end{align*}
+        for all $\omega \in \mathbb{S}^2$, and
+        \begin{align*}
+            \frac{\partial}{\partial \theta} \Big( R(\theta) \omega_{P,0}\Big) = \frac{\partial}{\partial \theta} \omega_P(\theta)
+        \end{align*}
+        for all $\theta$.
+        <ul>
+            <li>Let me confess that I'm at a lost of with the writing. The paper points to Appendix B for the formula that can be used to derive the matrix. However, the appendix does not use the notation defined just above. It talks about Rodriguez's formula defined in terms of $\omega_a$ and $\omega_b$. How am I supposed to know which is which? What about the differential operator?</li>
+        </ul>
+        </li>
+    </ul>
+
+    <h4>2.1.2 &nbsp; Generalizing to functions with large support</h4>
+
+    <ul>
+        <li>We rely on the property that the integral of a function $f$ is equal to the integral of convolution of $f$:
+        \begin{align*}
+            \int_{\mathbb{S}^2} f(\omega)\,\dee\omega 
+            = \int_{\mathbb{S}^2} \int_{\mathbb{S}^2} f(\mu) k(\mu,\omega)\,\dee\mu,\dee\omega
+        \end{align*}
+        where $k$ is a spherical convoution kernel satisfying:
+        \begin{align*}
+            \int_{\mathbb{S}^2} k(\mu,\omega)\,\dee\mu = 1
+        \end{align*}
+        for all $\omega \in \mathbb{S}^2$. An example of this kernel is the <a href="https://en.wikipedia.org/wiki/Von_Mises%E2%80%93Fisher_distribution">von Mises-Fisher</a> distribution.
+        </li>
+        
+        <li>The above integral can be estimated with the following Monte Carlo estimator:
+        \begin{align*}
+            I \approx E = \frac{1}{N} \sum_{i=1}^N \frac{f(R_i(\mu_i,\theta), \theta) k(R_i(\mu_i,\theta), \omega_i(\theta))}{p(\omega_i(\theta), \theta), p_k(\omega_i(\theta), \mu_i)}
+        \end{align*}
+        where we first sample $\omega_i(\theta)$ and then sample $\mu_i$ from the kernel probability density $p_k(\cdot, \mu_i)$.
+        </li>
+
+        <li>The size of the spherical kernel provides a trade-off between variance and bias of the gradient estimate:
+        <ul>
+            <li>For small kernels, rotations are an excellent model for the displacement of discontinuities (i.e., smaller bias), but the probability of finding discontinuities within the kernel support is small, and hence the gradient has more variance.</li>
+        </ul>
+        </li>
+    </ul>
+
+    <h3>2.2 &nbsp; Variance reduction using control variates</h3>
+
+    <ul>
+        <li>The algorithm in the last section produces gradients with high variance.</li>
+
+        <li>To reduce variance, the paper proposes the use of <a href="https://en.wikipedia.org/wiki/Control_variates">control variates</a>.</li>        
+    </ul>
+
+    <h4>2.2.1 &nbsp; The statistics of gradient estimator</h4>
+
+    <ul>
+        <li>The reparameterization introduces a change of variable, which manifests in the Monte Carlo esimate as follows:
+        \begin{align*}
+            E = \frac{1}{N} \sum_{i=1}^N f(T(y_i,\theta),\theta) \frac{k(T(y_i,\theta),\theta)}{k(T(y_i, \theta_0), \theta_0)}.
+        \end{align*}
+        Here $T$ is the associated change of variable, and I belive the $k$ term in the denominator comes from the sampling probability distribution $p_k(\cdot, \cdot)$. (Why do they have to keep changing the notation?)
+        </li>
+
+        <li>Let
+        \begin{align*}
+            w_i(\theta) = \frac{k(T(y_i,\theta),\theta)}{k(T(y_i, \theta_0), \theta_0)}.
+        \end{align*}
+        We have that $w_i(\theta) = 1$ in the forward computation (because $\theta_0 = \theta$). The estimator becomes:
+        \begin{align*}
+            E = \frac{1}{N} \sum_{i=1}^N f(T(y_i,\theta),\theta) w_i(\theta).
+        \end{align*}
+        </li>
+
+        <li>I found the discussion that comes after this definition incomprehensible.</li>
+    </ul>
+
+    <h4>2.2.2 &nbsp; Control variates</h4>
+
+    <ul>
+        <li>Suppose we have a random variable $E$ that we want to reduce its variance.</li>
+
+        <li>Let $F$ be another random variable that is correlated with $E$ whose expected value is known.</li>
+
+        <li>Define
+        \begin{align*}
+            E' = E + \alpha(F - \mathbb{E}[F])
+        \end{align*}
+        where $\alpha \in \Real$ is a constant to be chosen. The  choice of $\alpha$ that reduces the variance the most is:
+        \begin{align*}
+            \alpha = -\frac{\mathrm{Cov}(E,F)}{\mathrm{Var}(F)}.
+        \end{align*}
+        </li>
+
+        <li>$\alpha$ is different for every integral, so the paper opted for a value that is simpler to calculate.</li>
+
+        <li>Note that
+        \begin{align*}
+            \frac{\partial E}{\partial \theta} 
+            &= \frac{1}{N} \sum \frac{\partial}{\partial \theta} \Big[ f(T(y_i,\theta),\theta) w_i(\theta) \Big] \\
+            &= \frac{1}{N} \sum \bigg( \frac{\partial }{\partial \theta} f(T(y_i,\theta),\theta) \bigg) w_i(\theta)
+            + \frac{1}{N} \sum f(T(y_i,\theta),\theta) \frac{\partial w_i(\theta) }{\partial \theta}.
+        \end{align*}
+        So, we can see that $\frac{\partial E}{\partial \theta}$ is correlated with
+        \begin{align*}
+            \frac{\partial F}{\partial \theta} = \frac{1}{N} \sum \frac{\partial w_i(\theta) }{\partial \theta}.
+        \end{align*}
+        </li>
+
+        <li>The paper says that the expected value of $\partial w_i(\theta) / \partial \theta$ is zero. (Why?)</li>
+
+        <li>The improved estimator is given by:
+        \begin{align*}
+        E' &= \frac{1}{N}\sum \Big[ f(T(y_i,\theta),\theta) w_i(\theta) - \alpha(w_i(\theta) - w_i(\theta_0)) \Big] \\
+        \frac{\partial E'}{\partial \theta} &= \frac{1}{N}\sum \frac{\partial}{\partial \theta} \Big[ f(T(y_i,\theta),\theta) w_i(\theta) - \alpha(w_i(\theta) - w_i(\theta_0)) \Big].
+        \end{align*}
+        </li>        
+    </ul>
+
+    <h4>2.2.3 &nbsp; Using pairs of paths to determine $\alpha$</h4>
+
+    <ul>
+        <li>If $f(x) = c$ is constant in the domain, then the most rediction in variance can be obtained from setting $\alpha = -c$. (This might be because $w_i(\theta)$ would be cause to 1.)</li>
+
+        <li>However, $\alpha$ should be determined independent of $w_i(\theta)$ to avoid introducing bias in the gradient of $E'$. (Why?)</li>
+
+        <li>The paper uses a technique called the <i>cross-weighting scheme</i> <a href="https://cs.dartmouth.edu/wjarosz/publications/rousselle16image.html">[Rouselle et al. 2016]</a>, which uses two uncorrelated estimates to compute $\alpha$.</li>
+
+        <li>The paper sample pairs of simplar paths and then performs variance cross-reduction for each pair.
+        <ul>
+            <li>At each scattering event, a path accumulates radiacne either via emitter sampling or via BSDF sampling.</li>
+
+            <li>The total contribution $r_i$ of one path can be written as a sum:
+            \begin{align*}
+                r_i = \sum_{l=0}^\infty f_{i,l}(\theta) W_{i,l}(\theta)
+            \end{align*}
+            where
+            <ul>
+                <li>each index corresponds to the contribution from an emitter;</li>
+
+                <li>$f_{i,l}(\theta)$ represents the product of emitted radiance and path throughput.</li>
+
+                <li>$W_{i,l}(\theta)$ is the product of all associated weights.</li>
+
+                <li>Because $\mathcal{E}[\partial w_i/\partial \theta] = 0$ and each weight is independent from the gradients of other weights, we have that $\mathcal{E}[\partial W_{i,l}/\partial \theta] = 0$ too.</li>
+
+                <li>The paper uses the following estimator:
+                \begin{align*}
+                    r' = \frac{1}{2}[ f_{0,l}(\theta) W_{0,l}(\theta) - f_{1,l}(\theta)(W_{0,l}(\theta)-W_{0,l}(\theta_0)) ] +
+                    \frac{1}{2}[ f_{1,l}(\theta) W_{1,l}(\theta) - f_{0,l}(\theta)(W_{1,l}(\theta)-W_{1,l}(\theta_0)) ].
+                \end{align*}
+                </li>
+            </ul>              
+            </li>
+        </ul>
+        </li>
+    </ul>
+
+    <h4>2.2.4 &nbsp; Using partially correlated paths</h4>
+
+    <ul>
+        <li>Similar paths are paths that are highly correlated. However, there should be no correlation btween $f_{0,l}$ and $\partial W_{1,l}(\theta)/partial \theta$ for all scattering orders (and vice versa for the other directions).</li>
+
+        <li>This is possible by reusing the random numbers used to constructing the first path except those that affect the weights $W_{i,l}$.</li>
+    </ul>
+
+    <h3>2.3 &nbsp; Comment</h3>
+
+    <ul>
+        <li>This paper is very hard to read. It lacks clarity. Not enough discussion is given for the exact algorithm to use. I also could not find the source code to read. I'm really frustrated with it.</li>
     </ul>
 
     <h2>3 &nbsp; Zhang et al. (SIGGRAPH 2020)</h2>
@@ -669,7 +986,7 @@
         where $\sigma(x,y)$ means $s$, which is the measure of length on the line $\alpha(x,y) = 0$.
         </li>
     </ul>
-    
+
     <hr>
     <div class="page-header"></div>
     <p>Last modified: 2021/02/06</p>    
