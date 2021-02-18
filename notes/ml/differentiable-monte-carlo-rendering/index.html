@@ -866,7 +866,82 @@
     <h2>6 &nbsp; Bangaru et al. (SIGGRAPH Asia 2020)</h2>
 
     <ul>
-        <li></li>
+        <li>Like Loubet et al.'s 2019 paper, this paper aims to resolve the difficulty involved in boundary sampling required to compute gradients in Li et al's 2018 paper.</li>
+
+        <li>Approach:
+        <ul>
+            <li>Apply the divergence theorem to convert the boundary integral into an area integral.</li>
+
+            <li>Rewrite the integral into a form tghat is suitable for Monte Carlo rendering.</li>
+        </ul>
+        </li>
+
+        <li>The paper also gives a sampling algorithm for the above rewritten integral.</li>
+
+        <li>Loubet et al.'s paper is the first paper that uses area sampling to compute gradients. The difference between this paper and that one is bias of the estimator.
+        <ul>
+            <li>Loubet et al.'s algorithm introduces many approximations to the gradient integral (i.e., approximating boundary movement with rotation and determining occluders with a heuristics), leading to bias. On the other hand, this paper's algorithm is consistent or unbiased.</li>
+        </ul>            
+        </li>                
+    </ul>
+
+    <h3>6.1 &nbsp; Area formulation of differentiable rendering</h3>
+
+    <ul>
+        <li>The idea is to apply the divergence theorem to reformulate the boundary integral as an integral over the interior supplemented by a vector field called the "warp field."</li>
+
+        <li>The warp field needs to be continuous and consistent with the derivative of the boundary points.</li>
+
+        <li>The authors pick a family of warp fields that depends only on the qualities that can be easily computed.</li>
+    </ul>
+
+    <h4>6.1.1 &nbsp; Boundary integral in differentiable rendering</h4>
+
+    <ul>
+        <li>We'd like to compute the gradient $\partial I / \partial \theta$ of the integral:
+        \begin{align*}
+            I = \int_{D} f(\omega; \theta)\, \dee\omega
+        \end{align*}
+        over some domain $D$.
+        </li>
+
+        <li>The problem is that $\partial I / \partial \theta$ is not unbiased because $f$ is discontinuous with respect to $\theta$.
+        <ul>
+            <li>The derivative includes the Dirac delta fucntion.</li>
+
+            <li>We must eliminate it in order to be able to slide the differential operator inside the integral and then approximate the gradient with Monte Carlo integration.</li>
+        </ul>
+        </li>
+
+        <li>To eliminate the integral, we partiion the domain $D$ into disjoin regions $D_0(\theta)$, $D_1(\theta)$, $\dotsc$ such that:
+        <ul>
+            <li>$f(\omega,\theta)$ is continuous within the boundaries of each piece, and</li>
+            <li>all the discontinuities are at the boundaries of the domains.</li>
+        </ul>
+        This way, the integral becomes:
+        \begin{align*}
+            \frac{\partial I}{\partial \theta}
+            = \sum_{i} \frac{\partial}{\partial \theta} \int_{D_i(\theta)} f(\omega;\theta)\, \dee\omega.
+        \end{align*}
+        </li>
+
+        <li>When the integrand is continuous inside the domain, the derivative of the integral can be computed using the <i>Leibniz's rule</i> in the 1D case. It states that for an integral of the form
+        \begin{align*}
+            \int_{a(\theta)}^{b(\theta)} f(x;\theta)\, \dee x
+        \end{align*}
+        where $-\infty < a(\theta), b(\theta) < \infty$, its derivative is expressible as:
+        \begin{align*}
+            \frac{\dee}{\dee \theta} \int_{a(\theta)}^{b(\theta)} f(x;\theta)\, \dee x
+            = f(b(\theta);\theta) \frac{\dee}{\dee\theta} b(\theta) - f(a(\theta);\theta) \frac{\dee}{\dee\theta} a(\theta) + \int_{a(\theta)}^{b(\theta)} \frac{\partial}{\partial \theta} f(x;\theta)\, \dee x.
+        \end{align*}
+        </li>
+
+        <li>The generalization of Leibniz's rule to higher dimensions is called the <i>Reynolds transport theorem</i>, which states:
+        \begin{align*}
+            \frac{\partial I}{\partial \theta}
+            = \sum_{i} \int_{D'(\theta)} \frac{\partial f(\omega,\theta)}{\partial \theta}\, \dee D'_i(\theta)
+        \end{align*}
+        </li>
     </ul>
 
     <h2>Appendix A &nbsp; Removing the Dirac delta function from an integral</h2>
