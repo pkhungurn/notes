@@ -673,7 +673,7 @@
     <hr>    
 
     <p>
-    Let $\mathcal{X}$ be a subset of $\Real^n$. The form $\dee x^1 \wedge \dotsb \wedge x^n$ is called the <b>volume from</b>.
+    Let $\mathcal{X}$ be a subset of $\Real^n$. The form $\dee x^1 \wedge \dotsb \wedge \dee x^n$ is called the <b>volume from</b>.
     </p><hr>
 
     <p>
@@ -730,7 +730,7 @@
     Here, $D\ve{g}[I,J]$ denotes the submatrix of $D\ve{g}$ with only rows whose indices are in $I$ and columns whose indices are in $J$.
     </p><hr>
 
-    <h2>4 &nbsp; Integration</h2>
+    <h2>6 &nbsp; Integration</h2>
 
     <p><b>Definition.</b> If $f: \Real^n \rightarrow \Real$, the <b>support</b> of $f$ is the closure of the set $\{ \ve{x} : \alpha(\ve{x}) = 0 \}$.</p>
 
@@ -789,9 +789,9 @@
     <p>If $\alpha$ is not compactly supported, we pick a partition of unity $\{ \rho_i \}$ such that each $\rho_i$ is compactly supported. We can then define $\int \alpha = \sum_i \int \rho_i \alpha$.</p>
 
     <p>This trick only works if the integral converges absolutely. That is, if $\int |f(\ve{x})|\, \dee x^1 \dee x^2 \dotsb \dee x^n$ converges as a Riemann integral, then everything works out.</p>
-    <hr>    
+    <hr>
 
-    <h2>5 &nbsp; Differential Forms on Manifolds</h2>
+    <h2>7 &nbsp; Differential Forms on Manifolds</h2>
 
     <p><b>Definition.</b> Let $k > 0$. A subset $M$ of $\Real^n$ is called a <b>$k$-dimensional manifold of class $C^r$ without boundary</b> if the following property holds:  for each $\ve{p} \in M$, there is a set $V \subseteq M$ containing $\ve{p}$ that is open in $M$, a set $U$ that is open in $\Real^k$, and a bijection $\psi: U \rightarrow V$ such that:
     <ul>
@@ -849,57 +849,696 @@
 
     <p><b>Definition. </b> Let $M$ be an orientable $k$-manifold with non-empty boundary. Given an orientation of $M$, the corresponding <b>induced orientation</b> of $\partial M$< is defined as follows. If $k$ is even, it is the orientation obtained by simply restricting coordinate patches belonging to the orientation of $M$. If $k$ is odd, it is the opposiate of the orientation of $\partial M$ obtained this way.</p><hr>
 
-    <p><b>Theorem (Generalized Stokes's).</b> Let $k \geq 1$. Let $M$ be a compact oriented $k$-manifold in $\Real^n$. Give $\partial M$ the induced orientation if $\partial M$ is not empty. Let $\omega$ be a $(k-1)$-form defined in an open set of $\Real^n$ containing $M$. Then
+    <p><b>Theorem (Generalized Stokes's).</b> Let $k > 1$. Let $M$ be a compact oriented $k$-manifold in $\Real^n$. Give $\partial M$ the induced orientation if $\partial M$ is not empty. Let $\omega$ be a $(k-1)$-form defined in an open set of $\Real^n$ containing $M$. Then,
     \begin{align*}
         \int_M\, \dee\omega = \int_{\partial M} \omega
     \end{align*}
     if $\partial M$ is not empty, and $\int_M\, \dee\omega = 0$ if $\partial M$ is empty.
     </p><hr>
 
-    <p><b>Example.</b> Let $\gamma$ be an oriented path in $\Real^3$. This means that there is a function $\ve{g}: (a,b) \rightarrow \Real^3$. Let $t$ denote the argument of $\ve{g}$. We have that
-    \begin{align*}
-        \dee x^1 &= \frac{\partial g_1}{\partial t}\, \dee t, &
-        \dee x^2 &= \frac{\partial g_2}{\partial t}\, \dee t, &
-        \dee x^3 &= \frac{\partial g_3}{\partial t}\, \dee t.
-    \end{align*}
-    Let $\ve{v}(\ve{x})$ be a vector field. We have that
-    \begin{align*}
-        w^1_\ve{x} = v_1(\ve{x})\, \dee x^1 + v_2(\ve{x})\, \dee x^2 + v_3(\ve{x})\, \dee x^3.
-    \end{align*}
-    We have that
-    \begin{align*}
-        \int_{\gamma} w^1_\ve{v}
-        &= \int_a^b \ve{g}^*(w^1_\ve{v}) \\
-        &= \int_{\gamma} \ve{g}^*\big( v_1(\ve{x})\, \dee x^1 + v_2(\ve{x})\, \dee x^2 + v_3(\ve{x})\, \dee x^3 \big) \\
-        &= \int_a^b 
-        v_1(\ve{g}(t)) \frac{\partial g_1}{\partial t}\, \dee t
-        + v_2(\ve{g}(t)) \frac{\partial g_2}{\partial t}\, \dee t
-        + v_3(\ve{g}(t)) \frac{\partial g_3}{\partial t}\, \dee t \\
-        &= \int_a^b \ve{v}(\ve{g}(t)) \cdot \frac{\partial \ve{g}(t)}{\partial t}\, \dee t.
-    \end{align*}
-    Let $\ve{t}(t)$ denote the unit tangent vector to the curve at time $t$. In other words:
-    \begin{align*}
-        \ve{t}(t) = \frac{1}{\| \partial \ve{g}(t) / \partial t \|} \frac{\partial \ve{g}(t)}{\partial t}.
-    \end{align*}
-    The arc length measure $\dee s$ is given by:
-    \begin{align*}
-        \dee s = \bigg\| \frac{\partial \ve{g}(t)}{\partial t} \bigg\|\, \dee t.
-    \end{align*}
-    So,
-    \begin{align*}
-        \int_{\gamma} w^1_\ve{v}
-        = \int_a^b \bigg( \ve{v}(\ve{g}(t)) \cdot \ve{t}(t) \bigg\| \frac{\partial \ve{g}(t)}{\partial t} \bigg\|\bigg) \, \dee t
-        = \int_a^b \big( \ve{v}(\ve{g}(t)) \cdot \ve{t}(t)\big)\, \dee s
-        = \int_\gamma \ve{v} \cdot \ve{t}\, \dee s.
-    \end{align*}
-    </p>    
-    <hr> 
+    <p><b>Definition.</b> Let $M$ be an oriented $1$-manifold in $\Real^n$ that is covered by a single chart $\psi: [a,b] \rightarrow \Real$ belonging to that orientation. We call $M$ an <b>(smooth) arc</b>. We call $\psi(a)$ the <b>initial point</b> and $\psi(b)$ the <b>final point</b> of $M$.</p><hr>
 
-    <p><b>Example.</b> Let's get back to the 1-form $\omega = (x\,\dee y - y\,\dee x) / (x^2 + y^2)$. We know that $\dee \omega = 0$. However, we said earlier that it is not exact. That is, there is no $\nu$ such that $\omega = \dee\nu$. To see this, let us assume that it exists. Because $\omega$ is a 1-form, $\nu$ would be a 0-form, basically a function $\nu: \Real^2 \rightarrow \Real$. So, for any oriented path $\gamma$ that starts from point $\ve{a}$ and ends at point $\ve{b}$, we have that
+    <p><b>Theorem (Generalized Stokes's; 1D version).</b> Let $M$ be a compact arc in $\Real^n$ with initial point $\ve{p}$ and final point $\ve{q}$. Let $f$ be a $0$-form (i.e, a function) defined in a neighborhood around $M$. Then,
+    \begin{align*}
+        \int_M\, \dee f = \int_{\partial M} f  = f(\ve{q}) - f(\ve{p}).
+    \end{align*}
+    </p><hr>
+
+    <p><b>Definition.</b> A <b>path</b> is a piecewise sequence of arcs.</p><hr>
+
+    <p><b>Example.</b> Let's get back to the 1-form $\omega = (x\,\dee y - y\,\dee x) / (x^2 + y^2)$. We know that $\dee \omega = 0$. However, we said earlier that it is not exact. That is, there is no $\nu$ such that $\omega = \dee\nu$. To see this, let us assume that it exists. Because $\omega$ is a 1-form, $\nu$ would be a 0-form. So, for any path $\gamma$ with initial point $\ve{a}$ and final point $\ve{b}$, we have that
     \begin{align*}
         \int_{\gamma} \omega = \int_{\gamma} \dee\nu = \int_{\partial \gamma} \nu = \nu(\ve{b}) - \nu(\ve{a}).
     \end{align*}
-    That is, the path integral involving $\omega$ would exhibit path independence. However, it is easy to find two paths that would result in different values with $\omega$. For example, consider (a) a path that goes straight from $(1,0)$ to $(100,0)$ and (b) another path that goes from $(1,0)$ to $(1,100)$ then to $(100,100)$ and then to $(100,0)$. The first path's integral is $0$, but the second is not.
+    That is, any path integral involving $\omega$ would exhibit <i>path independence</i>. However, it is easy to find two paths that would result in different values with $\omega$. For example, consider (a) a path that goes straight from $(1,0)$ to $(100,0)$ and (b) another path that goes from $(1,0)$ to $(1,100)$ then to $(100,100)$ and then to $(100,0)$. The first path's integral is $0$, but the second is not.
+    </p>
+    <hr>
+
+    <h2>8 &nbsp; Really, what are differential forms?</h2>
+
+    <p>A differential form is a "field" of "alternating" "tensors" on the "tangent spaces." We will unpack these terms one by one.</p><hr>
+
+    <h3>8.1 &nbsp; Tensors</h3>
+
+    <p><b>Definition.</b> Let $V$ be a finite-dimentional real vector space. A <b>$k$-tensor</b> is a function $f: V^k \rightarrow \Real$ such that it is linear in the $i$th argument for all $i$.</p>
+
+    <p>The set of $k$-tensors on $V$ is denoted by $\mathcal{L}^k(V)$. If $k = 1$, $\mathcal{L}^1(V)$ is the set of all linear transformation $f: V \rightarrow \Real$. It is called the <b>dual space</b> of $V$.</p>
+    <hr>
+
+    <p>The set of $k$-tensors form a vector space according to the following operations:
+    \begin{align*}
+    (f+g)(\ve{v}_1, \dotsc, \ve{v}_k) &= f(\ve{v}_1, \dotsc, \ve{v}_k) + g(\ve{v}_1, \dotsc, \ve{v}_k), \\
+    (cf)(\ve{v}_1, \dotsc, \ve{v}_k) &= c \big( f(\ve{v}_1, \dotsc, \ve{v}_k)\big).
+    \end{align*}
+    </p><hr>
+
+    <p>$\mathcal{L}^1(V)$ has $n$ dimensions. Let $\ve{a}_1, \dotsc, \ve{a}_n$ be a basis for $V$. For each $1 \leq i \leq n$, define $$\phi_i(c_1 \ve{a}_1 + \dotsb +  c_n \ve{a}_n) = c_i.$$ We have that the $\phi_i$'s are basis vectors of $\mathcal{L}^1(V)$.
+    </p><hr>
+
+    <p>In particular, $\mathcal{L}^k(V)$ has $n^k$ dimensions. Let $I$ denote a tuple $(i_1, \dotsc, i_k) \in [n]^k$. Define
+    \begin{align*}
+        \phi_I(\ve{v}_1, \cdots, v_k) = \phi_{i_1}(\ve{v}_1) \phi_{i_2}(\ve{v}_2) \dotsm \phi_{i_k}(\ve{v}_k).
+    \end{align*}
+    Then, we have that the $\phi_I$'s are basis vectors of $\mathcal{L}^k(V)$. These are call the <b>elementary $k$-tensors</b>.</p><hr>
+
+    <p><b>Definition.</b> Let $f$ be a $k$-tensor on $V$ and let $g$ be an $\ell$-tensor on $V$. The <b>tensor product</b> $f \otimes g$ is a $k+\ell$ tensor on $V$ defined as follows:
+    \begin{align*}
+        (f \otimes g)(\ve{v}_1, \dotsc, \ve{v}_{k+\ell}) = f(\ve{v}_1, \dotsc, \ve{v}_k) \cdot g(\ve{v}_{k+1}, \dotsc, \ve{v}_{k+\ell}).
+    \end{align*}
+    </p><hr>
+
+    <p><b>Proposition.</b> The tensor product has the following properties:
+    <ul>
+        <li>$f \otimes (g \otimes h) = (f \otimes g) \otimes h$.</li>
+        <li>$(cf) \otimes g = c(f \otimes g) = f \otimes (cg)$ for any real constant $c$.</li>
+        <li>If $f$ and $g$ have the same order:
+        \begin{align*}
+            (f+g)\otimes h &= f\otimes h + g\otimes h, \\
+            h \otimes (f+g) &= h\otimes f + h\otimes g.
+        \end{align*}        
+        </li>
+    </ul>
+    </p><hr>   
+    
+    <p>Note that for $I = (i_1, \dotsc, i_k) \in [n]^k$. The element $k$-tensor $\phi_I$ can be written as:
+    \begin{align*}
+        \phi_I = \phi_{i_1} \otimes \phi_{i_2} \otimes \dotsb \otimes \phi_{i_k}.
+    \end{align*}
+    </p><hr>
+
+    <p><b>Definition.</b> Let $T: V \rightarrow W$ be a linear transformation. We define the <b>pullback</b> (or <b>dual transformation</b>) $T^*: \mathcal{L}^k(W) \rightarrow \mathcal{L}^k(V)$ as follows: 
+    \begin{align*}
+        \big(T^*(f)\big)(\ve{v}_1, \dotsc, \ve{v}_k) =  f(T(\ve{v}_1), \dotsc, T(\ve{v}_k)).
+    \end{align*}
+    </p><hr>
+
+    <p><b>Proposition.</b> The pullback $T^*$ has the following properties:
+    <ul>
+        <li>$T^*$ is linear.</li>
+        <li>$T^*(f \oplus g) = T^*f \oplus T^*g$.</li>
+        <li>If $S: W \rightarrow X$ is a linear transformation, then $(S \circ T)^*(f) = T^*(S^* f).$</li>
+    </ul>
+    </p><hr>
+
+    <h3>8.2 &nbsp; Alternating Tensors</h3>
+
+    <p><b>Definition.</b> Let $f$ be a $k$-tensor on $V$. We say that $f$ is <b>symmetric</b> if
+    \begin{align*}
+        f(\ve{v}_1, \dotsc, \ve{v}_i, \ve{v}_{i+1}, \dotsc, v_k) 
+        &= f(\ve{v}_1, \dotsc, \ve{v}_{i+1}, \ve{v}_{i}, \dotsc, v_k)
+    \end{align*}
+    for all $1 \leq i < k$. We say that $f$ is alternating if
+    \begin{align*}
+        f(\ve{v}_1, \dotsc, \ve{v}_i, \ve{v}_{i+1}, \dotsc, v_k) 
+        &= -f(\ve{v}_1, \dotsc, \ve{v}_{i+1}, \ve{v}_{i}, \dotsc, v_k)
+    \end{align*}
+    for all $1 \leq i < k$.
+    </p><hr>
+
+    <p>Let $\pi$ be a permutation on $[k]$. It follows that, if $f$ is symmetric, then:
+    \begin{align*}
+        f(\ve{v}_{\pi(1)}, \dotsc, \ve{v}_{\pi(k)})
+        = f(\ve{v}_1, \dotsc, \ve{v}_k).
+    \end{align*}
+    If $f$ is alternating, then 
+    \begin{align*}
+        f(\ve{v}_{\pi(1)}, \dotsc, \ve{v}_{\pi(k)})
+        = \sgn(\pi) f(\ve{v}_1, \dotsc, \ve{v}_k).
+    \end{align*}
+    </p><hr>
+
+    <p><b>Definition.</b> Let $\mathcal{A}^k(V)$ denote the set of alternating $k$-tensors on $V$. We have that $\mathcal{A}^k(V)$ is a linear subspace of $\mathcal{L}^k(V)$.</p><hr>
+
+    <p><b>Definition.</b> Given $f \in \mathcal{L}^k(V)$, define $\mathrm{Alt}(f)$ by 
+    \begin{align*}
+        \mathrm{Alt}(f)(\ve{v}_1, \dotsc, \ve{v}_k)
+        = \frac{1}{k!} \sum_{\pi \in \mathfrak{S}_k} \sgn(\pi) \cdot f(\ve{v}_{\pi(1)}, \dotsc, \ve{v}_{\pi(k)}).
+    \end{align*}    
+    </p><hr>
+
+    <p><b>Definition.</b> We have that
+    <ul>
+        <li>If $f \in \mathcal{L}^k(V)$, then $\mathrm{Alt}(f) \in \mathcal{A}^k(V)$.</li>
+        <li>If $g \in \mathcal{A}^k(V)$, then $\mathrm{Alt}(g) \in \mathcal{A}^k(V)$.</li>
+    </ul>
+    </p><hr>
+
+    <p><b>Definition.</b> Given $f \in \mathcal{A}^k(V)$ and $g \in \mathcal{A}^\ell(V)$, define the <b>wedge product</b> $f \wedge g$ as:
+    \begin{align*}
+        f \wedge g = \frac{(k + \ell)!}{k!\ell!} \mathrm{Alt}(f \otimes g).
+    \end{align*}
+    </p><hr>
+
+    <p><b>Proposition.</b> The wedge product satisfies the following properties:
+    <ul>
+        <li>$f \wedge (g \wedge h) = (f \wedge g) \wedge h.$</li>
+        <li>$(cf) \wedge g = c(f \wedge g) = f \wedge (cg).$</li>
+        <li>If $f$ and $g$ have the same order,
+        \begin{align*}
+            (f+g)\wedge h &= f\wedge h + g\wedge h, \\
+            h\wedge(f+g) &= h \wedge f + h \wedge g.
+        \end{align*}
+        </li>
+        <li>If $f$ and $g$ have order $k$ and $\ell$, respectively, then
+        \begin{align*}
+            g \wedge f = (-1)^{k\ell}f \wedge g.
+        \end{align*}
+        </li>
+        <li>If $T: V \rightarrow W$ is a linear transformation, then
+        \begin{align*}
+            T^*(f \wedge g) = T^*f \wedge T^*g.
+        \end{align*}
+        </li>
+    </ul>
+    </p><hr>
+
+    <p><b>Proposition.</b> The set of all 
+    \begin{align*}
+        \phi_{i_1} \wedge \phi_{i_2} \wedge \dotsb \wedge \phi_{i_k}
+    \end{align*}
+    for all $1 \leq i_1 < i_2 < \dotsb < i_k \leq n$ is a basis for $\mathcal{L}^k(V)$ where $V$ is an $n$-dimensional vector space. These tensors are called the <b>elementary alternating $k$-tensors</b>.</p>
+
+    <p>As a result, $\mathcal{A}^k(V)$ has dimension ${n \choose k}$.</p>
+    <hr>    
+
+    <p><b>Proposition.</b> Let $V$ be an $n$-dimensional vector space, and let $\ve{a}_1$, $\dotsc$, $\ve{a}_n$ be a basis for $V$. For each $i \in [n]$, let $\ve{v}_i = \sum_{j=1}^n c_{ij} \ve{a}_j$ be $n$ vectors in $\Real^n$. Let $f \in \mathcal{A}^n(V)$. We have that
+    \begin{align*}
+        f(\ve{v}_1, \dotsc, \ve{v}_n) = \det([c_{ij}]) \cdot f(\ve{a}_1, \dotsc, \ve{a}_n).
+    \end{align*}    
+    </p><hr>
+
+    <p><b>Proposition.</b> Let $I = (i_1, \dotsc, i_k)$ be a stringly ascending $k$-tuple in $[n]^k$. Let $\psi_I = \phi_{i_1} \wedge \phi_{i_2} \wedge \dotsb \wedge \phi_{i_k}$ be an elementary alternating $k$-tensor in $\Real^n$. Given vectors $\ve{x}_1$, $\dotsc$, $\ve{x}_k$ in $\Real^n$. Let $X$ be the matrix $\begin{bmatrix} \ve{x}_1 & \ve{x}_2 & \cdots & \ve{x}_k \end{bmatrix} \in \Real^{n \times k}$. Then,
+    \begin{align*}
+        \psi_I(\ve{x}_1, \dotsc, \ve{x}_k) = \det X_I
+    \end{align*}
+    where $X_I$ denote the $k \times k$ matrix whose rows are rows $i_1$, $i_2$, $\dotsc$, $i_k$ of $X$, in that order.
+    </p><hr>
+
+    <h3>8.3 &nbsp; Tangent Spaces</h3>
+
+    <p><b>Definition.</b> Let $\ve{x} \in \Real^n$. A <b>tangent vector</b> to $\Real^n$ at $\ve{x}$ is a pair $(\ve{x}; \ve{v})$ where $\ve{v} \in \Real^n$.</p><hr>
+
+    <p><b>Definition.</b> The tangent vector to $\Real^n$ at $\ve{x}$ form a vector space through the following operations:
+    \begin{align*}
+        (\ve{x};\ve{v}) + (\ve{x};\ve{w}) &= (\ve{x};\ve{v}+\ve{w}),\\
+        c(\ve{x};\ve{v}) &= (\ve{x};c\ve{v}).
+    \end{align*}
+    The space is called the <b>tangent space</b>, and it is denoted by $\mathcal{T}_\ve{x}(\Real^n)$.
+    </p><hr>
+
+    <p>The above defintion is the easy-to-understand version found in undergrad textbooks such as Munkres's Analysis on Manifold and Spivak's <a href="https://www.amazon.com/Calculus-Manifolds-Approach-Classical-Theorems/dp/0805390219">Calculus on Manifolds</a>. However, there's another version that is used in more advanced courses. We'll use it here.</p><hr>
+
+    <p><b>Definition.</b> If $f: \Real^n \rightarrow \Real$ is $C^\infty$ in a neighborhood of $\ve{p}$ in $\Real^n$. Let $\ve{v} = (v^1, v^2, \dotsc, v^n)$ be a tangent vector at $\ve{p}$. The <b>directional derivative</b> of $f$ at $\ve{p}$ is defined to be
+    \begin{align*}
+        \lim_{t \rightarrow} \frac{f(\ve{p} + \ve{v}t) - f(\ve{p})}{t} = \frac{\dee}{\dee t}\bigg|_{t=0} f(\ve{p} + \ve{v} t) = \sum_{i=1}^n v^i \frac{\partial f}{\partial x^i}\bigg|_{\ve{p}} = (Df(\ve{p}))\ve{v}.    
+    \end{align*}
+    We denote this number by $D_{\ve{p};\ve{v}} f$. If it is clear what $\ve{p}$ is from context, we will just write $D_\ve{v} f$. Now, $D_{\ve{p};\ve{v}}$ can be thought of as an operator, and we write:
+    \begin{align*}
+        D_{\ve{p};\ve{v}} = \sum_{i=1}^n v^i \frac{\partial}{\partial x^i}\bigg|_{\ve{p}}.
+    \end{align*}
+    </p><hr>
+
+    <p><b>Definition.</b> Let $\ve{p} \in \Real^n$. Consider the set of pairs $(f,U)$ where $f: \Real^n \rightarrow \Real$ is a $C^\infty$ function, and $U$ is a neighborhood of $\ve{p}$. We say that $(f,U)$ is equivalent to $(g,V)$ if there exists an open set $W \subseteq U \cup V$ containing $\ve{p}$ such that $f = g$ when restricted to $U$. The set of equivalent classes of $(f,U)$ is called the <b>germ</b> of $f$ at $\ve{p}$. We denote the set of all germs of $C^\infty$ real-valued functions at $\ve{p}$ by $C^\infty_{\ve{p}}(\Real^n)$ or just $C^\infty_\ve{p}$.</p><hr>
+
+    <p>The directional derivative operator $D_{\ve{p};\ve{v}}$ can be viewed as a function with signature:
+    \begin{align*}
+        D_{\ve{p};\ve{v}}: C^\infty_{\ve{p}} \rightarrow \Real.
+    \end{align*}
+    It satisfies the Leibniz rule:
+    \begin{align*}
+        D_{\ve{p};\ve{v}}(fg) = (D_{\ve{p};\ve{v}} f) g(\ve{p}) + f(\ve{p}) D_{\ve{p};\ve{v}} g.
+    \end{align*}
+    </p><hr>
+
+    <p><b>Definition.</b> Any linear map $D: C^\infty_{\ve{p}} \rightarrow \Real$ satisfying the Liebneiz rule is called the <b>derivation at $\ve{p}$</b> or a <b>point-derivation</b> of $C^\infty_{\ve{p}}$.</p>
+
+    <p>Denote the set of all derivations at $\ve{p}$ by $\mathcal{D}_p(\Real^n)$. We have this set is a real vector space.</p>
+    <hr>
+
+    <p>The directional derivatives at $\ve{p}$ are derivations at $\ve{p}$. So, there exists a map:
+    \begin{align*}
+        \phi: \mathcal{T}_\ve{p}(\Real^n) &\rightarrow \mathcal{D}_{\ve{p}}(\Real^n) \\
+        \ve{v} & \mapsto D_{\ve{p};\ve{v}} = \sum_{i=1}^n v^i \frac{\partial}{\partial x^i}\bigg|_{\ve{p}}.
+    \end{align*}
+    I can be shown that this map is in fact an isomorphism between $\mathcal{T}_\ve{p}(\Real^n)$ and $\mathcal{D}_\ve{p}(\Real^n).$</p><hr>
+
+    <p>The standard basis of $(\ve{p};\ve{e}_1)$, $(\ve{p};\ve{e}_2)$, $\dotsc$, $(\ve{p};\ve{e}_n)$ of $\mathcal{T}_{\ve{p}}(\Real^n)$ would correspond to the $\partial/\partial x^1|_{\ve{p}}$, $\partial/\partial x^2|_{\ve{p}}$, $\dotsc$, $\partial/\partial x^n|_{\ve{p}}$. From now on, we will make this identification, and we will write a tangent vector $(\ve{p};\ve{v}) = \big(\ve{p};(v^1, v^2, \dotsc, v^n)\big)$ as:
+    \begin{align*}
+        (\ve{p};\ve{v}) = \sum_{i=1}^n v^i \frac{\partial}{\partial x^i}\bigg|_{\ve{p}}.
+    \end{align*}
+    </p><hr>
+
+    <p><b>Definition.</b> Let $A$ be open in $\Real^k$ or $\mathbb{H}^k$. Let $\ve{g}: A \rightarrow \Real^n$ be of class $C^r$. Let $\ve{x} \in A$, and let $\ve{y} = \ve{g}(\ve{x})$. The <b>pushforward</b> of $\ve{g}$, denoted by $\ve{g}_*$, is a map
+    \begin{align*}
+        g_*: \mathcal{T}_{\ve{x}}(\Real^k) \rightarrow \mathcal{T}_{\ve{y}}(\Real^n)
+    \end{align*}
+    defined by:
+    \begin{align*}
+        \ve{g}_*(\ve{x};\ve{v}) = (\ve{y};D\ve{g}(\ve{x})\ \ve{v}).
+    \end{align*}
+    In other words,
+    \begin{align*}
+        \ve{g}_*\bigg( \sum_{j=1}^k v^j \frac{\partial}{\partial x^j}\bigg|_{\ve{x}} \bigg)
+        = \sum_{i=1}^n \bigg( \sum_{j=1}^k v^j \frac{\partial g_i}{\partial x^j}\bigg|_{\ve{x}}  \bigg) \frac{\partial}{\partial y^i}\bigg|_{\ve{y}}.
+    \end{align*}
+    </p><hr>
+
+    <p><b>Definition.</b> The $M$ be a $k$-manifold of class $C^r$ in $\Real^n$. If $\ve{y} \in M$, choose a coordinate patch $\ve{g}: U \rightarrow V$ about $\ve{y}$, where $U$ is open in $\Real^k$ or $\mathbb{H}^k$. Let $\ve{x}$ be a point in $U$ such that $\ve{g}(\ve{x}) = \ve{y}$. The set of all vectors for the form $\ve{g}^*(\ve{x};\ve{v})$ where $\ve{v}$ is a vector in $\Real^k$, is called the <b>tangent space of $M$ at $\ve{y}$</b> and is denoted by $\mathcal{T}_{\ve{y}}(M)$. In other words,
+    \begin{align*}
+        \mathcal{T}_{\ve{y}}(M) = \ve{g}_*(\mathcal{T}_\ve{x}(\Real^k)).
+    \end{align*}
+    </p><hr>
+
+    <p>Because $\mathcal{T}_{\ve{x}}(\Real^k)$ is spanned by $\partial/\partial x^1|_\ve{x}$, $\dotsc$, $\partial/\partial x^k|_\ve{x}$, we have that $\mathcal{T}_{\ve{y}}(M)$ is spanned by:
+    \begin{align*}
+    \ve{g}^*\bigg( \frac{\partial}{\partial x^1}\bigg|_{\ve{x}} \bigg) 
+    &= \sum_{i=1}^n \frac{\partial g_i}{\partial x^1} \bigg|_{\ve{x}} \frac{\partial}{\partial y^i}\bigg|_{\ve{y}} \\
+    \ve{g}^*\bigg( \frac{\partial}{\partial x^2}\bigg|_{\ve{x}} \bigg) 
+    &= \sum_{i=1}^n \frac{\partial g_i}{\partial x^2} \bigg|_{\ve{x}} \frac{\partial}{\partial y^i}\bigg|_{\ve{y}} \\
+    &\vdots \\
+    \ve{g}^*\bigg( \frac{\partial}{\partial x^k}\bigg|_{\ve{x}} \bigg) 
+    &= \sum_{i=1}^n \frac{\partial g_i}{\partial x^k} \bigg|_{\ve{x}} \frac{\partial}{\partial y^i}\bigg|_{\ve{y}}.
+    \end{align*}
+    </p><hr>
+
+    <p><b>Definition.</b> The union of the tangent spaces $\mathcal{T}_{\ve{p}}(M)$ for all $\ve{p} \in M$ is called the <b>tangent bundle</b> of $M$, which is denoted by $\mathcal{T}(M)$.</p><hr>
+
+    <h3>8.4 &nbsp; Tangent Vector Fields</h3>
+
+    <p><b>Definition.</b> Let $U$ be a subset of $\Real^n$. A <b>tangent vector field</b> on $U$ is a function $F$ that assigns for each point $\ve{x} \in U$ a vector in $\mathcal{T}_\ve{x}(\Real^n)$. Let us denote $F(\ve{p})$ also by $F_\ve{p}$.</p><hr>
+
+    <p>Because $\mathcal{T}_\ve{x}(\Real^n)$ is spanned by $\partial_1|_\ve{x}$, $\partial_2|_\ve{x}$, $\dotsc$, $\partial_n|_\ve{x}$, we have that $F_{\ve{x}}$ can be written as:
+    \begin{align*}
+    F_{\ve{x}} = \sum_{i=1}^n f_i(\ve{x}) \partial_i|_\ve{x}
+    \end{align*}
+    for some real-valued functions $f_1$, $f_2$, $\dotsc$, $f_n$. These are called the <b>component functions</b> of $F$.
+    </p>
+    <hr>
+
+    <p><b>Definition.</b> We say that the tangent vector field $V$ is $C^r$ on $U$ of all its component functions are $C^r$ in $U$.</p><hr>    
+
+    <p>If $F$ is a $C^\infty$ tangent vector field in $U \subseteq \Real^n$ and $g$ is a $C^\infty$ real-valued function on $U$. We can define a new function $F g$ on $U$ by
+    \begin{align*}
+        (F g)(\ve{x}) = F_{\ve{x}} g.
+    \end{align*}
+    Writing $F = \sum_{i=1}^n f_i(\ve{x}) \partial/\partial x^i|_\ve{x}$, we have that
+    \begin{align*}
+        (F g)(\ve{x})
+        &= \bigg( \sum_{i=1}^n f_i(\ve{x}) \frac{\partial}{\partial x^i}\bigg|_{\ve{x}}\bigg)\ g
+        = \sum_{i=1}^n f_i(\ve{x}) \frac{\partial g}{\partial x^i}\bigg|_{\ve{x}}.
+    \end{align*}
+    </p><hr>
+
+    <p><b>Proposition.</b> If $F$ is a $C^\infty$ tangent vector field and $g$ and $h$ are $C^\infty$ real-valued function on an open set $U \subseteq \Real^n$, then
+    \begin{align*}
+        F(gh) = (Fg)h + g(Fh).
+    \end{align*}
+    </p><hr>
+
+    <p><b>Definition.</b> A <b>tangent vector field</b> to a manifold $M$ is a function $F: M \rightarrow \mathcal{T}(M)$ such that $F(\ve{p}) \in \mathcal{T}_{\ve{p}}(M)$ for each $\ve{p} \in M$.</p><hr>
+
+    <h3>8.5 &nbsp; Differential Forms</h3>
+
+    <p><b>Definition.</b>
+    Let $U$ be a subset of $\Real^n$. A <b>$k$-tensor field</b> on $U$ is a function $\omega$, assigning to each $\ve{x} \in U$, a $k$-tensor defined on $\mathcal{T}_\ve{x}(\Real^n)$.</p><hr>    
+
+    <p><b>Definition.</b> If a $k$-tensor field $\omega$ is such that $\omega(\ve{x})$ is an alternating tensor in $\mathcal{A}^k(\mathcal{T}_{\ve{x}}(\Real^n))$, then we call it a <b>differential $k$-form</b> on $U$.</p><hr>
+
+    <p>Note that $\mathcal{A}^1(\mathcal{T}_\ve{x}(\Real^n))$ is the same as $\mathcal{L}^1(\mathcal{T}_\ve{x}(\Real^n))$. It has a canonical basis corresponding to the canonical basis $\partial/\partial x^1|_\ve{x}$, $\partial/\partial x^2|_\ve{x}$, $\dotsc$, $\partial/\partial x^n|_\ve{x}$ of $\mathcal{T}_\ve{x}(\Real^n)$. The elements of the basis functions $\phi_1$, $\phi_2$, $\dotsc$, $\phi_n$ where
+    \begin{align*}
+        \phi_i \bigg( c_1 \frac{\partial}{\partial x^1}\bigg|_{\ve{x}} + c_2 \frac{\partial}{\partial x^2}\bigg|_{\ve{x}} + \dotsb + c_n \frac{\partial}{\partial x^n}\bigg|_{\ve{x}} \bigg) = c_i
+    \end{align*}
+    for all $i \in [n]$. Hence, $\mathcal{A}^k(\mathcal{T}_\ve{x}(\Real^n))$ is spanned by  $\{\phi_I\}$ where $\phi_I = \phi_{i_1} \wedge \phi_{i_2} \wedge \dotsb \wedge \phi_{i_k}$, and $I$ is any $k$-tuple $(i_1, i_2, \dotsc, i_k) \in [n]^k$ with $i_1 < i_2 < \dotsb < i_k$.</p>
+
+    <p>As a result, any $k$-form $\alpha$ can be written as
+    \begin{align*}
+        \alpha(\ve{x}) = \sum_I \alpha_I(\ve{x})\, \phi_I
+    \end{align*}
+    where $\alpha_I: \Real^n \rightarrow \Real$ is a real-valued function.
+    </p><hr>
+
+    <p>The wedge production on this definition of differential forms is defined the same way as we have done it before. Just that, when we apply a wedge product on alternating tensors, it becomes the wedge product as defined on alternating tensors.</p><hr>
+
+    <p><b>Definition.</b> Let $U$ be an subset of $\Real^k$ and $V$ be a subset of $\Real^n$.  Let $\ve{g}: U \rightarrow V$ be a diffeomorphism. The <b>pullback</b> of $\ve{g}$, denoted by $\ve{g}^*$, is a map that sends, for each $\ve{x} \in U$, a $k$-tensor $f \in \mathcal{L}^k(\mathcal{T}_{\ve{g}(\ve{x})}(\Real^n))$ to another $k$-tensor in $\mathcal{L}^k(\mathcal{T}_\ve{x}(\Real^k))$. It is defined as follows:
+    \begin{align*}
+        \big( \ve{g}^* f \big) (\ve{v}_1, \ve{v}_2, \dotsc, \ve{v}_k)
+        &= f( D\ve{g}\, \ve{v}_1, D\ve{g}\, \ve{v}_2, \dotsc, D\ve{g}\, \ve{v}_k).
+    \end{align*}
+    When a pullback acts on a $k$-tensor field $\alpha(\ve{y}) = \sum_I \alpha_I(\ve{y})\, \phi_I$ on $V$, we have that
+    \begin{align*}
+        \ve{g^*}(\alpha(\ve{y}))
+        &= \sum_I \alpha_I(\ve{g}(\ve{x}))\, \ve{g}^*(\phi_I)
+    \end{align*}
+    where $\ve{x} = \ve{g}^{-1}(\ve{y})$. Note that all the properties we have studied about the pullbacks before still apply to this definition of the pullback.
+    </p><hr>
+
+    <p><b>Definition.</b> A <b>differential 0-form</b> on $U \subseteq \Real^n$ is a function $\Real^n \rightarrow \Real$. (Consistent with what we have defined before.)</p><hr>
+
+    <p><b>Definition.</b> Let $U$ be open in $\Real^n$. Let $f$ be a function of class $C^r$. We define a $1$-form $\dee f$ on $U$ by the formula:
+    \begin{align*}
+        (\dee f(\ve{x}))( \ve{x}; \ve{v} )
+        = \big(Df(\ve{x})\big)\, \ve{v}
+        = D_{\ve{x};\ve{v}} f.
+    \end{align*}
+    In other words, $\dee$ turns $f$ to its directional derivative function.
+    </p><hr>
+
+    <p>For $i \in [n]$, let $\xi_i(\ve{x}) = x^i$ denote the function that projects the point $\ve{x}$ to its $i$th coordinate. We have that
+    \begin{align*}
+        \dee \xi_i \bigg( c_1 \frac{\partial}{\partial x^1}\bigg|_{\ve{x}} + \dotsb + c_n \frac{\partial}{\partial x^n}\bigg|_{\ve{x}} \bigg) 
+        = (D\xi_i) \begin{bmatrix} c_1 \\ \vdots \\ c_n \end{bmatrix}
+        = \ve{e}_i^T \begin{bmatrix} c_1 \\ \vdots \\ c_n \end{bmatrix}
+        = c_i.
+    \end{align*}
+    Hence,
+    \begin{align*}
+        \dee \xi_i = \phi_i.
+    \end{align*}
+    So, $\{\dee \xi_i\}$ forms the canonical basis of $\mathcal{A}^1(\mathcal{T}_{\ve{x}}(\Real^n))$ for any $\ve{x}$. It is common to denote $\dee \xi_i$ with $\dee x^i$. So, now we know what the differential symbols mean.</p><hr>
+
+    <p>Note that the differential operator is linear on the real-valued functions (i.e., 0-forms). Moreover, we have that
+    \begin{align*}
+        (\dee f)(\ve{x})
+        &= (D_{\ve{x};\ve{e}_1}f)\,\dee x^1 + (D_{\ve{x};\ve{e}_2}f)\,\dee x^2 + \dotsb + (D_{\ve{x};\ve{e}_n}f)\,\dee x^n \\
+        &= \frac{\partial f}{\partial x^1}\bigg|_{\ve{x}}\,\dee x^1
+        + \frac{\partial f}{\partial x^2}\bigg|_{\ve{x}}\,\dee x^2
+        + \dotsb
+        + \frac{\partial f}{\partial x^n}\bigg|_{\ve{x}}\,\dee x^n.
+    \end{align*}
+    </p><hr>
+
+    <p><b>Definition.</b> Let $U$ be an open set in $\Real^n$. Let $\Omega^k(U)$ denote the set of all $k$-forms on $U$ (of class $C^\infty$).</p>
+
+    <p>We have that $\Omega^k(U)$ is a vector space.</p>
+    <hr>
+
+    <p>Now, we extend the operation of the differential operator $d$ to differntial forms of higher order.</p>
+    
+    <p><b>Definition.</b> For any $k \geq 1$, we can view $\dee$ as a function with signature $\Omega^{k}(U) \rightarrow \Omega^{k+1}(U)$, and its action is given as follows. Let $\alpha = \sum_I \alpha_I\, \dee x^I \in \Omega^{k}(U)$ where each $\alpha_I$ is a 0-form. Then,
+    \begin{align*}
+        \dee \alpha = \sum_{I} (\dee \alpha_I) \wedge \dee x^I.
+    \end{align*}
+    </p>
+
+    <p>This definition satisfies all the properties of the differential operators we have discussed before.</p>
+    <hr>
+
+    <h2>9 &nbsp; Volume Forms</h2>
+
+    <p><b>Definition.</b> Let $S$ be a bounded set in $\Real^n$. If the constant function $1$ is integrable of $S$, we define the $n$-dimensional <b>volume</b> of $S$, denoted by $v(S)$, to be 
+    \begin{align*}
+        v(S) = \idotsint_{S} 1\, \dee x^1 \dee x^2 \dotsc \dee x^n.
+    \end{align*}
+    The integral above is the normal multidimensional Riemann integral.
+    </p><hr>
+
+    <p><b>Definition.</b> Let $\ve{a}_1$, $\ve{a}_2$, $\dotsc$, $\ve{a}_k$ be vectors in $\Real^n$, the <b>parallelopiped</b> $\mathcal{P}(\ve{a}_1, \dotsc, \ve{a}_k)$ is defined as the set:
+    \begin{align*}
+        \mathcal{P}(\ve{a}_1, \dotsc, \ve{a}_k)
+        = \{ c_1 \ve{a}_1 + \dotsb + c_k \ve{a}_k : c_i \in [0,1] \}.
+    \end{align*}
+    </p><hr>
+
+    <p><b>Theorem.</b> Let $\ve{a}_1$, $\ve{a}_2$, $\dotsc$, $\ve{a}_n$ be vectors in $\Real^n$ Let $A$ be the $n \times n$ matrix $\begin{bmatrix} \ve{a}_1 & \cdots & \ve{a}_n \end{bmatrix}$. Then,
+    \begin{align*}
+        v\big(\mathcal{P}(\ve{a}_1, \ve{a}_2, \dotsc, \ve{a}_n)\big) = |\det A|.
+    \end{align*}
+    </p><hr>
+
+    <p><b>Definition.</b> The unique tensor $\omega_v$ in $\mathcal{A}^n(\Real^n)$ such that $\omega_v(\ve{a}_1, \dotsc, \ve{a}_n) = 1$ for any positively-oriented orthonormal basis $\ve{a}_1, \dotsc, \ve{a}_n$ of $\Real^n$ is called the <b>volume element</b> of $\Real^n$.</p><hr>
+
+    <p>If follows that
+    \begin{align*}
+        \omega_v(\ve{a}_1, \ve{a}_2, \dotsc, \ve{a}_n) = \det A = \pm v\big(\mathcal{P}(\ve{a}_1, \ve{a}_2, \dotsc, \ve{a}_n)\big)
+    \end{align*}
+    where the sign of the RHS is the orientation of $(\ve{a}_1, \ve{a}_2, \dotsc, \ve{a}_n)$.
+    </p><hr>
+
+    <p>It can be shown that $\phi_1 \wedge \phi_2 \wedge \dotsb \wedge \phi_n$ is the volume element. Here, $\{ \phi_i \}$ is the canonical basis of $\mathcal{A}^1(\Real^n)$. The $n$-form $\dee x^1 \wedge \dotsb \wedge \dee x^n$ corresponds to the volume element and so is called the <b>volume form</b> of $\Real^n$.</p><hr>
+
+    <p>Note that, if $k < n$, we have that $v(\mathcal{P}(\ve{a}_1, \dotsc, \ve{a}_k)) = 0$ because $\mathcal{P}(\ve{a}_1, \dotsc, \ve{a}_k)$ would be a set of measure zero. However, we actually want to define some notion of volume of a $k$-sided parallelopiped $\mathcal{P}(\ve{a}_1, \dotsc, \ve{a}_k)$ because it will be useful in defining things like arc length, area, and the measure associated with them.</p><hr>
+
+    <p><b></b></p>
+
+    <p><b>Theorem.</b> There is a unique function $V$ that assigns, for each $k$-tuple $(\ve{x}_1, \ve{x}_2, \dotsc, \ve{x}_n)$ of elements of $\Real^n$, a non-negative number such that:
+    <ul>
+        <li>If $h: \Real^n \rightarrow \Real^n$ is an orthogonal linear transformation, then
+        \begin{align*}
+            V(h(\ve{x}_1), \dotsc, h(\ve{x}_k)) = V(\ve{x}_1, \dotsc, \ve{x}_k).
+        \end{align*}
+        </li>
+
+        <li>If $\ve{y}_1, \dotsc, \ve{y}_k$ belongs to the subspace $\Real^k \times {0}^{n-k}$ of $\Real^n$, so that
+        \begin{align*}
+            \ve{y}_i = \begin{bmatrix} \ve{z}_i \\ \ve{0} \end{bmatrix}
+        \end{align*}
+        where $\ve{z}_i \in \Real^k$, then
+        \begin{align*}
+            V(\ve{y}_1, \dotsc, \ve{y}_k) = |\det \begin{bmatrix} \ve{z}_1 & \cdots & \ve{z}_k \end{bmatrix}|
+        \end{align*}
+        </li>
+
+        <li>The function $V$ vanishes if and only if the vectors $\ve{x}_1$, $\ve{x}_2$, $\dotsc$, $\ve{x}_k$ are linearly dependent.</li>
+    </ul>
+    The function is given by
+    \begin{align*}
+        V(\ve{x}_1, \dotsc, \ve{x}_k) = \sqrt{\det(X^T X)}.
+    \end{align*}
+    where $X$ is the $n \times k$ matrix $\begin{bmatrix} \ve{x}_1 & \cdots & \ve{x}_k \end{bmatrix}$.
+    </p><hr>
+
+    <p>Here's another way to describe $V$:
+    \begin{align*}
+    V(\ve{x}_1, \dotsc, \ve{x}_k) 
+    = \left( \det \begin{bmatrix} 
+        (\ve{v}_1,\ve{v}_1) & (\ve{v}_1,\ve{v}_2) & \cdots & (\ve{v}_1,\ve{v}_k) \\
+        (\ve{v}_2,\ve{v}_1) & (\ve{v}_2,\ve{v}_2) & \cdots & (\ve{v}_2,\ve{v}_k) \\
+        \vdots & \vdots & \ddots & \vdots \\
+        (\ve{v}_k,\ve{v}_1) & (\ve{v}_k,\ve{v}_2) & \cdots & (\ve{v}_k,\ve{v}_k).
+    \end{bmatrix} \right)^{1/2}
+    \end{align*}
+    Here, $(\ve{x},\ve{y})$ denote the dot product in $\Real^n$.
+    </p><hr>
+
+    <p>In fact, the above characterization of $V$ can be extends to work with an inner product.</p><hr>
+
+    <p><b>Definition.</b> We say that a 2-tensor $f$ on a vector space $W$ is <b>positive definite</b> if $f(\ve{v},\ve{v}) > 0$ for all $\ve{v} \neq \ve{0}$.</p><hr>
+
+    <p><b>Definition.</b> An <b>inner product</b> on a vector space $W$ is a symmetric 2-tensor on $W$ that is positive definite. (That is, it is a <a href="https://www.youtube.com/watch?v=zFnPJD6lyD0">positive definite symmetric bilinear form</a>.)</p>
+
+    <p>We usually denote an inner product with the symbol $\langle \cdot, \cdot \rangle$.</p>
+    <hr>
+
+    <p><b>Theorem.</b> Let $W$ be an $n$-dimensional vector space with an inner product $\langle \cdot, \cdot \rangle$. The function $V(\ve{x}_1, \dotsc, \ve{x}_k)$ of $k$-tuples of vectors of $W$ given by
+    \begin{align*}
+    V(\ve{x}_1, \dotsc, \ve{x}_k) 
+    = \left( \det \begin{bmatrix} 
+        \langle \ve{v}_1,\ve{v}_1 \rangle & \langle \ve{v}_1,\ve{v}_2 \rangle & \cdots & \langle \ve{v}_1,\ve{v}_k) \\
+        \langle \ve{v}_2,\ve{v}_1 \rangle & \langle  \ve{v}_2,\ve{v}_2 \rangle & \cdots & \langle \ve{v}_2,\ve{v}_k) \\
+        \vdots & \vdots & \ddots & \vdots \\
+        \langle \ve{v}_k,\ve{v}_1 \rangle & \langle \ve{v}_k,\ve{v}_2 \rangle & \cdots & \langle \ve{v}_k,\ve{v}_k \rangle.
+    \end{bmatrix} \right)^{1/2}
+    \end{align*}
+    is the unique function such that:
+    <ul>
+        <li>Exchanging $\ve{x}_i$ with $\ve{x}_j$ does not change $V$.</li>
+
+        <li>For $i \neq j$, replacing $\ve{x}_i$ by $\ve{x}_i + c\ve{x}_j$ does not change $V$.</li>
+
+        <li>Replacing $\ve{x}_i$ by $\lambda \ve{x}_i$ multiplies the valuie of $V$ by $|\lambda|$.</li>
+
+        <li>If $\ve{x}_1, \dotsc, \ve{x}_k$ are orthonormal (according to the dot product), then $V(\ve{x}_1, \dotsc, \ve{x}_k) = 1$.</li>
+    </ul>
+    As a result, it makes sense to use $V$ as a volume function for parallelopiped in $W$.
+    </p>
+    <hr>
+
+    <p><b>Definition.</b> Let $\ve{v}_1$, $\ve{v}_2$, $\dotsc$, $\ve{v}_{n-1}$ be elements of $\Real^n$. Define $\varphi(\ve{v})$ as
+    \begin{align*}
+        \varphi(\ve{v}) = \det \begin{bmatrix} 
+            \ve{v}_1 & \ve{v}_2 & \cdots & \ve{v}_{n-1} & \ve{v}
+        \end{bmatrix}.
+    \end{align*}
+    Then, $\varphi \in \mathcal{L}^1(\Real^n)$. If follows that there is a unique $\ve{z} \in \Real^n$ such that
+    \begin{align*}
+        \ve{z} \cdot \ve{v} = \varphi(\ve{v}).
+    \end{align*}
+    Then, $\ve{z}$ is called the <b>cross product</b> of $\ve{v}_1$, $\ve{v}_2$, $\dotsc$, $\ve{v}_{n-1}$, and it is denoted by $\ve{v}_1 \times \ve{v}_2 \times \dotsb \times \ve{v}_{n-1}$.
+    </p><hr>
+
+    <p><b>Definition.</b> An manifold $M$ in that is equipped with an inner product $g_\ve{p}(\cdot, \cdot)$ on $\mathcal{T}_{\ve{p}}(M)$ for each point $\ve{p} \in M$ is called a <b>Riemannian manifold</b>.</p>
+
+    <p>It is common to require that $g_\ve{p}$ be a smooth function with respect to $\ve{p}$.</p><hr>
+
+    <p><b>Definition.</b> The <b>Riemannian volume form</b> of a $k$-manifold $M$ is the $k$-form $\omega_v$, defined on the local coordinates, given by
+    \begin{align*}
+    \omega_v(\ve{x}) 
+    &= \sqrt{\det G_\ve{x} } \, \dee x^1 \wedge \dee x^2 \wedge \dotsb \wedge \dee x^k    
+    \end{align*}
+    where $G_\ve{x}$ is the matrix whose $(i,j)$-entry is given by:
+    \begin{align*}
+    G_\ve{x}[i,j] = \langle \alpha_*(\partial_i|_\ve{x}) , \alpha_*(\partial_j|_\ve{x}) \rangle_{\alpha(\ve{x})}
+    \end{align*}
+    where $\alpha$ is a coordinate patch around $\ve{x}$, and $\alpha_*$ is the associated pushforward.
+    </p><hr>
+
+    <p>Note that, in the definition above, $\sqrt{\det G_\ve{x} }$ is the volume of the parallelopiped $\alpha_*\big(\mathcal{P}(\partial_1|_{\ve{x}}, \partial_2|_{\ve{x}}, \dotsc, \partial_k|_{\ve{x}} ))$ according to the inner product $g_{\alpha(\ve{x})}$.</p><hr>
+
+    <p>A common case is that $M$ is a $k$-manifold in $\Real^n$. In this case, $g_\ve{p}$ would be the dot product in $\Real^n$.</p><hr>
+
+    <p><b>Definition.</b> Let $M$ be a compact oriented $k$-manifold in $\Real^n$. Let $f: M \rightarrow \Real$ be a continuous function. Let $C = \mathrm{Support}\ f$, then $C$ is compact. Suppose there is a coordinate patch $\alpha: U \rightarrow V$ on $M$ in the positivfe orientation such that $C \subseteq V$. Define the <b>integral of $f$ over $M$</b> by the equation
+    \begin{align*}
+        \int_{M} f\, \dee V = \int_{\mathrm{Int}\ U} (f \circ \alpha)(\ve{x}) \sqrt{\det G_\ve{x}}\, \dee x^1 \wedge \dee x^2 \wedge \dotsb \wedge \dee x^k.
+    \end{align*}
+    Here, the entries of the matrix $G_\ve{x}$ is computed using the dot product in $\Real^n$. The symbol $\dee V$ is called the <b>volume measure</b> of $M$.
+    </p><hr>
+
+    <p>If $f$ is not covered by a single patch, we can apply the trick of using a partition of unity to split it so that each part is compactly supported and covered by a single patch. In this way, we can define $\int_M f\, \dee V$ without relying on a specific patch.</p><hr>
+
+    <p>Note that another way to do define the integral would be to find a form $\omega$ in $\Real^n$ such that the pullback $\alpha^* \omega$ equals the Reimannian volume measure. In this way, we can define
+    \begin{align*}
+        \int_M f\, \dee V = \int_M f\, \omega = \int_{\mathrm{Int}\ U} (f \circ \alpha)\, a^*\omega 
+        = \int_{\mathrm{Int}\ U} (f \circ \alpha)(\ve{x}) \sqrt{\det G_\ve{x}}\, \dee x^1 \wedge \dee x^2 \wedge \dotsb \wedge \dee x^k.
+    \end{align*}
+    </p><hr>
+
+    <p>When $M$ is a 1-manifold (i.e., an arc), we have that its volume measure is called the <b>arc length measure</b> and is denoted by $\dee s$.</p> Consider an arc $M$ defined by the following function:
+    \begin{align*}
+        \ve{f}: [a,b] &\rightarrow \Real^n \\
+        t &\mapsto (f_1(t), f_2(t), \dotsc, f_n(t)).
+    \end{align*}
+    We have that
+    \begin{align*}
+        \ve{f}_*\bigg( \frac{\partial}{\partial t} \bigg).
+    \end{align*}
+    For any $t_0 \in [a,b]$, we have that
+    \begin{align*}
+        \ve{f}_* \bigg( \frac{\partial}{\partial t}\bigg|_{t_0} \bigg) = \bigg( \frac{\partial f_1}{\partial t}\bigg|_{t_0}, \frac{\partial f_2}{\partial t}\bigg|_{t_0}, \dotsc, \frac{\partial f_n}{\partial t}\bigg|_{t_0} \bigg).
+    \end{align*}
+    So, the matrix $G_{t_0}$ has one entry, which is equal to
+    \begin{align*}
+        \ve{f}_*\bigg( \frac{\partial}{\partial t} \bigg) \cdot \ve{f}_*\bigg( \frac{\partial}{\partial t} \bigg)
+        &= \bigg( \frac{\partial f_1}{\partial t}\bigg|_{t_0} \bigg)^2 + \bigg( \frac{\partial f_2}{\partial t}\bigg|_{t_0} \bigg)^2 + \dotsb + \bigg( \frac{\partial f_n}{\partial t}\bigg|_{t_0} \bigg)^2 \\
+        &= \bigg\| \frac{\partial \ve{f}}{\partial t}\bigg|_{t_0} \bigg\|^2.
+    \end{align*}
+    Hence, the Riemannian volume tensor is given by:
+    \begin{align*}
+        \sqrt{\bigg\| \frac{\partial \ve{f}}{\partial t} \bigg\|^2}\, \dee t
+        = \bigg\| \frac{\partial \ve{f}}{\partial t} \bigg\|\, \dee t
+    \end{align*}
+    As a result, the integral of any continuous scalar function $g: \Real^n \rightarrow \Real$ on the arc according to the arc lenght measure is given by:
+    \begin{align*}
+        \int_M g\, \dee s = \int_a^b g(\ve{f}(t)) \bigg\| \frac{\partial \ve{f}}{\partial t} \bigg\|\, \dee t.        
+    \end{align*}
+    We thus may say:
+    \begin{align*}
+        \dee s = \bigg\| \frac{\partial \ve{f}}{\partial t} \bigg\|\, \dee t.
+    \end{align*}
+    <hr>
+
+    <p>When $M$ is a 2-manifold, its volume measure is called the <b>area measure</b> and is denoted by $\dee A$.</p>
+
+    <p>Let $M$ be a manifold generated by a function $\ve{f}: U \rightarrow \Real^n$ where $U$ is an open subset of $\Real^2$. Let us denote the coordinates of $U$ by $(x^1, x^2)$ and the coordinates of $\Real^n$ by $(y^1, y^2, \dots y^n)$. Let
+    \begin{align*}
+        \ve{f}_i = \ve{f}_i(\ve{x}) = \begin{bmatrix} \frac{\partial f_1}{\partial x^i}\bigg|_{\ve{x}} \\ \vdots \\ \frac{\partial f_n}{\partial x^i}\bigg|_{\ve{x}} \end{bmatrix}
+    \end{align*}
+    for $i = 1,2$. We have that
+    \begin{align*}
+        \det G_\ve{x} = \det \begin{bmatrix}
+            \ve{f}_1 \cdot \ve{f}_1 & \ve{f}_1 \cdot \ve{f}_2 \\
+            \ve{f}_2 \cdot \ve{f}_1 & \ve{f}_2 \cdot \ve{f}_2.
+        \end{bmatrix}
+        = E G - F^2
+    \end{align*}
+    where $E = \ve{f}_1 \cdot \ve{f}_1$, $F = \ve{f}_1 \cdot \ve{f}_2$, and $G = \ve{f}_2 \cdot \ve{f}_2$. Hence, the integral of a scalar function $g$ over $M$ is given by:
+    \begin{align*}
+        \int_M g\, \dee A
+        = \int_{U} g(\ve{f}(t)) \sqrt{EG - F^2}\, \dee x^1 \wedge \dee x^2.
+    \end{align*}
+    So, we may say
+    \begin{align*}
+        \dee A = \sqrt{EG - F^2}\, \dee x^1 \wedge \dee x^2.
+    \end{align*}
+    The functions $E$, $F$, and $G$ are called <b>the coefficients of the first fundamental form</b>.
+    </p><hr>
+
+    <p><b>Definition.</b> Given $n-1$ vectors $\ve{x}_1$, $\ve{x}_2$, $\dotsc$, $\ve{x}_{n-1}$ in $\Real^{n}$, consider the function
+    \begin{align*}
+        \varphi(\ve{x}) = \det \begin{bmatrix} \ve{x}_1 & \ve{x}_2 & \cdots & \ve{x}_{n-1} & \ve{x} \end{bmatrix}.
+    \end{align*}
+    We have that $\varphi \in \mathcal{A}^1(\Real^n)$. Hence, there is a unique vector $\ve{z} \in \Real^n$ such that $\varphi(\ve{x}) = \ve{z} \cdot \ve{x}$. We call $\ve{z}$ the <b>cross product</b> of $\ve{x}_1$, $\ve{x}_2$, $\dotsc$, $\ve{x}_{n-1}$, and it is denoted by $\ve{x}_1 \times \ve{x}_2 \times \dotsb \times \ve{x}_{n-1}.$
+    </p><hr>
+
+    <p>From the definition, we can show that
+    \begin{align*}
+        \ve{x}_1 \times \ve{x}_2 \times \dotsb \times \ve{x}_{n-1}
+        &= \sgn(\pi) \ve{x}_{\pi(1)} \times \ve{x}_{\pi(2)} \times \dotsb \times \ve{x}_{\pi(n-1)} \\
+        \ve{x}_1 \times \ve{x}_2 \times \dotsb \times (c\ve{x}_i) \times \dotsb \times \ve{x}_{n-1}
+        &= c(\ve{x}_{\pi(1)} \times \ve{x}_{\pi(2)} \times \dotsb \times \ve{x}_i \times \times \dotsb \times \ve{x}_{\pi(n-1)}) \\
+        \ve{x}_1 \times \ve{x}_2 \times \dotsb \times (\ve{x}_i + \ve{x}_i') \times \dotsb \times \ve{x}_{n-1}
+        &= \ve{x}_{\pi(1)} \times \ve{x}_{\pi(2)} \times \dotsb \times \ve{x}_i \times \times \dotsb \times \ve{x}_{\pi(n-1)} \\
+        &\qquad + \ve{x}_{\pi(1)} \times \ve{x}_{\pi(2)} \times \dotsb \times \ve{x}_i' \times \times \dotsb \times \ve{x}_{\pi(n-1)}.
+    \end{align*}
+    </p><hr>
+
+    <p>The coordinates of the cross product are given by
+    \begin{align*}
+        \ve{x}_1 \times \dotsb \times \ve{x}_{n-1}
+        = \begin{bmatrix}
+            (-1)^{n+1} \det X_{(1)} \\
+            (-1)^{n+2} \det X_{(2)} \\
+            \vdots \\
+            (-1)^{2n} \det X_{(n)}
+        \end{bmatrix}        
+    \end{align*}
+    where $X$ is the matrix $\begin{bmatrix} \ve{x}_1 & \cdots & \ve{x}_{n-1} \end{bmatrix}$, and $X_{(i)}$ is the matrix $X$ with the $i$th row removed.
+    </p><hr>
+
+    <p>Let $M$ be an oriented $(n-1)$-manifold in $\Real^n$ generated by a positively oriented coordinate patch $\ve{f}: U \rightarrow \Real^n$ where $U$ is an open set in $\Real^n$. Again, the coordinates of $U$ are $(x^1, \dotsc, x^{n-1})$, and the coordinates of $\Real^n$ are $(y^1, \dotsc, y^n)$.</p>
+
+    <p>At each point $\ve{y} \in M$, we define the <b>outward unit normal vector</b> $\ve{n}(\ve{y})$ to be the unit vector in $\Real^n$ with the following properties 
+    <ul>
+        <li>It is normal to every vector in $\mathcal{T}_{\ve{y}}(M)$.</li>
+        <li>The frame $\big(\ve{f}_1(\ve{x}), \dotsc, \ve{f}_{n-1}(\ve{x}), \ve{n}(\ve{y})\big)$ is positively oriented.</li>
+    </ul></p>
+
+    <p>We have that $\mathcal{T}_{\ve{y}}(M)$ is spanned by $\ve{f}_1(\ve{x})$, $\dotsc$, $\ve{f}_{n-1}(\ve{x})$. As a result, $\ve{f}_1(\ve{x}) \times \dotsb \times \ve{f}_{n-1}(\ve{x})$ would be normal to every vector in $\mathcal{T}_{\ve{y}}(M)$. Now, let $\ve{z}$ be the dot product. We have that $$\det \begin{bmatrix} \ve{f}_1(\ve{x}) & \cdots & \ve{f}_{n-1}(\ve{x}) & \ve{z} \end{bmatrix} = \ve{z} \cdot \ve{z} > 0.$$ Hence, the frame $\big( \ve{f}_1(\ve{x}), \dotsc, \ve{f}_{n-1}(\ve{x}), \ve{z} \big)$ is positively oriented. Hence, we have that:
+    \begin{align*}
+        \ve{n}(\ve{y}) 
+        &= \frac{\ve{z}}{\| \ve{z} \|} 
+        = \frac{\ve{f}_1(\ve{x}) \times \dotsb \times \ve{f}_{n-1}(\ve{x})}{\| \ve{f}_1(\ve{x}) \times \dotsb \times \ve{f}_{n-1}(\ve{x}) \|} \\
+        &= \frac{1}{\sqrt{\det^2 D\ve{f}_{(1)} + \dotsb + \det^2 D\ve{f}_{(n)}}}
+        \begin{bmatrix}
+            (-1)^{n+1} \det D\ve{f}_{(1)} \\
+            (-1)^{n+2} \det D\ve{f}_{(2)} \\
+            \vdots \\
+            (-1)^{2n} \det D\ve{f}_{(n)}
+        \end{bmatrix}.
+    \end{align*}
+    </p>
+    <hr>
+
+    <p>Continuing from the above example. Consider the following differntial $(n-1)$-form in $\Real^n$:
+    \begin{align*}
+        \nu = (-1)^{n+1} \ve{n}[1]\, \dee y^{[n]-\{1\}} + (-1)^{n+2} \ve{n}[2]\, \dee y^{[n]-\{2\}} + \dotsb + (-1)^{2n} \ve{n}[n]\, \dee y^{[n]-\{n\}}
+    \end{align*}
+    where $\ve{n}$ is the normal vector of the manifold $M$, $\ve{n}[i]$ is the $i$th component of $\ve{n}$, and $y^{[n]-\{i\}}$ is the differential form $\dee y^1 \wedge \dotsb \wedge \dee y^{i-1} \wedge \dee y^{i+1} \wedge \dee y^n$. We claim that this corresponds to the Riemannian volume form of the manifold. In other words, $\ve{f}^*\nu = \omega_v$.
+    </p>
+
+    <p>To see that this is true, we note that $\ve{f}^*(\dee y^{[n] - \{i\}}) = \det D\ve{f}_{(i)}\, \dee x^1 \wedge \dotsb \wedge \dee x^{n-1}$ as derived in Section 5. So,
+    \begin{align*}
+    \ve{f}^*\big( (-1)^{n+i} \ve{n}[i] \dee y^{[n]-{i}} \big)
+    &= (-1)^{n-i} \frac{(-1)^{n+i} \det D\ve{f}_{(i)}}{\sqrt{\det^2 D\ve{f}_{(1)} + \dotsb + \det^2 D\ve{f}_{(n)}}} \det D\ve{f}_{(i)} \dee x^1 \wedge \dotsb \wedge \dee x^{n-1}
+    \\
+    &= \frac{\det^2  D\ve{f}_{(i)}}{\sqrt{\det^2 D\ve{f}_{(1)} + \dotsb + \det^2 D\ve{f}_{(n)}}} \dee x^1 \wedge \dotsb \wedge \dee x^{n-1}.
+    \end{align*}
+    Hence,
+    \begin{align*}
+        \ve{f}^*\nu 
+        &= \frac{\det^2 D\ve{f}_{(1)} + \dotsb + \det^2 D\ve{f}_{(n)}}{\sqrt{\det^2 D\ve{f}_{(1)} + \dotsb + \det^2 D\ve{f}_{(n)}}} \dee x^1 \wedge \dotsb \wedge \dee x^{n-1} \\
+        &= \sqrt{\det^2 D\ve{f}_{(1)} + \dotsb + \det^2 D\ve{f}_{(n)}}\,\dee x^1 \wedge \dotsb \wedge \dee x^{n-1} \\
+        &= \omega_v.    
+    \end{align*}
     </p>
     <hr>
 
