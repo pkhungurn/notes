@@ -1280,7 +1280,7 @@
 
     <p><b></b></p>
 
-    <p><b>Theorem.</b> There is a unique function $V$ that assigns, for each $k$-tuple $(\ve{x}_1, \ve{x}_2, \dotsc, \ve{x}_n)$ of elements of $\Real^n$, a non-negative number such that:
+    <p><b>Theorem.</b> There is a unique function $V$ that assigns, for each $k$-tuple $(\ve{x}_1, \ve{x}_2, \dotsc, \ve{x}_k)$ of elements of $\Real^n$, a non-negative number such that:
     <ul>
         <li>If $h: \Real^n \rightarrow \Real^n$ is an orthogonal linear transformation, then
         \begin{align*}
@@ -1352,19 +1352,6 @@
     As a result, it makes sense to use $V$ as a volume function for parallelopiped in $W$.
     </p>
     <hr>
-
-    <p><b>Definition.</b> Let $\ve{v}_1$, $\ve{v}_2$, $\dotsc$, $\ve{v}_{n-1}$ be elements of $\Real^n$. Define $\varphi(\ve{v})$ as
-    \begin{align*}
-        \varphi(\ve{v}) = \det \begin{bmatrix} 
-            \ve{v}_1 & \ve{v}_2 & \cdots & \ve{v}_{n-1} & \ve{v}
-        \end{bmatrix}.
-    \end{align*}
-    Then, $\varphi \in \mathcal{L}^1(\Real^n)$. If follows that there is a unique $\ve{z} \in \Real^n$ such that
-    \begin{align*}
-        \ve{z} \cdot \ve{v} = \varphi(\ve{v}).
-    \end{align*}
-    Then, $\ve{z}$ is called the <b>cross product</b> of $\ve{v}_1$, $\ve{v}_2$, $\dotsc$, $\ve{v}_{n-1}$, and it is denoted by $\ve{v}_1 \times \ve{v}_2 \times \dotsb \times \ve{v}_{n-1}$.
-    </p><hr>
 
     <p><b>Definition.</b> An manifold $M$ in that is equipped with an inner product $g_\ve{p}(\cdot, \cdot)$ on $\mathcal{T}_{\ve{p}}(M)$ for each point $\ve{p} \in M$ is called a <b>Riemannian manifold</b>.</p>
 
@@ -1528,15 +1515,15 @@
     <p>To see that this is true, we note that $\ve{f}^*(\dee y^{[n] - \{i\}}) = \det D\ve{f}_{(i)}\, \dee x^1 \wedge \dotsb \wedge \dee x^{n-1}$ as derived in Section 5. So,
     \begin{align*}
     \ve{f}^*\big( (-1)^{n+i} \ve{n}[i] \dee y^{[n]-{i}} \big)
-    &= (-1)^{n-i} \frac{(-1)^{n+i} \det D\ve{f}_{(i)}}{\sqrt{\det^2 D\ve{f}_{(1)} + \dotsb + \det^2 D\ve{f}_{(n)}}} \det D\ve{f}_{(i)} \dee x^1 \wedge \dotsb \wedge \dee x^{n-1}
+    &= (-1)^{n-i} \frac{(-1)^{n+i} \det D\ve{f}_{(i)}}{\sqrt{\det^2 D\ve{f}_{(1)} + \dotsb + \det^2 D\ve{f}_{(n)}}} \det D\ve{f}_{(i)}\, \dee x^1 \wedge \dotsb \wedge \dee x^{n-1}
     \\
-    &= \frac{\det^2  D\ve{f}_{(i)}}{\sqrt{\det^2 D\ve{f}_{(1)} + \dotsb + \det^2 D\ve{f}_{(n)}}} \dee x^1 \wedge \dotsb \wedge \dee x^{n-1}.
+    &= \frac{\det^2  D\ve{f}_{(i)}}{\sqrt{\det^2 D\ve{f}_{(1)} + \dotsb + \det^2 D\ve{f}_{(n)}}}\, \dee x^1 \wedge \dotsb \wedge \dee x^{n-1}.
     \end{align*}
     Hence,
     \begin{align*}
         \ve{f}^*\nu 
-        &= \frac{\det^2 D\ve{f}_{(1)} + \dotsb + \det^2 D\ve{f}_{(n)}}{\sqrt{\det^2 D\ve{f}_{(1)} + \dotsb + \det^2 D\ve{f}_{(n)}}} \dee x^1 \wedge \dotsb \wedge \dee x^{n-1} \\
-        &= \sqrt{\det^2 D\ve{f}_{(1)} + \dotsb + \det^2 D\ve{f}_{(n)}}\,\dee x^1 \wedge \dotsb \wedge \dee x^{n-1} \\
+        &= \frac{\det^2 D\ve{f}_{(1)} + \dotsb + \det^2 D\ve{f}_{(n)}}{\sqrt{\det^2 D\ve{f}_{(1)} + \dotsb + \det^2 D\ve{f}_{(n)}}}\, \dee x^1 \wedge \dotsb \wedge \dee x^{n-1} \\
+        &= \sqrt{\det^2 D\ve{f}_{(1)} + \dotsb + \det^2 D\ve{f}_{(n)}} \,\dee x^1 \wedge \dotsb \wedge \dee x^{n-1} \\
         &= \omega_v.    
     \end{align*}
     </p>
