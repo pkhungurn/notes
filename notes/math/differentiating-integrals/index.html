@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>Differentiating Integrals</title>
+
+    <!-- Bootstrap -->
+    <link href="../../../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../../../css/theme.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+      TeX: { equationNumbers: {autoNumber: "AMS"} } 
+    });
+    </script>
+    <script type="text/javascript"
+            src="../../../MathJax/MathJax.js?config=TeX-AMS_HTML-full">
+    </script>
+
+    <script type="text/javascript" src="../../../js/jquery-3.4.1.min.js"></script>    
+    <script type="text/javascript" src="../../../js/bigfoot.min.js"></script>    
+
+    <link rel="stylesheet" type="text/css" href="../../../css/bigfoot-default.css">    
+
+</head>
+<body>
+<div class="container">
+    <span style="visibility: hidden;">
+        \(
+        \def\sc#1{\dosc#1\csod}
+        \def\dosc#1#2\csod{{\rm #1{\small #2}}}
+
+        \newcommand{\dee}{\mathrm{d}}
+        \newcommand{\Dee}{\mathrm{D}}
+        \newcommand{\In}{\mathrm{in}}
+        \newcommand{\Out}{\mathrm{out}}
+        \newcommand{\pdf}{\mathrm{pdf}}
+        \newcommand{\Cov}{\mathrm{Cov}}
+        \newcommand{\Var}{\mathrm{Var}}
+
+        \newcommand{\ve}[1]{\mathbf{#1}}
+        \newcommand{\mrm}[1]{\mathrm{#1}}
+        \newcommand{\etal}{{et~al.}}
+        \newcommand{\sphere}{\mathbb{S}^2}
+        \newcommand{\modeint}{\mathcal{M}}
+        \newcommand{\azimint}{\mathcal{N}}
+        \newcommand{\ra}{\rightarrow}
+        \newcommand{\mcal}[1]{\mathcal{#1}}
+        \newcommand{\X}{\mathcal{X}}
+        \newcommand{\Y}{\mathcal{Y}}
+        \newcommand{\Z}{\mathcal{Z}}
+        \newcommand{\x}{\mathbf{x}}
+        \newcommand{\y}{\mathbf{y}}
+        \newcommand{\z}{\mathbf{z}}
+        \newcommand{\tr}{\mathrm{tr}}
+        \newcommand{\sgn}{\mathrm{sgn}}
+        \newcommand{\diag}{\mathrm{diag}}
+        \newcommand{\Real}{\mathbb{R}}
+        \newcommand{\sseq}{\subseteq}
+        \newcommand{\ov}[1]{\overline{#1}}
+        \DeclareMathOperator*{\argmax}{arg\,max}
+        \DeclareMathOperator*{\argmin}{arg\,min}
+
+        \newcommand{\data}{\mathrm{data}}
+        \newcommand{\N}{\mathcal{N}}
+        \newcommand{\Hil}{\mathcal{H}}
+        \newcommand{\iprod}{\mathbin{\lrcorner}}
+        \)
+    </span>
+
+    <br>
+    <h1>Differentiating Integrals</h1>
+    <hr>
+
+    <p>In differentiable Monte Carlo rendering and in some formulation of differentiable rendering, we would like to compute:
+    \begin{align*}
+        \frac{\partial}{\partial \theta} \int_{\Omega(\theta)} f(\ve{x},\theta)\, \dee\ve{x}
+    \end{align*}
+    Here, $\theta$ is one of the scene parameters, which can have influence on the integration domain $\Omega(\theta)$. The function $f(\ve{x},\theta)$ maps a point in the domain to some type of contribution (e.g., radiance) that is gathered to created an image. An example of such a $\theta$ is the $x$-coordinate of a vertex of a triangle in the scene. It has influence on the domain of integration because changing it is changing the scene geometry.
+    </p>
+
+    <p>This note is written as I read the article <a href="https://www.jstor.org/stable/2319163">"Differentiation under the Integral Sign"</a> by Harley Flanders. The article considers the problem in many different settings, ending in a proof of the <a href="https://en.wikipedia.org/wiki/Reynolds_transport_theorem">Reynolds transport theorem</a>.</p>
+    <hr>
+
+    <h2>1 &nbsp; One-Dimensional Case</h2>
+
+    <p>The Leibniz rule for differentiating an integral says:
+    \begin{align*}
+    \frac{\dee}{\dee t} \bigg( \int_{g(t)}^{h(t)} F(x,t)\, \dee x \bigg)
+    = F(h(t), t)\, h'(t) - F(g(t),t)\, g'(t) + \int_{g(t)}^{h(t)} \frac{\partial F(x,t)}{\partial t}\, \dee x.
+    \end{align*}
+    It applies when $\partial F(x,t) / \partial t$ is integrable.
+    </p>
+    <hr>
+
+    <p>Let us give a "physicist proof" of the identity. Let
+    \begin{align*}
+        f(t) = \int_{g(t)}^{h(t)} F(x,t)\, \dee x.
+    \end{align*}
+    Let $\delta t$ be an infinitesimal quantity. We have that
+    \begin{align*}
+    \frac{\dee}{\dee t} \bigg( \int_{g(t)}^{h(t)} F(x,t)\, \dee x \bigg)
+    &= \frac{\dee f}{\dee t}
+    = \frac{f(t + \delta t) - f(t)}{\delta t} \\
+    &= \frac{1}{\delta t} \bigg[ \bigg( \int_{g(t+\delta t)}^{h(t + \delta t)} F(x,t+\delta t)\, \dee x \bigg) - \bigg( \int_{g(t)}^{h(t)} F(x,t)\, \dee x \bigg) \bigg]
+    \end{align*}
+    Now, we have that
+    \begin{align*}
+        g(t + \delta t) &= g(t) + g'(t)\, \delta t \\
+        h(t + \delta t) &= h(t) + h'(t)\, \delta t \\
+        F(x, t + \delta t) &= F(x,t) + \frac{\partial F(x,t)}{\partial t}\, \delta t.
+    \end{align*}
+    So,
+    \begin{align*}
+    &\int_{g(t+\delta t)}^{h(t + \delta t)} F(x,t+\delta t)\, \dee x \\
+    &= \int_{g(t) + g'(t)\, \delta t}^{h(t) + g'(t)\, \delta t} \bigg( F(x,t) + \frac{\partial F(x,t)}{\partial t}\, \delta t\bigg) \, \dee x \\
+    &= \int_{g(t)}^{h(t)} \bigg( F(x,t) + \frac{\partial F(x,t)}{\partial t}\, \delta t\bigg) \, \dee x \\
+    & \qquad + \int_{h(t)}^{h(t) + h'(t)\, \delta t} \bigg( F(x,t) + \frac{\partial F(x,t)}{\partial t}\, \delta t\bigg) \, \dee x \\
+    & \qquad - \int_{g(t)}^{g(t) + g'(t)\, \delta t} \bigg( F(x,t) + \frac{\partial F(x,t)}{\partial t}\, \delta t\bigg) \, \dee x.
+    \end{align*}
+    Consider the bottom two integrals. Because they are over an intervals with infinitesimal lengths, their values are the values of the integrands times the (infinitesimal) interval width. Hence,
+    \begin{align*}
+    &\int_{g(t+\delta t)}^{h(t + \delta t)} F(x,t+\delta t)\, \dee x \\ 
+    &= \int_{g(t)}^{h(t)} \bigg( F(x,t) + \frac{\partial F(x,t)}{\partial t}\, \delta t\bigg) \, \dee x \\
+    & \qquad + h'(t)\, \delta t\, \bigg( F(h(t),t) + \frac{\partial F(x,t)}{\partial t}\bigg|_{x = h(t)}\, \delta t \bigg) \\
+    & \qquad - g'(t)\, \delta t\, \bigg( F(g(t),t) + \frac{\partial F(x,t)}{\partial t}\bigg|_{x=g(t)}\, \delta t\bigg) \\
+    &= \int_{g(t)}^{h(t)} F(x,t)\, \dee x + \delta t \int_{g(t)}^{h(t)} \frac{\partial F(x,t)}{\partial t}\, \dee x \\
+    & \qquad + \delta t\, F(h(t),t)\, h'(t) + (\delta t)^2\, \frac{\partial F(x,t)}{\partial t}\bigg|_{x = h(t)}\, h'(t) \\
+    & \qquad - \delta t\, F(g(t),t)\, g'(t) - (\delta t)^2\, \frac{\partial F(x,t)}{\partial t}\bigg|_{x = g(t)}\, g'(t) \\
+    &= \int_{g(t)}^{h(t)} F(x,t)\, \dee x + \delta t \bigg[ \int_{g(t)}^{h(t)} \frac{\partial F(x,t)}{\partial t}\, \dee x + F(h(t),t)\, h'(t) - F(g(t),t)\, g'(t) \bigg].
+    \end{align*}
+    As a result,
+    \begin{align*}
+    \frac{f(t+\delta t) - f(t)}{\delta t}
+    &= F(h(t),t)\, h'(t) - F(g(t),t)\, g'(t) + \int_{g(t)}^{h(t)} \frac{\partial F(x,t)}{\partial t}\, \dee x 
+    \end{align*}
+    as required.
+    </p>
+    <hr>
+
+    <h2>2 &nbsp; Another Proof</h2>
+
+    <p>Flanders introduces another proof which is more generalizable. Let us denote the domain of integration $[g(t),h(t)]$ by $C_t$. We imagine that it is a result from warping a fixed interval $[a,b]$ through time. In other words, $C_t = \{ \phi_t(u) : u \in [a,b] \}$. So, $x \in C_t$, we may write it as $x = x(u,t) = \phi(u,t)$ for some $u \in [a,b]$. Hence, using the change of variable formula
+    \begin{align*}
+        \int_{g(t)}^{h(t)} F(x,t)\, \dee x
+        = \int_{a}^{b} F(\phi(u,t), t) \frac{\partial \phi(u,t)}{\partial u} \, \dee u.
+    \end{align*}
+    Again, define $f(t)$ has in the above proof. We have that
+    \begin{align*}
+    f(t +\delta t) 
+    &= \int_{a}^{b}
+        F(\phi(u, t+\delta t), t + \delta t) \frac{\partial \phi(u, t+\delta t)}{\partial u}\, \dee u \\
+    &= \int_{a}^{b}
+        F\bigg(\phi(u, t) + \frac{\partial \phi(u,t)}{\partial t}  \delta t, t + \delta t\bigg) \frac{\partial \phi(u, t+\delta t)}{\partial u}\, \dee u \\
+    &= \int_{a}^{b}
+        \bigg[ F(\phi(u,t),t) + \frac{\partial F(\phi(u,t), t)}{\partial x} \frac{\partial \phi(u,t)}{\partial t} \delta t + \frac{\partial F(\phi(u,t),t)}{\partial t} \delta t \bigg]
+        \bigg( \frac{\partial \phi(u, t)}{\partial u} + \frac{\partial^2 \phi(u,t)}{\partial t \partial u} \delta t \bigg) \, \dee u \\
+    &= \int_{a}^{b}
+        F(\phi(u,t),t) \frac{\partial \phi(u, t)}{\partial u} \, \dee u \\
+    &\qquad + \delta t \int_{a}^{b}
+        F(\phi(u,t),t)
+        \frac{\partial^2 \phi(u,t)}{\partial t \partial u} \, \dee u \\
+    & \qquad + \delta t \int_{a}^{b}
+        \frac{\partial F(\phi(u,t), t)}{\partial x} \frac{\partial \phi(u,t)}{\partial t} \frac{\partial \phi(u, t)}{\partial u} \, \dee u \\
+    &\qquad + \delta t \int_{a}^{b}
+        \frac{\partial F(\phi(u,t),t)}{\partial t}
+        \frac{\partial \phi(u, t)}{\partial u} \, \dee u.
+    \end{align*}
+    Define a velocity field $v(x,t) = \partial x(u,t) / \partial t = \partial \phi(u,t) / \partial t$.
+    We have that
+    \begin{align*}
+        \frac{\partial^2 \phi(u,t)}{\partial t \partial u}
+        = \frac{\partial}{\partial u} \bigg( \frac{\partial \phi(u,t)}{\partial t} \bigg)
+        = \frac{\partial v(x,t)}{\partial u}
+        = \frac{\partial v(x,t)}{\partial x} \frac{\partial x(u,t)}{\partial u}
+        = \frac{\partial v(x,t)}{\partial x} \frac{\partial \phi(u,t)}{\partial u}.        
+    \end{align*}
+    So, we have
+    \begin{align*}
+    f(t +\delta t) 
+    &= \int_{a}^{b}
+        F(\phi(u,t),t) \frac{\partial \phi(u, t)}{\partial u} \, \dee u \\
+    &\qquad + \delta t \int_{a}^{b}
+        F(\phi(u,t),t)
+        \frac{\partial v(x,t)}{\partial x} \frac{\partial \phi(u,t)}{\partial u} \, \dee u \\
+    & \qquad + \delta t \int_{a}^{b}
+        \frac{\partial F(\phi(u,t), t)}{\partial x} v(x,t) \frac{\partial \phi(u, t)}{\partial u} \, \dee u \\
+    &\qquad + \delta t \int_{a}^{b}
+        \frac{\partial F(\phi(u,t),t)}{\partial t}
+        \frac{\partial \phi(u, t)}{\partial u} \, \dee u \\
+    &= \int_{g(t)}^{g(t)}
+        F(x,t)\, \dee x 
+    + \delta t \int_{g(t)}^{h(t)}
+        F(x,t)
+        \frac{\partial v(x,t)}{\partial x} \, \dee x
+    + \delta t \int_{g(t)}^{h(t)}
+        \frac{\partial F(x, t)}{\partial x} v(x,t) \, \dee x
+    + \delta t \int_{g(t)}^{h(t)}
+        \frac{\partial F(x,t)}{\partial t}
+        \, \dee x. \\
+    &= \int_{g(t)}^{g(t)}
+        F(x,t)\, \dee x 
+    + \delta t  \int_{g(t)}^{h(t)}
+        \bigg[
+        F(x,t)
+        \frac{\partial v(x,t)}{\partial x}
+        + \frac{\partial F(x, t)}{\partial x} v(x,t)
+        \bigg] \, \dee x    
+    + \delta t \int_{g(t)}^{h(t)}
+        \frac{\partial F(x,t)}{\partial t}
+        \, \dee x. \\
+    &= \int_{g(t)}^{g(t)}
+        F(x,t)\, \dee x 
+    + \delta t  \int_{g(t)}^{h(t)}
+        \frac{\partial}{\partial x} [F(x,t) v(x,t)] \, \dee x    
+    + \delta t \int_{g(t)}^{h(t)}
+        \frac{\partial F(x,t)}{\partial t}
+        \, \dee x\\
+    &= \int_{g(t)}^{g(t)}
+        F(x,t)\, \dee x 
+    + \delta t  \int_{g(t)}^{h(t)}
+        \bigg[ \mathrm{div} \big( F(x,t) v(x,t) \big) + \frac{\partial F(x,t)}{\partial t} \bigg] \, \dee x.        
+    \end{align*}
+    As a result,
+    \begin{align*}
+        \frac{\dee f(t)}{\dee t}
+        = \frac{f(t + \delta t) - f(t)}{\delta t}
+        = \int_{g(t)}^{h(t)}
+        \bigg[ \mathrm{div} \big( F(x,t) v(x,t) \big) + \frac{\partial F(x,t)}{\partial t} \bigg] \, \dee x.
+    \end{align*}
+    Note that the divergence operator in 1D is just taking $\partial / \partial x$.
+    </p><hr>
+
+    <p>The nice thing about the above integral is that it is an integral <i>over the domain of integration, not the boundary of the integration</i>.</p><hr>
+
+    <p>Also, note that, according to the above equation, all we have to do is to define a velocity field $v(x,t)$ such that $v(g(t),t) = g'(t)$ and $v(h(t),t) = h'(t)$ for all $t$ in the range that we care about. In other words, we have to care for what happends at the boundary of the interval, and that the velocity field is continuous and integrable. The values of $v(x,t)$ in the interior of the interval do not matter at all!</p><hr>
+
+    <h2>3 &nbsp; Genalization to 2D and 3D</h2>
+
+    <p>In 2D, suppose that we have a 2D region $D(t)$ that moves with time. We wish to compute
+    \begin{align*}
+        \frac{\dee}{\dee t} \iint_{D(t)} F(\ve{x}, t)\, \dee x\, \dee y.
+    \end{align*}
+    It turns out that a formula similar to the one we just derived also applies in this case:
+    \begin{align*}
+        \frac{\dee}{\dee t} \iint_{D(t)} F(\ve{x}, t)\, \dee x\, \dee y
+        = \iint_{D(t)} \bigg[ \mathrm{div}\big( F(\ve{x}, t) \ve{v}(\ve{x}, t) \big) + \frac{\partial F(\ve{x},t)}{\partial t} \bigg]\, \dee x\, \dee y
+    \end{align*}
+    where $\ve{v}(\ve{x},t)$ is the velocity field whose values agree with the velocities of points on $\partial D(t)$, the boundary of $D(t)$.
+    </p><hr>
+
+    <p>It formula above also applies in to 3D.
+    \begin{align*}
+        \frac{\dee}{\dee t} \iiint_{D(t)} F(\ve{x}, t)\, \dee x\, \dee y\, \dee z
+        = \iiint_{D(t)} \bigg[ \mathrm{div}\big( F(\ve{x}, t) \ve{v}(\ve{x}, t) \big) + \frac{\partial F(\ve{x},t)}{\partial t} \bigg]\, \dee x\, \dee y\, \dee z
+    \end{align*}
+    </p><hr>
+
+    <h2>4 &nbsp; Interior Product</h2>
+
+    <p>An <b>interior product</b> is an operation that consumes a vector field and a $p$-form and products a $(p-1)$-form.</p><hr>
+
+    <p>Let $\ve{v}$ be a vector field and $\alpha$ is a p-form on a manifold $M$. The <b>interior product</b> between $\ve{v}$ and $\alpha$, denoted by $\ve{v} \iprod \alpha$, is a $(p-1)$-form given by
+    \begin{align*}
+        \Big( (\ve{v} \iprod \alpha)(\ve{x}) \Big)(\ve{v}_2, \ve{v}_3, \dotsc, \ve{v}_{p})
+        &= \Big( \alpha(\ve{x}) \Big) (\ve{v}(\ve{x}), \ve{v}_2, \ve{v}_3, \dotsc, \ve{v}_{p})
+    \end{align*}
+    for all $\ve{x} \in M$ and $\ve{v}_2, \dotsc, \ve{v}_{p} \in \mathcal{T}_\ve{x}(M).$
+    </p>
+    <hr>    
+
+    <p>The interior product between a vector field and a 1-form is a 0-form, which is a scalar field. Let's see what it is. Let $\alpha$ be a 1-form in $\Real^n$. We have that
+    \begin{align*}
+        \alpha = \sum_{i=1}^n \alpha_i(\ve{x})\, \dee x^i
+    \end{align*}
+    where $\alpha_i(\ve{x})$ is a scalar function. So,
+    \begin{align*}
+        \Big( \ve{v} \iprod \alpha \Big)(\ve{x})
+        = \Big( \alpha(\ve{x}) \Big) (\ve{v}(\ve{x}))
+        = \sum_{i=1}^n \alpha_i(\ve{x})\, \dee x^i(\ve{v}(\ve{x}))
+        = \sum_{i=1}^n \alpha_i(\ve{x}) v^i(\ve{x}).
+    \end{align*}    
+    </p><hr>
+
+    <p>Since the scalar field $\sum_{i=1}^n \alpha_i(\ve{x}) v^i(\ve{x})$ will appear quite often, we will give it a special symbol: 
+    \begin{align*}
+    \langle \ve{v}, \alpha \rangle := \sum_{i=1}^n v^i(\ve{x}) \alpha_i(\ve{x}).
+    \end{align*}
+    </p><hr>
+
+    <p>Now, let's see the effect of the interior product on a $p$-form. It suffices to consider only the $p$-form of the form $\alpha_I(\ve{x})\, \dee x^I$ where $I = \{ i_1, \dotsc, i_p \}$ is a subset of size $p$ of $[n] = \{ 1, 2, \dotsc, n \}$. It is true that
+    \begin{align*}
+        \ve{v} \iprod ( \alpha_I(\ve{x})\, \dee x^I )
+        = \alpha_I(\ve{x}) \sum_{j=1}^p (-1)^{j-1} \langle \ve{v}, \dee x^{i_j} \rangle\, \dee x^{i_1} \wedge \dotsb \wedge \dee x^{j-1} \wedge \dee x^{j+1} \wedge \dotsb \wedge \dee x^{i_p}.
+    \end{align*}
+    We will not prove this though because it is kind of troublesome.
+    </p><hr>
+
+    <p>It can be shown that
+    \begin{align*}
+        \ve{v} \iprod (\omega \wedge \eta) &= (\ve{v} \iprod \omega) \wedge \eta + (-1)^{\deg \omega}\,\omega \wedge (\ve{v} \iprod \eta) \\
+        \ve{u} \iprod (\ve{v} \iprod \omega) &= - \ve{v} \iprod (\ve{u} \iprod \omega).
+    \end{align*}
+    </p><hr>
+
+    <p>Now, consider a time-varying $p$-dimensional manifold $D(t)$. Here, each $\ve{x} \in D(t)$ is given by $\ve{x} = \phi(\ve{u},t)$ where $\ve{u}$ runs over a fixed domain $C \subseteq \Real^p$. We are given a $p$-form $\omega$ where
+    \begin{align*}
+    \omega = \sum_{H} \alpha_H(\ve{x},t)\, \dee x^H
+    \end{align*}
+    where $H = \{ h_1, \dotsc, h_p \} \subseteq [n]$ with $h_1 < \dotsb < h_p$. We wish to compute
+    \begin{align*}
+        \frac{\dee}{\dee t} \int_{D(t)} \omega.
+    \end{align*}
+    Let $\ve{v}(\ve{x},t) = \partial \ve{x} / \partial t = \partial \phi(\ve{u},t) / \partial t$ be the velocity field. We have that
+    \begin{align*}
+        \frac{\dee}{\dee t} \int_{D(t)}\omega
+        = \int_{D(t)} \ve{v} \iprod \dee \omega + \int_{D(t)} \dee (\ve{v} \iprod \omega) + \int_{D(t)} \dot{\omega} 
+    \end{align*}
+    where
+    \begin{align*}
+        \dot{\omega} = \sum_{H} \frac{\partial \alpha_H(\ve{x}, t)}{\partial t}\, \dee x^H.
+    \end{align*}
+    </p><hr>
+
+    <div class="page-header"></div>
+    <p>Last modified: 2021/02/27</p>
+</div>
+
+<script type="text/javascript">
+$.bigfoot();
+</script>
+
+</body>
+</html>
+
+
