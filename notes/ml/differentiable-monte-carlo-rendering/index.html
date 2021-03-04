@@ -1434,6 +1434,90 @@
             + \frac{\partial z}{\partial \varphi}\, \dee\varphi
             = -\sin\vartheta\, \dee\vartheta.
         \end{align*}</li>
+
+        <li>Now, let $\ve{x}$ denote the vector $(x,y,z)^T$, and let $\omega$ denote $(\vartheta,\varphi)^T$. We have that
+        \begin{align*}
+            \ve{x} &= \ve{g}(\omega),
+        \end{align*}
+        and
+        \begin{align*}
+            \frac{\partial \ve{x}}{\partial \omega}
+            &= \begin{bmatrix}
+                \cos\varphi \cos\vartheta & -\sin\varphi \sin\vartheta \\
+                \sin\varphi \cos\vartheta & \cos\varphi \sin\vartheta \\
+                -\sin\vartheta & 0
+            \end{bmatrix}
+        \end{align*}
+        Suppose we have computed $\ve{y} = \ve{f}(\ve{x};\theta)$, and we also have computed
+        \begin{align*}
+            \frac{\partial \ve{y}}{\partial \theta} 
+            &= \begin{bmatrix}
+                y^1_\theta \\
+                y^2_\theta \\
+                y^3_\theta
+            \end{bmatrix}, \\
+            \frac{\partial \ve{y}}{\partial \ve{x}}
+            &= \begin{bmatrix}
+                y^1_x & y^1_y & y^1_z \\
+                y^2_x & y^2_y & y^2_z \\
+                y^3_x & y^3_y & y^3_z \\
+            \end{bmatrix}.
+        \end{align*}
+        We would like to know
+        \begin{align*}
+            \frac{\partial \omega}{\partial \theta}
+            = \frac{\partial \omega}{\partial \ve{y}} \frac{\partial \ve{y}}{\partial \theta}.
+        \end{align*}
+        We have that
+        \begin{align*}
+            \frac{\partial \ve{y}}{\partial \omega}
+            = \frac{\partial \ve{y}}{\partial \ve{x}} \frac{\partial \ve{x}}{\partial \omega}
+            = \begin{bmatrix}
+                y^1_x & y^1_y & y^1_z \\
+                y^2_x & y^2_y & y^2_z \\
+                y^3_x & y^3_y & y^3_z \\
+            \end{bmatrix}
+            \begin{bmatrix}
+                \cos\varphi \cos\vartheta & -\sin\varphi \sin\vartheta \\
+                \sin\varphi \cos\vartheta & \cos\varphi \sin\vartheta \\
+                -\sin\vartheta & 0
+            \end{bmatrix}
+        \end{align*}.
+        However, the matrix is $3 \times 2$ and so is not invertible. However, we still use the pseudoinverse:
+        \begin{align*}
+            \frac{\partial \omega}{\partial \ve{y}}
+            := \bigg( \frac{\partial \ve{y}}{\partial \omega} \bigg)^\dagger
+            = \left( \begin{bmatrix}
+                y^1_x & y^1_y & y^1_z \\
+                y^2_x & y^2_y & y^2_z \\
+                y^3_x & y^3_y & y^3_z \\
+            \end{bmatrix}
+            \begin{bmatrix}
+                \cos\varphi \cos\vartheta & -\sin\varphi \sin\vartheta \\
+                \sin\varphi \cos\vartheta & \cos\varphi \sin\vartheta \\
+                -\sin\vartheta & 0
+            \end{bmatrix} \right)^\dagger.
+        \end{align*}
+        As a result,
+        \begin{align*}
+            \frac{\partial \omega}{\partial \theta}
+            = \left( \begin{bmatrix}
+                y^1_x & y^1_y & y^1_z \\
+                y^2_x & y^2_y & y^2_z \\
+                y^3_x & y^3_y & y^3_z \\
+            \end{bmatrix}
+            \begin{bmatrix}
+                \cos\varphi \cos\vartheta & -\sin\varphi \sin\vartheta \\
+                \sin\varphi \cos\vartheta & \cos\varphi \sin\vartheta \\
+                -\sin\vartheta & 0
+            \end{bmatrix} \right)^\dagger
+            \begin{bmatrix}
+                y^1_\theta \\
+                y^2_\theta \\
+                y^3_\theta
+            \end{bmatrix}
+        \end{align*}
+        </li>        
     </ul>
 
     <hr>
