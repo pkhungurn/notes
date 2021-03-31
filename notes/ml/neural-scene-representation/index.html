@@ -81,7 +81,7 @@
     <hr>
 
 
-    <h2>1. &nbsp; Neural Radiance Fields</h2>
+    <h2>1 &nbsp; Neural Radiance Fields</h2>
 
     <ul>
         <li>This is an ECCV 2020 paper by Mildenhall et al. <a href="https://www.matthewtancik.com/nerf">[LINK]</a></li>
@@ -371,10 +371,115 @@
         <li>A typical scene takes around 100k to 300k iterations to converge. This is about 1-2 days on a NVIDIA V100 GPU.</li>
     </ul>
 
+    <h2>2 &nbsp; Dynamic NeRF [Gafni et al. 2020]</h2>
+
+    <ul>
+        <li>Here's <a href="https://gafniguy.github.io/4D-Facial-Avatars/">the project page</a>.</li>
+        
+        <li>Problem specification.
+        <ul>
+            <li><b>Input:</b> A monocular video of a human talking in front of a static camera.</li>
+            <li><b>Output:</b> A NeRF that satisfies the following contracts.
+            <ul>
+                <li><b>Inputs</b>
+                <ul>
+                    <li>A 3D position $(x,y,z).$</li>
+                    <li>A direction $\ve{d} = (\theta,\phi)$.</li>
+                    <li>A pose parameter $\delta \in \Real^{76}$.</li>
+                    <li>A per-frame latent code $\gamma \in \Real^{32}$.</li>
+                </ul>
+                </li>
+
+                <li><b>Outputs</b>
+                <ul>
+                    <li>A volume density $\sigma$ at $(x,y,z)$.</li>
+                    <li>An RGB radiance $\ve{c}$ emiited per (differential) mass from $(x,y,z)$ in direction $(\theta,\phi)$.</li>                    
+                </ul>
+                The outputs are of the human in the video frame indicated by $\gamma$, taking the pose specified by $\delta$.
+                </li>
+            </ul>
+            In other words, this is a rigged NeRF of the human in the video.
+            </li>
+        </ul>
+        </li>
+
+        <li>The pose parameter $\delta$ is the one used by a 3D morphable model that is used by the <a href="https://arxiv.org/abs/2007.14808">Face2Face paper</a>.</li>
+
+        <li>The latent code $\gamma$ is there to compensate for the fact that $\delta$ might not be able to capture all variations.
+        <ul>
+            <li>For certain, it does not capture shoulder movements or hair movements, which can be present in the video.</li>
+        </ul>
+        </li>
+
+        <li>Network architecture.
+        <ul>
+            <li>The architecture is very similar to that of the NeRF paper. They just add the extra parameters as input.</li>
+
+            <li>Look at the picture:
+            <a href="dynamic-nerf-architecture.png"><img src="dynamic-nerf-architecture.png" width="600" /></a>
+            </li>
+
+            <li>Also, the paper also uses the "coarse" and the "fine" networks, just like how the NeRF paper does it.
+            <ul>
+                <li>However, this time $N_c = N_f = 64$.</li>
+            </ul>
+            </li>            
+        </ul>
+        </li>
+
+        <li>Training.
+        <ul>
+            <li>Given a video with $M$ frames, let $I_i$ denote the $i$th frame where $i \in \{1, 2, \dotsc, M\}$.</li>
+
+            <li>Let $\gamma_i$ denote the latent code for the $i$th frame. The paper says that these latent codes are learnable parameters.</li>
+
+            <li>For each frame, the paper uses the 3D morphable model to regress the pose parameter $\delta_i$ and the transformation matrix $P_i$ associated with the head rotation.</li>
+
+            <li>Let $\Theta$ be the parameters of a network. The lost associated with the $i$th frame is given by:
+            \begin{align*}
+                \mathcal{L}_i(\Theta) = \sum_{j \in \mathrm{pixels}} \| C(\ve{r}_j; \Theta, P_i, \delta_i, \gamma_i) - I_i[j] \|^2
+            \end{align*}
+            where
+            <ul>
+                <li>$\ve{r}_j$ is the camera ray associated with Pixel $j$. The ray is transformed into the object space by $P_i^{-1}$ first before being fed to the underlying NeRF.</li>
+                
+                <li>$C(\ve{r}_j; \Theta, P_i, \delta_i, \gamma_i)$ is the radiance seen through the ray $\ve{r}_j$ given the relevant parameters.</li>
+            </ul>
+            </li>
+
+            <li>To facilitate foreground-background segmentation, the paper modifies the radiance computation procedure a little.
+            <ul>
+                <li>In addition to the video, the paper also takes a snapshot of the background (i.e., the scene without a person talking).</li>
+
+                <li>The function $C$ is modified so that the last sample along each rays evaluates to the associated background pixel's color.</li>
+            </ul>
+            </li>
+
+            <li>The overall loss is the sum of the losses of the coarse and the fine networks over the frames.
+            \begin{align*}
+                \mathcal{L}_{\mathrm{total}}
+                = \sum_{i=1}^M \Big( \mathcal{L}_i(\Theta_{\mathrm{coarse}}) + \mathcal{L}_i(\Theta_{\mathrm{fine}}) \Big).
+            \end{align*}
+            </li>
+
+            <li>In real training, however, the paper does not use the whole images in a batch. It instead samples 2048 rays such that 95% of the rays intersect the head's bounding box.</li>
+
+            <li>The opimization algorithm was Adam with learning rate $5 \times 10^{-4}$.</li>
+
+            <li>Each model is trained for 400k iterations.</li>
+
+            <li>Input image size was 512.</li>
+
+            <li>The paper mentions that it needs a large number of training images---more than those of static scene reconstruction---to be able to generalize on the poses.</li>
+        </ul>
+        </li>
+    </ul>
+
     <hr>
     <div class="page-header"></div>
     <p>Last modified: 2021/03/28</p>    
 </div>
+
 
 <script type="text/javascript">
 $.bigfoot();
