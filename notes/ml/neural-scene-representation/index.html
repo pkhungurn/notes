@@ -370,6 +370,7 @@
 
         <li>A typical scene takes around 100k to 300k iterations to converge. This is about 1-2 days on a NVIDIA V100 GPU.</li>
     </ul>
+    <hr>
 
     <h2>2 &nbsp; Dynamic NeRF [Gafni et al. 2020]</h2>
 
@@ -473,6 +474,168 @@
             <li>The paper mentions that it needs a large number of training images---more than those of static scene reconstruction---to be able to generalize on the poses.</li>
         </ul>
         </li>
+    </ul>
+    <hr>
+
+    <h2>3 &nbsp; Portrait NeRF [Gao et al. 2020]</h2>
+
+    <ul>
+        <li><a href="https://portrait-nerf.github.io/">Link to the project page</a>.</li>
+
+        <li>This paper presents a way to generate (non-posable) NeRF from a single photograph.
+        <ul>
+            <li>The input photograph contains a face looking straight ahead. It covers the upper head, hairs, and torso.</li>
+        </ul>
+        </li>
+
+        <li>The paper looks at the problem as an instance of meta-learning.
+        <ul>
+            <li>The paper pretrains a NeRF with portrait images obtained from light stage captures.</li>
+
+            <li>At test time, we are given a portrait image and use it to finetune the above NeRF.</li>
+
+            <li>In meta-learning lingo:
+            <ul>
+                <li>The problem of synthesizing view from a camera pose is called a <b>query</b>.</li>
+
+                <li>Light stage captures are called the <b>labels</b>.</li>
+
+                <li>Training a subject specific NeRF is called a <b>task</b>.</li>
+
+                <li>At test time, we are given a single label (the frontal capture), and we need to optimize the <b>testing task</b>, which must be able to answer multiple queries.</li>
+            </ul>
+            </li>
+
+            <li>The paper learns a single NeRF and uses it to initialize the weight of the NeRF that is going to be optimize at test time. It does so by solving multiple tasks given the labels. These are called <b>meta-training tasks</b>.
+            <ul>
+                <li>That is, we learn a single MLP for multple subjects.</li>
+            </ul>
+            </li>
+        </ul>
+        </li>
+    </ul>
+
+    <h3>3.1 &nbsp; Overview</h3>
+
+    <ul>
+        <li>The method contains two stages:
+        <ul>
+            <li><b>Pretraining</b>
+            <ul>
+                <li>We train a coordinate-based NeRF $f_\Theta$ on subjects captured from a light stage.</li>
+
+                <li>The end project is a model parameter $\Theta^*_p$.</li>
+            </ul>
+            </li>
+
+            <li><b>Testing</b>
+            <ul>
+                <li>We initialize the NeRF with $\Theta^*_p$.</li>
+                <li>We finetune it on the frontal view of the test subject.</li>
+            </ul>
+            </li>
+        </ul>
+        </li>
+
+        <li>To address the variety of size and translation among different subjects, the input to the NeRF is defined in a <b>canonical face coordinate</b> (i.e., the object space). Camera rays are transformed into these coordinates before being fed to the NeRF.</li>
+    </ul>
+
+    <h3>3.2 &nbsp; Training Data</h3>
+
+    <ul>
+        <li>The paper uses a light stage to cpature multiple subjects.</li>
+
+        <li>For each subject:
+        <ul>
+            <li>The paper construct a 3D mesh of the subject.</li>
+
+            <li>It then renders a 5 $\times$ 5 training views. These views form a uniform grid on the solid angles with $25^\circ$ vertical field-of-view and $15^\circ$ horizonal field-of-view and with the center being the view looking straight to the subject's face.            
+            </li>
+
+            <li>The set containing only the center view is called the <b>support set</b> and is denoted by $\mathcal{D}_s$.</li>
+
+            <li>The set containing the other 24 views are called the <b>query set</b> and is denoted by $\mathcal{D}_q$.</li>
+        </ul>
+        </li>        
+    </ul>
+
+    <h3>3.3 &nbsp; Pretraining</h3>
+
+    <ul>
+        <li>Let there be $K$ subjects in the training data. The subjects are indexed by $m \in \{0,1,\dotsc, K-1\}$.</li>
+
+        <li>The paper starts with a NeRF with randomly initialized parameter $\Theta_{p,-1}$.</li>
+
+        <li>It then loops for the subjects, one by one, from Subject $m = 0$ to Subject $m = K-1$.
+        <ul>
+            <li>Now, consider Subject $m$.</li>
+
+            <li>We train two NeRF, whose parameters are denoted by $\Theta_m$ and $\Theta_{p,m}$.
+            <ul>
+                <li>$\Theta_m$ is optimized with both $\mathcal{D}_s$ and $\mathcal{D}_q$. We discard it after the iteration. Its only use is to generate gradients to update $\Theta_{p,m}$.</li>
+
+                <li>$\Theta_{p,m}$ is optimized with only $\mathcal{D}_q$. We use it in the next iteration.</li>
+            </ul>
+            </li>
+
+            <li>First, we optimize $\Theta_m$ with data from $\mathcal{D}_s$.
+            <ul>
+                <li>We initialize $\Theta_m^0 \gets \Theta_{p,m-1}$.</li>
+
+                <li>For $N_s$ iterations, we perform the gradient update:
+                \begin{align*}
+                    \Theta_m^{t+1} 
+                    \gets \Theta_m^t - \alpha \frac{\partial \mathcal{L}(\mathcal{D}_s, \Theta^t_m)}{\partial \Theta_m^t}.
+                \end{align*}
+                where $\mathcal{L}(\mathcal{D}_s, \Theta^t_m)$ is the L2 loss between the view predicts by the NeRF with parameters $\Theta^t_m$, and $\alpha$ is the learning rate.
+                </li>
+
+                <li>Let $\Theta_m^*$ denote the parameter at the end of the $N_s$th iteration, $\Theta^{N_s}_m$.</li>
+            </ul>
+            </li>
+
+            <li>Second, we optimize $\Theta_m$ and $\Theta_{p,m}$ jointly.
+            <ul>
+                <li>We initialize $\Theta_m^0 \gets \Theta_m^*$ and $\Theta_{p,m}^0 \gets \Theta_{p,m-1}$.</li>
+
+                <li>For $N_q$ iterations, we perform the following gradient updates:
+                \begin{align*}
+                    \Theta_{m}^{t+1} &\gets \Theta_m^t - \beta \frac{\partial \mathcal{L}(\mathcal{D}_q, \Theta^t_m)}{\partial \Theta_m^t} \\
+                    \Theta_{p,m}^{t+1} &\gets \Theta_{p,m}^t - \beta \frac{\partial \mathcal{L}(\mathcal{D}_q, \Theta^t_m)}{\partial \Theta_m^t}.
+                \end{align*}
+                where $\beta$ is the learning rate.
+                </li>
+
+                <li>At the end, we set $\Theta_{p,m} \gets \Theta_{p,m}^{N_q}$.</li>
+            </ul>            
+            </li>
+        </ul>
+        In the end, the pretrained parameters $\Theta_p^*$ is $\Theta_{K-1}^*$.
+        </li>
+    </ul>
+
+    <h3>3.4 &nbsp; Finetuning</h3>
+
+    <ul>
+        <li>Finetuning at test time is equivalent to performing the $N_s$ gradient updates as discussed the last section.</li>
+    </ul>
+
+    <h3>3.5 &nbsp; Canonical Face Space</h3>
+
+    <ul>
+        <li>For each subject $m$ in the training data, we approximate its geometry with a 3D morphable model. Say, the morphable model for Subject $m$ is $F_m$.</li>
+
+        <li>We average the geometry to obtain an average mesh $\overline{F}$.</li>
+
+        <li>We use the correspondence between $F_m$ and $\overline{F}$ to find a rigid transform $\ve{x} \mapsto s_m R_m \ve{x} + \ve{t}_m$ where $s_m$ is a scaling factor, $R_m$ is a rotation matrix, and $\ve{t}_m$ is translation vector.
+        <ul>
+            <li>This optimization is done by computing an SVD. (More details in the paper.</li>
+        </ul>
+        </li>
+
+        <li>The above rigid transformation is applied to the incoming ray before feeding it to the underlying NeRf.</li>
+
+        <li>At test time, the rigid transformation can be computed in the same way.</li>
     </ul>
 
     <hr>
