@@ -637,6 +637,146 @@
 
         <li>At test time, the rigid transformation can be computed in the same way.</li>
     </ul>
+    <hr>
+
+    <h2>4 &nbsp; SIREN [Sitzmann et al. NeurIPS 2020]</h2>
+
+    <ul>
+        <li><a href="https://vsitzmann.github.io/siren/">Link to project page</a>.</li>
+
+        <li>There are many classes of problem that can be formulated as solving the following equation:
+        \begin{align*}
+            F(\ve{x}, \Phi, \nabla_{\ve{x}} \Phi, \nabla^2_{\ve{x}} \Phi, \dotsc, ) = 0
+        \end{align*}
+        where $\phi: \ve{x} \mapsto \Phi(\ve{x})$.
+        <ul>
+            <li>A prime example of problems of this classes are <b>boundary value problems</b>: solving differential equations with respect to some boundary conditions.</li>
+
+            <li>This can also be used to model discrete signals (images, videos, 3D shapes) with continuous functions.</li>
+        </ul>
+        </li>
+
+        <li>We would like to learn a network that computes $\Phi(\ve{x})$ that satisfies the above equation.
+        <ul>
+            <li>Such a network is called a <b>implicit neural representation</b> of $\Phi$.</li>
+        </ul>
+        </li>
+
+        <li>An implicit neural representation has many advantanges over discrete grid-based representations.
+        <ul>
+            <li>It is limited by the network's capacity, not the resolution.</li>
+
+            <li>It is differentiable, and so may be used to solve inverse problems.</li>
+        </ul>
+        </li>
+
+        <li>There are many recent works that try to use implicit neural representation for various tasks. (NeRF is one of them.) Most of these works use ReLU-based MLPs.</li>
+
+        <li>However, ReLU-based MLPS have the following cons:
+        <ul>
+            <li>They cannot represent fine details.</li>
+
+            <li>They cannot represent gradients well because ReLU networks are piecewise linear and so their second order derivatives are zero everywhere.</li>
+        </ul>
+        </li>
+
+        <li>Their are also other choices of activation functions such as $\tanh$ and $\mathrm{softplus}$. The paper shows that, while they can represent higher-order derivatives, these are not well behaved. Moreover, such networks cannot represent fine details.</li>
+
+        <li>The paper proposed using periodic function (the sine) as the activation function.
+        <ul>
+            <li>SIREN = SInusoidal REpresentation Network.</li>
+        </ul>
+        </li>
+
+        <li>The NeRF paper and <a href="https://bmild.github.io/fourfeat/index.html">a subsequent paper</a> propose using positional encoding in conjunction with ReLU-based MLPs as implicit representations. The paper shows that SIREN is better than this alternative in representing details and derivatives.</li>
+    </ul>
+
+    <h3>4.1 &nbsp; Formulation</h3>
+
+    <ul>
+        <li>Let us formulate the problem another way. We would like to solve the following problem:<br><br>
+        <p style="margin-left:40px;">
+            Find $\Phi(\ve{x})$ subjected to contrains $\mathcal{C}_m(\ve{a}({x}), \Phi(\ve{x}), \nabla_\ve{x} \Phi(\ve{x}), \nabla^2_\ve{x} \Phi(\ve{x}), \dotsc) = 0$ for any $\ve{x} \in \Omega_m$ where $m = 1, \dotsc, M$.
+        </p><br>
+        </li>
+
+        <li>The problem can be cast as minimizing the following loss function:
+        \begin{align*}
+            \mathcal{L} = \int_{\Omega} \bigg( \sum_{m=1}^M \mathbf{1}[\ve{x} \in \Omega_m] |\mathcal{C}_m(\ve{a}({x}), \Phi(\ve{x}), \nabla_\ve{x} \Phi(\ve{x}), \nabla^2_\ve{x} \Phi(\ve{x}), \dotsc) | \bigg)\, \dee\ve{x}
+        \end{align*}
+        where $\mathbf{1}[\ve{x} \in \Omega_m]$ is the indiciator function that is 1 if $\ve{x} \in \Omega_m$ and 0 otherwise.
+        </li>
+
+        <li>In practice, we have a dataset $\ve{D} = \{ (\ve{x}_i, \ve{a}(\ve{x}_i)) : i = 1, 2, \dotsc, N \}$, and the loss becomes:
+        \begin{align*}
+            \mathcal{L} = \sum_{i=1}^N \sum_{m=1}^M |\mathcal{C}_m(\ve{a}(\ve{x}_i), \Phi(\ve{x}), \nabla_\ve{x} \Phi(\ve{x}), \nabla^2_\ve{x} \Phi(\ve{x}), \dotsc) |.
+        \end{align*}
+        </li>
+
+        <li>In the problem of signal representation, $\ve{x}_i$ would be dynamically sampled at test time.</li>
+        
+        <li>The paper proposes to use a neural network for the form:
+        \begin{align*}
+            \Phi(\ve{x}) = \ve{b}_n + W_n(\phi_{n-1} \circ \phi_{n-2} \circ \dotsm \circ \phi_0)(\ve{x})
+        \end{align*}
+        where
+        \begin{align*}
+            \phi_j: \ve{x}^{(j)} \rightarrow \sin(\ve{b}_j + W_j\ve{x}^{(j)})
+        \end{align*}
+        is just appying the sine function as an activation function after an affine transformation.
+        </li>
+
+        <li>Now, note that:
+        \begin{align*}
+            \frac{\partial}{\partial \ve{x}^{(j)}} \phi_j(\ve{x}^{(j)})
+            &= W_j \cos(\ve{b}_j + W_j\ve{x}^{(j)})
+            = W_j \sin\bigg( \frac{\pi}{2} - \ve{b}_j - W_j\ve{x}^{(j)} \bigg).
+        \end{align*}
+        So, we can deduce that the $\nabla_\ve{x} \Phi(\ve{x})$ is also a SIREN as well. As a result, the derivative remains well behaved.
+        </li>        
+    </ul>
+
+    <h3>4.2 &nbsp; Initialization Scheme</h3>
+
+    <ul>
+        <li>The paper presents an initialization scheme such that the distribution of activations do not dependent on the number of network layers.</li>
+
+        <li>Consider the output distribution of a single sine neuron.
+        <ul>
+            <li>Say, the input $x$ comes from the uniformly distributed input $x \sim \mathrm{Uniform}[-1,1]$.</li>
+
+            <li>The neuron's output is $y = \sin(ax+b)$ with $a, b \in \Real$.</li>
+
+            <li>It can be show nthat for any $a > \pi/2$., the output of the sine is $y \sim sin^{-1}([-1,1])$, a special case of of a U-shaped Beta distribution, independent of the choice of $b$.</li>
+
+            <li>Now, consider $y = \sin(\ve{w}^T\ve{x} + b)$.</li>
+
+            <li>We assume that the neuron is in the second layer, so each if its input is arcsine distributed.</li>
+
+            <li>We can show that when each component of $\ve{w}$ comes from the distribution $\mathrm{Uniform}(-c/\sqrt{n}, c/\sqrt{n})$ with $c \in \Real$ and $n$ is the number of components of $\ve{w}$, we have that the dot product satisfies $\ve{w}^T\ve{x} \sim \mathcal{N}(0, c^2/6)$ as $n$ grows.</li>
+
+            <li>Feeding the above distribution to a sine function gives an arcsine distributed random variable for any $c > \sqrt{6}$.</li>
+
+            <li>The weights of SIREN can be interpreted as angular frequencies, and the biases can be interpreted as phase shifts. As a result, large frequencies appear when the weights have large magnitude.</li>
+
+            <li>When $|\ve{w}^T\ve{x}| < \pi / 4$, the sine layer will leav e the frequencies unchanged because the sine is approximateley linear in that regime.
+            <ul>
+                <li>The paper even found that a sine layer keeps spatial frequencies approximate constant for $|\ve{w}^T\ve{x}| < \pi$. The spatial frequencies increase above this value though.</li>
+            </ul>
+            </li>
+
+            <li>The paper proposes to draw weights with $c = 6$, which ensures that the input to each sine activation is normally distributed with standard deviation of $1$.</li>
+
+            <li>Because few weights would be larger in magnitude than $\pi$, the frequency throughout the sine netowkr grows only slowly.</li>
+
+            <li>For the first layer, the paper proposes to initialize the first layer with weights so that the sine function $\sin(\omega_0 \cdot W\ve{x} + \ve{b})$ spans multiple periods over $[-1,1]$.
+            <ul>
+                <li>The paper found that $\omega_0 = 30$ works well.</li>
+            </ul>
+            </li>
+        </ul>
+        </li>
+    </ul>
 
     <hr>
     <div class="page-header"></div>
