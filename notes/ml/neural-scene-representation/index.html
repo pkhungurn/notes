@@ -779,6 +779,156 @@
     </ul>
 
     <hr>
+
+    <h2>5 &nbsp; PIFu [Saito et al. ICCV 2019]</h2>
+
+    <ul>
+        <li><a href="https://shunsukesaito.github.io/PIFu/">[Project page]</a></li>
+
+        <li><b>Goal.</b> Given a single image of a human subject or multiple images taken from different angles, construct the underlying 3D geometry and texture.</li>
+
+        <li>Convention used in the paper.
+        <ul>
+            <li>It denotes a 3D position with capital letters such as $X$.</li>
+            <li>On the other hand, a 2D position is denoted with small letters such as $x$.</li>
+        </ul>
+        </li>
+
+        <li>Let us assume that there is a single input image, denoted by $I$.
+        <ul>
+            <li>The image pixel at 2D position $x$ is denoted by $I[x]$. This is computed by bilinear sampling because $x$ is a continuous variable, but $I$ has a discrete representation.</li>
+
+            <li>We assume that the camera parameter for $I$.</li>
+        </ul>
+        </li>
+
+        <li>The paper first processes the input image $I$ to produce two pixel-aligned feature embeddings. To do so, it uses two encoders.
+        <ul>
+            <li>$F_V$ is used to produce an embedding for volumetric represention.</li>
+            <li>$F_C$ is used to produce an embedding for the geometry's texture. ($C$ might stand for "color.")</li>
+        </ul>
+        </li>
+
+        <li>To reconstruct the surface, the paper approximates the groundtruth 3D occupancy field:
+        \begin{align*}
+        f^*_v(X) = \begin{cases}
+        1, & \mbox{if X is inside the surface} \\
+        0, & \mbox{otherwise}
+        \end{cases}
+        \end{align*}
+        </li>
+        
+        <li>The surface is the 0.5-level set: $\{ X : f_v^*(X) = 0.5 \}$. The paper approximates it with the function:
+        \begin{align*}
+        f^*_v(X) \approx f_v(F_V(I)[x], z(X))  
+        \end{align*}
+        where
+        <ul>
+            <li>$f_v$ is a neural network,</li>
+            <li>$F_V(I)[x]$ denotes fetching the feature embedding at 2D position $x$ with bilinear interpolation,</li>
+            <li>$x = \pi(X)$ is the 2D projection of $X$ into the image plane of $I$, and</li>
+            <li>$z(X)$ is the depth value of $X$ according to $I$'s view transformation. </li>
+        </ul>
+        The surface can be extracted from the approximated level-set with, say, the marching cubes altorithm.
+        </li>
+
+        <li>The paper views the texture as a vector (in other words, RGB) field: $f^*_c: \Real^3 \rightarrow \Real^3$, which it approximates as:
+        \begin{align*}
+            f^*_c(X) \approx f_c(F_C(I, F_V(I))[x], z(X))
+        \end{align*}
+        where $f_c$ is another neural network. The approximated RGB field can be evaluated on the level-set to get the texture values for the reconstructed surface.
+        <ul>
+            <li>Note that the encoder $F_C$ also takes the feature for volumetric reconstruction as input. The paper observes that, without it, the texture function would be forced to learn the volumetric representation as well. Including the feature embedding can lessen $f_c$'s and $F_C$'s burden and make them generalize better.</li>
+        </ul> 
+        </li>
+    </ul>
+
+    <h3>5.1 &nbsp; Single-View Surface Reconstruction</h3>
+
+    <ul>
+        <li>We require a dataset containing pairs of (1) an input image and (2) a corresponding 3D mesh that is aliged with the input image.
+        <ul>
+            <li>It is assumed that the meshs is water-tight so that the ground truth occupancy field can be computed.</li>
+        </ul>
+        </li>
+
+        <li>For each pair of image and mesh, we sample $n$ 3D points $X_1$, $X_2$, $\dotsc$, $X_n$ and minimize the loss:
+        \begin{align*}
+            \mathcal{V} = \frac{1}{n} \sum_{i=1}^n \big( f_v(F_V(I)[x_i], z(X_i)) - f^*_v(X_i) \big)^2
+        \end{align*}
+        by jointly updating the paramters of $F_V$ and $f_v$.
+        </li>
+
+        <li>The 3D points above are sampled on the fly from the ground truth mesh. The paper combines two sampling strategies:
+        <ul>
+            <li>It randomly sample points on the surface geometry and add offsets with normal distribution $\mathcal{N}(0, 0.5\,\mathrm{cm})$.</li>
+
+            <li>It also uniformly sample points within the bounding box of the scene.</li>
+        </ul>
+        The ratio for the two types of samples points is 16 : 1.
+        </li>
+    </ul>
+
+    <h3>5.2 &nbsp; Texture Inference</h3>
+
+    <ul>
+        <li>Again, we need pairs of (1) an image and (2) a texture mesh that is aligned with it.</li>
+
+        <li>For each pair, we sample $n$ points $X_1$, $X_2$, $\dotsc$, $X_n$ on the surface. Let $C(X_i)$ denote the texture color at points $X_i$.</li>
+
+        <li>To make the learning task easier, the paper perturb each point's position by displacing along the normal direction:
+        \begin{align*}
+            X'_i = X_i + \epsilon N(X_i)
+        \end{align*}
+        where $\epsilon \sim \mathcal{N}(0, 1\,\mathrm{cm})$, and $N(X_i)$ is the normal vector at $X_i$.
+        </li>
+
+        <li>The loss function is given by:
+        \begin{align*}
+            \mathcal{L}_C = \frac{1}{n} \sum_{i=1}^n \big| f_c(F_C(I, F_V(I))[x'_i] , z(X'_i)) - C(X_i) \big|
+        \end{align*}
+        </li>
+    </ul>
+
+    <h3>5.3 &nbsp; Multi-View Reconstruction</h3>
+
+    <ul>
+        <li>Suppose we have multiple images $I_1$, $I_2$, $\dotsc$, $I_m$, taken from different camera angles, of the same subject and with the same underlying ground truth mesh.
+        <ul>
+            <li>Again, it is assumed that the camera setting for each image is known.</li>
+
+            <li>Let $\pi_k(X)$ be the 2D projection of the 3D point $X$ into the image plane of $I_k$.</li>
+
+            <li>Let $z_k(X)$ be the depth according to the camera projection of $I_k$.</li>
+        </ul>
+        </li>
+
+        <li>To enable reconstruction from multiple images, we need to modify $f_v$ and $f_c$ so that it takes multiple images into account. In this section, we will focus on $f_v$. The transformation for $f_c$ would be similar.</li>        
+
+        <li>We decompose $f_v$ to be a composition of two functions:
+        <ol>
+            <li>$f^{(1)}_v$ transforms $F_V(I_i)[\pi_i(X)]$ and $z_i(X)$ into a feature embedding $\Phi_i$ for each image $i$.</li>
+
+            <li>$f^{(2)}_v$ transforms $\Phi = \frac{1}{m} \sum_{k=1}^m \Phi_k$ into the occupancy propability.</li>
+        </ol>
+        In other words, we approximate the ground truth occupancy field with:
+        \begin{align*}
+            f^*_v(X) \approx f^{2}_v\bigg( \frac{1}{m}\sum_{k=1}^m f^{(1)}_v\big( F_V(I)[\pi_i(X)], z_i(X) \big) \bigg).
+        \end{align*}
+        </li>
+    </ul>
+
+    <h3>5.4 &nbsp; Details</h3>
+
+    <ul>
+        <li>The image encoder for surface reconstruction uses the <a href="https://arxiv.org/abs/1603.06937">stacked hourglass</a> architecture.</li>
+
+        <li>The image encoder for texture uses the one used by CycleGAN.</li>
+
+        <li>The implicit functions $f_v$ and $f_c$ are multi-layer perceptions that have skip connections from the inputs.</li>
+    </ul>
+
+    <hr>
     <div class="page-header"></div>
     <p>Last modified: 2021/03/28</p>    
 </div>
