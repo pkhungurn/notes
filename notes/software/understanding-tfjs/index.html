@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>Understanding Tensorflow.js</title>
+
+    <!-- Bootstrap -->
+    <link href="../../../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../../../css/theme.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+    MathJax.Hub.Config(
+        {
+            tex2jax: {
+                inlineMath: [['$','$'], ['\\(','\\)']],                
+            },
+            TeX: { equationNumbers: {autoNumber: "AMS"} } 
+        });
+    </script>
+    <script type="text/javascript"
+            src="../../../MathJax/MathJax.js?config=TeX-AMS_HTML-full">
+    </script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.1/styles/default.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.1/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
+</head>
+<body>
+<div class="container">
+    <span style="visibility: hidden;">
+        \(
+        \def\sc#1{\dosc#1\csod}
+        \def\dosc#1#2\csod{{\rm #1{\small #2}}}
+
+        \newcommand{\dee}{\mathrm{d}}
+        \newcommand{\Dee}{\mathrm{D}}
+        \newcommand{\In}{\mathrm{in}}
+        \newcommand{\Out}{\mathrm{out}}
+        \newcommand{\pdf}{\mathrm{pdf}}
+        \newcommand{\Cov}{\mathrm{Cov}}
+        \newcommand{\Var}{\mathrm{Var}}
+
+        \newcommand{\ve}[1]{\mathbf{#1}}
+        \newcommand{\mrm}[1]{\mathrm{#1}}
+        \newcommand{\etal}{{et~al.}}
+        \newcommand{\sphere}{\mathbb{S}^2}
+        \newcommand{\modeint}{\mathcal{M}}
+        \newcommand{\azimint}{\mathcal{N}}
+        \newcommand{\ra}{\rightarrow}
+        \newcommand{\mcal}[1]{\mathcal{#1}}
+        \newcommand{\X}{\mathcal{X}}
+        \newcommand{\Y}{\mathcal{Y}}
+        \newcommand{\Z}{\mathcal{Z}}
+        \newcommand{\x}{\mathbf{x}}
+        \newcommand{\y}{\mathbf{y}}
+        \newcommand{\z}{\mathbf{z}}
+        \newcommand{\tr}{\mathrm{tr}}
+        \newcommand{\sgn}{\mathrm{sgn}}
+        \newcommand{\diag}{\mathrm{diag}}
+        \newcommand{\Real}{\mathbb{R}}
+        \newcommand{\sseq}{\subseteq}
+        \newcommand{\ov}[1]{\overline{#1}}
+        \DeclareMathOperator*{\argmax}{arg\,max}
+        \DeclareMathOperator*{\argmin}{arg\,min}
+
+        \newcommand{\data}{\mathrm{data}}
+        \newcommand{\N}{\mathcal{N}}
+        \)
+    </span>
+
+    <br>
+    <h1>Understanding Tensorflow.js</h1>
+ 
+    <p>
+        I would like to run my  <a href="http://github.com/pkhungurn/talking-head-anime-2-demo">"Talking Head Anime from a Single Image"</a>  
+        network on web browsers and mobile devices. My networks were trained with <a href="http://pytorch.org">Pytorch</a>.  The current plan
+        is to convert the model to <a href="js.tensorflow.org">Tensorflow.js</a> (TFJS) and try to run it in web browsers. If this goes well, I can
+        use the TFJS model to develop mobile applications with tools like <a href="http://flutter.dev">Flutter</a> or 
+        <a href="http://reactnative.dev">React Native</a>. I can also develop desktop applications with <a href="http://electronjs.org">Electron</a>. 
+    </p>
+
+    <p>
+        However, the main problem is that my network uses layers that are not yet implemented in TFJS. These are 
+        <code><a href="https://pytorch.org/docs/master/generated/torch.nn.functional.affine_grid.html">affine_grid</a></code>,
+        <code><a href="https://pytorch.org/docs/master/generated/torch.nn.functional.grid_sample.html">grid_sample</a></code>, and
+        <code><a href="https://pytorch.org/docs/master/generated/torch.nn.functional.instance_norm.html">instance_norm</a></code>.
+        I think I cannot really rely on the TFJS team to implement them, so I will have to do it myself.
+    </p>
+
+    <p>
+        Implementing new layers needs understanding of how the underlying software works, and this notes is written as I try to gain this knowlege.
+        As I am interested in implementing inference, not training, I will not cover how gradients are computed in TFJS.
+    </p>
+    <hr>
+
+    <h2>1 &nbsp; Related Terms</h2>
+
+    <h3>1.1 &nbsp; Engine</h3>
+
+    <p>
+        The <b>engine</b> is the object that implements all TFJS functionality. It does 
+        <a href="https://github.com/tensorflow/tfjs/blob/1bec37b9364df6164a4a0ad64c29e0859382f0b4/tfjs-core/src/tensor.ts#L158">memory management for tensor objects</a>
+        and execute mathematical computations. There seems to be only one engine present at a time, and it is accessible from the 
+        global variable <a href="https://github.com/tensorflow/tfjs/blob/1bec37b9364df6164a4a0ad64c29e0859382f0b4/tfjs-core/src/engine.ts#L1216"><code>ENGINE</code></a>
+        and also by calling <code>tf.engine()</code>. Nevertheless, end users of TFJS rarely use it directly.
+    </p>
+
+    <h3>1.2 &nbsp; Backends</h3>
+
+    <p>
+        A <b>backend</b> is a part of the engine that carries two functions:
+        <ul>
+            <li>Storing tensor data in a platform-specific way.</li>
+            <li>Acting as a platform-specific collection of tensor computations.</li>
+        </ul> 
+        When our Javascript program is running in a web browser, it can use two backends:
+        <ul>
+            <li>The CPU backend. <a href="https://github.com/tensorflow/tfjs/tree/master/tfjs-backend-cpu">[CODE]</a></li>
+            <li>The WebGL backend. <a href="https://github.com/tensorflow/tfjs/tree/master/tfjs-backend-webgl">[CODE]</a></li>
+        </ul>
+        There are other backends that can be used when we run our program with <a href="https://nodejs.org/en/">Node.js</a>. However, we do not care about
+        them in this note.
+    </p>
+
+    <p>
+        A backend is represented by the 
+        <a href="https://github.com/tensorflow/tfjs/blob/1bec37b9364df6164a4a0ad64c29e0859382f0b4/tfjs-core/src/backends/backend.ts#L97"><code>KernelBackend</code></a> class.
+        It implements the <a href="https://github.com/tensorflow/tfjs/blob/1bec37b9364df6164a4a0ad64c29e0859382f0b4/tfjs-core/src/backends/backend.ts#L33"><code>TensorStorage</code></a> 
+        interface, which allows one to read, write, and manage memory for tensor data.
+    </p>
+
+    <h3>1.3 &nbsp; Ops</h3>
+
+    <p>
+        An <b>operation</b> (op) is a function that takes a number of tensors and produce a number of output tensors. It is an abstract operation that
+        can have different implementations in different backends. Examples of ops include 
+        <a href="https://github.com/tensorflow/tfjs/blob/master/tfjs-core/src/ops/square.ts"><code>square</code></a>,
+        <a href="https://github.com/tensorflow/tfjs/blob/master/tfjs-core/src/ops/conv2d.ts"><code>conv2d</code></a>,
+        and <a href="https://github.com/tensorflow/tfjs/blob/master/tfjs-core/src/ops/mat_mul.ts"><code>matMul</code></a>.
+        Ops are defined in the <a href="https://github.com/tensorflow/tfjs/tree/master/tfjs-core"><code>tfjs-core</code></a> package.
+    </p>
+
+    <h3>1.4 &nbsp; Kernels</h3>
+
+    <p>
+        A <b>kernel</b> is a backend-specific implementation of an op. A kernel can be executed by calling the 
+        <a href="https://github.com/tensorflow/tfjs/blob/1bec37b9364df6164a4a0ad64c29e0859382f0b4/tfjs-core/src/engine.ts#L514"></a><code>runKernel</code> 
+        function of the engine.
+    </p>
+
+    <p>
+        To define a custom kernel, we first need to create a 
+        <a href="https://github.com/tensorflow/tfjs/blob/e18e0984ab494c18d83b08b7b8bff0fdac79af05/tfjs-core/src/kernel_registry.ts#L55"><code>KernelConfig</code></a> object,
+        where we must specify:
+        <ul>
+            <li>The kernel's name.</li>
+            <li>The backend's name.</li>
+            <li>
+                The kernel's code, which satisfies the 
+                <a href="https://github.com/tensorflow/tfjs/blob/e18e0984ab494c18d83b08b7b8bff0fdac79af05/tfjs-core/src/kernel_registry.ts#L38"><code>KernelFunc</code></a> interface.
+            </li>
+            <li>The kernel's setup code (optional).</li>
+            <li>The kernel's disposal code (optional).</li>
+        </ul>
+    </p>
+
+    <p>
+        A kernel is identified by a <a href="https://github.com/tensorflow/tfjs/blob/e18e0984ab494c18d83b08b7b8bff0fdac79af05/tfjs-core/src/kernel_registry.ts#L213">lookup key</a> 
+        that is made up of its name and its backend. TFJS maintains a global dictionary mapping keys to corresponding <code>KernelConfig</code>, which it calls the 
+        <a href="https://github.com/tensorflow/tfjs/blob/e18e0984ab494c18d83b08b7b8bff0fdac79af05/tfjs-core/src/kernel_registry.ts#L24"><code>kernelRegistry</code></a>.
+        The <a href="https://github.com/tensorflow/tfjs/blob/e18e0984ab494c18d83b08b7b8bff0fdac79af05/tfjs-core/src/kernel_registry.ts#L138"><code>registerKernel</code>
+        </a> function can be used to add new kernels to the registry.
+    </p>
+    <hr>
+
+    <h2>2 &nbsp; The CPU Backend</h2>
+
+    <h3>2.1 &nbsp; Data Storage</h3>
+
+    <p>
+        Tensor data is represented by the 
+        <a href="https://github.com/tensorflow/tfjs/blob/e18e0984ab494c18d83b08b7b8bff0fdac79af05/tfjs-backend-cpu/src/backend_cpu.ts#L25"><code>TensorData</code></a> 
+        generic class. It contains:
+        <ul>
+            <li>
+                An optional <code>values</code>, which is a 
+                <a href="https://github.com/tensorflow/tfjs/blob/e18e0984ab494c18d83b08b7b8bff0fdac79af05/tfjs-core/src/types.ts#L63"><code>BackendValues</code></a>,
+                which is in turn an array of <code>Float32Array</code>, <code>Int32Array</code>, or <code>Uint8Array</code>.
+            </li>
+            <li>
+                A <code>dtype</code>, which has a type that extends 
+                <a href="https://github.com/tensorflow/tfjs/blob/e18e0984ab494c18d83b08b7b8bff0fdac79af05/tfjs-core/src/types.ts#L57"><code>DataType</code></a>,
+                which is simply <code>"float32"|"int32"|"bool"|"complex64"|"string"</code>.
+            </li>
+            <li>An optional <code>complexTensorInfo</code>.</li>
+            <li>A <code>refCount</code>.</li>
+        </ul>
+    </p>
+
+    <p>
+        The data strorage is implemented by the 
+        <a href="https://github.com/tensorflow/tfjs/blob/e18e0984ab494c18d83b08b7b8bff0fdac79af05/tfjs-core/src/backends/backend.ts#L46">
+            <code>DataStorage&lt;TensorData&lt;DataType&gt;&gt;</code></a> generic class,
+        which contains a <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WeakMap">WeakMap</a> from
+        <code>DataId</code> (arbitrary object) to <code>TensorData&lt;DataType&gt;</code>.
+    </p>
+
+    <p>
+        The backend maintains in increasing integer 
+        <a href="https://github.com/tensorflow/tfjs/blob/e18e0984ab494c18d83b08b7b8bff0fdac79af05/tfjs-backend-cpu/src/backend_cpu.ts#L42"><code>nextDataId</code></a>,
+        which is incremented every time a new data is written to the backend through the 
+        <a href="https://github.com/tensorflow/tfjs/blob/e18e0984ab494c18d83b08b7b8bff0fdac79af05/tfjs-backend-cpu/src/backend_cpu.ts#L52"><code>write</code> </a> method.
+    </p>
+
+    <h3>2.2 &nbsp; Data Layout</h3>
+
+    <p>
+        From <a href="https://github.com/tensorflow/tfjs/blob/master/tfjs-backend-cpu/src/kernels/BatchMatMul.ts"><code>BatchMatMul.ts</code></a>,
+        it seems that the tensor data is stored in row major order.                
+    </p>
+
+    <p>
+        For 2D convolution operation, the input data can either be stored in the NCHW or NHWC layout. This can be specified as input to the 
+        <a href="https://github.com/tensorflow/tfjs/blob/e18e0984ab494c18d83b08b7b8bff0fdac79af05/tfjs-core/src/kernel_names.ts#L175">Conv2D</a> op.
+        The filter weights, however, is stored in the <code>[filterHeight, filterWidth, inDepth, outDepth]</code> <a href="https://js.tensorflow.org/api/latest/#conv2d">[LINK]</a>.
+    </p>
+
+    <p>
+        Nevertheless, the transposed convolution operation can only supports input of the NHWC format <a href="https://js.tensorflow.org/api/latest/#conv2dTranspose">[LINK]</a>.
+        It is, however, possible to invoke the kernel, called the 
+        <a href="https://github.com/tensorflow/tfjs/blob/master/tfjs-core/src/ops/conv2d_backprop_input.ts"><code>conv2DBackpropInput</code></a>, with the 'NCHW' format.
+    </p>
+
+    <h3>2.3 &nbsp; Kernel Implementation</h3>
+
+    <p>
+        An example kernel implementation is given <a href="https://github.com/tensorflow/tfjs/blob/master/tfjs-backend-cpu/src/kernels/Square.ts">here</a>.
+        We will study it in more details.
+    </p>
+
+    <h4>2.3.1 &nbsp; Understanding <code>KernelConfig</code></h4>
+
+    <p>
+        First, we need to construct an instance of 
+        <a href="https://github.com/tensorflow/tfjs/blob/e18e0984ab494c18d83b08b7b8bff0fdac79af05/tfjs-core/src/kernel_registry.ts#L55"><code>KernelConfig</code></a>, 
+        whose type definition is given below:
+    </p>
+
+<pre><code class="typescript">/** Config object for registering a kernel in the global registry. */
+export interface KernelConfig {
+    kernelName: string;
+    backendName: string;
+    kernelFunc: KernelFunc;
+    setupFunc?: KernelSetupFunc;
+    disposeFunc?: KernelDisposeFunc;
+}
+</code></pre>
+
+    <p>
+        We see that we must provide (1) the kernel name, (2) the backend name (i.e., <code>"cpu"</code>), and 
+        (3) the 
+        <a href="https://github.com/tensorflow/tfjs/blob/e18e0984ab494c18d83b08b7b8bff0fdac79af05/tfjs-core/src/kernel_registry.ts#L38"><code>KernelFunc</code></a>. 
+        The main bulk of work is in the <code>KernelFunc</code>, whose type definition is:
+    </p>
+
+<pre><code class="typescript">/** Specifies the code to run when executing a kernel. */
+export type KernelFunc = (params: {
+    inputs: NamedTensorInfoMap,
+    backend: {},
+    attrs?: NamedAttrMap,
+}) => TensorInfo|TensorInfo[];
+</code></pre>
+
+    <p>
+        Let's go through the types that are involved with the <code>KernelFunc</code>.
+        <ul>
+            <li>
+                The return value is 
+                <a href="https://github.com/tensorflow/tfjs/blob/e18e0984ab494c18d83b08b7b8bff0fdac79af05/tfjs-core/src/kernel_registry.ts#L75"><code>TensorInfo</code></a>.
+<p>
+<pre><code class="typescript">/** Holds metadata for a given tensor. */
+export interface TensorInfo {
+    dataId: DataId;
+    shape: number[];
+    dtype: DataType;
+}
+</code></pre>
+</p>
+
+                Recall that the <code>dataId</code> field holds an arbitrary object. In the CPU backend, the object holds an integer ID of the tensor.
+            </li>
+
+            <li>
+                The input to the kernel function is an object of the following type:
+<p>
+<pre><code class="typescript">{
+    inputs: NamedTensorInfoMap,
+    backend: {},
+    attrs?: NamedAttrMap,
+}</code></pre>
+</p>
+                It has three fields:
+                <ul>
+                    <li>
+                        <code>inputs</code> is a collection of named tensors, which is represented by the 
+                        <a href="https://github.com/tensorflow/tfjs/blob/e18e0984ab494c18d83b08b7b8bff0fdac79af05/tfjs-core/src/kernel_registry.ts#L81"><code>NamedTensorInfoMap</code></a>
+                        class.
+<p>
+<pre><code class="typescript">export interface NamedTensorInfoMap {
+    [name: string]: TensorInfo;
+}
+</code></pre>
+</p>
+                        Kernels will specialize this type based using the <a href="https://www.typescriptlang.org/docs/handbook/utility-types.html#picktype-keys">Pick</a> 
+                        utility type. For example, the 
+                        <a href="https://github.com/tensorflow/tfjs/blob/e371af0dac5031f7094b81225b0a2eda68f3f168/tfjs-core/src/kernel_names.ts#L796"><code>SquareInputs</code></a> 
+                        class, which represent tensor inputs to the Square kernel, is defined as follows:
+                        <p>
+                            <pre><code class="typescript">export type SquareInputs = Pick&lt;NamedTensorInfoMap, 'x'&gt;;</code></pre>
+                        </p>                        
+                    </li>
+
+                    <li>
+                        <code>backend</code> is the backend that is going to run the kernel.
+                    </li>
+
+                    <li>
+                        <code>attrs</code> represents a collection of named "attributes," where an attribute is just a non-tensor input. Its type is 
+                        <a href="https://github.com/tensorflow/tfjs/blob/e18e0984ab494c18d83b08b7b8bff0fdac79af05/tfjs-core/src/kernel_registry.ts#L85">NamedAttrMap</a>.
+                        Here's the collection of types that are used to represent attributes.
+<p>
+<pre><code class="typescript">export interface NamedAttrMap {
+    [name: string]: Attribute;
+}
+
+/** These are extra non-tensor/primitive params passed to kernel functions. */
+export type Attribute = AttributeValue|RecursiveArray<AttributeValue>;
+
+type AttributeValue = 
+    number|number[]|boolean|boolean[]|string|string[]|NamedAttrMap;
+
+export interface RecursiveArray<T extends any> {
+    [index: number]: T|RecursiveArray<T>;
+}
+</code></pre>                    
+</p>
+                        Again, kernels will specialize this type as follows:
+<p>
+<pre><code class="typescript">export interface FusedConv2DAttrs {
+    strides: [number, number]|number;
+    pad: 'valid'|'same'|number|ExplicitPadding;
+    dataFormat: 'NHWC'|'NCHW';
+    dilations: [number, number]|number;
+    dimRoundingMode: 'floor'|'round'|'ceil';
+    activation: Activation;
+    leakyreluAlpha?: number;
+}
+</code></pre>
+</p>                        
+                    </li>
+                </ul>
+            </li>
+        </ul>
+    </p>
+
+    <h4>2.3.2 &nbsp; Writing a <code>KernelFunc</code></h4>
+
+    <p>
+        Now, let's loook at the implementation of the Square kernel.        
+    </p>
+
+<pre><code class="typescript">import {Square, SquareInputs} from '@tensorflow/tfjs-core';
+import {KernelConfig} from '@tensorflow/tfjs-core';
+import {MathBackendCPU} from '../backend_cpu';
+import {assertNotComplex} from '../cpu_util';
+
+export const squareConfig: KernelConfig = {
+  kernelName: Square,
+  backendName: 'cpu',
+  kernelFunc: ({inputs, backend}) => {
+    const {x} = inputs as SquareInputs;
+    const cpuBackend = backend as MathBackendCPU;
+    assertNotComplex(x, 'square');
+
+    const values = cpuBackend.data.get(x.dataId).values as Float32Array;
+    const newValues = new Float32Array(values.length);
+    for (let i = 0; i < values.length; ++i) {
+      const value = values[i];
+      newValues[i] = value * value;
+    }
+    const dataId = cpuBackend.write(newValues, x.shape, x.dtype);
+    return {dataId, shape: x.shape, dtype: x.dtype};
+  }
+};
+</code></pre>
+
+    <p>
+        We see that there are a number of steps to follow.
+        <ol>
+            <li>
+                Cast the <code>inputs</code> field of the input object to the specific input type of the kernel and then extract the relevant individual inputs.
+<p>
+<pre><code class="typescript">const {x} = inputs as SquareInputs;</code></pre>
+</p>
+                Here, we see that <code>x</code> is a <code>TensorInfo</code> object that represents the input tensor.
+            </li>
+
+            <li>
+                Cast the <code>backend</code> field to the specific backend that the kernel works with.
+<p>
+<pre><code class="typescript">const cpuBackend = backend as MathBackendCPU;</code></pre>
+</p>
+            </li>
+
+            <li>
+                Retrieve the tensor data from the backend.
+<p>
+<pre><code class="typescript">const values = cpuBackend.data.get(x.dataId).values as Float32Array;</code></pre>
+</p>
+            </li>
+
+            <li>
+                Compute the output data.
+<p>
+<pre><code class="typescript">const newValues = new Float32Array(values.length);
+for (let i = 0; i < values.length; ++i) {
+    const value = values[i];
+    newValues[i] = value * value;
+}</code></pre>
+</p>
+            </li>
+
+            <li>
+                Write the new data to the backend.
+<p>
+<pre><code class="typescript">const dataId = cpuBackend.write(newValues, x.shape, x.dtype);</code></pre>
+</p>
+                Note that the <code>write</code> function of all backends is supposed to return a new <code>DataId</code>.
+            </li>
+
+            <li>
+                Create an object satisfying the <code>TensorInfo</code> interface and return it as output.
+<p>
+<pre><code class="typescript">return {dataId, shape: x.shape, dtype: x.dtype};</code></pre>
+</p>
+            </li>
+        </ol>
+    </p>
+
+    <h3>2.4 &nbsp; Registering the Kernel</h3>
+
+    <p>
+        After creating the <code>KernelConfig</code>, we need to call the 
+        <a href="https://github.com/tensorflow/tfjs/blob/e18e0984ab494c18d83b08b7b8bff0fdac79af05/tfjs-core/src/kernel_registry.ts#L138"><code>registerKernel</code></a>
+        function on it. For the CPU backend, all kernels are registered in 
+        <a href="https://github.com/tensorflow/tfjs/blob/master/tfjs-backend-cpu/src/register_all_kernels.ts"><code>register_all_kernels.ts</code></a>.
+    </p>
+    <hr>
+
+    <h2>3 &nbsp; The WebGL Backend</h2>
+    <hr>
+
+    <h3>3.1 &nbsp; Data Storage</h3>
+
+    <p>
+        The WebGL backend is implemented by the 
+        <a href="https://github.com/tensorflow/tfjs/blob/e18e0984ab494c18d83b08b7b8bff0fdac79af05/tfjs-backend-webgl/src/backend_webgl.ts#L104"><code>MathBackendWebGL</code></a>
+        class. It has a field called <code>texData</code>, which has type <code>DataStorage&lt;TextureData&gt;</code>, meaning that the
+        <a href="https://github.com/tensorflow/tfjs/blob/e18e0984ab494c18d83b08b7b8bff0fdac79af05/tfjs-backend-webgl/src/tex_util.ts#L72"><code>TextureData</code></a> class
+        represents storage of texture data. Here's the definition of the class:
+    </p>
+
+<pre><code class="typescript">export interface TextureData {
+    // Required.
+    shape: number[];
+    dtype: DataType;
+
+    // Optional.
+    values?: backend_util.BackendValues;
+    texture?: WebGLTexture;
+    // For complex numbers, the real and imaginary parts are stored as their own
+    // individual tensorInfos, with a parent joining the two with the
+    // complexTensors field. When this is defined, texture will be null.
+    complexTensorInfos?: {real: TensorInfo, imag: TensorInfo};
+    /** [rows, columns] shape of the texture. */
+    texShape?: [number, number];
+    usage?: TextureUsage;
+    isPacked?: boolean;
+
+    refCount: number;
+
+    // Available when the tensor has been sliced.
+    slice?: {
+        // Offset in the 'flat index' space.
+        flatOffset: number;
+        // Used for counting how many sliced tensors point to the same texture.
+        origDataId: DataId;
+    };
+}
+</code></pre>
+
+    <p>Let's dig into some of the fields:
+        <ul>
+            <li>
+                <code>texture</code> stores a <code>WebGLTexture</code>. This is not a TFJS-specific type as it comes WebGL.
+                <a href="https://developer.mozilla.org/en-US/docs/Web/API/WebGLTexture">[LINK]</a>
+            </li>
+
+            <li>
+                <code>value</code> stores data that is not uploaded to the GPU yet.
+            </li>
+
+            <li>
+                Because <code>texture</code> and <code>value</code> are optional,
+                the backend can deal with data that have been updated to GPU and those that have not been uploaded.
+            </li>
+
+            <li>
+                <code>usage</code> stores an enum of type 
+                <a href="https://github.com/tensorflow/tfjs/blob/e18e0984ab494c18d83b08b7b8bff0fdac79af05/tfjs-backend-webgl/src/tex_util.ts#L57"><code>TextureUsage</code></a>,
+                which has the following definition:
+<p>
+<pre><code class="typescript">export enum TextureUsage {
+    RENDER,
+    UPLOAD,
+    PIXELS,
+    DOWNLOAD
+}
+</code></pre>
+</p>
+                I don't quite understand the meaning of the <code>TextureUsage</code> enum yet.
+                <ul>
+                    <li>
+                        One thing that I know right now is that, for data that has not been uploaded to the GPU yet, <code>usage</code> is set to <code>UPLOAD</code>.
+                        <a href="https://github.com/tensorflow/tfjs/blob/081b28468bf18505326b543f1ec450d725e1dbb4/tfjs-backend-webgl/src/backend_webgl.ts#L172">[LINK]</a>
+                    </li>
+                </ul>
+            </li>
+
+            <li>
+                <code>isPacked</code> gives information about how texture data is laid out.
+                We will cover what this means momentarily.
+            </li>
+        </ul>
+    </p>
+
+    <h3>3.2 &nbsp; GPGPU Program</h3>
+
+    <p>
+        Computation is carried out by running shaders on the GPU. This is done through the
+        <a href="https://github.com/tensorflow/tfjs/blob/38f8462fe642011ff1b7bcbb52e018f3451be58b/tfjs-backend-webgl/src/backend_webgl.ts#L783"><code>runWebGLProgram</code></a>
+        of the <code>MathBackendWebGL</code> class. Here's the signature of the method.
+    </p>
+
+<pre><code class="typescript">runWebGLProgram(
+    program: GPGPUProgram, 
+    inputs: TensorInfo[], 
+    outputDtype: DataType,
+    customSetup?: (gpgpu: GPGPUContext, webGLProgram: WebGLProgram) => void,
+    preventEagerUnpackingOfOutput = false): TensorInfo    
+</code></pre>
+
+    <p>
+        Here's how the
+        <a href="https://github.com/tensorflow/tfjs/blob/38f8462fe642011ff1b7bcbb52e018f3451be58b/tfjs-backend-webgl/src/gpgpu_math.ts#L25"><code>GPGPUProgram</code></a>
+        interface is defined.
+    </p>
+
+<pre><code class="typescript">export interface GPGPUProgram {
+    variableNames: string[];
+    outputShape: number[];
+    userCode: string;
+    /** If true, this program expects packed input textures. Defaults to false. */
+    packedInputs?: boolean;
+    /** If true, this program produces a packed texture. Defaults to false. */
+    packedOutput?: boolean;
+    /**
+     * Affects what type of texture we allocate for the output. Defaults to
+     * `TextureUsage.RENDER`.
+     */
+    outTexUsage?: TextureUsage;
+    /**
+     * The type of scheme to use when packing texels for the output values.
+     * See `PackingScheme` for details. Defaults to `PackingScheme.SHARED_BATCH`.
+     */
+    outPackingScheme?: PackingScheme;
+} 
+</code></pre>
+
+    <p>
+        <a href=""><code>PackingScheme</code></a> is defined as follows.
+    </p>
+
+<pre><code class="typescript">export enum PackingScheme {
+    /**
+    * All values in a single texel are densely packed without any constraints.
+    *
+    * This is how the shader encodes a tensor with shape = [2, 3, 4]
+    * (indices are [batch, row, col]).
+    *
+    * 000|001   010|011   020|021
+    * -------   -------   -------
+    * 002|003   012|013   022|023
+    *
+    * 100|101   110|111   120|121
+    * -------   -------   -------
+    * 102|103   112|113   122|123
+    *
+    */
+    DENSE,
+    
+    /**
+    * Single texels contain only values from the same batch, and from adjacent
+    * rows and columns.
+    *
+    * This is how the shader encodes a tensor with shape = [2, 3, 5]
+    * (indices are [batch, row, col]).
+    *
+    * 000|001   002|003   004|xxx   020|021   022|023   024|xxx
+    * -------   -------   -------   -------   -------   -------
+    * 010|011   012|013   014|xxx   xxx|xxx   xxx|xxx   xxx|xxx
+    *
+    * 100|101   102|103   104|xxx   120|121   122|123   124|xxx
+    * -------   -------   -------   -------   -------   -------
+    * 110|111   112|113   114|xxx   xxx|xxx   xxx|xxx   xxx|xxx
+    *
+    */
+    SHARED_BATCH
+}
+</code></pre>
+
+    <p>
+        Now, I searched for <code>SHARED_BATCH</code> across the repository, and it seems
+        that it was not used anywhere despite being documented that it is the default value.
+    </p>
+
+    <h4>3.2.1 &nbsp; Concrete <code>GPGPUProgram</code> Examples</h4>
+
+    <p>
+        Let's see an example of a concrete instance of <code>GPGPUProgram</code>. 
+    </p>
+
+    <h4>3.2.1.1 &nbsp; Unary Operation Programs</h4>
+
+    <p>
+        The simplest one is the
+        <a href="https://github.com/tensorflow/tfjs/blob/e18e0984ab494c18d83b08b7b8bff0fdac79af05/tfjs-backend-webgl/src/unaryop_gpu.ts#L20"><code>UnaryOpProgram</code></a>.
+    </p>
+
+<pre><code class="typescript">
+export class UnaryOpProgram implements GPGPUProgram {
+    variableNames = ['A'];
+    userCode: string;
+    outputShape: number[];
+    
+    constructor(aShape: number[], opSnippet: string) {
+        this.outputShape = aShape;
+        this.userCode = `
+        float unaryOperation(float x) {
+            ${opSnippet}
+        }
+        void main() {
+            float x = getAAtOutCoords();
+            float y = unaryOperation(x);
+            setOutput(y);
+        }
+        `;
+    }
+}
+</code></pre>
+
+    <p>
+        Note that the user code is not a complete program. It is only a snippet that must be combined with another piece of code
+        in order to make a functioning fragment shader. In particular, two functions are not defined:
+        <ul>
+            <li>
+                <code>getAAtOutCoords()</code>, which seems to derive its name from the <code>variableNames = ['A']</code> line.
+                The return type is a <code>float</code>.
+            </li>
+            <li>
+                <code>setOutput()</code>, which should set the output value at the output coordinates.
+            </li>
+        </ul>
+
+    <p>
+        Here are some sample of <code>opSnippet</code> found within the code file.
+    </p>
+
+<pre><code class="typescript">export const CHECK_NAN_SNIPPET = `if (isnan(x)) return x;`;
+
+export const LINEAR = `return x;`;
+
+export const ABS = `return abs(x);`;
+
+export function STEP(alpha = 0.0) {
+    return CHECK_NAN_SNIPPET + `
+    return x > 0.0 ? 1.0 : float(${alpha});
+    `;
+}
+
+export const ELU = `return (x >= 0.0) ? x : (exp(x) - 1.0);`;
+
+export const RELU = CHECK_NAN_SNIPPET + `
+    return (x < 0.0) ? 0.0 : x;
+`;
+</code></pre>
+
+    <p>
+        However, there's another version, the
+        <a href="https://github.com/tensorflow/tfjs/blob/e18e0984ab494c18d83b08b7b8bff0fdac79af05/tfjs-backend-webgl/src/unaryop_packed_gpu.ts#L59"><code>UnaryOpPackedProgram</code></a>.
+    </p>
+
+<pre><code class="typescript">export class UnaryOpPackedProgram implements GPGPUProgram {
+    variableNames = ['A'];
+    userCode: string;
+    outputShape: number[];
+    packedInputs = true;
+    packedOutput = true;
+    
+    constructor(aShape: number[], opSnippet: string) {
+        this.outputShape = aShape;
+        this.userCode = `
+        vec4 unaryOperation(vec4 x) {
+            ${opSnippet}
+        }
+        void main() {
+            vec4 x = getAAtOutCoords();
+            vec4 y = unaryOperation(x);
+            setOutput(y);
+        }
+        `;
+    }
+}
+</code></pre>
+
+    <p>
+        This time, <code>getAAtOutCoords</code> outputs a <code>vec4</code>, and <code>setOutput</code> also accepts a <code>vec4</code>
+        instead of a <code>float</code>. Here are examples of <code>opSnippet</code> found in the same file.
+    </p>
+
+<pre><code class="typescript">export const LINEAR = `return x;`;
+    
+export const ELU = `
+    vec4 result;
+    result.r = (x.r >= 0.0) ? x.r : (exp(x.r) - 1.0);
+    result.g = (x.g >= 0.0) ? x.g : (exp(x.g) - 1.0);
+    result.b = (x.b >= 0.0) ? x.b : (exp(x.b) - 1.0);
+    result.a = (x.a >= 0.0) ? x.a : (exp(x.a) - 1.0);
+    return result;
+`;
+
+export const RELU = `
+    vec4 result = x * vec4(greaterThanEqual(x, vec4(0.0)));
+    bvec4 isNaN = isnan(x);
+    result.r = isNaN.r ? x.r : result.r;
+    result.g = isNaN.g ? x.g : result.g;
+    result.b = isNaN.b ? x.b : result.b;
+    result.a = isNaN.a ? x.a : result.a;
+    return result;
+`;
+</code></pre>
+
+    <p>
+        So, it would seem that, if the texture is packed, a texel stores an RGBA value. Otherwise, it stores only a <code>float</code>.
+    </p>
+
+    <hr>
+    <div class="page-header"></div>
+    <p>Last modified: 2021/05/08</p>    
+</div>
+
+</body>
+</html>
