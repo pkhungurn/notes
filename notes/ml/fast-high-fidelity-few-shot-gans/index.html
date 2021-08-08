@@ -851,6 +851,22 @@
             \mathcal{L}_G &= -E_{\ve{z} \sim \mathcal{N}(0,1)}[D(G(\ve{z}))] 
             \end{align*}
         </li>
+
+        <li>Here are the discrepancies between the paper and the code.
+        <ul>
+            <li>The paper (Figure 4, in particular) says that there are two decoders, but the code has three.</li>
+
+            <li>The paper does not mention the small pathway. Figure 4 only contains the big pathway.</li>
+
+            <li>The big pathway in Figure 4 does not show any skip-layer connections.</li>
+
+            <li>The paper says that it randomly crops the original image to get a $128 \times 128$ image. It also crops $\ve{b}_8$ by $\frac{1}{8}$ of its height and width and feeds the result to the decoder to reconstruct a $128 \times 128$ image. However, this does not make sense because this would produce a $2 \times 2$ tensor, which cannot be converted to a $128 \times 128$ image with 4 $\mathrm{UpBlock}$s. The code, instead, works a random quadrant of the input image and uses a random quadrant of $\ve{b}_8$ to regenerate the scaled down version of the quadrant.
+            <ul>
+                <li>The paper claims that the use of random crops of $\ve{b}_8$ would allow the discriminator to learn about detailed textures, but this does not seem to be true because the quadrants are scaled down by a factor of $4$.</li>
+            </ul>
+            </li>
+        </ul>
+        </li>
     </ul>
 
     <hr>
