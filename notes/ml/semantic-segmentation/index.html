@@ -352,7 +352,7 @@
 
         <li><b>Dilated Convolutions</b>
         <ul>
-            <li>DeepLab <a href="https://arxiv.org/abs/1412.7062">[Chen et al. 2015]</a> and DeepLabV2 <a href="https://arxiv.org/abs/1606.00915">[Chen et al. 2016]</a> introduce two additional techniques in addition to the CRF postprocessing.
+            <li>DeepLab <a href="https://arxiv.org/abs/1412.7062">[Chen et al. 2015]</a> and DeepLabv2 <a href="https://arxiv.org/abs/1606.00915">[Chen et al. 2016]</a> introduce two additional techniques in addition to the CRF postprocessing.
             <ul>
                 <li>The first is the use of dilated (aka atrous) convolutions.</li>
 
@@ -360,7 +360,7 @@
             </ul>
             </li>
 
-            <li>DeepLabV3 uses an encoder-decoder with atrous separable convolutions <a href="https://arxiv.org/abs/1802.02611">[Chen et al. 2018]</a>.</li>
+            <li>DeepLabv3 uses an encoder-decoder with atrous separable convolutions <a href="https://arxiv.org/abs/1802.02611">[Chen et al. 2018]</a>.</li>
         </ul>
 
         <li><b>Attention</b></li>
@@ -404,8 +404,64 @@
         </li>
     </ul>
     
+    <hr>
+    <h2>4 &nbsp; Long et al. (CVPR 2015)</h2>
 
+    <ul>
+        <li>This seems to be the first paper that uses deep CNNs to perform segmantic segmentation.</li>
 
+        <li>The general approach is to adapt CNNs trained to do image classfication for image segmentation.
+        <ul>
+            <li>The paper chooses VGG-16 as the CNN to adapt.</li>
+        </ul>
+        </li>
+
+        <li>The first step in doing so is to view all fully-connected layers as $1\times 1$ convolutional layers.</li>
+
+        <li>After the first step, the paper says that it removes the last layer that produces a 1000-way prediction, and replaces it with a $1 \times 1$ convolution that produces the right number of classes. (21 for the Pascal VOC dataset.)</li>        
+
+        <li>Now, things start to not make sense. The paper claims that this produces an feature tensor whose side length is 32x less than the original image. This, however, does not make sense because the convolution after the last pooling layer <a href="https://github.com/shelhamer/fcn.berkeleyvision.org/blob/1305c7378a9f0ab44b2c936f4d60e4687e3d8743/voc-fcn16s/net.py#L52">has size 7 and does not have any padding</a>.
+        <ul>
+            <li>The only way for this to work is to add padding at the last convolution or just use the output of the last pooling steps without using the last convolution.</li>
+        </ul>
+        </li>
+
+        <li>Assuming that we cut out all the convolutions after the last pooling layer, the paper does the following.
+        <ol>
+            <li>It passes the output of the last 3 pooling layers to new $1\times1$ convolutional layers to get tensors whose side lengths are 32x, 16x, and 16x smaller than the original image.</li>
+
+            <li>It them combines the outputs together, upsampling the 32x tensor with a deconvolution and add the result to the 16x image. It agains upsamples the result and add it to the 8x image, producing a 8x output.</li>
+        </ol>
+        A diagram of the network is given below.
+        <p align="center"><img src="fcn.jpg" width="800"></p>
+        Here, $C$ is the number of classes, $H$ is the image height, and $W$ is the image width.
+        </li>
+
+        <li>Note, again, that the prediction produced by this paper is 8x smaller (in side length) than the image size.
+        <ul>
+            <li>We will see that, for most of the works discussed here, the outputs are small in size than the input.</li>
+        </ul>
+        </li>
+    </ul>
+    
+    <hr>
+    <h2>5 &nbsp; The DeepLab Family</h2>
+
+    <ul>
+        <li>The DeepLab family is the brain child of <a href="http://liangchiehchen.com/">Liang-Chieh Chen</a>, who started working on it in 2015 and made 3 incrementals to it up to 2018. The last version is called <a href="https://arxiv.org/abs/1802.02611">DeepLabv3+</a>.</li>
+
+        <li>Like Long et al.'s paper, the idea is also to repurpose CNNs trained for image classification. It thus must solve the problem that the output resolution is low.</li>
+
+        <li>The DeepLab family 
+        <ol>
+            <li>sets the strides of pooling layers to 1, and</li>
+            <li>replaces some convolutions in the original network with atrous convolutions (aka dilated convolution)</li>
+        </ol>
+        to increase output resolution. In constrast, Long et al. uses after-the-fact deconvolution to do so.
+        </li>
+    </ul>
+
+    <hr>
     <div class="page-header"></div>
     <p>Last modified: 2021/09/11</p>    
 </div>
