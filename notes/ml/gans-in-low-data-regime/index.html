@@ -87,23 +87,165 @@
             <li>Paintings by a specific painter.</li>
             <li>Illustrations a specific artists.</li>
             <li>Medical images from patients with a specific rare malady.</li>
+            <li>Photos of a specific person.</li>
         </ul>
-        In other words, what to do if you have several hundreds or even several tens of the training examples?
+        In other words, what to do if you only have several hundreds or even several tens of the training examples?
         </li>
 
         <li>This notes contains summaries of papers dealing with this problem.</li>
     </ul>
 
     <hr>
-    <h2></h2>
+    <h2>1 &nbsp; Enforcing Cross-Cross Domain Correspondence [Ojha et al. 2021]</h2>
 
     <ul>
-        <li>Citation: Charin Kong, Jeesoo Kim, Donghoon Han, and Nojin Kwak. <b>Smoothing the Generative Latent Space with Mixup-based Distance Learning.</b> 2021.</li>
+        <li>Utkarsh Ojha, Yijun Li, Jingwan Lu, Alexei A. Efros, Yong Jae Lee, Eli Shechtman, and Richard Zhang. <b>Few-shot Image Generation via Cross-domain Correspondence. CVPR, 2021.</b></li>
+
+        <li>Links: <a href="https://utkarshojha.github.io/few-shot-gan-adaptation/">[Project]</a> <a href="https://arxiv.org/abs/2104.06820">[arXiv]</a> <a href="https://github.com/utkarshojha/few-shot-gan-adaptation">[GitHub]</a></li>
+
+        <li>It's one of Alyosha's papers again. He's really influencial in the CV area.</li>
+    </ul>
+
+    <h3>1.1 &nbsp; Introduction</h3>
+
+    <ul>
+        <li>Well, let's say we have a domain with 10 examples. How do we train a GAN on this domain?</li>
+
+        <li>The paper says uses transfer learning.
+        <ul>
+            <li>Let's assume your domain has good correspondence with another domain where there's a lot of data to train GANs with.
+            <ul>
+                <li>For example, painting of human faces and photos.</li>
+
+                <li>Let's call your data-scarce domain the <b>target</b> domain, and the domain with a lot of data the <b>source</b> domain.</li>
+            </ul>
+            </li>
+
+            <li>So, we start with a GAN pre-trained for the source domain. We will somehow adapt it to generate data in the target doamin.</li>
+        </ul>
+        </li>
+
+        <li>The novel feature of this paper is that it tries to transfer a new kind of information from the source domain to the target domain: <b>similarities between elements</b>.
+        <ul>
+            <li>The idea is that the diversity of a domain is captured by how elements are similar or different to one another.</li>
+
+            <li>If we can transfer similarties (and thereby differences) between elements from the source to the target domain, then we have a good chance of inheriting the diversity of the source domain. This should address the data scarcity problem of the target domain because we inject diversity from another domain.</li>
+        </ul>
+        </li>
+
+        <li>To encourage transfer of similarities between elements, the paper introduce a new <b>cross-domain distance consistency loss</b>, which measures the difference between the distribution of pairwise distances between generated examples before and after adaptation.</li>
+    </ul>
+
+    <h3>1.2 &nbsp; Approach</h3>
+
+    <ul>
+        <li>We are given a source generator $G_s$, training on a large source dataset $\mcal{D}_s$. It maps a noise $z \sim p_z(z)$ to an image $x \in \mcal{D}_s$.</li>
+
+        <li>We would like to fine tune $G_s$ to produce $G_{s \rightarrow t}$, fitting it to a smaller dataset $\mcal{D}_t$.</li>
+
+        <li>Normally, we would intiailize the weights of a generator $G$ to that of $G_s$. Then, we train $G$ together with a discriminator $D$ to solve the following optimization problem:
+        \begin{align*}
+        \min_{G} \max_{D} E_{z \sim p_z(x), x \sim \mcal{D}_t} [\mcal{L}_{adv}(G,D,z,x)]
+        \end{align*}
+        where
+        \begin{align*}
+            \mcal{L}_{adv}(G,D,z,x) = D(G(z)) - D(x).
+        \end{align*}
+        </li>
+
+        <li>However, the above procedure only works when there are thousands of samples in the target domain.</li>
+
+        <li>When there are only tens of examples, the model would overfit the training examples, losing the diversity in the source domain as generated examples collapse into discrete modes around the limit training examples.</li>
+
+        <li>To prevent such collapses, the paper seeks to preserve pairwise distances between the samples.</li>
+
+        <li>The cross-domain distance consistency loss.
+        <ul>
+            <li>We first sample a $N+1$ noise vectors $z_0, z_1, \dotsc, z_N$. Typically, $N = 3$.</li>
+
+            <li>We then pass the noise vectors to the generator before adaptation ($G_s$) and the generator under training for adaptation ($G_{s \rightarrow} t)$, extranging activations after a number of layers. Let us denote the activations after Layer $l$ by
+            \begin{align*}
+            G^l_s(z_0), G^l_s(z_1), \dotsc, G^l_s(z_N)
+            \end{align*}
+            and 
+            \begin{align*}
+            G^l_{s \rightarrow t}(z_0), G^l_{s \rightarrow t}(z_1), \dotsc, G^l_{s \rightarrow t}(z_N)
+            \end{align*}
+            </li>
+
+            <li>For each $i \in \{0, 1, \dotsc, N\}$, we compute an $N$ cosine similarities between the activation of $z_i$ and the activations of the rest:
+            \begin{align*}
+                \{ \mathrm{sim}(G^l_s(z_i), G^l_s(z_j)) : j \neq i \}
+            \end{align*}
+            and 
+            \begin{align*}
+                \{ \mathrm{sim}(G^l_{s \rightarrow t}(z_i), G^l_{s \rightarrow t}(z_j)) : j \neq i \}.
+            \end{align*}
+            </li>
+
+            <li>These numbers are then turned into discrete probability distributions by applying softmax:
+            \begin{align*}
+                y_i^{s, l} = \mathrm{Softmax}( \{ \mathrm{sim}(G^l_s(z_i), G^l_s(z_j)) : j \neq i \} )
+            \end{align*}
+            and 
+            \begin{align*}
+                y_i^{s\rightarrow t, l} = \mathrm{Softmax} ( \{ \mathrm{sim}(G^l_{s \rightarrow t}(z_i), G^l_{s \rightarrow t}(z_j)) : i \neq j \} ).
+            \end{align*}
+            </li>
+
+            <li>The loss is defined as the KL-divergence between the above two discrete probability distributions:
+            \begin{align*}
+                \mcal{L}_{dist}(G_s, G_{s \rightarrow t}) = E_{z_0, \dotsc, z_N \sim p_z} \bigg[ \sum_{l, i} D_{KL}(y_i^{s,l} \| y_i^{s\rightarrow t, l}) \bigg].
+            \end{align*}
+            </li>
+
+            <li>In practice, the paper does not use all the layers at once. It only samples one layer to use at a time. This reduces computation by a lot.</li>
+        </ul>
+        </li>
+
+        <li>Modifying the adversarial loss.
+        <ul>
+            <li>When there are so few training images in the target domain, it is not advisable to use the vanilla adversarial loss without modification.</li>
+
+            <li>The problem is that, because the training data is so limited, the discriminator can simply memorize the training examples and reject all other "realistic-looking" generated examples that are not exactly these few ones.</li>
+
+            <li>The paper's strategy is to apply the full-image adversarial discriminator $D_{img}$ to examples generated from noice vectors in a small region of $\mcal{Z}$, and then apply patch-based adversarial loss $D_{patch}$ to the rest.</li>
+
+            <li>To do this, it defines "anchor" distribution $p_{anch}(z)$ whose support is much smaller than that of $p_z$.  The adversarial loss now becomes:
+            \begin{align*}
+                \mcal{L}'_{adv}(G, D_{img}, D_{patch}) = E_{z \sim p_{anch}, x \sim \mcal{D}_t} [\mcal{L}_{adv}(G, D_{img}, z, x)] + E_{z \sim p_z(z), x \sim \mcal{D}_t} [\mcal{L}_{adv}(G, D_{patch}, z, x)].
+            \end{align*}
+            </li>
+
+            <li>The anchor distribution is defined as a mixture of Gaussians with small standard deviation ($\sigma = 0.05$) around $k$ fixed noise vectors where $k$ is the number of elements in $\mcal{D}_t$. The $k$ noise vectors are sampled from $p_z$ once at the beginning of training.</li>
+
+            <li>In the implementation, $D_{patch}$ is computed by taking intermediate activations of $D_{img}$ where each pixel corresponds to a patch of the full image.</li>
+        </ul>
+        </li>
+
+        <li>The final objective.
+        <ul>
+            <li>We solve the following optimization problem:
+            \begin{align*}
+            \min_{G_{s\rightarrow t}} \max_{D_{img}, D_{patch}}\ \mcal{L}_{adv}(G_{s\rightarrow t}, D_{img}, D_{patch}) + \lambda \mcal{L}_{dist}(G_s, G_{s\rightarrow t})
+            \end{align*}
+            </li>
+
+            <li>The paper founded that using $\lambda$ between $10^3$ and $10^4$ works well.</li>
+        </ul>
+        </li>
+    </ul>
+
+    <hr>
+    <h2>2 &nbsp; Mixup-Based Distance Learning [Kong et al. 2021]</h2>
+
+    <ul>
+        <li>Charin Kong, Jeesoo Kim, Donghoon Han, and Nojin Kwak. <b>Smoothing the Generative Latent Space with Mixup-based Distance Learning.</b> 2021.</li>
 
         <li>Links: <a href="https://arxiv.org/pdf/2111.11672.pdf">[PDF]</a></li>
     </ul>
 
-    <h2>1 &nbsp; Introduction</h2>
+    <h3>2.1 &nbsp; Introduction</h3>
 
     <ul>
         <li>Training GANs with limited data typically yields bad results because the model will easily overfits.</li>
