@@ -181,6 +181,10 @@
             \begin{align*}
                 \{ \mathrm{sim}(G^l_{s \rightarrow t}(z_i), G^l_{s \rightarrow t}(z_j)) : j \neq i \}.
             \end{align*}
+            Here,
+            \begin{align*}
+                \mathrm{sim}(\ve{u}, \ve{v}) = \frac{\ve{u} \cdot \ve{v}}{\| \ve{u} \| \| \ve{v} \|}.
+            \end{align*}
             </li>
 
             <li>These numbers are then turned into discrete probability distributions by applying softmax:
@@ -308,7 +312,73 @@
         <li>With $z_1, \dotsc, z_N$ and $\ve{c}$ defined as in the last section, we can find similarities between $d^{(1)}(G(z_0))$ and $d^{(1)}(G(z_1))$, $d^{(1)}(G(z_2))$, $\dotsc$, $d^{(1)}(G(z_N))$. Nevertheless, the paper does not do it directly.
         </li>
 
-        <li></li>
+        <li>Instead, it employs a "projection head," a small MLP that maps the feature tensor $d^{(1)}(G(z))$ to another space, before computing the cosine similarity. The projection head method is commonly employed in works on constrastive self-supervised learning such as that of <a href="https://arxiv.org/pdf/2002.05709.pdf">[Chen et al. 2020]</a>. In that paper, the projection head is an MLP with one hidden layer and ReLU activation:
+        \begin{align*}
+            \mathrm{Proj}(\ve{h}) = W^{(2)} \sigma( W^{(1)}\ve{h})
+        \end{align*}
+        where
+        <ul>
+            <li>$\ve{h}$ is a feature tensor,</li>
+            <li>$W^{(1)}$ and $W^{(2)}$ are weight matrices, and</li>
+            <li>$\sigma(\cdot)$ is the ReLU non-linearity.</li>
+        </ul>
+        I presume that the weight matrices are learned. Note that it is unclear what kind of projection head the Kong et al. paper uses because it never explicitly specify it. However, I think there's a high chance that it uses the one in the Chen et al. paper.
+        </li>
+
+        <li>With the projection head defined, we can define a discrete probability distribution on the similarities:
+        \begin{align*}
+            \mathfrak{r} = \mathrm{Softmax}\Big(\Big\{ \mathrm{sim}\big( \mathrm{Proj}(d^{(1)}(G(z_0))), \mathrm{Proj}(d^{(1)}(G(z_i))) \big) : i = 1, \dotsc, N \Big\}\Big)
+        \end{align*}
+        </li>
+
+        <li>The regularization loss on the discriminator is given by:
+        \begin{align*}
+            \mcal{L}^D_{dist} = E_{z_1, \dotsc, z_N \sim p_z, \ve{c} \sim \mathrm{Dir}(\ve{1})} \bigg[ \sum_{l} D_{KL}(\mathfrak{k} \| \mathfrak{p} ) \bigg]
+        \end{align*}
+        </li>
+    </ul>
+
+    <h3>2.4 &nbsp; Final Losses</h3>
+
+    <ul>
+        <li>The losses for the generator and the discriminator are the combination of the standard adversarial loss and the regularization losses above:
+        \begin{align*}
+            \mcal{L}^G = \mathcal{L}^G_{adv} + \lambda_G \mcal{L}^G_{dist} \\
+            \mcal{L}^D = \mathcal{L}^D_{adv} + \lambda_D \mcal{L}^D_{dist}.
+        \end{align*}
+        The paper sets $\lambda_G = 1000$ and $\lambda_D = 1$.
+        </li>
+    </ul>
+
+    <h3>2.5 &nbsp; Implementation Details</h3>
+
+    <ul>
+        <li>While the losses above are agnostic to GAN architectures, the paper says that for StyleGANs, it is better to interpolate mapped latent codes (i.e., the output of the mapping network) instead of interpolating the latent codes directly.</li>
+
+        <li>The paper says that it applies patch-level discriminator to encourage the generator to be creative. However, it is unclear whether it also uses the anchor probability distribution as the Ojha et al. paper does.</li>
+
+        <li>Note that the method should not be used alone. Instead, one should also employ data augmentation techniques such as DiffAugment <a href="https://arxiv.org/abs/2006.10738">[Zhao et al. 2020]</a> or ADA <a href="https://arxiv.org/abs/2006.06676">[Karras et al. 2020]</a> for improved performance.</li>
+    </ul>
+
+    <h3>2.6 &nbsp; Results</h3>
+
+    <ul>
+        <li>Using the regularizing losses improve GAN performance in low-data regime in terms of lowering FID scores and increasing LPIPS scores between generated examples.</li>
+
+        <li>The best performance was obtained by using the regularizing losses with a data augmentation technique.</li>
+
+        <li>The generators trained with the regulizating losses create images that have noticable visual differences. Those that are trained without the losses tend to output images that look just like one another.</li>
+    </ul>
+
+    <h3>2.7 &nbsp; Comments</h3>
+
+    <ul>
+        <li>While the results seem promising, the writing is not clear.
+        <ul>
+            <li>How the latent vectors are sampled is not clearly specified, and I had to fill the gap with my understanding of the Ojha et al. paper.</li>
+            <li>It is unclear how the patch-based discriminator is applied and whether the full-image discriminator is also used.</li>
+        </ul>
+        </li>
     </ul>
 
     <p>
