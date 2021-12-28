@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>A Primer on Discrete-Time Markov Chains</title>
+
+    <!-- Bootstrap -->
+    <link href="../../../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../../../css/theme.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      loader: {load: ['[tex]/boldsymbol']},
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+      TeX: { equationNumbers: {autoNumber: "AMS"} } 
+    });
+    </script>
+    <script type="text/javascript"
+            src="../../../MathJax/MathJax.js?config=TeX-AMS_HTML-full">
+    </script>
+
+    <script type="text/javascript" src="../../../js/jquery-3.4.1.min.js"></script>    
+    <script type="text/javascript" src="../../../js/bigfoot.min.js"></script>    
+
+    <link rel="stylesheet" type="text/css" href="../../../css/bigfoot-default.css">    
+
+</head>
+<body>
+<div class="container">
+    <span style="visibility: hidden;">
+        \(
+        \def\sc#1{\dosc#1\csod}
+        \def\dosc#1#2\csod{{\rm #1{\small #2}}}
+
+        \newcommand{\dee}{\mathrm{d}}
+        \newcommand{\Dee}{\mathrm{D}}
+        \newcommand{\In}{\mathrm{in}}
+        \newcommand{\Out}{\mathrm{out}}
+        \newcommand{\pdf}{\mathrm{pdf}}
+        \newcommand{\Cov}{\mathrm{Cov}}
+        \newcommand{\Var}{\mathrm{Var}}
+
+        \newcommand{\ve}[1]{\mathbf{#1}}
+        \newcommand{\mrm}[1]{\mathrm{#1}}
+        \newcommand{\ves}[1]{\boldsymbol{#1}}
+        \newcommand{\etal}{{et~al.}}
+        \newcommand{\sphere}{\mathbb{S}^2}
+        \newcommand{\modeint}{\mathcal{M}}
+        \newcommand{\azimint}{\mathcal{N}}
+        \newcommand{\ra}{\rightarrow}
+        \newcommand{\mcal}[1]{\mathcal{#1}}
+        \newcommand{\X}{\mathcal{X}}
+        \newcommand{\Y}{\mathcal{Y}}
+        \newcommand{\Z}{\mathcal{Z}}
+        \newcommand{\x}{\mathbf{x}}
+        \newcommand{\y}{\mathbf{y}}
+        \newcommand{\z}{\mathbf{z}}
+        \newcommand{\tr}{\mathrm{tr}}
+        \newcommand{\sgn}{\mathrm{sgn}}
+        \newcommand{\diag}{\mathrm{diag}}
+        \newcommand{\Real}{\mathbb{R}}
+        \newcommand{\sseq}{\subseteq}
+        \newcommand{\ov}[1]{\overline{#1}}
+        \DeclareMathOperator*{\argmax}{arg\,max}
+        \DeclareMathOperator*{\argmin}{arg\,min}
+        \)
+    </span>
+
+    <br>
+    <h1>A Primer on Measure Theory</h1>
+    
+    <p>This is a primer on measure theory and Lebesque integration. The materials are taken from the following sources:    
+    </p>
+
+    <ul>
+        <li>Robert G. Bartle. <a href="https://archive.org/details/BartleR.G.TheElementsOfIntegrationAndLebesgueMeasure/page/n1/mode/2up">Elements of Integration and Lebesque Measure</a>. 1966.</li>
+        <li>John K. Hunter <a href="https://www.math.ucdavis.edu/~hunter/m206/measure_notes.pdf">Measure Theory</a>.</li>
+    </ul>
+
+    <hr>
+    <h2>1 &nbsp; Introduction</h2>
+
+    <ul>
+        <li>Why do we care about measure theory and Lebesque integration?
+        <ul>
+            <li>They expand the class of functions for which integrations are defined compared to what can be achieved by Riemann integration.</li>
+
+            <li>Theorems relating to the intechange of limits and integrals are valid under less stringent conditions (again, compared to Reimann integration).</li>
+
+            <li>In particular, the <a href="https://en.wikipedia.org/wiki/Dominated_convergence_theorem">dominated convergence theorem</a> is a very powerful tool. For examples, it can be use to easily show that
+            \begin{align*}
+                \lim_{n \rightarrow \infty} \int_{0}^\infty \frac{e^{-nx}}{\sqrt{x}}\, \dee x = 0
+            \end{align*}
+            and
+            \begin{align*}
+                \frac{\dee}{\dee x} \int_{0}^\infty x^2 e^{-tx}\, \dee x = -\int_0^\infty x^3 e^{-tx}\, \dee x.
+            \end{align*}
+            </li>
+
+            <li>Measure theory is the foundation of modern probability theory, and the dominated convergence theorem shows up everywhere in it.</li>
+        </ul>
+        </li>
+
+        <li>How is Lebesque integration different from Reimann integration?
+        <ul>
+            <li>Riemann integrals are defined in terms of approximating a function with constant functions over intevals.
+            <ul>
+                <li>An <b>interval</b>> is a subset of the real line which is of one of the following forms:
+                \begin{align*}
+                    [a,b] &= \{ x \in \Real: a \leq x \leq b \}, \\
+                    [a,b) &= \{ x \in \Real: a \leq x < b \}, \\
+                    (a,b] &= \{ x \in \Real: a < x \leq b \}, \\
+                    (a,b) &= \{ x \in \Real: a < x < b \}.
+                \end{align*}
+                The real number $a$ and $b$ are said to be the <b>endpoints</b> of the interval, and $b-a$ is the <b>length</b> of the interval.
+                </li>
+
+                <li>If $E$ is a set, then the <b>characteristic function</b> or the <b>indicator function</b> of $E$, denoted by $\chi_E$, is given by
+                \begin{align*}
+                    \chi_E(x) = \begin{cases}
+                        1, & \mbox{if } x \in E\\
+                        0, & \mbox{if } x \not\in E
+                    \end{cases}.
+                \end{align*}
+                </li>
+
+                <li>A <b>step function</b> $\varphi$ is a linear combination of a finite number of characteristic functions of intevals.
+                \begin{align*}
+                    \varphi(x) = \sum_{i=1}^n c_j \chi_{E_j}(x)
+                \end{align*}
+                where $c_j \in \Real$ and each $E_j$ is an interval with endpoints $a_j$ and $b_j$. 
+                </li>
+
+                <li>The integral of a step function $\varphi$ is defined to be $$ \int \varphi = \sum_{i=1}^n c_j(b_j - a_j).$$</li>
+
+                <li>If $f$ is a bounded function on $[a,b]$, then the <b>Reimann integral</b> is defined to the limit of the integrals of step functions that approximate $f$.</li>
+
+                <li>The <b>lower Rieman integral</b> is defined to be the supremum of integrals of all step functions $\phi$ such that $\phi(x) \leq f(x)$ for all $x \in [a,b]$ and $\phi(x) = 0$ for all $x \not\in [a,b]$.</li>
+            </ul>
+            </li>
+
+            <li>The Lebesque integral is defined similarly, with some differences.
+            <ul>
+                <li>Intervals are replaced by a larger collection of sets (called <b>measurable sets</b>).</li>
+
+                <li>The notion of "length" is generalize to the notation of <b>measure</b>.
+                <ul>
+                    <li>Here, the measure is a function $\mu$ that maps a set of a non-negative real number.</li>
+                </ul>
+                </li>
+
+                <li>The step function is replaced by the <b>simple function</b>, which is a finite linear combination of characteristic functions of measurable sets.
+                \begin{align*}
+                    \varphi(x) = \sum_{j=1}^n c_j \chi_{E_j}(x)
+                \end{align*}
+                where each $E_j$ is a measurable set. The integral of $\phi$ is defined to be
+                \begin{align*}
+                    \int \varphi = \sum_{j=1}^n c_j \mu(E_j).
+                \end{align*}
+                </li>
+
+                <li>If $f$ is a non-negative function defined on $\Real$, then the <b>Lebesque integral</b> of $f$ is the supremum of all simple functions $\phi$ such that $\phi(x) \leq f(x)$ for all $x \in \Real$.
+                <ul>
+                    <li>This notation can later be generalized to functions taking both signs.</li>
+                </ul>
+                </li>
+            </ul>
+            </li>
+        </ul>
+        </li>
+
+        <li>When studying integration, it is convenient to work with the <b>extended real number system</b> $\overline{\Real} = \Real \cup \{-\infty, \infty\}$.
+        <ul>
+            <li>For any $x \in \Real$, we have that $-\infty < x < \infty$.</li>
+
+            <li>We say that the length of the real line is $\infty$.</li>
+
+            <li>We define the supremum of non-empty set of real numbers which does not have an upper bound to be $\infty$, and the infemum of the a non-empty set of real numbers which does not have a lower bound to be $-\infty$.
+            <ul>
+                <li>In this way, all non-empty sets of real numbers (or subsets of $\overline{\Real}$) have unique supremums and infemums.</li>
+            </ul>
+
+            <li>The arithematic operations between the infiniites and real numbers are as follows:
+            \begin{align*}
+                (\pm \infty) + (\pm \infty) = x + (\pm \infty) = (\pm \infty) + x &= \pm \infty \\
+                (\pm \infty) (\pm \infty) &= +\infty \\
+                (\pm \infty) (\mp \infty) &= -\infty \\
+                (\pm \infty) x = x (\infty) &= \begin{cases}
+                    \pm \infty, & \mbox{if } x > 0, \\
+                    0 &, &\mbox{if } x = 0, \\
+                    \mp \infty, & \mbox{if } x < 0
+                \end{cases}
+            \end{align*}
+            for any (finite) real number $x$.
+            </li>
+
+            <li>Note that we do not define $(\pm \infty) - (\pm \infty)$. We also do not define quotients when the denominators are $\pm \infty$.</li>
+        </ul>
+
+        <li>If $(x_n)$ is a sequence of extended real numbers, define the <b>limit superiour</b> and <b>limit inferior</b> by
+        \begin{align*}
+            \limsup_{n \rightarrow \infty}\ x_n &= \lim_{n \rightarrow \infty} \Big( \sup_{m \geq n} x_m \Big) = \inf_{n} \Big( \sup_{m \geq n} x_m \Big) \\
+            \liminf_{n \rightarrow \infty}\ x_n &= \lim_{n \rightarrow \infty} \Big( \inf_{m \geq n} x_m \Big) = \sup_{n} \Big( \inf_{m \geq n} x_m \Big).
+        \end{align*}
+        If the limit superior and limit inferere of a sequence both exist and are equal, then the <b>limit</b> of the sequence exists and is equal to that value.
+        </li>        
+    </ul>
+
+    <hr>
+    <h2>2 &nbsp; $\sigma$-Algebras and Measures</h2>
+
+    <ul>
+        <!--
+        <li>A "measure" maps a set to its "size." So, in general, a measure $\mu$ should have the following properties:
+        <ul>
+            <li>For any set $E$, we should have that $0 \leq \mu(E) \leq \infty$.</li>
+            <li>The size of a union of sets should not exceed the sum of the sizes of individual sets. In other words,
+            \begin{align*}
+                \mu(E_1 \cup E_2 \cup \dots \cup E_k) \leq \sum_{i=1}^k \mu(E_k).
+            \end{align*}
+            Typically, we require that this property holds for a countable collection of sets
+            \begin{align*}
+                \mu\bigg( \bigcup_{i=1}^\infty E_i \bigg) \leq \sum_{i=1}^\infty \mu(E_i).
+            \end{align*}
+            In this way, we can reason about limits of measures of sequence of sets.
+            </li>
+        </ul>
+        </li>
+
+        <li>$\sigma$-algebras are collection of sets that "behave well," in the sense that a "measure" can be defined on it.
+        <ul>
+            <li>In this context, there is a universe that contains all the elements that we are interested it. Let this universe be denoted by $X$.
+            <ul>
+                <li>In probability theory, this is the sample space, which is often denoted by $\Omega$.</li>
+            </ul>
+            </li>
+            <li></li>
+        </ul>
+        </li>
+        -->
+
+        <li>Before we go into defining what a measure and a $\sigma$-algebra are, let us explore similar concepts of outer measures and topological spaces.</li>
+
+        <li>Let us denote the power set of set $X$ with $\mcal{P}(X)$.</li>
+
+        <li> <b>Definition 2.1 </b> &nbsp; An <b>outer measure</b> $\mu^*$ on a set $X$ is a function $\mu^*: \mcal{P}(X) \rightarrow [0,\infty]$ such that the following properties hold.
+        <ol>
+            <li>$\mu^*(\emptyset) = 0$.</li>
+            <li>If $E \subseteq F \subseteq X$, then $\mu^*(E) \leq \mu^*(F)$.</li>
+            <li>If $\{ E_i \subseteq X : i \in \mathbb{N} \}$ is a countable collection of subsets of $X$, then
+            \begin{align*}
+                \mu\bigg( \bigcup_{i=1}^\infty E_i \bigg) \leq \sum_{i=1}^\infty \mu^*(E_i).
+            \end{align*}
+            </li>
+        </ol>
+        </li>
+
+        <li>An outer measure has properties that we kind of expect of the notion of the "volume" of a set.
+        <ul>
+            <li>The discusson about an outer measure is well scoped because there is a set $X$ acting as the universe of things we are interested in.</li>
+            <li>It maps a set to a non-negative real number, and non-negative real numbers can be compared in terms of "largeness."</li>
+            <li>The "volume" of the empty set is zero.</li>
+            <li>The volume of a subset is not more than the set that contains it.</li>
+            <li>The volume of a union of sets is less than the sum of the volumes of individual sets.</li>
+        </ul>
+        However, it is still an "outer" measure, not a measure, because it lacks several nice properties that a measure has. We will cover this later.
+        </li>
+
+        <li>Requiring an outer measure to be defined on all elements of $\mcal{P}(X)$ might be too much. In fact, we only need it to be defined on countable unions of subsets of $X$. A "topological space" encapsulates the collection of sets where an outer measure can be discussed without going outside it.</li>
+
+        <li><b>Definition 2.2</b> &nbsp; A <b>topological space</b> $(X,\mcal{T})$ is a set $X$ together with a collection $\mcal{T} \subseteq \mcal{P}(X)$ of subsets of $X$, called <b>open sets</b>, such that the following properties hold.
+        <ol>
+            <li>$\emptyset, X \in \mcal{T}$.</li>
+            <li>For any collection of open sets $\{ U_\alpha \in \mcal{T} : \alpha \in I \}$, the union of all sets are also open. In other words,
+            \begin{align*}
+                \bigcup_{\alpha \in I} U_\alpha \in \mcal{T}.
+            \end{align*}
+            Here, $I$ can be infinite and even not countable.
+            </li>
+            <li>Any finite intersection of open sets are also open. In other words, for any $U_1, U_2, \dotsc, U_k \in \mcal{T}$, we have that
+            \begin{align*}
+                \bigcup_{i=1}^n U_i \in \mcal{T}.
+            \end{align*}
+            </li>
+        </ol>
+        A complement $E^c = X - E$ of an open set $E$ is said to be <b>closed</b>. The collection $\mcal{T}$ is said to be a <b>topology</b> on $X$.
+        </li>
+
+        <li><p>A measure, however, is defined on something with several nicer properties, this is the $\sigma$-algebra.</p>
+        
+        <p><b>Definition 2.3 </b> &nbsp; A <b>$\sigma$-algebra</b> (or a <b>$\sigma$-field</b>) is a tuple $(X, \mcal{X})$ where $X$ is a set and $\mcal{X}$ </p>
+        </li>
+    </ul>
+
+    <hr>
+    <div class="page-header"></div>
+    <p>Last modified: 2021/12/26</p>    
+</div>
+
+<script type="text/javascript">
+$.bigfoot();
+</script>
+
+</body>
+</html>
