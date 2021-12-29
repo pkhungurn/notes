@@ -372,7 +372,7 @@ This is a primer on measure theory and Lebesgue integration. The materials are t
   \begin{align}
     (a,b], (-\infty,b], (a,\infty), (\infty,\infty) \label{half-open-intervals-spec}
   \end{align}
-  and their finite unions. However, we cannot claim that it is a measure because we have not defined how to deal with countable unions of such intervals yet. So, we are not so sure whether it is a measure on the Borel algebra $\mcal{B}$.
+  and their finite unions. However, we cannot claim that it is a measure because (1) we do not know whether this collection of sets is a $\sigma$-algebra, and (2) we have not defined how to deal with countable unions of such intervals yet.
 
   \item \begin{definition}
     A family $\mcal{A}$ of subsets of a set $X$ is said to be an {\bf algebra} or a {\bf field} on $X$ if the following properties are satisfied.
@@ -403,6 +403,7 @@ This is a primer on measure theory and Lebesgue integration. The materials are t
 
     \item $\mcal{F}$ is closed under finite unions by definition.
   \end{itemize}
+  An algebra, however, is not equivalent to a $\sigma$-algebra.
 
   \item \begin{definition}
     Let $\mcal{A}$ be an algebra on $X$. A {\bf premeasure} on $\mcal{A}$ is an extended real valued function $\mu$ defined on $\mcal{A}$ that satisfies the following properties.
@@ -467,7 +468,7 @@ This is a primer on measure theory and Lebesgue integration. The materials are t
     Combining the results of all cases, we can conclude that $\ell$ is countably additive in $\mcal{F}$.
   \end{proof}
 
-  \item Given a premeasure $\mu$ on an algebra $\mcal{A}$, we can show that $\mu$ can be extended to a measure on a $\sigma$-algebra.
+  \item The good news is that, given a premeasure $\mu$ on an algebra $\mcal{A}$, we can show that $\mu$ can be extended to a measure on a $\sigma$-algebra.
   \begin{itemize}
     \item In other words, there exist a $\sigma$-algebra $\mcal{A}^*$ containing $\mcal{A}$ and a measure $\mu^*$ defined on $\mcal{A}^*$ such that $\mu^*(E) = \mu(E)$ for all $E \in \mcal{A}$. 
   \end{itemize}
