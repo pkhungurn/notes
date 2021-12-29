@@ -560,8 +560,138 @@ This is a primer on measure theory and Lebesgue integration. The materials are t
 
   \item A $\mu^*$-measurable set $E$ splits any set $A$ into pieces whose output measures add up to the outer measure of $A$. In other words, a set is $\mu^*$-measurable if it splits other sets in a ``nice'' way.
   
-  \item \begin{theorem}[Carath\'{e}odory extension] Let $\mu^*$ be an outer measure on $X$. The collection of $\mu^*$-measurable sets is a $\sigma$-algebra on $X$. Moreover, $\mu^*$ is a measure on this collection.
+  \item \begin{theorem}[Carath\'{e}odory's extension] Let $\mu^*$ be an outer measure on $X$. The collection of $\mu^*$-measurable sets is a $\sigma$-algebra on $X$. Moreover, $\mu^*$ is a measure on this collection.
   \end{theorem}
+
+  \begin{proof} Let $\mcal{X}^*$ denote the set of $\mu^*$-measurable sets on $X$. We shall show that $\mcal{X}^*$ is a $\sigma$-algebra, and $\mu^*$ is a measure on it.
+
+    {\bf ($\infty, X \in \mcal{X}^*$)} Because $\mu^*$ is a premeasure, we have that $\mu^*(\emptyset) = 0$. For any set $A \subseteq X$, we have that
+    \begin{align*}
+      \mu^*(A) = \mu^*(\emptyset) + \mu^*(A) = \mu^*(A \cap \emptyset) + \mu^*(A \cap X).
+    \end{align*}
+    Because $\emptyset$ and $X$ are complements of each other, it follows that they are $\mu^*$-measurable and so belong to $\mcal{X}^*$.
+
+    {\bf (Closure under complementation)} Let $E$ be a $\mu^*$-measurable set. It follows that
+    \begin{align*}
+      \mu^*(A) = \mu^*(\emptyset) + \mu^*(A \cap E) = \mu^*(A \cap E^c)
+    \end{align*}
+    This implies that $E^c$ is also $\mu^*$-measurable.
+
+    {\bf (Closure under finite unions)} This step is required to show closure under countable union. Suppose that $E$ and $F$ are $\mu^*$-measurable. Let $A \subseteq X$. We need to show that
+    \begin{align*}
+      \mu^*(A) = \mu^*(A \cap (E \cup F)) + \mu^*(A \cap (E \cup F)^c).
+    \end{align*}
+    Because $A = (A \cap (E \cup F)) \cup (A \cap (E \cup F)^c)$ and $\mu^*$ is subadditive, we have that
+    \begin{align*}
+      \mu^*(A) \leq \mu^*(A \cap (E \cup F)) + \mu^*(A \cap (E \cup F)^c).
+    \end{align*}
+    Thus, it remains to show that $\mu^*(A) \geq \mu^*(A \cap (E \cup F)) + \mu^*(A \cap (E \cup F)^c)$. Because $A$ is $\mu^*$-measurable, we have that
+    \begin{align*}
+      \mu^*(A) &= \mu^*(A \cap E) + \mu^*(A \cap E^c).
+    \end{align*}
+    Since both $A \cap E$ and $A \cap E^c$ are subsets of $X$ and $B$ is $\mu^*$-measurable, we have
+    \begin{align*}
+      \mu^*(A \cap E) &= \mu^*(A \cap E \cap F) + \mu^*(A \cap E \cap F^c) \\
+      \mu^*(A \cap E^c) &= \mu^*(A \cap E^c \cap F) + \mu^*(A \cap E^c \cap F^c).
+    \end{align*}
+    As a result,
+    \begin{align*}
+      \mu^*(A) &= \mu^*(A \cap E \cap F) + \mu^*(A \cap E \cap F^c) + \mu^*(A \cap E^c \cap F) + \mu^*(A \cap E^c \cap F^c) \\
+      &= \mu^*(A \cap E \cap F) + \mu^*(A \cap E \cap F^c) + \mu^*(A \cap E^c \cap F) + \mu^*(A \cap (E \cup F)^c).
+    \end{align*}
+    Because $E \cup F = (E \cap F) \cup (E \cap F^c) \cup (E^c \cap F)$, we have that
+    \begin{align*}
+      A \cap (E \cup F) = (A \cap E \cap F) \cup (A \cap E \cap F^c) \cup (A \cap E^c \cap F).
+    \end{align*}
+    So,
+    \begin{align*}
+      \mu^*(A \cap (E \cup F)) \leq \mu^*(A \cap E \cap F) \cup \mu^*(A \cap E \cap F^c) \cup \mu^*(A \cap E^c \cap F).
+    \end{align*}
+    Thus,
+    \begin{align*}
+      \mu^*(A) 
+      &= \mu^*(A \cap E \cap F) + \mu^*(A \cap E \cap F^c) + \mu^*(A \cap E^c \cap F) + \mu^*(A \cap (E \cup F)^c)\\
+      &\geq \mu^*(A \cap (E \cup F)) + \mu^*(A \cap (E \cup F)^c).
+    \end{align*}
+    It follows that $\mu^*(A) = \mu^*(A \cap (E \cup F)) + \mu^*(A \cap (E \cup F)^c)$, and so $E \cup F$ is also measurable.
+
+    {\bf (Closure under finite intersections)} We briefly mention that closure under complementation and closure under finite union implies closure under complementation. This is a consequence of de Morgan's law: $E \cap F = (E^c \cup F^c)^c$.
+
+    {\bf (Closure under disjoint countable unions implies closure under countable unions)} We need to show closure under countable union. However, it suffices to only show that $\bigcup E_j$ is measurable for all sequences $(E_j)$ where the sets are measurable and disjoint. To see this, let $F_j$ denote the union of the first $j$ sets: $$F_j = \bigcup_{i=1}^j E_j,$$ and let $G_0 = E_1$ and $G_j = F_{j+1} - F_j = F_{j+1} \cap F_j^c$ for $j \geq 1$. It follows that, $G_j$ is measurable for all $j$ because $\mcal{X}^*$ is closed under finite unions and intersections. Moreover, the $G_j$'s are disjoint, and
+    \begin{align*}
+      \bigcup_{j=1}^\infty E_j = \bigcup_{j=0}^\infty G_j.
+    \end{align*}
+    Hence, the measurability of $\bigcup_{j=0}^\infty G_j$ imples the measurability of $\bigcup_{j=1}^\infty E_j$.
+
+    {\bf (Finite additivity)} In order to establish closure under countable unions, it is useful to show that $\mu^*$ is additive for finite disjoint unions. Let $E$ and $F$ be any disjoint measurable sets. Because $E$ is measurable, we have that
+    \begin{align*}
+      \mu^*(E \cup F) 
+      &= \mu^*((E \cup F) \cap E) + \mu^*((E \cup F) \cap E^c) 
+      = \mu^*(E) + \mu^*((E \cup F) - E)
+      = \mu^*(E) + \mu^*(F).
+    \end{align*}
+
+    {\bf (Closure under disjoint countable unions)} Let $(E_j)$ be a sequence of disjoint measurable sets. Let
+    \begin{align*}
+      F_j &= \bigcup_{i=1}^j E_j, & F &= \bigcup_{i=1}^\infty E_j.
+    \end{align*}
+    We need to show show that, for any set $A \subseteq X$, it is true that $\mu^*(A) = \mu^*( A \cap F ) + \mu^*( A \cap F^c)$. Because $\mu^*$ is subadditive, we already know that $\mu^*(A) \leq \mu^*( A \cap F ) + \mu^*( A \cap F^c )$. So, we only need to show that $\mu^*(A) \geq \mu^*( A \cap F) + \mu^*( A \cap F^c)$.
+
+    For any $j$, we have that $F_j$ is measurable because of closure under finite unions. So
+    \begin{align*}
+      \mu^*(A) 
+      &= \mu^*(A \cap F_j) + \mu^*(A \cap F_j^c) \\
+      &= \mu^*\bigg( A \cap \bigcup_{i=1}^j E_i\bigg) + \mu^*(A \cap F_j^c) \\
+      &= \mu^*\bigg( \bigcup_{i=1}^n ( A \cap E_i) \bigg) + \mu^*(A \cap F_j^c).
+    \end{align*}
+    Because $A \cap E_1$, $A \cap E_2$, $\dotsc$, and $A \cap E_j$ are mutually disjoint, we have that
+    \begin{align*}
+      \mu^*(A)
+      &= \sum_{i=1}^j \mu^*( A \cap E_j) + \mu^*(A \cap F_j^c).
+    \end{align*}
+    Moreover, because $F_j \subseteq F$, it follows that $A \cap F_j^c \supseteq A \cap F^c$. Hence, $\mu^*(A \cap F_j^c) \geq \mu^*(A \cap F^c)$. Thus,
+    \begin{align*}
+      \mu^*(A)
+      &\geq \sum_{i=1}^j \mu^*( A \cap E_i) + \mu^*(A \cap F^c).
+    \end{align*}
+    Taking the limit as $j \rightarrow \infty$, we have that
+    \begin{align*}
+      \mu^*(A) 
+      &\geq \sum_{i=1}^\infty \mu^*( A \cap E_i) + \mu^*(A \cap F^c) \\
+      &\geq \mu^*\bigg( \bigcup_{i=1}^\infty (A \cap E_i) \bigg) + \mu^*(A \cap F^c) \\
+      &= \mu^*\bigg( A \cap \bigcup_{i=1}^\infty E_i \bigg) + \mu^*(A \cap F^c) \\
+      &= \mu^*( A \cap F) + \mu^*(A \cap F^c),
+    \end{align*}
+    which implies that $F$ is $\mu^*$-measurable.
+    
+    {\bf (Countable additivity)} In the proof of closure under countable union, we established that
+    \begin{align*}
+      \mu^*(A) 
+      &\geq \sum_{i=1}^\infty \mu^*( A \cap E_i) + \mu^*(A \cap F^c) \\
+      &\geq \mu^*\bigg( \bigcup_{i=1}^\infty (A \cap E_i) \bigg) + \mu^*(A \cap F^c) \\
+      &= \mu^*( A \cap F) + \mu^*(A \cap F^c) \\
+      &\geq \mu^*(A).
+    \end{align*}
+    Therefore, it must be the case that
+    \begin{align*}
+      \sum_{i=1}^\infty \mu^*( A \cap E_i) + \mu^*(A \cap F^c) 
+      &= \mu^*\bigg( \bigcup_{i=1}^\infty (A \cap E_i) \bigg) + \mu^*(A \cap F^c),
+    \end{align*}
+    and this is true for any set $A \subseteq X$. Taking $A = F$, we have that
+    \begin{align*}
+      \sum_{i=1}^\infty \mu^*( F \cap E_i) + \mu^*(F \cap F^c) 
+      &= \mu^*\bigg( \bigcup_{i=1}^\infty (F \cap E_i) \bigg) + \mu^*(F \cap F^c) \\
+      \sum_{i=1}^\infty \mu^*( E_i ) + \mu^*(\emptyset) 
+      &= \mu^*\bigg( \bigcup_{i=1}^\infty E_i \bigg) + \mu^*(\emptyset) \\
+      \sum_{i=1}^\infty \mu^*( E_i )
+      &= \mu^*\bigg( \bigcup_{i=1}^\infty E_i \bigg),
+    \end{align*}
+    which shows that $\mu^*$ is countably additive.
+  \end{proof}
+
+  \item \begin{corollary}
+  Let $\mu$ be a premeasrue on an algebra $\mcal{A}$ on $X$. Let $\mu^*$ be the outer measure generated by $\mu$, and let $\mcal{A}^*$ be the collection of $\mu^*$-measurable sets. 
+  \end{corollary}
 \end{itemize}
 
 \section{Product Measures}
