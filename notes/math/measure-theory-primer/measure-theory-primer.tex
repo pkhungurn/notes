@@ -368,11 +368,14 @@ This is a primer on measure theory and Lebesgue integration. The materials are t
     \end{align*}  
   \end{itemize}
 
-  \item By the notion above, we have that $\ell$ is defined on intervals of the form
+  \item Let $\mcal{F}$ be the collection of subsets of $\Real$ that contains all intervals of the forms
   \begin{align}
-    (a,b], (-\infty,b], (a,\infty), (\infty,\infty) \label{half-open-intervals-spec}
-  \end{align}
-  and their finite unions. However, we cannot claim that it is a measure because (1) we do not know whether this collection of sets is a $\sigma$-algebra, and (2) we have not defined how to deal with countable unions of such intervals yet.
+    (a,b], (-\infty,b], (a,\infty), (\infty,\infty) \label{half-open-intervals-spec}, 
+  \end{align} and all the finite unions of such intervals.  
+
+  \item By the notion above, we have that $\ell$ is a function of signature $\mcal{F} \rightarrow [0,\infty]$. However, we cannot claim that it is a measure (1) we have not defined how to deal with countable unions of such intervals yet, and (2) we have not identified the $\sigma$-algebra upon which it acts.
+  
+  \item Furthermore, we cannot claim that $\mcal{F}$ is a $\sigma$-algebra. However, $\mcal{F}$ is a mathematical structure with a number of nice properties, so we shall give it a name.
 
   \item \begin{definition}
     A family $\mcal{A}$ of subsets of a set $X$ is said to be an {\bf algebra} or a {\bf field} on $X$ if the following properties are satisfied.
@@ -381,13 +384,7 @@ This is a primer on measure theory and Lebesgue integration. The materials are t
       \item If $E \in \mcal{A}$, then $E^c = X-E \in \mcal{A}$.
       \item If $E_1, E_2, \dotsc, E_n \in \mcal{A}$, then $\bigcup_{i=1}^n E_i \in \mcal{A}$.
     \end{enumerate}
-  \end{definition}
-
-  \item Let $\mcal{F}$ be the collection of subsets of $\Real$ that contains
-  \begin{itemize}
-    \item all intervals of the forms in \eqref{half-open-intervals-spec}, and
-    \item all the finite unions of such intervals.
-  \end{itemize}
+  \end{definition}  
   
   \item We have that $\mcal{F}$ is an algebra on $\Real$.
   \begin{itemize}
@@ -403,7 +400,8 @@ This is a primer on measure theory and Lebesgue integration. The materials are t
 
     \item $\mcal{F}$ is closed under finite unions by definition.
   \end{itemize}
-  An algebra, however, is not equivalent to a $\sigma$-algebra.
+
+  \item We now turn back to the length function $\ell$. It turns out that we can show that it has more nice properties that are worthy of being encapsulated with an abstraction.
 
   \item \begin{definition}
     Let $\mcal{A}$ be an algebra on $X$. A {\bf premeasure} on $\mcal{A}$ is an extended real valued function $\mu$ defined on $\mcal{A}$ that satisfies the following properties.
@@ -472,9 +470,9 @@ This is a primer on measure theory and Lebesgue integration. The materials are t
   \begin{itemize}
     \item In other words, there exist a $\sigma$-algebra $\mcal{A}^*$ containing $\mcal{A}$ and a measure $\mu^*$ defined on $\mcal{A}^*$ such that $\mu^*(E) = \mu(E)$ for all $E \in \mcal{A}$. 
   \end{itemize}
-  As a result, we can extend $\ell$ so that it becomes a measure in a $\sigma$-algebra.
+  As a result, we can extend our $\ell$ so that it becomes a measure on a $\sigma$-algebra.
 
-  \item The way to extend $\mu$ is as follows.
+  \item The way to extend a premeasure $\mu$ is as follows.
   \begin{definition}
     Given a premeasure $\mu$ defined on an algebra $\mcal{A}$ on set $X$, define $\mu^*: \mcal{P}(\ve{X}) \rightarrow [0,\infty]$ to be
     \begin{align*}
