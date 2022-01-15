@@ -1265,9 +1265,7 @@ In this section, consider a fixed measurable space $(X,\mcal{X})$.
 \begin{itemize}
   \item In this section, we consider a fixed measure space $(X, \mcal{X}, \mu)$.
   
-  \item Denote the set of all $\mcal{X}$-measurable functions by $M = M(X,\mcal{X})$.
-  
-  \item Denote the set of all non-negative $\mcal{X}$-measurable functions by $M^+ = M^+(X,\mcal{X})$.
+  \item Denote the set of all $\mcal{X}$-measurable functions by $M = M(X,\mcal{X})$. Denote the set of all non-negative $\mcal{X}$-measurable functions by $M^+ = M^+(X,\mcal{X})$.
   
   \item \begin{definition}
     A real-valued function is {\bf simple} if it has only a finite number of values.
@@ -1456,14 +1454,14 @@ In this section, consider a fixed measurable space $(X,\mcal{X})$.
       \item $\mu(\emptyset) = 0$.
       \item $\mu$ is countably additive. This is, for a sequence $(E_n)$ of disjoint sets, it holds that
       \begin{align*}
-        \mu\bigg( \sum_{n=1}^\infty E_n \bigg) = \sum_{n=1}^\infty \mu(E_n).
+        \mu\bigg( \bigcup_{n=1}^\infty E_n \bigg) = \sum_{n=1}^\infty \mu(E_n).
       \end{align*}
     \end{enumerate}
   \end{definition}
 
-  \item Note that the only difference between a charge and a measure is that a charge can be negative while a measure must be non-negative.
+  \item The difference between a charge and a measure is that a measure is always non-negative, but a charge can be negative. Moreover, a charge cannot take infinite values.
   
-  \item \begin{lemma}
+  \item \begin{lemma} \label{lemma:charge-from-integrable-function}
     If $f$ belongs to $L$, and $\lambda(E) = \int_E f\, \dee\mu$, then $\lambda$ is a charge.
   \end{lemma}
 
@@ -1529,7 +1527,7 @@ In this section, consider a fixed measurable space $(X,\mcal{X})$.
   \end{proof}  
 \end{itemize}
 
-\subsection{Dependence on a Parameter}
+\section{Integrals That Involve Limits}
 
 \begin{itemize}
   \item In this section, let $f$ denote a function with signature $X \times [a,b] \rightarrow \Real$. Also, assume that $f(x,t)$ is $\mcal{X}$-measurable for each $t \in [a,b]$.
@@ -1591,7 +1589,7 @@ In this section, consider a fixed measurable space $(X,\mcal{X})$.
   \end{proof}
 \end{itemize}
 
-\section{Product Measures}
+\section{Product Measures and Double Integrals}
 
 \begin{itemize}
   \item In this section, we show that the Cartesian product of two measurable spaces can be made into a measurable space in a natural fashion.
@@ -1715,6 +1713,153 @@ In this section, consider a fixed measurable space $(X,\mcal{X})$.
   \begin{proof}
     TODO
   \end{proof}
+\end{itemize}
+
+\section{Signed Measures and Their Decompositions}
+
+\begin{itemize}
+  \item \begin{definition}
+    Let $(X,\mcal{X})$ be a measurable space. A function $\lambda: \mcal{X} \rightarrow \overline{\Real}$ is said to be a {\bf signed measures} if the following conditions are satisfied.
+    \begin{enumerate}
+      \item[(a)] $\lambda(\emptyset) = 0$.
+      \item[(b)] $\lambda$ attains at most one of the values $\infty$ and $-\infty$.
+      \item[(c)] $\lambda$ is countably additive. In other words, if $(A_n)$ is a sequence of disjoint sets in $\mcal{X}$, then
+      \begin{align*}
+        \lambda\bigg( \bigcup_{n=1}^\infty A_n \bigg) = \sum_{n=1}^\infty \mu(A_n).
+      \end{align*}
+    \end{enumerate}
+  \end{definition}
+
+  \item The condition (b) is introduced to avoid undefined quantities such as $\infty - \infty$.
+
+  \item A signed measure is very similar to a charge, but it can take an infinite value while a charge cannot. Note that a charge is a signed measure, but not the other way around.
+    
+  \item It can be shown that, if $(E_n)$ is an increasing sequence of sets in $\mcal{X}$, then
+  \begin{align*}
+    \lambda\bigg( \bigcup_{n=1}^\infty E_n \bigg) = \lim_{n \rightarrow \infty} \lambda(E_n).
+  \end{align*}
+  Similarly, if $(F_n)$ is a decreasing sequence of sets in $\mcal{X}$, then
+  \begin{align*}
+    \lambda\bigg( \bigcap_{n=1}^\infty F_n \bigg) = \lim_{n \rightarrow \infty} \lambda(F_n).
+  \end{align*}
+
+  \item \begin{definition}
+    Let $\lambda$ be a signed measure on $(X,\mcal{X})$. A set $P$ in $\mcal{X}$ is said to be {\bf positive} with respect to $\lambda$ if $\lambda(E \cap P) \geq 0$ for any $E \in \mcal{X}$. A set $N \in \mcal{X}$ is said to be {\bf negative} with respect to $\lambda$ if $\lambda(E \cap N) \leq 0$ for all $E \in \mcal{X}$. A set $M \in \mcal{X}$ is said to be a {\bf null set} for $\lambda$ if $\lambda(E \cap M) = 0$ for all $E \in \mcal{X}$.
+  \end{definition}
+
+  \item It can be shown that a measurable subset of a positive set is positive, and the union of two positive sets is also positive.
+  
+  \item \begin{theorem}[Hahn decomposition theorem]
+    If $\lambda$ is a signed measure on $\mcal{X}$, then there exist sets $P$ and $N$ in $\mcal{X}$ with $X = P \cup N$, $P \cap N = \emptyset$, and such that $P$ is positive and $N$ is negative with respect to $\lambda$.
+  \end{theorem}
+
+  \begin{proof}
+    TODO
+  \end{proof}
+
+  \item A pair $(P,N)$ of measurable sets in the above theorem is said to form a {\bf Hahn decomposition} of $X$ with respect to $\lambda$.
+  
+  \item In general, Hahn decompositions are not unique. In fact, if $M$ is a null set for $\lambda$, then $(P \cup M, N - M)$ and $(P - M, N \cup M)$ are also Hahn decompositions of $X$ w.r.t $\lambda$.
+  
+  \item \begin{lemma} \label{lemma:equivalence-of-hahn-decompositions}
+    If $(P_1, N_1)$ and $(P_2, N_2)$ are Hahn decompositions of $X$ w.r.t $\lambda$, and $E \in \mcal{X}$, then
+    \begin{align*}
+      \lambda(E \cap P_1) &= \lambda(N \cap P_2), \\
+      \lambda(E \cap N_1) &= \lambda(N \cap N_2).
+    \end{align*}
+  \end{lemma}
+
+  \begin{proof}
+    TODO
+  \end{proof}
+
+  \item \begin{definition}
+    Let $\lambda$ be a signed measure on $\mcal{X}$, and let $(P,N)$ be a Hahn decomponent w.r.t $\lambda$. The {\bf positive} and {\bf negative variations} of $\lambda$ are the non-negative measures $\lambda^+$, $\lambda^-$ defined by:
+    \begin{align*}
+      \lambda^+(E) &= \lambda(E \cap P), \\
+      \lambda^-(E) &= -\lambda(E \cap N).
+    \end{align*}
+    The {\bf total variation} of $\lambda$, denoted by $|\lambda|$, is defined as:
+    \begin{align*}
+      |\lambda|(E) = \lambda^+(E) + \lambda^-(E).
+    \end{align*}
+  \end{definition}
+
+  \item By Lemma~\ref{lemma:equivalence-of-hahn-decompositions}, the positive and negative variations are well defined and do not depend on the particular choice of Hahn decomposition.
+  
+  \item We also have that
+  \begin{align*}
+    \lambda(E) = \lambda^+(E) - \lambda^-(E),
+  \end{align*}
+  and this result is encapsulated in the following theorem.
+
+  \begin{theorem}[Jordan decomposition theorem]
+    If $\lambda$ is a signed measure on $\mcal{X}$, then there exists measures $\lambda^+$ and  $\lambda^-$ on $\mcal{X}$, at least one of which is finite, such that the following conditions are satisifed.
+    \begin{enumerate}
+      \item[(a)]  $\lambda = \lambda^+ - \lambda^-$. 
+      \item[(b)] There exists sets $M$ and $N$ such that $M \cup N = X$, $M \cap N = \emptyset$, $\lambda^+(N) = 0$, and $\lambda^-(M) = 0$.
+      \item[(c)] If $\lambda = \mu - \nu$ where $\mu$ and $\nu$ are measures, then $\mu(E) \geq \lambda^+(E)$ and $\nu(E) \geq \lambda^-(E)$.
+    \end{enumerate}    
+  \end{theorem}
+
+  \begin{proof}
+    TODO
+  \end{proof}
+
+  \item Let $f$ be an integrable function with respect to a measure $\mu$ on $\mcal{X}$. We can define
+  \begin{align*}
+    \lambda(E) = \int_E f\, \dee\mu.
+  \end{align*}
+  Lemma~\ref{lemma:charge-from-integrable-function} tells us that $\lambda$ is a charge.
+
+  \item \begin{lemma}
+    If $f \in L(X,\mcal{X},\mu)$ and $\lambda(E) = \int_E f\, \dee\mu$, then $\lambda^+$, $\lambda^-$ and $|\lambda|$ are given by:
+    \begin{align*}
+      \lambda^+(E) = \int_E f^+\, \dee\mu, \qquad 
+      \lambda^-(E) = \int_E f^-\, \dee\mu, \qquad 
+      |\lambda|(E) = \int_E |\lambda|\, \dee\mu.
+    \end{align*}
+  \end{lemma}  
+
+  \begin{proof}
+    TODO
+  \end{proof}
+\end{itemize}
+
+\section{Radon--Nikodym Theorem}
+
+\begin{itemize}
+  \item From Corollary~\ref{corollary:measure-from-integral}, we can create a measure $\lambda$ from a non-negative extended real-valued measurable function $f$ by integrating with respect to an existing measure.
+  
+  \item The Radon--Nikodym theorem is the converse of the above corollary. It indicates when a measure $\lambda$ can be expressed as an integration of a function $f$ with respect to $\mu$. Hence, it is useful in defining probability density functions.
+  
+  \item A necessary and sufficient condition for the theorem to hold is given below.
+  \begin{definition}
+    A measure $\lambda$ on $\mcal{X}$ is said to be {\bf absolutely continuous} with respect to a measure $\mu$ on $\mcal{X}$ if $\lambda(E) = 0$ for all set $E \in \mcal{X}$ such that $\mu(E) = 0$. In this case, we write $\lambda \ll \mu$. A signed measure $\lambda$ is {\bf absolsution continuous} with respect to a signed measure $\mu$ if the total variation $|\lambda|$ is absolutely continuous with respect to $|\mu|$.
+  \end{definition}
+
+  \item \begin{lemma}
+    Let $\lambda$ and $\mu$ be finite measures on $\mcal{X}$. Then, $\lambda \ll \mu$ if and only if, for every $\varepsilon > 0$, there exists a $\delta(\varepsilon) > 0$ such that $\lambda(E) < \varepsilon$ for all $E$ such that $\mu(E) < \delta(\varepsilon)$.
+  \end{lemma}
+
+  \begin{proof}
+    TODO
+  \end{proof}
+
+  \item \begin{theorem}[Random--Nikodym theorem]
+    Let $\lambda$ and $\mu$ be $\sigma$-finite measures defined on $\mcal{X}$, and suppose that $\lambda$ is absolutely continous with respect to $\mu$. Then, there exists a function $f \in M^+(X,\mcal{X})$ such that 
+    \begin{align*}
+      \lambda(E) = \int_E f\, \dee\mu.
+    \end{align*}
+    Moreover, the function $f$ is uniquely determined $\mu$-almost everywhere.
+  \end{theorem}
+
+  \begin{proof}
+    TODO
+  \end{proof}
+
+  \item The function $f$ above is often called the {\bf Random--Nikodym derivative} of $\lambda$ with respective to $\mu$, and it is denoted by $\dee \lambda / \dee \mu$.
+  
 \end{itemize}
 
 \bibliographystyle{apalike}
