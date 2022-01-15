@@ -468,6 +468,8 @@ This is a primer on measure theory and Lebesgue integration. The materials are t
 \subsection{Algebras and Monotone Classes}
 
 \begin{itemize}
+  \item In this section, we take another detour on a structure that is similar to the $\sigma$-algebra and a theorem about it that is similar to the Dynkin's $\pi$-$\lambda$ theorem.
+  
   \item \begin{definition}
     A family $\mcal{A}$ of subsets of a set $X$ is said to be an {\bf algebra} or a {\bf field} on $X$ if the following properties are satisfied.
     \begin{enumerate}
@@ -1065,11 +1067,13 @@ The Lebesgue measure on $\Real$ is a measure that corresponds to the notion of `
 
 \section{Measurable Functions}
 
-In this section, consider a fixed measurable space $(X,\mcal{X})$.
+An important component of measure theory is the definition of integrals of functions and the study of their properties. Measurable functions are nice functions upon which integrals can be defined. 
 
 \subsection{Measurable Real-Valued Functions}
 
 \begin{itemize}
+  \item Consider a fixed measurable space $(X,\mcal{X})$.
+    
   \item \begin{definition}
     A function $f: X \rightarrow \Real$ is said to be {\bf $\mcal{X}$-measurable} (or simply {\bf measurable}) if, for every real number $\alpha$, the set $\{ x \in X : f(x) > \alpha \}$ is measurable (in other words, belongs to $\mcal{X}$).
   \end{definition}
@@ -1313,11 +1317,11 @@ In this section, consider a fixed measurable space $(X,\mcal{X})$.
   \end{proof}
 
   \item \begin{definition}
-    If $f$ belongs to $M^+(X, \mcal{X})$, define the {\bf integral of $f$ with respect to $\mu$} to be the extended real number
+    If $f$ belongs to $M^+(X, \mcal{X})$, define the {\bf (Lebesgue) integral of $f$ with respect to $\mu$} to be the extended real number
     \begin{align*}
-      \int f\, \dee\mu = \sup \bigg\{ \int \varphi\, \dee\mu \bigg\}
+      \int f\, \dee\mu = \sup \bigg\{ \int \varphi\, \dee\mu\ \bigg| \ \varphi \in M^+(X,\mcal{X})\mbox{ is simple, and } \varphi(x) \leq f(x)\mbox{ for all }x \in S \bigg\}
     \end{align*}
-    where the supremum is taken over all simple functions $\varphi$ in $M^*(X, \mcal{X})$ satisfying $0 \leq \varphi(x) \leq f(x)$ for all $x \in X$. For any $E \in \mcal{X}$, define the {\bf integral of $f$ over $E$ with respect to $\mu$} to be the extended real number
+    For any $E \in \mcal{X}$, define the {\bf (Lebesgue) integral of $f$ over $E$ with respect to $\mu$} to be the extended real number
     \begin{align*}
         \int_E f\, \dee \mu = \int f\chi_E\, \dee\mu.
     \end{align*}
