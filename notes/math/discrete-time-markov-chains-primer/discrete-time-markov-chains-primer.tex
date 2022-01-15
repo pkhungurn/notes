@@ -172,7 +172,7 @@ This is a primer on discrete-time Markov chains. The materials are taken from a 
   \end{proposition}
 
   \item \begin{corollary}
-    Communication classes are strongly connected components\footnote{\url{https://en.wikipedia.org/wiki/Strongly_connected_component}} in the transiation graph. (That is, there is a directed path betweeen every pair of states in a communication class.) A Markov chain is irreducible if and only if the entire transition graph is strongly connected.
+    Communication classes are strongly connected components\footnote{\url{https://en.wikipedia.org/wiki/Strongly_connected_component}} in the transition graph. (That is, there is a directed path betweeen every pair of states in a communication class.) A Markov chain is irreducible if and only if the entire transition graph is strongly connected.
   \end{corollary}
 \end{itemize}
 
@@ -403,7 +403,7 @@ This is a primer on discrete-time Markov chains. The materials are taken from a 
 
   \item We will now show that $\ves{\mu}^{(t)}$ converges to the stationary distribution $\ves{\pi}$ as $t \rightarrow \infty$ regardless of what $\ves{\mu}^{(0)}$ is. To do this, we need a notion of how two distributions would converge to each other.
   
-  \item \begin{definition}
+  \item \begin{definition} \label{definition:finite-total-variation-distance}
     Given two row vectors $\ve{a} = (a_1, \dotsc, a_k)$ and $\ve{b} = (b_1, \dotsc, b_k)$, the {\bf total variation distance} between $\ve{a}$ and $\ve{b}$ is given by:
     \begin{align*}
         d_{\mrm{TV}}(\ve{a},\ve{b}) = \frac{1}{2} \sum_{i=1}^k | a_i - b_i |.
@@ -741,11 +741,13 @@ This is a primer on discrete-time Markov chains. The materials are taken from a 
 
 \section{Continuous State Spaces}
 
+\subsection{Basic Notions}
+
 \begin{itemize}
   \item For continuous state spaces, the transition matrix is replaced by the transition ``kernel.''
   
   \begin{definition}
-    Let $S$ be a continuous state space, and $\mcal{S}$ be a $\sigma$-algebra on $S$. A {\bf transiation kernel} $K$ is a function from $S \times \mcal{S}$ to $[0,1]$ such that
+    Let $S$ be a continuous state space, and $\mcal{S}$ be a $\sigma$-algebra on $S$. A {\bf transition kernel} $K$ is a function from $S \times \mcal{S}$ to $[0,1]$ such that
     \begin{enumerate}
       \item For all $x \in S$, the function $K(x,\cdot)$ is a probability measure on the measurable space $(S, \mcal{S})$.
       \item For all $A \in \mcal{S}$, the function $K(\cdot, A)$ is a measurable function on $S$.
@@ -776,7 +778,7 @@ This is a primer on discrete-time Markov chains. The materials are taken from a 
   
   \item Examples.
   \begin{itemize}
-    \item {\bf (Random work)} Let $(\xi_n)$ be an i.i.d. sequence of random variables. Let $$X_n = \sum_{i=1}^n \xi_n.$$ We have that $X_{n+1} = X_n + \xi_{n+1}$. The kernel is given by
+    \item {\bf (Random walk)} Let $(\xi_n)$ be an i.i.d. sequence of random variables. Let $$X_n = \sum_{i=1}^n \xi_n.$$ We have that $X_{n+1} = X_n + \xi_{n+1}$. The kernel is given by
     \begin{align*}
       K(x,A) = \mu_{\xi}(\{ y - x : y \in A \})
     \end{align*}
@@ -798,6 +800,7 @@ This is a primer on discrete-time Markov chains. The materials are taken from a 
   \end{align*}
   It is called the {\bf $n$-step transition kernel}.  
 
+  \begin{comment}
   \item Moreover, the integral of $f$ with respect to a measure $\mu$ on $X$ can be denoted in several ways.
   \begin{align*}
     \int_X f\, \dee\mu
@@ -805,6 +808,7 @@ This is a primer on discrete-time Markov chains. The materials are taken from a 
     = \int_X f(x)\, \dee\mu(x)
     = \int_X f(x)\mu(\dee x).
   \end{align*}  
+  \end{comment}
 
   \item \begin{proposition}[Kolmogorov--Chapman equation]
     Let $m,n$ be positive integers and $A \in \mcal{S}$. Then,
@@ -819,6 +823,144 @@ This is a primer on discrete-time Markov chains. The materials are taken from a 
     \Pr(X_0 \in A_0, X_1 \in A_1, \dotsc, X_n \in A_n)
     = \bigg( \int_{A_0} \dee\mu(x_0) \bigg) \bigg( \int_{A_1} K(x_0, \dee x_1) \bigg) \dotsb \bigg( \int_{A_n} K(x_{n-1}, dx_n) \bigg).
   \end{align*}
+
+  \item \begin{theorem}[Weak Markov property]
+    Then, for any initial distribution and any positive integer $k$,
+    \begin{align*}
+      E[h(X_{k+1}, X_{k+2}, \dotsc)|X_0 = x_0, X_1 = x_1, \dotsc, X_k = x_k]  = E[h(X_1, X_2, \dotsc) | X_0 = x_k].
+    \end{align*}
+    for any function $h$ such that the expectation exists.
+  \end{theorem}
+\end{itemize}
+
+\subsection{Asymptotic Behavior}
+
+To discuss asymptotic behavior, we need to discuss terms like irreducibility, recurrence, aperiodicity, and convergence. These notions are quite different from their counterparts in the discrete cases.
+
+\subsubsection{Irreducibility}
+
+\begin{itemize}
+  \item \begin{definition}
+    Let $\psi$ be a non-zero $\sigma$-finite measure on $(S, \mcal{S})$. A Markov chain is $\psi$-irreducible if, for every $A \in \mcal{S}$ with $\psi(A) > 0$ and every $x \in S$, there exists a positive integer $n$ such that $K^n(x, A) > 0$.
+  \end{definition}
+
+  \item By the above definition, it doesn't matter if a set of measure zero is unreachable. The definition does not care about sets of measure zero.
+  
+\end{itemize}
+
+\subsubsection{Recurrence}
+
+\begin{itemize}
+  \item \begin{definition}
+    Let $A \in \mcal{S}$. The {\bf hitting time} $T_A$ is the time the chain first enters $A$.
+    \begin{align*}
+      T_A = \inf \{ n\geq 1 : X_n \in A \}.
+    \end{align*}
+  \end{definition}
+
+  \item \begin{definition}
+    Let $A \in \mcal{S}$. Define $N_A$ to be the number of times the chain visits $A$.
+    \begin{align*}
+      N_A = \sum_{n=1}^\infty I(X_n \in A).
+    \end{align*}
+  \end{definition}
+
+  \item \begin{definition}
+    A Markov chain is {\bf recurrent} if the following conditions hold.
+    \begin{enumerate}
+      \item[(a)] There exists a non-zero $\sigma$-finite measure $\psi$ where the chain is $\psi$-irreducible.
+      \item[(b)] For all $A \in \mcal{S}$ with $\psi(A) > 0$, we have that $E[N_A | X_0 = x] = \infty$ for all $x \in A$.
+    \end{enumerate}
+  \end{definition}
+
+  \item The above definition, however, has pathological cases. This is because we can have $E[N_A|X_0 = x] = \infty$ when $0 < \Pr(N_A = \infty | X_0 = x) < 1$.
+  
+  \item \begin{definition}
+    A Markov chain is {\bf Harris recurrent} if the following conditions hold.
+    \begin{enumerate}
+      \item[(a)] There exists a non-zero $\sigma$-finite measure $\psi$ where the chain is $\psi$-irreducible.
+      \item[(b)] For all $A \in \mcal{S}$ with $\psi(A) > 0$, we have that $\Pr(T_A < \infty|X_0 = x) = 1$ for all $x \in A$.
+    \end{enumerate}    
+  \end{definition}
+
+  \item \begin{definition}
+    A $\sigma$-finite measure $\pi$ is {\bf invariant} for a Markov chain with transition kernel $K$ if
+    \begin{align*}
+      \pi(A) = \int_S K(x,A)\, \dee\pi(x)
+    \end{align*}
+    for all $A \in \mcal{S}$. If there is an invariant measure which is a probability measure, then we say that the Markov chain is {\bf positive recurrent}.
+  \end{definition}
+
+  \item \begin{theorem}
+    Every recurrent Markov chain has an invariant $\sigma$-finite measure. It is unique up to a multiplicative constant.
+  \end{theorem}
+
+  \item \begin{proposition}
+    If a Markov chain is positive recurrent, then it is recurrent.
+  \end{proposition}
+
+  \item A recurrent chain that is not positive recurrent is called {\bf null recurrent}.
+\end{itemize}
+  
+\subsubsection{Aperiodicity}
+
+\begin{itemize}
+  \item \begin{definition}
+    A Markov chain is said to be {\bf periodic} if there exists a sequence of non-empty disjoint measurable sets $A_1$, $A_2$, $\dotsc$, $A_n$ with $n \geq 2$ such that
+    \begin{enumerate}
+      \item[(a)] $K(x, A_{j+1}) = 1$ for all $x \in A_j$ and $j = 1, 2, \dotsc, n-1$, and
+      \item[(b)] $K(x, A_1) = 1$ for all $x \in A_n$.
+    \end{enumerate}
+    If a Markov chain is not periodic, it is said to be {\bf aperiodic}
+  \end{definition}
+
+  \item \begin{proposition}
+    Consider a Markov chain with transition function $k(\cdot, \cdot)$. If $k(x, \cdot)$ is positive in a neighborhood of $x$ for all $x \in S$, then the Markov chain is a periodic.
+  \end{proposition}
+
+  This is true because the chain can remain in that neighborhood for an arbitrary number of times before visiting other areas.
+\end{itemize}
+
+\subsubsection{Total Variation Distance}
+
+\begin{itemize}
+  \item \begin{definition}
+    The {\bf total variation distance} between two probabiliy measures $\mu$ and $\nu$ on measurable space $(S,\mcal{S})$ is given by:
+    \begin{align*}
+      d_{\mrm{TV}}(\mu,\nu) = \sup_{A \in \mcal{S}} |\mu(A) - \nu(A)|.
+    \end{align*}
+  \end{definition}
+  
+  \item We note that this definition is equivalent to Definition~\ref{definition:finite-total-variation-distance}.
+\end{itemize}
+
+\subsubsection{Convergence Theorems}
+
+\begin{itemize}
+  \item \begin{theorem}
+    Consider a Markov chain with transition kernel $K$. If the chain is $\psi$-irreducible, aperiodic, and has an invariant probability measure (i.e., a stationary distribution) $\pi$, then
+    \begin{align*}
+      \lim_{n \rightarrow \infty} d_{\mrm{TV}}(K^n(x, \cdot), \pi(\cdot)) = 0
+    \end{align*}
+    for $\pi$-almost every $x \in S$ regardless of the initial distribution of $X_0$. Moreover, if the chain is Harris recurrent, then the convergence holds for all $x \in S$.
+  \end{theorem}  
+\end{itemize}
+
+\subsection{Reversibility}
+
+\begin{itemize}
+  \item \begin{definition}
+    Consider a Markov chain with transition function $k$. The chain satisfies {\bf detailed balance} if there is a non-negative function $p: S \rightarrow \Real$ such that
+    \begin{align*}
+      p(y)k(y,x) = p(x)k(x,y)
+    \end{align*}
+    for all $x,y \in S$.
+  \end{definition}
+
+  \item \begin{proposition}
+    Consider a Markov chain that satisfies detailed balance through a function $p$.
+    If $p$ is integrable with respect to some measure $\mu$ on $(S,\mcal{S})$, then its integral $\pi(A) = \int_A p\, \dee\mu$ is an invariant measure.
+  \end{proposition}
 \end{itemize}
 
 \bibliographystyle{apalike}
