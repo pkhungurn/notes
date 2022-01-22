@@ -595,6 +595,18 @@ And I have to admit that I have no idea what this equation is about. This note i
       &= \bigg(u_t + u_x F + \frac{1}{2}u_{xx} G^2\bigg)\, \dee t + u_x G\, \dee W.
     \end{align*}
   \end{theorem}
+
+  \item \begin{example}
+    Let $X = W$, and $u(x) = x^m$. We have that $u_t(W) = 0$, $u_x(W) = mW^{m-1}$, and $u_{xx}(W) = m(m-1)W^{m-2}$. Moreover, $F = 0$ and $G = 1$, so the It\^{o}'s chain rule yields
+    \begin{align*}
+      \dee(W^m) 
+      = \dee u(W)
+      &= \bigg(u_t(W) + u_x(W) F + \frac{1}{2}u_{xx}(W) G^2\bigg)\, \dee t + u_x(W) G\, \dee W \\
+      &= \frac{1}{2} m(m-1) W^{m-2}\, \dee t + mW^{m-1}\, \dee W.
+    \end{align*}
+  \end{example}
+  
+  
 \end{itemize}
 
 \bibliographystyle{apalike}
