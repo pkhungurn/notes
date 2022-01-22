@@ -754,15 +754,27 @@ This is a primer on discrete-time Markov chains. The materials are taken from a 
     \end{enumerate}
   \end{definition}
 
-  \item Suppose that the space space is a subset of $\Real^d$. Suppose also that, for all $s$, the measure $K(s,\cdot)$ is absolutely continuous with respect to the Lebesgue measure. The Random--Nikodym theorem tells us that there exists a non-negative function $k(x,y)$ such that
-  \begin{align*}
-    K(x,A) = \int_A k(x,y)\, \dee y
-  \end{align*}
+  \item Suppose that, for all $s \in S$, the measure $K(s,\cdot)$ is absolutely continuous with respect to a $\sigma$-finite measure $\mu$. The Random--Nikodym theorem tells us that there exists a non-negative function $k(x,y)$ such that
+  \begin{align}
+    K(x,A) = \int_A k(x,y)\, \dee \mu(y) \label{eqn:transition-function}
+  \end{align}
   for all $A \in \mcal{S}$. In this case, we refer to $k(x,y)$ as the {\bf transition function}.
+
+  \item The integral of $f$ with respect to a measure $\mu$ on $A$ can be denoted in several ways.
+  \begin{align*}
+    \int_A f\, \dee\mu
+    = \int_A f(x)\, \dee\mu
+    = \int_A f(x)\, \dee\mu(x)
+    = \int_A f(x)\mu(\dee x).
+  \end{align*}  
+  Hence, \eqref{eqn:transition-function} may be rewritten as:
+  \begin{align*}
+    K(x,A) = \int_A k(x,y)\, \mu(\dee y)
+  \end{align*}
 
   \item The transition function must satisfy
   \begin{align*}
-    \int_S k(x,y)\, \dee y = 1
+    \int_S k(x,y)\, \mu(\dee y) = 1
   \end{align*}
   for all $x \in S$.
 
@@ -800,16 +812,6 @@ This is a primer on discrete-time Markov chains. The materials are taken from a 
   \end{align*}
   It is called the {\bf $n$-step transition kernel}.  
 
-  \begin{comment}
-  \item Moreover, the integral of $f$ with respect to a measure $\mu$ on $X$ can be denoted in several ways.
-  \begin{align*}
-    \int_X f\, \dee\mu
-    = \int_X f(x)\, \dee\mu
-    = \int_X f(x)\, \dee\mu(x)
-    = \int_X f(x)\mu(\dee x).
-  \end{align*}  
-  \end{comment}
-
   \item \begin{proposition}[Kolmogorov--Chapman equation]
     Let $m,n$ be positive integers and $A \in \mcal{S}$. Then,
     \begin{align*}
@@ -821,7 +823,7 @@ This is a primer on discrete-time Markov chains. The materials are taken from a 
   \item Let $A_0, A_2, \dotsc, A_n \in \mcal{S}$. We have that
   \begin{align*}
     \Pr(X_0 \in A_0, X_1 \in A_1, \dotsc, X_n \in A_n)
-    = \bigg( \int_{A_0} \dee\mu(x_0) \bigg) \bigg( \int_{A_1} K(x_0, \dee x_1) \bigg) \dotsb \bigg( \int_{A_n} K(x_{n-1}, dx_n) \bigg).
+    = \bigg( \int_{A_0} \mu(\dee x_0) \bigg) \bigg( \int_{A_1} K(x_0, \dee x_1) \bigg) \dotsb \bigg( \int_{A_n} K(x_{n-1}, dx_n) \bigg).
   \end{align*}
 
   \item \begin{theorem}[Weak Markov property]
@@ -886,7 +888,7 @@ To discuss asymptotic behavior, we need to discuss terms like irreducibility, re
   \item \begin{definition}
     A $\sigma$-finite measure $\pi$ is {\bf invariant} for a Markov chain with transition kernel $K$ if
     \begin{align*}
-      \pi(A) = \int_S K(x,A)\, \dee\pi(x)
+      \pi(A) = \int_S K(x,A)\, \pi(\dee x)
     \end{align*}
     for all $A \in \mcal{S}$. If there is an invariant measure which is a probability measure, then we say that the Markov chain is {\bf positive recurrent}.
   \end{definition}
