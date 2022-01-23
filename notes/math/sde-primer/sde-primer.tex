@@ -439,7 +439,7 @@ And I have to admit that I have no idea what this equation is about. This note i
   \end{align*}
   where $\ve{X}(t)$ is a stochastic process, and $\ve{W}(t)$ is the standard Brownian motion in $\Real^n$.
 
-  \item We said in the introduction would be
+  \item We said in the introduction that the solution would be
   \begin{align*}
     \ve{X}(t) = \ve{x}_0 + \int_0^t \ve{b}(\ve{X}(t), t)\, \dee t + \int_0^t B(\ve{X}(t), t)\, \dee\ve{W}(t)
   \end{align*}
@@ -559,15 +559,25 @@ And I have to admit that I have no idea what this equation is about. This note i
       \int_0^T G\, \dee W = \lim_{n \rightarrow 0} \int_0^T H^{(n)}\, \dee W
     \end{align*}
     where $\{H^{(n)} \}_{n=1}^\infty$ is a sequence of step processes in $\mcal{L}^2(0,T)$ such that $\lim_{n \rightarrow 0} \| G - H^{(n)} \|_2 = 0$. The integral defined in this way does not depend on the particular sequence of step processes used to approximate $G$.
-  \end{definition}  
+  \end{definition}
+  
+  \item We have defined the It\^{o} integrals for functions in $\mcal{L}^2(0,T)$ whose every member $G$ satisfies
+  \begin{align*}
+    E \bigg[\int_0^T G^2\, \dee t\bigg] < \infty.
+  \end{align*}
+  It is possible to extend the definition to $\mcal{M}^2(0,T)$, which is the class of progressively measurable real-value stochastic processes such that
+  \begin{align*}
+    \int_0^T G^2\, \dee t < \infty \mbox{ almost surely.}
+  \end{align*}
+  Notice that $\mcal{L}^2(0,T) \subseteq \mcal{M}^2(0,T)$ because, if the expectation is finite, then the probabily that $\int G^2\, \dee t = \infty$ must be $0$.
 
-  \item \begin{theorem}
+  \item \begin{theorem} \label{theorem:ito-integral-properties}
     For all constants $a, b \in \Real$ and for all $G, H \in \mcal{L}^2(0,T)$, we have that
     \begin{align*}
       \int_0^T (aG + bH)\, \dee W &= a \int_0^T G\, \dee W + b \int_0^T H\, \dee W, \\
       E\bigg[ \int_0^T G\, \dee W \bigg] &= 0, \\
-      E\bigg[ \bigg( \int_0^T G\, \dee W \bigg)^2 \bigg] &= E \bigg[ \int_0^T G^2\, \dee W \bigg], \\
-      E\bigg[ \bigg( \int_0^T G\, \dee W \bigg) \bigg( \int_0^T H\, \dee W \bigg) \bigg] &= E \bigg[ \int_0^T GH \, \dee W \bigg]. 
+      E\bigg[ \bigg( \int_0^T G\, \dee W \bigg)^2 \bigg] &= E \bigg[ \int_0^T G^2\, \dee t \bigg], \\
+      E\bigg[ \bigg( \int_0^T G\, \dee W \bigg) \bigg( \int_0^T H\, \dee W \bigg) \bigg] &= E \bigg[ \int_0^T GH \, \dee t \bigg]. 
     \end{align*}
   \end{theorem}
 \end{itemize}
@@ -605,10 +615,344 @@ And I have to admit that I have no idea what this equation is about. This note i
       &= \frac{1}{2} m(m-1) W^{m-2}\, \dee t + mW^{m-1}\, \dee W.
     \end{align*}
   \end{example}
+
+  \item \begin{theorem}[It\^{o}'s product rule]
+    Suppose 
+    \begin{align*}    
+      dX_1 &= F_1\, \dee t + G_1\, \dee W \\
+      dX_2 &= F_2\, \dee t + G_2\, \dee W
+    \end{align*}
+    for $0 \leq t \leq dT$, $F_i \in \mcal{L}^1(0=,T)$, and $G_i \in \mcal{L}^2(0,T)$. Then,
+    \begin{align*}
+      \dee(X_1 X_2) = X_2\, \dee X_1 + X_1\, \dee X_2 + G_1G_2\, \dee t.
+    \end{align*}
+    The expression $G_1 G_2\, \dee t$ is called the {\bf It\^{o} correction term}.
+  \end{theorem}
+
+  \item The integrated versino of the above expression gives the {\bf It\^{o} integration-by-parts formula.}
+  \begin{align*}
+    \int_s^r X_2\, \dee X_1 = X_1(r)X_2(r) - X_1(s)X_2(s) - \int_r^s X_1\, \dee X_2 - \int_r^s G_1 G_2\, \dee t.
+  \end{align*}
+
+  \item The It\^{o}'s chain rule can be generalized into one that involves multi-variable $u$.
   
-  
+  \begin{theorem}
+    Suppose that
+    \begin{align*}
+      \dee X_i = F_i\, \dee t + G_i\, \dee W
+    \end{align*}
+    with $F_i \in \mcal{L}^1(0,T)$, $G_i \in \mcal{L}^2(0,T)$ for $i = 1, \dotsc, n$. If $u(x_1, x_2, \dotsc, x_n, t): \Real^n \times [0,T] \rightarrow \Real$ is a continuous function with continuous partial derivatives $u_t$, $u_{x_i}$, and $u_{x_i x_j}$ for $i,j = 1, 2, \dotsc, n$, then
+    \begin{align*}
+      \dee u = u_t\, \dee t + \sum_{i=1}^n u_{x_i}\, \dee X_i + \frac{1}{2}\sum_{i,j} u_{x_i x_j} G_i G_j\, \dee t.
+    \end{align*}
+  \end{theorem}
 \end{itemize}
 
+\subsection{It\^{o} Integral in Higher Dimensions}
+
+\begin{itemize}
+  \item We use $\ve{W}(t) = (W_1(t), W_2(t), \dotsc, W_n(t))$ to denote $n$-dimensional Brownian motion. Here, each component is an independent one-dimensional Brownian motion.
+  
+  \item \begin{lemma}
+    If $W_1$ and $W_2$ are independent one-dimensional Brownian motions, then $$\dee(W_1 W_2) = W_1\, \dee W_2 + W_2\, \dee W_1.$$
+  \end{lemma}
+
+  \item \begin{lemma}[It\^{o}'s product rule with several Brownian motions]
+    Suppose that
+    \begin{align*}
+      dX_1 = F_1\, \dee t + \sum_{k=1}^m G_{1k}\, \dee W_k \\
+      dX_2 = F_2\, \dee t + \sum_{k=1}^m G_{2k}\, \dee W_k
+    \end{align*}
+    where the $W_k$'s are independent Brownian motions. Then,
+    \begin{align*}
+      \dee(X_1 X_2) = X_1\, \dee X_2 + X_2\, \dee X_1 + \sum_{k=1}^m G_{1k}G_{2k}\, \dee t.
+    \end{align*}
+  \end{lemma}
+
+  \item We let $\mcal{L}^2_{n}(0,T)$ to denote the set of vector-valued functions $\ve{F} = (F_1, F_2, \dotsc, F_n)$ where each $F_i$ is a member of $\mcal{L}^2(0,T)$. Also, let $\mcal{L}^2_{n \times m}(0,T)$ denote the set of matrix value function
+  \begin{align*}
+    G = [G_{ij}] = \begin{bmatrix}
+      G_{11} & G_{12} & \cdots & G_{1m} \\
+      G_{21} & G_{22} & \cdots & G_{2m} \\
+      \vdots & \vdots & \ddots & \vdots \\
+      G_{n1} & G_{n2} & \cdots & G_{nm} 
+    \end{bmatrix}    
+  \end{align*}
+  where each $G_{ij}$ is a member of $\mcal{L}^2(0,T)$.
+
+  \item In this way, if $G \in \mcal{L}^2_{n\times m}(0,T)$ and $\mcal{W}$ is the $m$-dimensional Brownian motion, then
+  \begin{align*}
+    \int_0^T G\, \dee\ve{W}
+  \end{align*}
+  is an $\Real^n$-value random variable whose $i$-th component is
+  \begin{align*} 
+    \sum_{j=1}^m \int_0^T G_{ij}\, \dee W_j.
+  \end{align*}
+
+  \item \begin{lemma}
+    If $G \in \mcal{L}_{n\times m}^2(0,T)$, then
+    \begin{align*}
+      E\bigg[ \int_0^T G\, \dee\ve{W} \bigg] = \ve{0},
+    \end{align*}
+    and
+    \begin{align*}
+      E\bigg[ \bigg\| \int_0^T G(t)\, \dee\ve{W}(t) \bigg\|^2 \bigg]
+      = E\bigg[ \int_0^T \| G(t) \|^2\, \dee t \bigg]
+    \end{align*}
+    where $\| G(t) \|$ is the Frobenius norm of the matrix:
+    \begin{align*}
+      \| G(t) \| &= \bigg( \sum_{i,j} (G_{ij}(t))^2 \bigg)^{1/2}.
+    \end{align*}
+  \end{lemma}
+
+  \item Moreover, let $\ve{X}(t) = (X_1(t), \dotsc, X_n(t))$. When we write
+  \begin{align*}
+    \dee \ve{X} = \ve{F}\, \dee t + G\, \dee \ve{W},    
+  \end{align*}
+  we mean that $\ve{X}$ is the stochastic process such that
+  \begin{align*}
+    \ve{X}(r) = \ve{X}(s) + \int_r^s \ve{F}\, \dee t + \int_s^r G\, \dee \ve{W},
+  \end{align*}
+  which means
+  \begin{align*}
+    X_i(r) = X_i(s) + \int_s^r F_i(t)\, \dee t + \sum_{j=1}^m \int_{r}^s G_{ij}\, \dee W_j
+  \end{align*}
+  or, when written with differentials,
+  \begin{align*}
+    \dee X_i = F_i\, \dee t + \sum_{j=1}^m G_{ij}\, \dee W_j
+  \end{align*}
+  for all $i = 1, 2, \dotsc, n$.
+
+  \item \begin{lemma}[It\^{o}'s chain rule in $n$-dimension]
+    Suppose that $$\dee \ve{X} = \ve{F}\, \dee t + \ve{G}\, \dee\ve{W}.$$ Let $u : \Real^n \times [0,T]$ be a continuous function with continuous partial derivatives $u_t$, $u_{x_i}$, and $u_{x_i x_j}$ for $i,j = 1, 2, \dotsc, n$. Then,
+    \begin{align*}
+      \dee(u(\ve{X}(t), t)) = u_t\ \dee t + \sum_{i=1}^n u_{x_i}\dee X_i + \frac{1}{2} \bigg( \sum_{i=1}^n \sum_{j=1}^n u_{x_i x_j} \sum_{l=1}^m G_{il}G_{jl} \bigg)\, \dee t.
+    \end{align*}
+  \end{lemma}
+
+  \item Note that the It\^{o} chain rule corresponds to evaluating the expression
+  \begin{align*}
+    d(u(\ve{X}, t)) = u_t\, \dee t + \sum_{i=1}^n u_{x_i}\, \dee X_i + \frac{1}{2} \sum_{i=1}^n \sum_{j=1}^n u_{x_i x_j}\, \dee X_i \dee X_j.
+  \end{align*}
+  We then expand each $\dee X_i$ into $F_i\, \dee t + \sum_{k=1}^m G_{ij}\, \dee W_j$, multiply everything out, and then eliminate terms according to the following rules:
+  \begin{align*}
+    (\dee t)^2 &= 0, \\
+    \dee W_i\, \dee t &= 0, \\
+    \dee W_i\, \dee W_j &= \delta_{ij} \dee t.
+  \end{align*}
+\end{itemize}
+
+\section{Stochastic Differential Equations}
+
+\begin{itemize}
+  \item \begin{definition}
+    Let $\ve{W}$ be the $m$-dimensinal Brownian motion and $\ve{X}_0$ be a random variable that is independent of $\ve{W}$. We say that an $\Real^n$-valued stochastic process $\{ \ve{X} : 0 \leq t \leq T \}$ is a solution of the differential equation
+    \begin{align*}
+      \dee\ve{X} &= \ve{b}(\ve{X},t)\, \dee t + B(\ve{X},t)\, \dee\ve{W} \\
+      \ve{X}(0) &= \ve{X}_0
+    \end{align*}        
+    for $0 \leq t \leq T$ if the following conditions are satisfied.
+    \begin{enumerate}      
+      \item $\ve{X}(t)$ is progressively measurable with respect the filtration $\{ \Sigma(t) : 0 \leq t \leq T \}$ where $\Sigma(t)$ denotes $\sigma(\ve{X}_0, \ve{W}(s) : 0 \leq s \leq t)$, which is the $\sigma$-algebra generated by $\ve{X}_0$ and $\ve{W}(\cdot)$ up to time $t$.
+      \item $\ve{b}(\ve{X}(t), t) \in \mcal{L}^1_n(0,T)$.
+      \item $B(\ve{X}(t), t) \in \mcal{L}^2_{n \times m}(0,T)$.
+      \item For all time $0 \leq t \leq T$, we have that
+      \begin{align*}
+        \ve{X}(t) = \ve{X}_0 + \int_0^t\ve{b}(\ve{X}(s), s)\, \dee s + \int_0^t B(\ve{X}(s), s)\, \dee\ve{W}(s)
+      \end{align*}
+      almost surely.
+    \end{enumerate}
+  \end{definition}  
+\end{itemize}
+
+\subsection{Examples}
+
+\begin{itemize}
+  \item \begin{example}
+    Suppose $f,g$ are continuous functions $t$ (not random variables). Consider the initial value problem
+    \begin{align*}
+      \dee X &= f X \, \dee t + gX\, \dee W, \\
+      X(0) &= 1.
+    \end{align*}
+    Then, the solution is 
+    \begin{align*}
+      X(t) = \exp\bigg( \int_0^t f(s)\, \dee s -\frac{1}{2}\int_0^t g^2(s)\, \dee s + \int_0^t g(s)\, \dee W(s) \bigg).
+    \end{align*}
+    To check this, we take the time derivative. Take
+    \begin{align*}
+      Y(t) = \int_0^t f(s)\, \dee s  -\frac{1}{2}\int_0^t g^2(s)\, \dee s + \int_0^t g(s)\, \dee W(s),
+    \end{align*}    
+    and so
+    \begin{align*}
+      \dee Y = f\, \dee t -\frac{1}{2} g^2\, \dee t + g\, \dee W.
+    \end{align*}
+    Using the It\^{o}'s chain rule with $u(Y) = e^Y = X$, we have that $u_t = 0$, $u_Y = e^Y = X$, $u_{YY} = e^Y = X$, and
+    \begin{align*}
+      \dee X
+      = \dee u(Y)
+      &= u_t + u_Y \dee Y + \frac{1}{2} u_{YY} (\dee Y)^2 \\
+      &= X \bigg( f\, \dee t -\frac{1}{2} g^2\, \dee t + g\, \dee W \bigg)
+      + \frac{1}{2} X \bigg( f\, \dee t -\frac{1}{2} g^2\, \dee t + g\, \dee W \bigg)^2 \\
+      &= X \bigg( f\, \dee t -\frac{1}{2} g^2\, \dee t + g\, \dee W \bigg)
+      + \frac{1}{2} X g^2\, \dee t \\
+      &= f X\,\dee t + gX\, \dee W.
+    \end{align*}
+  \end{example}
+
+  \item \begin{example}[Stock prices]
+    Let $S(t)$ denote the price of a stock at time $t$. Recall from the introduction that we often model it with
+    \begin{align*}
+      \dee S &= \mu S\, \dee t + \sigma S\, \dee W.
+    \end{align*}
+    where $\mu$ and $\sigma$ are constants. Taking $S(0) = 1$, we have that the solution is given by:
+    \begin{align*}
+      S(t) &= \exp\bigg( \int_0^t \mu\, \dee s - \frac{1}{2} \int_0^t \sigma^2\, \dee s + \int_0^t \sigma\, \dee W \bigg) \\
+      &= \exp\bigg(\mu t - \frac{\sigma^2}{2} t + \sigma W(t)\bigg) \\
+      &= \exp\bigg( \sigma W(t) + \bigg( \mu - \frac{\sigma^2}{2} \bigg) t \bigg).
+    \end{align*}
+    Moreover, if $S(0) = s_0$, one can easily check that the solution is
+    \begin{align*}
+      S(t) = s_0 \exp\bigg( \sigma W(t) + \bigg( \mu - \frac{\sigma^2}{2} \bigg) t \bigg).
+    \end{align*}
+
+    Let us compute $E[S(t)]$. We have that
+    \begin{align*}
+      S(t) = s_0 + \int_0^t \mu S\, \dee s + \int_0^t \sigma S\, \dee W.
+    \end{align*}
+    So,
+    \begin{align*}
+      E[S(t)] &= s_0 + E\bigg[ \int_0^t \mu S\, \dee s\bigg] + E\bigg[\int_0^t \sigma S\, \dee W\bigg] \\
+      &= s_0 + \mu \int_0^T E[S(s)]\, \dee s + E\bigg[\int_0^t \sigma S\, \dee W\bigg].
+    \end{align*}
+    By Theorem~\ref{theorem:ito-integral-properties},    
+    \begin{align*}
+      E\bigg[\int_0^t \sigma S\, \dee W\bigg] = 0.
+    \end{align*}
+    As a result,
+    \begin{align*}
+      E[S(t)] &= s_0 + \mu \int_0^t E[ S(s)]\, \dee s.
+    \end{align*}
+    Differentiating both sides with respect to $t$, we have that
+    \begin{align*}
+      \frac{\dee E[S(t)]}{\dee t} = \mu E[S(t)],
+    \end{align*}
+    which implies that $E[S(t)] = s_0 e^{\mu t}$, which is the solution of the ODE $\dee S = \mu S\, \dee t$.
+  \end{example}
+
+  \item \begin{example}[Ornstein--Uhlenbeck process]
+  The Ornstein--Uhlenbeck equation
+  \begin{align*}
+    \frac{\dee^2 Y}{\dee t^2} = -b \frac{\dee Y}{\dee t} + \sigma \xi
+  \end{align*}
+  describes the motion of a particle under two forces: the damping force $-b\, \dee Y / \dee t$ and the random perturbation $\sigma \xi$ where $\xi$ is the white noise.
+
+  Let $X = \dee Y / \dee t$. We have that
+  \begin{align*}
+    \frac{\dee X}{\dee t} &= -b X + \sigma \xi \\
+    \frac{\dee X}{\dee t} + bX &=  \sigma \xi.
+  \end{align*}
+  To get a solution, we solve it like a normal ODE. First, multiplying both sides by $e^{bt}$, we have
+  \begin{align*}
+    e^{bt} \frac{X}{\dee t} + b e^{bt} X &= \sigma e^{bt} \xi \\
+    \frac{\dee}{\dee t} (e^{bt} X) &= \sigma e^{bt} \xi \\
+    e^{bt} X(t) &= X(0) + \sigma \int_0^t e^{bs} \xi(s)\, \dee s \\
+    X(t) &= e^{-bt} X(0) + \sigma \int_0^t e^{-b(t-s)}\, \dee W(s).
+  \end{align*}
+  Because $X = \dee Y / \dee t$, we have that
+  \begin{align*}
+    Y(t) = Y(0) + \int_0^t X(s)\, \dee s,
+  \end{align*}
+  and we can expand this out to get an expression for $Y(t)$.
+  
+  \end{example}
+\end{itemize}
+
+\subsection{Properties of Solution}
+
+\begin{itemize}
+  \item \begin{theorem} \label{theorem:existence-and-uniqueness-of-solution}
+    Let $\ve{b}: \Real^n \times [0,T] \rightarrow \Real^n$ and $B: \Real^n \times [0,T] \rightarrow \Real^{m \times n}$ be uniformly Lipschitz continuous, meaning that there exists a constant $L$ such that
+    \begin{align*}
+      \| \ve{b}(\ve{x},t) - \ve{b}(\ve{y},t) \| &\leq L\| \ve{x} - \ve{y} \| \\
+      \| B(\ve{x},t) - B(\ve{y},t) \| &\leq L\| \ve{x} - \ve{y} \| \\
+      \| \ve{b}(\ve{x},t) \| &\leq L(1 + \| \ve{x} \|) \\
+      \| B(\ve{x},t) \| &\leq L(1 + \| \ve{x} \|)
+    \end{align*}
+    for all $0 \leq t \leq T$, $\ve{x}, \ve{y} \in \Real^n$. Let $\ve{X}_0$ be a random variable such that $E[\| \ve{X}_0\|^2] < \infty$ that is independent of the $m$-dimensional Brownian motion $\ve{W}(\cdot)$. Then, there exists a unique solution $\ve{X} \in \mcal{L}^2(0,T)$ of the stochastic differential equation
+    \begin{align*}
+      \dee \ve{X} &= \ve{b}(\ve{X},t)\, \dee t + B(\ve{X}, t)\, \dee\ve{W} \\
+      \ve{X}(0) &= \ve{X}_0
+    \end{align*}
+    for $0 \leq t \leq T$. By ``unique,'' we mean that, if $\widetilde{\ve{X}}$ is another solution of the SDE, $\ve{X}(t) = \widetilde{\ve{X}}(t)$ for all $0 \leq t \leq T$ almost surely.
+  \end{theorem}
+
+  \item The solution can be found by using an algorithm called {\bf Picard's iteration}, which is also used in the proof for existence and uniqueness of solution to deteriministic ODE.
+  \begin{enumerate}
+    \item Start with $\ve{X}^{(0)} \gets \ve{X}_0$.
+    \item Having computed $\ve{X}^{(n)}$ in the previous iteration, compute the next esimate by
+    \begin{align*}
+      \ve{X}^{(n+1)} \gets \ve{X}_0 + \int_{0}^t \ve{b}(\ve{X}^{(n)}(s), s)\, \dee s + \int_0^t B(\ve{X}^{(n)}(s), s)\, \dee\ve{W}.
+    \end{align*}
+  \end{enumerate}
+  The proof of the above theorem involves showing that the sequence $\{ \ve{X}^{(n)} \}_{n=0}^\infty$ coverges in the $L^2$ norm to a function in $\mcal{L}^2(0,T)$, which clearly solves the SDE.
+
+  \item \begin{theorem}
+    The probability density $p(\ve{X},t)$ of the solution of the SDE in Theorem~\ref{theorem:existence-and-uniqueness-of-solution} solves the partial differential equation
+    \begin{align*}
+      \frac{\partial p(\ve{X},t)}{\partial t}
+      = - \sum_{i=1}^n \frac{\partial }{\partial x_i} [ b_i(\ve{X}, t) p(\ve{X},t) ] + \frac{1}{2} \sum_{i,j} \frac{\partial^2}{\partial X_i \partial X_j} \bigg( [B(\ve{X},t) (B(\ve{X},t))^T]_{ij}\, p(\ve{X}, t) \bigg).
+    \end{align*}
+    The equation above is called the {\bf Fokker--Planck equation} or the {\bf Kolmogorov forward equation}.
+  \end{theorem}
+
+  \item \begin{theorem}
+    Let $\ve{X}(t)$ be the solution of the SDE in Theorem~\ref{theorem:existence-and-uniqueness-of-solution}. Let 
+    \begin{align*}
+      \ve{m}(t) &= E[\ve{X}(t)], \\
+      C(t) &= E[(\ve{X}(t) - \ve{m}(t))(\ve{X}(t) - \ve{m}(t))^T].
+    \end{align*}
+    be the mean and the covariance matrix of the solution as a function of time. Then, these two functions are solutions to following differential equations
+    \begin{align*}
+      \frac{\dee\ve{m}}{\dee t} &= E[\ve{b}(\ve{X},t)], \\
+      \frac{\dee C}{\dee t}
+      &= E[\ve{b}(\ve{X},t)(\ve{X} - \ve{m})^T] + E[(\ve{X} - \ve{m})(\ve{b}(\ve{X},t))^T] + E[B(\ve{X},t)B(\ve{X},t)^T].
+    \end{align*}
+  \end{theorem}
+\end{itemize}
+
+\section{Numerical Solution to SDE}
+\begin{itemize}
+  \item Recall that we wish to solve
+  \begin{align*}
+    \dee \ve{X} &= \ve{b}(\ve{X},t)\, \dee t + B(\ve{X},t)\, \dee \ve{W} \\
+    \ve{X}(0) &= \ve{X}_0
+  \end{align*}
+  where $\ve{X}_0$ is a random variable that is independent from the Brownian motion $\ve{W}$.
+
+  \item The simplest numerical integration scheme is the {\bf Euler--Maruyama method}, which is just the Euler method applied in a very straightforward way to SDE.
+  
+  The algorithm goes as follows.
+  \begin{enumerate}
+    \item Divide the interval $[0,T]$ into $K$ subintevals of equal width. Let us say that the width of each subinterval is $\Delta t$.
+    
+    \item Sample $\widehat{\ve{X}}[0] \sim p(\ve{X}_0)$.
+    
+    \item For $k = 1, 2, \dotsc, K$, do the following.
+    \begin{enumerate}
+      \item Sample $\Delta \ve{W}[k] \sim \mcal{N}(0,\Delta t\, I )$.
+      
+      \item Compute
+      \begin{align*}
+        \widehat{\ve{X}}[k]
+        \gets
+        \widehat{\ve{X}}[k-1] + \ve{b}(\widehat{\ve{X}}[k-1], (k-1)\Delta t) \Delta t + B(\widehat{\ve{X}}[k-1], (k-1)\Delta t) \Delta \ve{W}[k].
+      \end{align*}
+    \end{enumerate}
+  \end{enumerate}
+  We that the sequence $\widehat{\ve{X}}[0], \widehat{\ve{X}}[1], \dotsc \widehat{\ve{X}}[K]$ should approximate $\ve{X}(0)$, $\ve{X}(\Delta t)$, $\dotsc$, $\ve{X}(K \Delta t)$, respectively.
+  
+  \item More sophisticated methods include the Milstein method and the stochastic Runge--Kutta method, but we are not discussing them here in this note.
+\end{itemize}
 \bibliographystyle{apalike}
 \bibliography{sde-primer}  
-\end{document} 
+\end{document}
