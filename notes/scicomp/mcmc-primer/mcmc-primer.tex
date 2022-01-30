@@ -18,6 +18,9 @@
 \newtheorem{claim}[lemma]{Claim}
 \newtheorem{example}[lemma]{Example}
 
+\def\sc#1{\dosc#1\csod}
+\def\dosc#1#2\csod{{\rm #1{\small #2}}}
+
 \newcommand{\dee}{\mathrm{d}}
 \newcommand{\Dee}{\mathrm{D}}
 \newcommand{\In}{\mathrm{in}}
@@ -28,6 +31,7 @@
 
 \newcommand{\ve}[1]{\mathbf{#1}}
 \newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\ves}[1]{\boldsymbol{#1}}
 \newcommand{\etal}{{et~al.}}
 \newcommand{\sphere}{\mathbb{S}^2}
 \newcommand{\modeint}{\mathcal{M}}
@@ -46,14 +50,242 @@
 \newcommand{\Real}{\mathbb{R}}
 \newcommand{\sseq}{\subseteq}
 \newcommand{\ov}[1]{\overline{#1}}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
 
-\title{Title}
-\author{Author}
+\title{A Primer of Markov Chain Monte Carlo Algorithms}
+\author{Pramook Khungurn}
 
 \begin{document}
-  \maketitle
+\maketitle
+
+This note is a primer on Markov chain Monte Carlo (MCMC) algorithms. I take materials from \cite{Gareth:2004} and \cite{Andrieu:2003}.
+
+\section{Introduction}
+
+\begin{itemize}
+  \item We are given an unnormalized distributon function $\pi_u$ defined on a measurable space $(\Omega,\Sigma)$ such that $0 < \int_\Omega p_u\, \dee x < \infty$.
+  
+  \item The above density gives rise to a probability measure $P$, which is given by
+  \begin{align*}
+    P(A) = \frac{\int_A \pi_u( x)\, \dee x}{\int_\Omega \pi_u( x)\, \dee x}
+  \end{align*}
+  for any $A \in \Sigma$. The corresponding probability distribution function is
+  \begin{align*}
+    \pi( x) = \frac{\pi_u( x)}{\int_\Omega \pi_u( x)\, \dee x}.
+  \end{align*}
+
+  \item MCMC algorithms allow us to perform the following two following tasks:
+  \begin{itemize}
+    \item Sample elements from $\Omega$ according to $P$.
+    \item Compute an estimate of 
+    \begin{align*}
+    \pi(f) 
+    = E_{ x \sim \pi}[f( x)]
+    = \int_\Omega f( x) \pi( x)\, \dee  x
+    = \frac{\int_\Omega f( x) \pi_u( x)\, \dee  x}{\int_\Omega \pi_u( x)\, \dee x}.
+    \end{align*}
+  \end{itemize}
+
+  \item There are a number of motivations for doing this.
+  \begin{itemize}
+    \item In statistictical mechanics, the probability density of state $ x$ is given by
+    \begin{align*}
+      \pi( x) = \frac{1}{Z} \exp\bigg(-\frac{E( x)}{kT}\bigg)
+    \end{align*}
+    where $E( x)$ is the Hamiltonian of $s$, $k$ is the Boltzmann's constant, and $T$ is the temperature of the system. The constant $Z$ is called the {\bf partition function}, and it is given by
+    \begin{align*}
+      Z = \int_{\Omega} \exp\bigg( -\frac{E( x)}{kT} \bigg)\, \dee  x.
+    \end{align*}    
+    We see that this setting is exactly the same as the one we just discuss after taking $\pi_u( x) = e^{-E( x)/(kT)}$. So, MCMC is useful for computing expectations arising from these probabilities.
+
+    \item In Bayesian parameter estimation, we are given data $x$, and we want to estimate parameter $\theta$ of our model, which includes the how to compute the prior $p(\theta)$, and the likelihood $p( x|x)$. The posterior is given by
+    \begin{align*}
+      p(\theta | x) = \frac{p(x|\theta)p(\theta)}{\int p(x|\theta)p(\theta)\, \dee \theta}
+    \end{align*}
+    In many cases, we also want to compute expectations such as
+    \begin{align*}
+      E_{\theta \sim p(\theta|x)}[f(\theta)] 
+      = \int f(\theta)p(\theta|x)\, \dee \theta
+      = \frac{\int f(\theta)p(x|\theta)p(\theta)\, \dee\theta}{\int p(x|\theta)p(\theta)\, \dee \theta}.
+    \end{align*}
+    So, if we let $\Theta$ be the set of the $\theta$'s, then we may set $\Omega = \{ (\theta,x) : \theta \in \Theta \}$, and $\pi_u(\theta,x) = p(x|\theta)p(\theta)$ be our unnormalized density.
+  \end{itemize}
+
+  \item In the above situations, what prevents us from computing probabilities and integrals is the difficulty of computing the integral $\int_\Omega \pi_u( x)\, \dee x$.
+  
+  \item MCMC gives a way to sample $ x$ according to the normalized version of $\pi_u( x)$ without explicity normalizing $\pi_u( x)$ itself. Given this ability, we may use MCMC to sample $ x_1$, $ x_2$, $\dotsc$, $ x_K$ according to $\pi( x)$ and then compute the estimate
+  \begin{align*}
+    \int_\Omega f( x) \pi( x)\, \dee x \approx \widehat{\pi}(f) = \frac{1}{K} \sum_{i=1}^K f( x_i).
+  \end{align*}
+  This is an unbiased estimate, having standard deviation of order $O(1/\sqrt{K})$.
+
+  \item The idea of MCMC is to constructs a Markov chain $\{ X_i \}_{i=0}^\infty$ whose stationary distribution is $\pi(x) = \pi_u(x) / (\int_\Omega \pi_u(x)\, \dee x)$. To do so, we need to find a transition kernel $K$, whose density is $k$, such that
+  \begin{align*}
+    \pi(y) = \int_\Omega \pi(x) k(x, y)\, \dee x.
+  \end{align*}
+  Then, we can run the Markov chain for a long time (starting from somewhere). When $n$ is large, the distribution of $X_n$ will be approximately $\pi$. We can then restart the Markov chain from $X_n$ and obtain $K$ values to compute the estimate $\widehat{\pi}(f)$.
+
+  \item We say that a Markov chain $\{ X_i \}_{i=0}^\infty$ with kernel density function $k$ is {\bf reversible} with probability density function $\pi$ if
+  \begin{align} \label{eqn:detailed-balance}
+    \pi(x) k(x,y) &= \pi(y) k(y,x) 
+  \end{align}
+  for all $x,y \in \Omega$. The condition \eqref{eqn:detailed-balance} is called {\bf detailed balance}.  
+
+  \item Note that when $\pi$ satisfies detailed balance, we have that $\pi$ is a stationary distribution. This is because
+  \begin{align*}
+    \int_\Omega \pi(x) k(x, y)\, \dee x = \int_\Omega \pi(y)k(y, x)\, \dee x = \pi(y) \int_\Omega k(y, x)\, \dee x = \pi(y).
+  \end{align*}
+\end{itemize}
+
+\section{The Metropolis--Hastings Algorithm}
+
+\begin{itemize}
+  \item The Metropolis--Hastings algorithm is the most popular MCMC algorithm.
+
+  \item Back to the problem setting, we are given $\pi_u$, which is the unnormalized version of a probability density $\pi$.
+  
+  \item The Metropolis--Hasting algorithm presupposes a Markov chain over $\Omega$. Let $Q$ denote its transition kernel, and let $q$ denote the transition kernel's density. This density can be unnormalized, just like $\pi_u$, but we require a way to sample $y$ according to $q(x,y)$ for any $x$. We often call $q$ the {\bf proposal distribution}.
+  
+  \item The algorithm proceeds as follows.
+  \begin{enumerate}
+    \item Choose some $X_0$ as the starting point.
+    \item Given $X_n$, generates a proposal $Y_{n+1}$ according to $q(X_n, \cdot)$.
+    \item Compute $\alpha(X_n, Y_{n+1})$ where
+    \begin{align*}
+      \alpha(x,y) = \min\bigg( 1, \frac{\pi_u(y)q(y,x)}{\pi_u(x)q(x,y)} \bigg)
+    \end{align*}
+    is the {\bf acceptance probability}.
+    Here, if $\pi(x)q(x,y) = 0$, we set $\alpha(x,y) = 1$.
+    \item Sample $\xi$ uniformly from $[0,1)$.
+    \item If $\xi < \alpha(x,y)$, then set $X_{n+1} = Y_{n+1}$. Otherwise, set $X_{n+1} = X_n$.
+    \item Repeat Step 2 to Step 5 until you are satisfied.
+  \end{enumerate}
+
+  \item The algorithm creates a Markov chain whose transition density is given by $q^*(x,y) = q(x,y)\alpha(x,y)$. 
+  
+  \item To see that $\pi$ is the stationary distribution of this above Markov chain, we need to show that
+  \begin{align*}
+    \pi(x)q^*(x,y) = \pi(y)q^*(y,x).
+  \end{align*}
+  To see this, let $\pi(x) = C^{-1} \pi_u(x,y)$ where $C = \int_\Omega p_u(x)\, \dee x$ is the normalizing constant. We have that
+  \begin{align*}
+    \pi(x) q^*(x,y)
+    &= \pi(x) q(x,y) \alpha(x,y) \\
+    &= C^{-1}\pi_u(x) q(x,y) \min\bigg( 1, \frac{\pi_u(y)q(y,z)}{\pi_u(x)q(x,y)} \bigg)\\
+    &= C^{-1} \min\bigg( \pi_u(x) q(x,y) , \pi_u(y)q(y,z) \bigg).    
+  \end{align*}
+  Notice that the expression on the RHS is symmetric in $x$ and $y$. Hence, we have that $\pi(x)q^*(x,y) = \pi(y)q^*(y,x)$ as required.
+
+  \item The main question for employing the Metroplis--Hastings algorithm is how to choose the propose distribution $q(\cdot, \cdot)$.
+  
+  \item Of course, $q$ needs to be such that the Markov chain is irreducible and aderiodic so that the Markov chain would converge to the stationary distribution regardless of where we start the chain.
+  \begin{itemize}
+    \item Note, though, that $q^*$ allows for rejection, so the Markov chain is aperiodic by default. As a result, we only need to make sure that the Markov chain covers the whole set where $\pi(\cdot)$ is defined. In other words, $\pi_u(y)q(y,x) > 0$ for all $x$ and $y$ such that $\pi_u(x) > 0$ and $\pi_u(y) > 0$.
+  \end{itemize}
+
+  \item There are many approaches to construct the proposal distribution.
+  \begin{itemize}
+    \item {\bf Symmetric Metropolis algorithm.} Here, $q$ is chosen such that $q(x,y) = q(y,x)$. The acceptance probability simplies to
+    \begin{align*}
+      \alpha(x,y) = \min\bigg( 1, \frac{\pi_u(y)}{\pi_u(x)} \bigg).
+    \end{align*}
+    One way to arrange for this is to use $y \sim \mcal{N}(x, \sigma^2)$.
+
+    \item {\bf Random walk Metropolis algorithm.} Here, $q(x,y) = q(y-x)$. For example, we may have $y \sim \mrm{Uniform}(x-1, x+1)$.
+    
+    \item {\bf Independence sampler.} Here, $q(x,y) = q(y)$. The acceptance probability thus reduces to
+    \begin{align*}
+      \alpha(x,y) 
+      = \min\bigg( 1, \frac{\pi_u(y)q(x)}{\pi_u(x)q(y)} \bigg)
+      = \min\bigg( 1, \frac{w(y)}{w(x)} \bigg)
+    \end{align*}
+    where $w(x) = \pi_u(x)/q(x)$ for all $x$.
+
+    \item {\bf Langevin algorithm.} The proposal distribution is given by
+    \begin{align*}
+      \ve{y} \sim \mcal{N}\Big(\ve{x} + \frac{\sigma}{2} \nabla \log \pi_u(\ve{x}), \sigma^2 I \Big) 
+    \end{align*}
+    for some small $\sigma > 0$.    
+  \end{itemize}
+
+  \item Heuristics on the standard deviation of the proposal distribution.
+  \begin{itemize}
+    \item If it is too low (i.e., the proposal distribution is too narrow), then only a few modes of the target distribution $\pi(\cdot)$ would be visited.
+    \item If it is too wide, then there's a high chance of new samples being rejected, resulting in high correlation between samples.
+  \end{itemize}
+
+  \item If all modes of the target distribution is visited while the acceptance probability is high, we say that the chain {\bf mixes well}.
+\end{itemize}
+
+\section{Combining Markov Chains}
+
+\subsection{Mixture MCMC}
+
+\begin{itemize}
+  \item If transition kernel density $k_1$ and $k_2$ both result in the same stationary distribution $\pi$, then so does the kernel $$\nu k_1 + (1 - \nu)k_2$$ for any $0 \leq \nu \leq 1$.
+  
+  \item The update step of the MCMC algorithm that uses the mixed kernel would be as follows:
+  \begin{itemize}
+    \item[] Sample $\xi \sim \mrm{Uniform}(0,1)$.
+    \item[] {\bf if} $\xi < \nu$ {\bf then}
+    \item[] $\qquad$ Generate the next state $X_{n+1}$ using kernel $k_1$.
+    \item[] {\bf else}
+    \item[] $\qquad$ Generate the next state $X_{n+1}$ using kernel $k_2$.
+    \item[] {\bf end if}
+  \end{itemize}
+
+  \item Mixing more than two kernels is, of course, possible.
+
+  \item Mixture MCMC is useful when the target distribution has many narrow peaks. In this case, we can have a ``global'' kernel that has large variance and a ``local'' kernel that has small variance. The global proposal would jump between peaks, and the local proposals would allow one to explore the space around each peak.
+\end{itemize}
+
+\subsection{Cycle MCMC}
+
+\begin{itemize}
+  \item If we have multiple transition kernel densities $k_1$, $k_2$, $\dotsc$, $k_m$ that have $\pi$ as the stationary distribution of their Markov chains, then the Markov chain obtained by applying the kernels in the round robin fashion, would also have $\pi$ as its stationary distribution.
+  
+  \item Another use of this type of MCMC algorithm is when a sample $\ve{x}$ can be divided into $m$ blocks $\ve{x} = (\ve{x}^{(1)} | \ve{x}^{(2)} | \dotsb | \ve{x}^{(m)})$. If the kernel $k_i$ only change the $\ve{x}^{(i)}$ block, then applying all the kernels in succession would give us a kernel that change all components of the sample, and this can be engineered to have $\pi$ as the statinoary distribution.
+  
+  \item The update step of the cycle MCMC algorithm be as follows:
+  \begin{itemize}
+    \item[] Use $k_1$ to get a state $Y^{(1)}_{n+1}$ from $X_n$.
+    \item[] Use $k_2$ to get a state $Y^{(2)}_{n+1}$ from $Y^{(1)}_{n+1}$.
+    \item[] $\qquad \vdots$
+    \item[] Use $k_m$ to get a state $Y^{(m)}_{n+1}$ from $Y^{(1)}_{n+1}$. 
+    \item[] Set $X_{n+1}$ to $Y^{(m)}_{n+1}$.
+  \end{itemize}
+
+  \item The expression for the overall kernel $k$ would be
+  \begin{align*}
+    k(x,y) = \int \int \dotsb \int k_1(x, x^{(1)})k_2(x^{(1)}, x^{(2)}) \dotsb k_m(x^{(m-1)}, y)\, \dee x^{(1)}\dee x^{(2)} \dotsb \dee x^{(m)}.
+  \end{align*}
+  However, if $k_i$ only changes the $i$th block independent of the other blocks, then we can write
+  \begin{align*}
+    k(\ve{x},\ve{y}) = \prod_{i=1}^m k_i(\ve{x}^{(i)},\ve{y}^{(i)}).
+  \end{align*}
+  Weirdly, all the papers that I read write the overall kernel as
+  \begin{align*}
+    k = k_1 k_2 \dotsb k_m.
+  \end{align*}
+\end{itemize}
+
+\subsection{The Gibbs Sampler}
+
+\begin{itemize}
+  \item Suppose that $\Omega = \Real^d$. So, we denote an elements of $\Real^d$ by $\ve{x} = (x_1, x_2, \dotsc, x_d)$.
+  
+  \item The $i$th component Gibbs sampler is a kernel $k_i$ that leaves all components besides $x_i$ unchanged and replaces $x_i$ by a draw from a distribution conditional on all the other components.
+\end{itemize}
 
 
-  \bibliographystyle{apalike}
-  \bibliography{mcmc-primer}  
+\section{Hamiltonian Monte Carlo}
+
+\begin{itemize}
+  \item 
+\end{itemize}
+
+
+\bibliographystyle{apalike}
+\bibliography{mcmc-primer}  
 \end{document}
