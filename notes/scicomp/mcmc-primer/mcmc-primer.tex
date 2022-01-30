@@ -59,7 +59,7 @@
 \begin{document}
 \maketitle
 
-This note is a primer on Markov chain Monte Carlo (MCMC) algorithms. I take materials from \cite{Gareth:2004} and \cite{Andrieu:2003}.
+This note is a primer on Markov chain Monte Carlo (MCMC) algorithms. I take materials from \cite{Andrieu:2003}, \cite{Gareth:2004}, and \cite{Neal:2011}.
 
 \section{Introduction}
 
@@ -160,20 +160,20 @@ This note is a primer on Markov chain Monte Carlo (MCMC) algorithms. I take mate
     \item Repeat Step 2 to Step 5 until you are satisfied.
   \end{enumerate}
 
-  \item The algorithm creates a Markov chain whose transition density is given by $q^*(x,y) = q(x,y)\alpha(x,y)$. 
+  \item The algorithm creates a Markov chain whose transition density is given by $k(x,y) = q(x,y)\alpha(x,y)$. 
   
   \item To see that $\pi$ is the stationary distribution of this above Markov chain, we need to show that $q^*$ satisfies detailed balance with respect to $\pi$. In other words,
   \begin{align*}
-    \pi(x)q^*(x,y) = \pi(y)q^*(y,x).
+    \pi(x)k(x,y) = \pi(y)k(y,x).
   \end{align*}
   To see this, let $\pi(x) = C^{-1} \pi_u(x,y)$ where $C = \int_\Omega p_u(x)\, \dee x$ is the normalizing constant. We have that
   \begin{align*}
-    \pi(x) q^*(x,y)
+    \pi(x) k(x,y)
     &= \pi(x) q(x,y) \alpha(x,y) \\
     &= C^{-1}\pi_u(x) q(x,y) \min\bigg( 1, \frac{\pi_u(y)q(y,x)}{\pi_u(x)q(x,y)} \bigg)\\
     &= C^{-1} \min\bigg( \pi_u(x) q(x,y) , \pi_u(y)q(y,x) \bigg).    
   \end{align*}
-  Notice that the expression on the RHS is symmetric in $x$ and $y$. Hence, we have that $\pi(x)q^*(x,y) = \pi(y)q^*(y,x)$ as required.
+  Notice that the expression on the RHS is symmetric in $x$ and $y$. Hence, we have that $\pi(x)k(x,y) = \pi(y)k(y,x)$ as required.
 
   \item The main question for employing the Metropolis--Hastings algorithm is how to choose the proposal distribution $q(\cdot, \cdot)$.
   
@@ -255,7 +255,7 @@ This note is a primer on Markov chain Monte Carlo (MCMC) algorithms. I take mate
 
   \item The expression for the overall kernel $k$ would be
   \begin{align*}
-    k(x,y) = \int \int \dotsb \int k_1(x, x^{(1)})k_2(x^{(1)}, x^{(2)}) \dotsb k_m(x^{(m-1)}, y)\, \dee x^{(1)}\dee x^{(2)} \dotsb \dee x^{(m)}.
+    k(x,y) = \int \int \dotsm \int k_1(x, x^{(1)})k_2(x^{(1)}, x^{(2)}) \dotsb k_m(x^{(m-1)}, y)\, \dee x^{(1)}\dee x^{(2)} \dotsm \dee x^{(m)}.
   \end{align*}
   However, if $k_i$ only changes the $i$th block independent of the other blocks, then we can write
   \begin{align*}
@@ -267,19 +267,93 @@ This note is a primer on Markov chain Monte Carlo (MCMC) algorithms. I take mate
   \end{align*}
 \end{itemize}
 
-\subsection{The Gibbs Sampler}
+\section{The Gibbs Sampler}
 
 \begin{itemize}
   \item Suppose that $\Omega = \Real^d$. So, we denote an elements of $\Real^d$ by $\ve{x} = (x_1, x_2, \dotsc, x_d)$.
   
-  \item The $i$th component Gibbs sampler is a kernel $k_i$ that leaves all components besides $x_i$ unchanged and replaces $x_i$ by a draw from a distribution conditional on all the other components.
+  \item Let $\ve{x}_{-i}$ denote $\ve{x}$ with the component $x_i$ removed. In other words,
+  \begin{align*}
+    \ve{x}_{-i} = (x_1, \dotsc, x_{i-1}, x_{i+1}, \dotsc, x_d) = (\ve{x}[1:i-1], \ve{x}[i+1:d]).
+  \end{align*}
+
+  \item Suppose that, in addition to an expression for $\pi_u(\ve{x})$, we are also given, for each $i$, an algorithm for sampling $x_i$ given all the other components (i.e., given $\ve{x}_{-i}$) according to the conditional probability distribution
+  \begin{align*}
+    \pi(x_i | \ve{x}_{-i}) = \frac{\pi_u(\ve{x})}{\int \pi_u(\ve{x}[1:i-1], x, \ve{x}[i+1,d])\, \dee x}.
+  \end{align*}
+  
+  \item For further derivativation, let us denote the marginal distribution of $\ve{x}_{-i}$ by
+  \begin{align*}
+    \pi(\ve{x}_{-i}) = \frac{1}{C} \pi_u(\ve{x}_{-i}) = \frac{1}{C} \int \pi_u(\ve{x}[1:i-1], x, \ve{x}[i+1,d])\, \dee x.
+  \end{align*}
+  where $C = \int \pi_u(\ve{x}')\, \dee \ve{x}'$ is the normalizing constant. It follows that $$\pi(\ve{x}) = \pi(x_i|\ve{x}_{-i}) \pi(\ve{x}_{-i}),$$ which is just the standard Bayes' rule. Moreover, $$\pi_u(\ve{x}) = C\pi(\ve{x}) = C \pi(x_i|\ve{x}_{-i}) \pi(\ve{x}_{-i}) = \pi(x_i|\ve{x}_{-i}) \pi_u(\ve{x}_{-i}).$$
+  
+  \item The $i$th component Gibbs sampler is a kernel $k_i$ that leaves all components besides $x_i$ unchanged and replaces $x_i$ by a sample drawn from the above expression. In other words, the proposal distribution $q_i(\ve{x},\ve{y})$ is defined only when $\ve{x}_{-i} = \ve{y}_{-i}$, and it is given by
+  \begin{align*}
+    q(\ve{x},\ve{y}) = \pi(y_i | \ve{x}_{-i}).
+  \end{align*}
+
+  \item When used with the Metropolis--Hastings algorithm, the acceptance probability is
+  \begin{align*}
+    \alpha_i(\ve{x}, \ve{y}) 
+    &= \min\bigg( 1, \frac{\pi_u(\ve{y}) q_i(\ve{y},\ve{x}) }{\pi_u(\ve{x})q_i(\ve{x},\ve{y}) } \bigg)
+    = \min\bigg( 1, \frac{\pi_u(\ve{y}) \pi(x_i|\ve{y}_{-i}) }{\pi_u(\ve{x}) \pi(y_i|\ve{x}_{-i}) } \bigg) \\
+    &= \min\bigg( 1, \frac{\pi_u(\ve{y}_{-i}) \pi(y_i|\ve{y}_{-i}) \pi(x_i|\ve{y}_{-i}) }{ \pi_u(\ve{x}_{-i}) \pi(x_i|\ve{x}_{-i}) \pi(y_i|\ve{x}_{-i}) } \bigg)
+  \end{align*}
+  Again, this is defined only when $\ve{x}_{-i} = \ve{y}_{-i}$. So,
+  \begin{align*}
+    \alpha_i(\ve{x}, \ve{y}) 
+    = \min\bigg( 1, \frac{\pi_u(\ve{x}_{-i}) \pi(y_i|\ve{x}_{-i}) \pi(x_i|\ve{x}_{-i}) }{ \pi_u(\ve{x}_{-i}) \pi(x_i|\ve{x}_{-i}) \pi(y_i|\ve{x}_{-i}) } \bigg)
+    = 1.
+  \end{align*}
+  This means that $k_i(\ve{x},\ve{y}) = q_i(\ve{x},\ve{y}) = \pi(y_i|\ve{x}_{-i})$ given that $\ve{x}_{-i} = \ve{y}_{-i}$.
+
+  \item With the above property, we have that, if $\ve{x}_{-i} = \ve{y}_{-i}$, 
+  \begin{align*}
+    \pi(\ve{x}) k_i(\ve{x},\ve{y}) 
+    &= \pi(x_i|\ve{x}_{-i}) \pi(\ve{x}_{-i}) \pi(y_i|\ve{x}_{-i}) 
+    = \pi(x_i|\ve{y}_{-i}) \pi(\ve{y}_{-i}) \pi(y_i|\ve{y}_{-i})
+    = \pi(x_i|\ve{y}_{-i}) \pi(\ve{y}) \\
+    &= \pi(\ve{y}) k_i(\ve{y},\ve{x}).
+  \end{align*}
+  So, the kernel $k_i$ is reversiable with respect to the conditional probability distribution $\pi(\ve{x}|\ve{x}_{-i})$.
+  
+  \item The above derivation implies that $k_1$, $k_2$, $\dotsc$, $k_d$ can be combined to obtain a kernel $k$ that has $\pi$ as the stationary distribution. There are at least two ways to combine them.
+  \begin{itemize}
+    \item The {\bf deterministic-scan Gibbs sampler} is
+    \begin{align*}
+      k = k_1 k_2 \dotsm k_d.
+    \end{align*} 
+
+    \item The {\bf random-scan Gibbs sampler} is
+    \begin{align*}
+      k = \frac{k_1 + k_2 + \dotsb + k_d}{d}.
+    \end{align*}
+  \end{itemize}
+  We note that the random-scan Gibbs sampler is reversible, but the deterministic-scan one is not. Moreover, for the deterministic scan one, $X_n$ is usable only when $d$ divides $n$.
 \end{itemize}
 
 
 \section{Hamiltonian Monte Carlo}
 
 \begin{itemize}
-  \item 
+  \item Hamiltonian Monte Carlo (HMC) is an algorithm that uses the gradient of the target distribution to create proposals, which allows a new proposal $Y_{n+1}$ to be far away from $X_n$ while still attaining high acceptance probability.
+\end{itemize}
+
+\subsection{Physical Background}
+
+\begin{itemize}
+  \item The algorithm uses ideas from analytical mechanics and statistical physics.
+  
+  \item In analytical mechanics, the state of a system can be described by its {\bf position vector} $\ve{x} \in \Real^d$ and its {\bf momentum vector} $\ve{p} \in \Real^d$. 
+  
+  \item The two vectors are related by
+  \begin{align*}
+    \ve{p} = M \frac{\dee \ve{x}}{\dee t} = M\dot{\ve{x}}.
+  \end{align*}
+  where $M$ is a positive definite matrix called the {\bf mass matrix}. Usually, the matrix is diagonal, and the mass value is often the same for all dimension. In such a case, we have that $$\ve{p} = m\dot{\ve{x}},$$ which is just the standard definition of momentum in physics.
+
+  \item When the system is time symmetric, it has a conserved quantity, which is called the {\bf energy} or the {\bf Hamiltonian}.
 \end{itemize}
 
 
