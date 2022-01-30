@@ -53,7 +53,7 @@
 \DeclareMathOperator*{\argmax}{arg\,max}
 \DeclareMathOperator*{\argmin}{arg\,min}
 
-\title{A Primer of Markov Chain Monte Carlo Algorithms}
+\title{A Primer on Markov Chain Monte Carlo Algorithms}
 \author{Pramook Khungurn}
 
 \begin{document}
@@ -64,16 +64,17 @@ This note is a primer on Markov chain Monte Carlo (MCMC) algorithms. I take mate
 \section{Introduction}
 
 \begin{itemize}
-  \item We are given an unnormalized distributon function $\pi_u$ defined on a measurable space $(\Omega,\Sigma)$ such that $0 < \int_\Omega p_u\, \dee x < \infty$.
+  \item We are given an unnormalized density function $\pi_u$ defined on a measurable space $(\Omega,\Sigma)$ such that $0 < \int_\Omega \pi_u(x)\, \dee x < \infty$.
   
   \item The above density gives rise to a probability measure $P$, which is given by
   \begin{align*}
     P(A) = \frac{\int_A \pi_u( x)\, \dee x}{\int_\Omega \pi_u( x)\, \dee x}
   \end{align*}
-  for any $A \in \Sigma$. The corresponding probability distribution function is
+  for any $A \in \Sigma$. The corresponding probability density function is
   \begin{align*}
     \pi( x) = \frac{\pi_u( x)}{\int_\Omega \pi_u( x)\, \dee x}.
   \end{align*}
+  We collectively call $P$ and $\pi$ the {\bf target distribution}.
 
   \item MCMC algorithms allow us to perform the following two following tasks:
   \begin{itemize}
@@ -114,19 +115,18 @@ This note is a primer on Markov chain Monte Carlo (MCMC) algorithms. I take mate
 
   \item In the above situations, what prevents us from computing probabilities and integrals is the difficulty of computing the integral $\int_\Omega \pi_u( x)\, \dee x$.
   
-  \item MCMC gives a way to sample $ x$ according to the normalized version of $\pi_u( x)$ without explicity normalizing $\pi_u( x)$ itself. Given this ability, we may use MCMC to sample $ x_1$, $ x_2$, $\dotsc$, $ x_K$ according to $\pi( x)$ and then compute the estimate
-  \begin{align*}
-    \int_\Omega f( x) \pi( x)\, \dee x \approx \widehat{\pi}(f) = \frac{1}{K} \sum_{i=1}^K f( x_i).
-  \end{align*}
-  This is an unbiased estimate, having standard deviation of order $O(1/\sqrt{K})$.
-
-  \item The idea of MCMC is to constructs a Markov chain $\{ X_i \}_{i=0}^\infty$ whose stationary distribution is $\pi(x) = \pi_u(x) / (\int_\Omega \pi_u(x)\, \dee x)$. To do so, we need to find a transition kernel $K$, whose density is $k$, such that
+  \item MCMC gives a way to sample $ x$ according to the target distribution without explicity normalizing $\pi_u( x)$. The idea is to constructs a Markov chain $\{ X_i \}_{i=0}^\infty$ whose stationary distribution is the target distribution $\pi(x)$. To do so, we need to find a transition kernel $K$, whose density is $k$, such that
   \begin{align*}
     \pi(y) = \int_\Omega \pi(x) k(x, y)\, \dee x.
   \end{align*}
-  Then, we can run the Markov chain for a long time (starting from somewhere). When $n$ is large, the distribution of $X_n$ will be approximately $\pi$. We can then restart the Markov chain from $X_n$ and obtain $K$ values to compute the estimate $\widehat{\pi}(f)$.
+  
+  \item Then, we can run the Markov chain for a long time (starting from somewhere). When $n$ is large, the distribution of $X_n$ will be approximately $\pi$. We can now restart the Markov chain from $X_n$, run the chain for $M$ iterations to obtain $M$ samples $x_1$, $ x_2$, $\dotsc$, $ x_M$, and then compute the estimate
+  \begin{align*}
+    \int_\Omega f( x) \pi( x)\, \dee x \approx \widehat{\pi}(f) = \frac{1}{M} \sum_{i=1}^M f( x_i).
+  \end{align*}
+  This is an unbiased estimate, and the error $(\pi(f) - \widehat{\pi}(f))/\sqrt{M}$ has Gaussian distribution. We have this property despite the fact that the samples are correlated.\footnote{\url{https://en.wikipedia.org/wiki/Markov_chain_central_limit_theorem}}
 
-  \item We say that a Markov chain $\{ X_i \}_{i=0}^\infty$ with kernel density function $k$ is {\bf reversible} with probability density function $\pi$ if
+  \item We say that a Markov chain $\{ X_i \}_{i=0}^\infty$ with kernel density function $k$ is {\bf reversible} with respect to probability density function $\pi$ if
   \begin{align} \label{eqn:detailed-balance}
     \pi(x) k(x,y) &= \pi(y) k(y,x) 
   \end{align}
@@ -136,16 +136,14 @@ This note is a primer on Markov chain Monte Carlo (MCMC) algorithms. I take mate
   \begin{align*}
     \int_\Omega \pi(x) k(x, y)\, \dee x = \int_\Omega \pi(y)k(y, x)\, \dee x = \pi(y) \int_\Omega k(y, x)\, \dee x = \pi(y).
   \end{align*}
+
+  \item Hence, the goal would be to find a kernel that satisfies detailed balance with respect to the target distribution. The most popular way to do so is the Metropolis--Hastings algorithm.
 \end{itemize}
 
 \section{The Metropolis--Hastings Algorithm}
 
 \begin{itemize}
-  \item The Metropolis--Hastings algorithm is the most popular MCMC algorithm.
-
-  \item Back to the problem setting, we are given $\pi_u$, which is the unnormalized version of a probability density $\pi$.
-  
-  \item The Metropolis--Hasting algorithm presupposes a Markov chain over $\Omega$. Let $Q$ denote its transition kernel, and let $q$ denote the transition kernel's density. This density can be unnormalized, just like $\pi_u$, but we require a way to sample $y$ according to $q(x,y)$ for any $x$. We often call $q$ the {\bf proposal distribution}.
+  \item The algorithm presupposes a Markov chain over $\Omega$. Let $Q$ denote its transition kernel, and let $q$ denote the transition kernel's density. This density can be unnormalized, just like $\pi_u$, but we require a way to sample $y$ according to $q(x,y)$ for any $x$. We often call $q$ the {\bf proposal distribution}.
   
   \item The algorithm proceeds as follows.
   \begin{enumerate}
@@ -164,7 +162,7 @@ This note is a primer on Markov chain Monte Carlo (MCMC) algorithms. I take mate
 
   \item The algorithm creates a Markov chain whose transition density is given by $q^*(x,y) = q(x,y)\alpha(x,y)$. 
   
-  \item To see that $\pi$ is the stationary distribution of this above Markov chain, we need to show that
+  \item To see that $\pi$ is the stationary distribution of this above Markov chain, we need to show that $q^*$ satisfies detailed balance with respect to $\pi$. In other words,
   \begin{align*}
     \pi(x)q^*(x,y) = \pi(y)q^*(y,x).
   \end{align*}
@@ -177,16 +175,15 @@ This note is a primer on Markov chain Monte Carlo (MCMC) algorithms. I take mate
   \end{align*}
   Notice that the expression on the RHS is symmetric in $x$ and $y$. Hence, we have that $\pi(x)q^*(x,y) = \pi(y)q^*(y,x)$ as required.
 
-  \item The main question for employing the Metroplis--Hastings algorithm is how to choose the propose distribution $q(\cdot, \cdot)$.
+  \item The main question for employing the Metropolis--Hastings algorithm is how to choose the proposal distribution $q(\cdot, \cdot)$.
   
-  \item Of course, $q$ needs to be such that the Markov chain is irreducible and aderiodic so that the Markov chain would converge to the stationary distribution regardless of where we start the chain.
-  \begin{itemize}
-    \item Note, though, that $q^*$ allows for rejection, so the Markov chain is aperiodic by default. As a result, we only need to make sure that the Markov chain covers the whole set where $\pi(\cdot)$ is defined. In other words, $\pi_u(y)q(y,x) > 0$ for all $x$ and $y$ such that $\pi_u(x) > 0$ and $\pi_u(y) > 0$.
-  \end{itemize}
+  \item Of course, $q$ needs to be such that the Markov chain is irreducible and aperiodic so that it would converge to the stationary distribution regardless of where we start.
+    
+  \item Note, though, that $q^*$ allows for rejection, so the chain is aperiodic by default. As a result, we only need to make sure that it covers the whole support of $\pi$. In other words, if $\pi_u(x) > 0$ and $\pi_u(y) > 0$, then $q(x,y)$ should be greater than $0$ too.  
 
   \item There are many approaches to construct the proposal distribution.
   \begin{itemize}
-    \item {\bf Symmetric Metropolis algorithm.} Here, $q$ is chosen such that $q(x,y) = q(y,x)$. The acceptance probability simplies to
+    \item {\bf Symmetric Metropolis algorithm.} Here, $q$ is chosen such that $q(x,y) = q(y,x)$. The acceptance probability simplifies to
     \begin{align*}
       \alpha(x,y) = \min\bigg( 1, \frac{\pi_u(y)}{\pi_u(x)} \bigg).
     \end{align*}
