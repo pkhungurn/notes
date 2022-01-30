@@ -172,8 +172,8 @@ This note is a primer on Markov chain Monte Carlo (MCMC) algorithms. I take mate
   \begin{align*}
     \pi(x) q^*(x,y)
     &= \pi(x) q(x,y) \alpha(x,y) \\
-    &= C^{-1}\pi_u(x) q(x,y) \min\bigg( 1, \frac{\pi_u(y)q(y,z)}{\pi_u(x)q(x,y)} \bigg)\\
-    &= C^{-1} \min\bigg( \pi_u(x) q(x,y) , \pi_u(y)q(y,z) \bigg).    
+    &= C^{-1}\pi_u(x) q(x,y) \min\bigg( 1, \frac{\pi_u(y)q(y,x)}{\pi_u(x)q(x,y)} \bigg)\\
+    &= C^{-1} \min\bigg( \pi_u(x) q(x,y) , \pi_u(y)q(y,x) \bigg).    
   \end{align*}
   Notice that the expression on the RHS is symmetric in $x$ and $y$. Hence, we have that $\pi(x)q^*(x,y) = \pi(y)q^*(y,x)$ as required.
 
