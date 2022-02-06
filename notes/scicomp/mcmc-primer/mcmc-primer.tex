@@ -690,10 +690,22 @@ This note is a primer on Markov chain Monte Carlo (MCMC) algorithms. I take mate
   \end{align*}
   which gives the proposal distribution
   \begin{align*}
-    q(\ve{x},\ve{y}) = \frac{1}{\sqrt{2\pi} \sigma} \exp\bigg( - \frac{\ve{y} - \sigma \nabla \log \pi_u(\ve{x})/2}{2\sigma^2} \bigg).
+    q(\ve{x},\ve{y}) = \frac{1}{\sqrt{2\pi} \sigma} \exp\bigg( - \frac{\ve{y} - \ve{x} - \sigma \nabla \log \pi_u(\ve{x})/2}{2\sigma^2} \bigg).
   \end{align*}
   We will look further into this algorithm in this section.
 \end{itemize}
+
+\subsection{Connection to Hamiltonian Monte Carlo}
+
+\begin{itemize}
+  \item According to \cite{Neal:2011}, Langevin dynamics can be viewed as a special case of HMC where only one time step is taken when simulating Hamiltonian dynamics.
+\end{itemize}
+
+\subsection{Langevin Equation}
+
+\subsection{Theoretical Results}
+
+\subsection{Generalization}
 
 \bibliographystyle{apalike}
 \bibliography{mcmc-primer}  
