@@ -140,7 +140,7 @@ This note is a primer on Markov chain Monte Carlo (MCMC) algorithms. I take mate
   \item Hence, the goal would be to find a kernel that satisfies detailed balance with respect to the target distribution. The most popular way to do so is the Metropolis--Hastings algorithm.
 \end{itemize}
 
-\section{The Metropolis--Hastings Algorithm}
+\section{The Metropolis--Hastings Algorithm} \label{sec:metropolis-hastings}
 
 \begin{itemize}
   \item The algorithm presupposes a Markov chain over $\Omega$. Let $Q$ denote its transition kernel, and let $q$ denote the transition kernel's density. This density can be unnormalized, just like $\pi_u$, but we require a way to sample $y$ according to $q(x,y)$ for any $x$. We often call $q$ the {\bf proposal distribution}.
@@ -199,7 +199,7 @@ This note is a primer on Markov chain Monte Carlo (MCMC) algorithms. I take mate
     \end{align*}
     where $w(x) = \pi_u(x)/q(x)$ for all $x$.
 
-    \item {\bf Langevin algorithm.} The proposal distribution is given by
+    \item {\bf Langevin dynamics.} The proposal distribution is given by
     \begin{align*}
       \ve{y} \sim \mcal{N}\Big(\ve{x} + \frac{\sigma}{2} \nabla \log \pi_u(\ve{x}), \sigma^2 I \Big) 
     \end{align*}
@@ -678,13 +678,21 @@ This note is a primer on Markov chain Monte Carlo (MCMC) algorithms. I take mate
     \item[] {\bf end for}
   \end{itemize}
 
-  \item Conceptually, the Markov chain simulates movement of a partition. It above keeps the current position $\ve{x}_n$ of the particle in memory. To get to the text positive, it gives the partical a random kick $\ve{p}_n$ and simulate Hamiltonian dynamics to see where the particle lands after time $N\Delta t$.
+  \item Conceptually, the Markov chain simulates movement of a particle. It above keeps the current position $\ve{x}_n$ of the particle in memory. To get to the text positive, it gives the partical a random kick $\ve{p}_n$ and simulate Hamiltonian dynamics to see where the particle lands after time $N\Delta t$.
 \end{itemize}
 
 \section{Langevin Dynamics}
 
 \begin{itemize}
-  \item 
+  \item Previously in Section~\ref{sec:metropolis-hastings}, we said that Langevin dynamics is a special case of the Metropolis--Hastings algorithm where the proposal $\ve{y}$ is given by
+  \begin{align*}
+    \ve{y} \sim \mcal{N}\bigg( \ve{x} + \frac{\sigma}{2} \nabla \log \pi_u(\ve{x}), \sigma^2 I \bigg),
+  \end{align*}
+  which gives the proposal distribution
+  \begin{align*}
+    q(\ve{x},\ve{y}) = \frac{1}{\sqrt{2\pi} \sigma} \exp\bigg( - \frac{\ve{y} - \sigma \nabla \log \pi_u(\ve{x})/2}{2\sigma^2} \bigg).
+  \end{align*}
+  We will look further into this algorithm in this section.
 \end{itemize}
 
 \bibliographystyle{apalike}
