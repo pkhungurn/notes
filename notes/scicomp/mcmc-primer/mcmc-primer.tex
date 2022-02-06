@@ -201,7 +201,7 @@ This note is a primer on Markov chain Monte Carlo (MCMC) algorithms. I take mate
 
     \item {\bf Langevin dynamics.} The proposal distribution is given by
     \begin{align*}
-      \ve{y} \sim \mcal{N}\Big(\ve{x} + \frac{\sigma}{2} \nabla \log \pi_u(\ve{x}), \sigma^2 I \Big) 
+      \ve{y} \sim \mcal{N}\Big(\ve{x} + \frac{\sigma^2}{2} \nabla \log \pi_u(\ve{x}), \sigma^2 I \Big) 
     \end{align*}
     for some small $\sigma > 0$.    
   \end{itemize}
@@ -423,7 +423,7 @@ This note is a primer on Markov chain Monte Carlo (MCMC) algorithms. I take mate
   \begin{align*}
     \pi'((\ve{x}', \ve{p}')) = \frac{\pi((\ve{x},\ve{p}))}{|\det(Df((\ve{x},\ve{p})))|}.
   \end{align*}
-  You can find more details about this at \cite{Khungurn:2022}.
+  You can find more details about this at \cite{Khungurn:2022a}.
 
   \item Now, if we replace the bijection $f$ with $\mcal{E}_t$, we have that $\pi'((\ve{x}',\ve{p}')) = \pi(\ve{x},\ve{p})$ because $\det(D\mcal{E}_t) = 1$. In other words, when we transform a point in phase space using time evolution according to Hamiltonian dynamics, we do not need to include any correction factors in our calculation.
 \end{itemize}
@@ -686,11 +686,11 @@ This note is a primer on Markov chain Monte Carlo (MCMC) algorithms. I take mate
 \begin{itemize}
   \item Previously in Section~\ref{sec:metropolis-hastings}, we said that Langevin dynamics is a special case of the Metropolis--Hastings algorithm where the proposal $\ve{y}$ is given by
   \begin{align*}
-    \ve{y} \sim \mcal{N}\bigg( \ve{x} + \frac{\sigma}{2} \nabla \log \pi_u(\ve{x}), \sigma^2 I \bigg),
+    \ve{y} \sim \mcal{N}\bigg( \ve{x} + \frac{\sigma^2}{2} \nabla \log \pi_u(\ve{x}), \sigma^2 I \bigg),
   \end{align*}
   which gives the proposal distribution
   \begin{align*}
-    q(\ve{x},\ve{y}) = \frac{1}{\sqrt{2\pi} \sigma} \exp\bigg( - \frac{\ve{y} - \ve{x} - \sigma \nabla \log \pi_u(\ve{x})/2}{2\sigma^2} \bigg).
+    q(\ve{x},\ve{y}) = \frac{1}{ (\sqrt{2\pi} \sigma)^{d/2} } \exp\bigg( - \frac{ \| \ve{y} - \ve{x} - \sigma^2 \nabla \log \pi_u(\ve{x})/2 \|^2}{\sigma^2} \bigg).
   \end{align*}
   We will look further into this algorithm in this section.
 \end{itemize}
@@ -699,9 +699,57 @@ This note is a primer on Markov chain Monte Carlo (MCMC) algorithms. I take mate
 
 \begin{itemize}
   \item According to \cite{Neal:2011}, Langevin dynamics can be viewed as a special case of HMC where only one time step is taken when simulating Hamiltonian dynamics.
+  
+  \item To see this, set $U(\ve{x}) = - \log \pi_u(\ve{x})$ and $K(\ve{p}) = \|\ve{p}\|^2$ (i.e. $m = 1$). We have that
+  \begin{align*}
+    \frac{\partial U}{\partial \ve{x}} &= -\nabla \log \pi_u(\ve{x}) \\
+    \frac{\partial K}{\partial \ve{p}} &= \ve{p}
+  \end{align*}
+  Let us run the leapfrog method for one iteration. We have that
+  \begin{align*}
+    \ve{p}_{1/2} &= \ve{p}_0 + \frac{\Delta t}{2} \nabla \log \pi_u(\ve{x}_0) \\
+    \ve{x}_1 &= \ve{x}_0 + \Delta t\, \ve{p}_{1/2} = \ve{x}_0 + \frac{(\Delta t)^2}{2} \nabla \log \pi_u(\ve{x}_0) + \Delta t\, \ve{p}_0
+  \end{align*}
+  Rewriting $\ve{x}_0$ as $\ve{x}$, $\ve{x}_1$ as $\ve{y}$, $\Delta t$ as $\sigma$, we have that
+  \begin{align} \label{eqn:hmc-one-step}
+    \ve{y} &= \ve{x} + \frac{\sigma^2}{2} \nabla \log \pi_u(\ve{x}) + \sigma \ve{p}_0.
+  \end{align}
+  Moreover, if we take $\ve{p}_0$ so that it is distributed according to the standard normal distribution $\mcal{N}(\ve{0}, I)$, then we have that
+  \begin{align*}
+    \ve{y} \sim \mcal{N}\bigg( \ve{x} + \frac{\sigma^2}{2} \nabla \log \pi_u(\ve{x}), \sigma^2 I \bigg),
+  \end{align*}
+  which is exactly the proposal distribution of the Langevin dynamics algorithm.
+
+  \item The difference between HMC and Langevin dynamics is when we calculate the acceptance propability. In HMC, we use the ratio 
+  \begin{align*}
+    \alpha((\ve{x},\ve{p}_0), (\ve{y},\ve{p}_1)) = \min\bigg(1, \frac{\exp(-H(\ve{y},\ve{p}_1))}{\exp(-H(\ve{x},\ve{p}_0))} \bigg).
+  \end{align*}
+  However, in Langevin dynamics, the momentum does not exist, so we have to use the full Metropolis--Hastings acceptance probability
+  \begin{align*}
+    \alpha(\ve{x},\ve{y}) = \min\bigg( 1, \frac{\pi_u(\ve{y}) q(\ve{y},\ve{x}) }{\pi_u(\ve{x}) q(\ve{x},\ve{y})} \bigg).
+  \end{align*}
 \end{itemize}
 
 \subsection{Langevin Equation}
+
+\begin{itemize}
+  \item Langevin dynamics gets its name from a stochastic differential equation (SDE) called the {\bf Langevin equation}
+  \begin{align*}
+    \dee \ve{x} = \frac{1}{2}\nabla \log \pi_u(\ve{x})\, \dee t + \dee \ve{W}.
+  \end{align*}
+  where $\ve{W}$ is the standard Brownian motion in $\Real^d$. The initial condition is $\ve{x}(0) = \ve{x}_0$ where $\ve{x}_0$ is an input.
+
+  \item An approximate trajectory of the stochastic process $\{ \ve{x}(t) : 0 \leq t \leq T \}$ can be obtained by the Euler--Maruyama method. (See \cite{Khungurn:2022b} for more details.) If we use only one time step, the calculation goes as follows:
+  \begin{enumerate}
+    \item Sample $\ve{W}_0$ from $\mcal{N}(\ve{0}, T)$.
+    \item Compute $\ve{x}_1 \gets \ve{x}_0 + \frac{T}{2} \nabla \log \pi_u(\ve{x}_0) + \ve{W}_0$.
+  \end{enumerate}
+  In the above process, we have that $\ve{W}_0$ can be rewritten as $\sqrt{T} \ves{\xi}$ where $\ves{\xi} \sim \mcal{N}(0, I)$, which means that
+  \begin{align*}
+    \ve{x}_1 = \ve{x}_0 + \frac{T}{2} \nabla \log \pi_u(\ve{x}_0) + \sqrt{T} \ves{\xi}.
+  \end{align*} 
+  Notice that the above equation is exactly the same as Equation~\eqref{eqn:hmc-one-step} if we substitute $\ve{x}_1$ with $\ve{y}$, $\ve{x}_0$ with $\ve{x}$, and $T$ with $\sigma^2$. This shows that the Markov chain we have been examining is a discrete approximation of the solution of the Langevin SDE.
+\end{itemize}
 
 \subsection{Theoretical Results}
 
