@@ -199,7 +199,7 @@ This note is a primer on Markov chain Monte Carlo (MCMC) algorithms. I take mate
     \end{align*}
     where $w(x) = \pi_u(x)/q(x)$ for all $x$.
 
-    \item {\bf Langevin dynamics.} The proposal distribution is given by
+    \item {\bf Langevin algorithm.} The proposal distribution is given by
     \begin{align*}
       \ve{y} \sim \mcal{N}\Big(\ve{x} + \frac{\sigma^2}{2} \nabla \log \pi_u(\ve{x}), \sigma^2 I \Big) 
     \end{align*}
@@ -681,10 +681,10 @@ This note is a primer on Markov chain Monte Carlo (MCMC) algorithms. I take mate
   \item Conceptually, the Markov chain simulates movement of a particle. It above keeps the current position $\ve{x}_n$ of the particle in memory. To get to the text positive, it gives the partical a random kick $\ve{p}_n$ and simulate Hamiltonian dynamics to see where the particle lands after time $N\Delta t$.
 \end{itemize}
 
-\section{Langevin Dynamics}
+\section{Langevin Algorithm}
 
 \begin{itemize}
-  \item Previously in Section~\ref{sec:metropolis-hastings}, we said that Langevin dynamics is a special case of the Metropolis--Hastings algorithm where the proposal $\ve{y}$ is given by
+  \item Previously in Section~\ref{sec:metropolis-hastings}, we said that the Langevin algoirthm is a special case of the Metropolis--Hastings algorithm where the proposal $\ve{y}$ is given by
   \begin{align*}
     \ve{y} \sim \mcal{N}\bigg( \ve{x} + \frac{\sigma^2}{2} \nabla \log \pi_u(\ve{x}), \sigma^2 I \bigg),
   \end{align*}
@@ -698,7 +698,7 @@ This note is a primer on Markov chain Monte Carlo (MCMC) algorithms. I take mate
 \subsection{Connection to Hamiltonian Monte Carlo}
 
 \begin{itemize}
-  \item According to \cite{Neal:2011}, Langevin dynamics can be viewed as a special case of HMC where only one time step is taken when simulating Hamiltonian dynamics.
+  \item According to \cite{Neal:2011}, the Langevin algorithm can be viewed as a special case of HMC where only one time step is taken when simulating Hamiltonian dynamics.
   
   \item To see this, set $U(\ve{x}) = - \log \pi_u(\ve{x})$ and $K(\ve{p}) = \|\ve{p}\|^2$ (i.e. $m = 1$). We have that
   \begin{align*}
@@ -739,7 +739,36 @@ This note is a primer on Markov chain Monte Carlo (MCMC) algorithms. I take mate
   \end{align*}
   where $\ve{W}$ is the standard Brownian motion in $\Real^d$. The initial condition is $\ve{x}(0) = \ve{x}_0$ where $\ve{x}_0$ is an input.
 
-  \item An approximate trajectory of the stochastic process $\{ \ve{x}(t) : 0 \leq t \leq T \}$ can be obtained by the Euler--Maruyama method. (See \cite{Khungurn:2022b} for more details.) If we use only one time step, the calculation goes as follows:
+  \item The Langevin equation is related to the problem at hand because the ``sationary distribution'' of its solution is exactly the target distribution $\pi(\ve{x})$. 
+  
+  \item More precisely, if the stochastic process $\{ \ve{x}(t): 0 \leq t \leq \infty \}$ is a solution of the Langevin equation, then the probability of density $\nu(\ve{x},t) = \nu(\ve{x}(t))$ of $\ve{x}(t)$ must satisfy the {\bf Fokker--Planck equation}:
+  \begin{align*}
+    \frac{\partial \nu(\ve{x},t)}{\partial t}
+    &= - \sum_{i=1}^d \frac{\partial}{\partial x_i} \bigg( \frac{1}{2} \frac{\partial \log \pi_u(\ve{x})}{\partial x_i} \nu(\ve{x},t) \bigg) + \frac{1}{2} \sum_{i=1}^d \frac{\partial^2 \nu(\ve{x},t)}{\partial x_i^2} \\
+    &= - \frac{1}{2} \sum_{i=1}^d \frac{\partial}{\partial x_i} \bigg( \frac{1}{\pi_u(\ve{x})} \frac{\partial \pi_u(\ve{x})}{\partial x_i} \nu(\ve{x},t) \bigg) + \frac{1}{2} \sum_{i=1}^d \frac{\partial^2 \nu(\ve{x},t)}{\partial x_i^2}.
+  \end{align*}
+  (Again, see \cite{Khungurn:2022b} for more details.)
+
+  A stationary distribution does not change in time. In other words, there is no dependence on $t$, and $\nu(\ve{x},t) = \nu(\ve{x})$. The Fokker--Planck equation becomes
+  \begin{align*}
+    0 &= - \frac{1}{2} \sum_{i=1}^d \frac{\partial}{\partial x_i} \bigg( \frac{1}{\pi_u(\ve{x})} \frac{\partial \pi_u(\ve{x})}{\partial x_i} \nu(\ve{x}) \bigg) + \frac{1}{2} \sum_{i=1}^d \frac{\partial^2 \nu(\ve{x})}{\partial x_i^2}.
+  \end{align*}
+  We have that the target distributon $\pi(\ve{x}) = C\pi_u(\ve{x})$ satisfies it. This can be checked by plugging substituting $\nu(\ve{x})$ with $C \pi_u(\ve{x})$.
+  \begin{align*}
+    & - \frac{1}{2} \sum_{i=1}^d \frac{\partial}{\partial x_i} \bigg( \frac{1}{\pi_u(\ve{x})} \frac{\partial \pi_u(\ve{x})}{\partial x_i} C \pi_u(\ve{x}) \bigg) + \frac{1}{2} \sum_{i=1}^d \frac{\partial^2 (C\pi_u(\ve{x}))}{\partial x_i^2} \\
+    &= - \frac{C}{2} \sum_{i=1}^d \frac{\partial}{\partial x_i} \bigg( \frac{\partial \pi_u(\ve{x})}{\partial x_i} \bigg) + \frac{C}{2} \sum_{i=1}^d \frac{\partial^2 \pi_u(\ve{x})}{\partial x_i^2} \\
+    &= - \frac{C}{2} \sum_{i=1}^d \frac{\partial^2 \pi_u(\ve{x})}{\partial x_i^2}  + \frac{C}{2} \sum_{i=1}^d \frac{\partial^2 \pi_u(\ve{x})}{\partial x_i^2} \\
+    &= 0.  
+  \end{align*}
+  
+  \item What this means is that, if we let $t \rightarrow \infty$, we would expect that the probability distribution $\nu(\ve{x},t)$ would reach equilibrium and will not change in time. So, the distribution $\lim_{t \rightarrow \infty} \nu(\ve{x},t)$ would be given by $\pi(\ve{x})$. (Note that this is not at all a rigourous argument.)
+  
+  \item Now that we have intuited that the stationary distribution of the dynamics described by the Langevin equation is $\pi(\ve{x})$, we would expect that the distribution of its discrete approximation would approach $\pi(\ve{x})$ as well if we do things the right way.
+\end{itemize}
+
+\subsection{Langevin Algorithm as Discrete Approximation to Langevin Dynamics}
+\begin{itemize}
+  \item An approximate trajectory of the stochastic process $\{ \ve{x}(t) : 0 \leq t \leq T \}$ satisfying the Langevin equation can be obtained by the Euler--Maruyama method. (See \cite{Khungurn:2022b} for more details.) If we take only one time step, the calculation goes as follows:
   \begin{enumerate}
     \item Sample $\ve{W}_0$ from $\mcal{N}(\ve{0}, T)$.
     \item Compute $\ve{x}_1 \gets \ve{x}_0 + \frac{T}{2} \nabla \log \pi_u(\ve{x}_0) + \ve{W}_0$.
@@ -748,12 +777,128 @@ This note is a primer on Markov chain Monte Carlo (MCMC) algorithms. I take mate
   \begin{align*}
     \ve{x}_1 = \ve{x}_0 + \frac{T}{2} \nabla \log \pi_u(\ve{x}_0) + \sqrt{T} \ves{\xi}.
   \end{align*} 
-  Notice that the above equation is exactly the same as Equation~\eqref{eqn:hmc-one-step} if we substitute $\ve{x}_1$ with $\ve{y}$, $\ve{x}_0$ with $\ve{x}$, and $T$ with $\sigma^2$. This shows that the Markov chain we have been examining is a discrete approximation of the solution of the Langevin SDE.
+  Notice that the above equation is exactly the same as Equation~\eqref{eqn:hmc-one-step} if we substitute $\ve{x}_1$ with $\ve{y}$, $\ve{x}_0$ with $\ve{x}$, and $T$ with $\sigma^2$. This shows that the Langevin algorithm is a discrete approximation of the dynamics governed by the Langevin equation.
+
+  \item In \cite{Roberts:1996}, Roberts and Tweedie analyzed convergence of of the Langevin algorithm, for which they distinguished between several variants.
+  \begin{itemize}
+    \item The {\it unadjusted Langevin algorithm} (ULA) accepts the proposal
+    \begin{align*}
+      \ve{y} \sim \mcal{N}\bigg( \ve{x} + \frac{\sigma^2}{2} \nabla \log \pi_u(\ve{x}), \sigma^2 I \bigg)
+    \end{align*}
+    with probabilty one.
+
+    \item The {\it Metropolis-adjusted Langevin algorithm} (MALA) is where the proposal is accepted with the acceptance probability
+    \begin{align*}
+      \alpha(\ve{x},\ve{y}) = \min\bigg(1, \frac{\pi_u(\ve{y}q(\ve{y},\ve{x}))}{\pi_u(\ve{x})q(\ve{x},\ve{y})} \bigg)
+    \end{align*}
+    This is the algorithm we have been discussing all along.
+
+    \item The {\it Metropolis-adjusted Langevin truncated algorithm} (MALTA) is where the proposal is given by
+    \begin{align*}
+      \ve{y} \sim \mcal{N}\bigg(\ve{x} + \frac{\delta}{\max(\delta, \| \nabla \log \pi_u(\ve{x}) \|)} \nabla \log \pi_u(\ve{x}), \sigma^2 I\bigg)
+    \end{align*}
+    for some fixed constant $\delta > 0$. Here, the displacement of $\ve{x}$ is bounded by a fixed distance $\delta$. The proposal is accepted with probability $\alpha(\ve{x},\ve{y})$ as in MALA.        
+  \end{itemize}
+
+  \item In their analysis, they also consider two notions of ``ergodicity.''
+  \begin{itemize}
+    \item \begin{definition}
+      We say that a Markov chain is {\bf ergodic} if it is aperiodic and Harris-recurrent.
+    \end{definition}
+
+    \item \begin{definition}
+      We say that a Markov chain $\{ \ve{x}_t: t = 0, 1, 2, \dotsc \}$ with kernal transition function $K$ is {\bf geometrically ergodic} or {\bf exponentially ergodic} if it converges to the stationary measure $\Pi$ at geometric rate with multiplicative constant depending on the start point. In other words, there is a function $V: \Real^d \rightarrow \Real$ such that
+      \begin{align*}
+        d_{\mrm{TV}}(K^n(\ve{x}_0, \cdot), \Pi(\cdot) ) \leq V(\ve{x}_0) \gamma^n
+      \end{align*}
+      for some constant $0 < \gamma < 1$.
+    \end{definition}
+
+    \item Note that we know that, for an ergodic Markov chain that has a stationary measure $\Pi$, the transition probabilities $K^n(\ve{x}_0, \cdot)$ will converge to the $\Pi$ in the total variation norm.
+    \begin{align*}
+      \lim_{n \rightarrow \infty} d_{\mrm{TV}}(K^n(\ve{x}_0, \cdot), \Pi(\cdot)) = 0.
+    \end{align*}
+    Here, $K^n(\cdot, \cdot)$ denotes the kernel density of applying the Markov chain transition $n$ times, and the probability measure $\Pi$ is given by
+    \begin{align*}
+      \Pi(A) = \int_A \pi(\ve{x})\, \dee\ve{x}.
+    \end{align*}
+    
+    \item We shall assume that all the Markov chains in this section (ULA, MALA, MALTA) has stationary distributions, which would be the target distribution $\Pi$. So, ``ergodic'' would mean ``converges to staionary distribution.''
+    
+    \item On the other hand, exponential ergodicity is a much stronger notion than ergodicity. It means that the Markov chain converges exponentially fast to the target distribution.
+  \end{itemize}
+
+  \item For ULA:
+  \begin{itemize}
+    \item When a ULA chain is ergodic, it generally converges to another distribution which is not the target distribution $\pi$.
+    
+    \item The paper proves results on convergence of the ULA chain in 1D. To do so, they make use of the following limits.
+    \begin{align*}
+      S^+_{\alpha} &:= \lim_{x \rightarrow \infty} \frac{\sigma^2}{2 x^\alpha} \frac{\dee (\log \pi_u(x))}{\dee x} \\
+      S^-_{\alpha} &:= \lim_{x \rightarrow -\infty} \frac{\sigma^2}{2 |x|^\alpha} \frac{\dee (\log \pi_u(x))}{\dee x}.
+    \end{align*}
+
+    \item \begin{theorem}
+      A ULA chain on $\Real$ is exponentially ergodic if one of the following conditions hold:
+      \begin{itemize}
+        \item For some $\alpha \in [0,1)$, both $S^+_\alpha$ and $S^-_\alpha$ exist with $S_\alpha^+ < 0$ and $S_\alpha^- > 0$.
+        \item For $\alpha = 1$, both $S^+_\alpha$ and $S^-_\alpha$ exist with $S_\alpha^+ < 0$, $S_\alpha^- > 0$, and $(1 + S_\alpha^+)(1 - S_\alpha^-) < 1$.
+      \end{itemize}
+    \end{theorem}
+
+    \item \begin{theorem}
+      A ULA chain on $\Real$ is ergodic but not exponentially ergodic if, for some $\alpha \in (-1,0)$, both $S^+_\alpha$ and $S^-_\alpha$ exist with $S_\alpha^+ < 0$ and ($S_\alpha^- > 0$.
+    \end{theorem}
+
+    \item \begin{theorem}
+      A ULA chain on $\Real$ not ergodic and even transient if one of the following conditions hold.
+      \begin{itemize}
+        \item For some $\alpha > 1$, both $S^+_\alpha$ and $S^-_\alpha$ exist with $S_\alpha^+ < 0$, and $S_\alpha^- > 0$.
+        \item For $\alpha = 1$, both $S^+_\alpha$ and $S^-_\alpha$ exist with $S_\alpha^+ < -2$, and $S_\alpha^- > 2$.
+      \end{itemize} 
+    \end{theorem}
+  \end{itemize}
+
+  \item For MALA:
+  \begin{itemize}
+    \item Let $A(\ve{x})$ denote the ``acceptance region'' of $\ve{x}$. In other words, $A(\ve{x})$ is the set of proposal $\ve{y}$ that is always accepted. In other words,
+    \begin{align*}
+      A(\ve{x}) = \{ \ve{y} : \pi_u(\ve{y})q(\ve{y},\ve{x}) \geq \pi_u(\ve{x})q(\ve{x},\ve{y}) \}
+    \end{align*}
+
+    \item We say that $A(\cdot)$ {\bf converges inwards in $q$} if
+    \begin{align*}
+      \lim_{\ve{x} \rightarrow \infty} \int_{A(\ve{x}) - I(\ve{x})} q(\ve{x},\ve{y})\, \dee\ve{y} = 0
+    \end{align*}
+    where $I(\ve{x}) = \{ \ve{y} : \| \ve{y} \| \leq \ve{x} \}$.
+
+    \item \begin{theorem}
+      Let $\ve{c}(\ve{x}) = \ve{x} + \sigma^2 \nabla \log \pi_u(\ve{x}) / 2$ denote the ``next candidate position.'' Let
+      \begin{align*}
+        \eta = \liminf_{\|\ve{x} \| \rightarrow \infty} ( \|\ve{x}\| - \| \ve{c}(\ve{x}) \|).
+      \end{align*}
+      If $\eta > 0$ and $A(\cdot)$ converges inwards in $q$, then the MALA chain is exponentially ergodic with $V(\ve{x}) = e^{s\|\ve{x} \|}$ for some $s < 2 \eta \sigma^2.$
+    \end{theorem}
+
+    \item The above result is hard to interpret due to the cryptic way the conditionas are written down. Intuitively though, we can say that, if $\pi_u(\ve{x}) \rightarrow 0$ fast as $\|\ve{x}\| \rightarrow \infty$, then the MALA chain is exponentially ergodic.
+    
+    \item On the other hand, when $\ve{x}$ has large tails, then the MALA chain is not exponentially ergodic.
+    
+    \item \begin{theorem}
+      If $\pi_u$ is bounded and
+      \begin{align*}
+        \liminf_{\|\ve{x}\| \rightarrow \infty} \frac{\| \nabla \log \pi_u(\ve{x}) \|}{\| \ve{x}\|} > \frac{4}{\sigma^2},
+      \end{align*}
+      then the MALA chain is not exponentially ergodic.
+    \end{theorem}
+
+    \item \begin{theorem}
+      If $\| \nabla \log \pi_u(\ve{x})\| \rightarrow 0$ as $\| \ve{x} \| \rightarrow \infty$, then the MALA chain is not geometricaly ergodic.
+    \end{theorem}
+  \end{itemize}
+
+  \item For MALTA, the authors mentione that its exponential ergodicity is much more robust than that of MALA, but they did not give much details in the paper.
 \end{itemize}
-
-\subsection{Theoretical Results}
-
-\subsection{Generalization}
 
 \bibliographystyle{apalike}
 \bibliography{mcmc-primer}  
