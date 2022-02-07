@@ -519,7 +519,7 @@ This note is a primer on Markov chain Monte Carlo (MCMC) algorithms. I take mate
   
   \item To do so, we employ the Metropolis--Hastings proposal+acceptance step.
 
-  \item The idea of HMC is to fix a duration $t$ and propose $(\ve{x}',\ve{p}') = \mcal{E}_t(((\ve{x},\ve{p}))$.
+  \item The idea of HMC is to fix a duration $t$ and propose $(\ve{x}',\ve{p}') = \mcal{E}_t((\ve{x},\ve{p}))$.
   
   \item Because $\mcal{E}_t$ is deterministic, we have that the transition kernel would be given by
   \begin{align*}
@@ -690,7 +690,7 @@ This note is a primer on Markov chain Monte Carlo (MCMC) algorithms. I take mate
   \end{align*}
   which gives the proposal distribution
   \begin{align*}
-    q(\ve{x},\ve{y}) = \frac{1}{ (\sqrt{2\pi} \sigma)^{d/2} } \exp\bigg( - \frac{ \| \ve{y} - \ve{x} - \sigma^2 \nabla \log \pi_u(\ve{x})/2 \|^2}{\sigma^2} \bigg).
+    q(\ve{x},\ve{y}) = \frac{1}{ (\sqrt{2\pi} \sigma)^d } \exp\bigg( - \frac{ \| \ve{y} - \ve{x} - \sigma^2 \nabla \log \pi_u(\ve{x})/2 \|^2}{2 \sigma^2} \bigg).
   \end{align*}
   We will look further into this algorithm in this section.
 \end{itemize}
@@ -700,7 +700,7 @@ This note is a primer on Markov chain Monte Carlo (MCMC) algorithms. I take mate
 \begin{itemize}
   \item According to \cite{Neal:2011}, the Langevin algorithm can be viewed as a special case of HMC where only one time step is taken when simulating Hamiltonian dynamics.
   
-  \item To see this, set $U(\ve{x}) = - \log \pi_u(\ve{x})$ and $K(\ve{p}) = \|\ve{p}\|^2$ (i.e. $m = 1$). We have that
+  \item To see this, set $U(\ve{x}) = - \log \pi_u(\ve{x})$ and $K(\ve{p}) = \|\ve{p}\|^2/2$ (i.e. $m = 1$). We have that
   \begin{align*}
     \frac{\partial U}{\partial \ve{x}} &= -\nabla \log \pi_u(\ve{x}) \\
     \frac{\partial K}{\partial \ve{p}} &= \ve{p}
@@ -739,7 +739,7 @@ This note is a primer on Markov chain Monte Carlo (MCMC) algorithms. I take mate
   \end{align*}
   where $\ve{W}$ is the standard Brownian motion in $\Real^d$. The initial condition is $\ve{x}(0) = \ve{x}_0$ where $\ve{x}_0$ is an input.
 
-  \item The Langevin equation is related to the problem at hand because the ``sationary distribution'' of its solution is exactly the target distribution $\pi(\ve{x})$. 
+  \item The Langevin equation is related to the problem at hand because the ``stationary distribution'' of its solution is exactly the target distribution $\pi(\ve{x})$. 
   
   \item More precisely, if the stochastic process $\{ \ve{x}(t): 0 \leq t \leq \infty \}$ is a solution of the Langevin equation, then the probability of density $\nu(\ve{x},t) = \nu(\ve{x}(t))$ of $\ve{x}(t)$ must satisfy the {\bf Fokker--Planck equation}:
   \begin{align*}
