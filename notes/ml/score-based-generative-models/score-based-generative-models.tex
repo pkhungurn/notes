@@ -145,7 +145,7 @@ I read the introductory blog post by Yang Song \cite{Song:2022}, but it seems th
       \end{bmatrix}
       = \nabla_{\ve{x}} \log p(\ve{x};\boldsymbol{\theta}).
   \end{align*}
-  Viewing the distribution $p$ as a function with signature $\Real^n \rightarrow \Real$, we have that $\boldsymbol{\Psi}$ has signature $\Real^n \rightarrow \Real^n$.
+  Viewing the distribution $p$ as a function with signature $\Real^d \rightarrow \Real$, we have that $\boldsymbol{\Psi}$ has signature $\Real^d \rightarrow \Real^d$.
 
   \item Note that the good thing about the score function is that it allows us to bypass the partition function:
   \begin{align*}
@@ -164,9 +164,9 @@ I read the introductory blog post by Yang Song \cite{Song:2022}, but it seems th
 
   \item The ``matching'' in score matching is trying to find $\boldsymbol{\theta}$ that makes $\boldsymbol{\Psi}(\ve{x},\boldsymbol{\theta})$ as close as possible to $\boldsymbol{\Psi}_{\mrm{data}}(\ve{x})$. Operationally, Hyv\"{a}rinen proposes minimizing the expected squared Euclidean distance between the scores:
   \begin{align*}
-      J(\theta) 
-      = \frac{1}{2} E_{\ve{x} \sim p_{\mrm{data}}} \Big[ \big\| \boldsymbol{\Psi}(\ve{x};\boldsymbol{\theta}) - \boldsymbol{\Psi}_{\mrm{data}}(\ve{x}) \big\|_2^2 \Big]
-      = \frac{1}{2} \int p_{\mrm{data}}(\ve{x}) \big\| \boldsymbol{\Psi}(\ve{x};\boldsymbol{\theta}) - \boldsymbol{\Psi}_{\mrm{data}}(\ve{x}) \big\|_2^2\, \dee\ve{x}.
+      J(\ves{\theta}) 
+      = \frac{1}{2} E_{\ve{x} \sim p_{\mrm{data}}} \Big[ \big\| \boldsymbol{\Psi}(\ve{x};\boldsymbol{\theta}) - \boldsymbol{\Psi}_{\mrm{data}}(\ve{x}) \big\|^2 \Big]
+      = \frac{1}{2} \int p_{\mrm{data}}(\ve{x}) \big\| \boldsymbol{\Psi}(\ve{x};\boldsymbol{\theta}) - \boldsymbol{\Psi}_{\mrm{data}}(\ve{x}) \big\|^2\, \dee\ve{x}.
   \end{align*}
   The estimator is thus given by by:
   \begin{align*}
@@ -175,7 +175,7 @@ I read the introductory blog post by Yang Song \cite{Song:2022}, but it seems th
 
   \item The function $J(\boldsymbol{\theta})$ is commonly known as the {\bf Fisher divergence} between two distributions. Given two distributions $p_0$ and $p_1$, the Fisher divergence is defined as:
   \begin{align*}
-      F(p_0\|p_1) = E_{\ve{x} \sim p_0} \Big[ \big\| \nabla_{\ve{x}} \log p_0(\ve{x}) - \nabla_{\ve{x}} \log p_1(\ve{x}) \big\|_2^2 \Big] = \int p_0(\ve{x}) \big\| \nabla_{\ve{x}} \log p_0(\ve{x}) - \nabla_{\ve{x}} \log p_1(\ve{x}) \big\|_2^2\, \dee\ve{x}.
+      F(p_0\|p_1) = E_{\ve{x} \sim p_0} \Big[ \big\| \nabla_{\ve{x}} \log p_0(\ve{x}) - \nabla_{\ve{x}} \log p_1(\ve{x}) \big\|^2 \Big] = \int p_0(\ve{x}) \big\| \nabla_{\ve{x}} \log p_0(\ve{x}) - \nabla_{\ve{x}} \log p_1(\ve{x}) \big\|^2\, \dee\ve{x}.
   \end{align*}
   In other words, we are minimizing $F(p_{\mrm{data}}(\ve{x}) \| p(\ve{x};\boldsymbol{\theta}))$.
 
@@ -185,8 +185,8 @@ I read the introductory blog post by Yang Song \cite{Song:2022}, but it seems th
   We have that
   \begin{align}
       J(\ves{\theta}) 
-      &= \int p_{\mrm{data}}(\ve{x}) \sum_{i=1}^n \bigg[ \frac{\partial \Psi_i(\ve{x};\boldsymbol{\theta})}{\partial x_i} + \frac{1}{2} \big( \Psi_i(\ve{x};\boldsymbol{\theta}) \big)^2 \bigg]\, \dee\ve{x} + C \notag\\
-      &= \int p_{\mrm{data}}(\ve{x}) \sum_{i=1}^n \bigg[ 
+      &= \int p_{\mrm{data}}(\ve{x}) \sum_{i=1}^d \bigg[ \frac{\partial \Psi_i(\ve{x};\boldsymbol{\theta})}{\partial x_i} + \frac{1}{2} \big( \Psi_i(\ve{x};\boldsymbol{\theta}) \big)^2 \bigg]\, \dee\ve{x} + C \notag\\
+      &= \int p_{\mrm{data}}(\ve{x}) \sum_{i=1}^d \bigg[ 
       \frac{\partial^2 (\log p(\ve{x};\boldsymbol{\theta}))}{\partial x_i^2}
       + \frac{1}{2} \bigg( \frac{\partial(\log p(\ve{x};\boldsymbol{\theta}))}{\partial x_i} \bigg)^2
       \bigg]\, \dee\ve{x} + C \label{fisher-divergence-rewrite}
@@ -204,23 +204,23 @@ I read the introductory blog post by Yang Song \cite{Song:2022}, but it seems th
   \item Note that the RHS of \eqref{fisher-divergence-rewrite} can be rewritten as:
   \begin{align*}
       J(\ves{\theta}) 
-      &= E_{\ve{x} \sim p_{\mrm{data}}} \bigg[ \nabla_{\ve{x}} \cdot \ves{\Psi}(\ve{x};\ves{\theta}) + \frac{1}{2} \| \ves{\Psi}(\ve{x};\ves{\theta}) \|_2^2 \bigg]
-      = E_{\ve{x} \sim p_{\mrm{data}}} \bigg[ \Delta_\ve{x} \log p(\ve{x};\ves{\theta}) + \frac{1}{2} \| \nabla_{\ve{x}} \log p(\ve{x};\ves{\theta}) \|_2^2 \bigg].
+      &= E_{\ve{x} \sim p_{\mrm{data}}} \bigg[ \nabla_{\ve{x}} \cdot \ves{\Psi}(\ve{x};\ves{\theta}) + \frac{1}{2} \| \ves{\Psi}(\ve{x};\ves{\theta}) \|^2 \bigg]
+      = E_{\ve{x} \sim p_{\mrm{data}}} \bigg[ \Delta_\ve{x} \log p(\ve{x};\ves{\theta}) + \frac{1}{2} \| \nabla_{\ve{x}} \log p(\ve{x};\ves{\theta}) \|^2 \bigg].
   \end{align*}
   Here, $\nabla_{\ve{x}} \cdot$ is the {\bf divergence operator}
   \begin{align*}
-      \nabla_{\ve{x}} \cdot \ve{f} = \sum_{i=1}^n \frac{\partial f_i}{\partial x_i},
+      \nabla_{\ve{x}} \cdot \ve{f} = \sum_{i=1}^d \frac{\partial f_i}{\partial x_i},
   \end{align*}
   and $\Delta_{\ve{x}} = \nabla_{\ve{x}} \cdot \nabla_{\ve{x}}$ is the {\bf Laplace operator}
   \begin{align*}
-      \Delta_{\ve{x}} f = \nabla_{\ve{x}} \cdot \nabla_{\ve{x}} f = \sum_{i=1}^n \frac{\partial^2 f}{\partial x_i^2}.
+      \Delta_{\ve{x}} f = \nabla_{\ve{x}} \cdot \nabla_{\ve{x}} f = \sum_{i=1}^d \frac{\partial^2 f}{\partial x_i^2}.
   \end{align*}
 
   \item Theorem~\ref{thm:score-matching} allows us to approximate $J(\theta)$ by Monte Carlo integrations using the samples we have:
-  \begin{align*}
-      J(\ves{\theta}) \approx \tilde{J}(\ves{\theta}) 
-      = \frac{1}{N} \sum_{j=1}^N \bigg[ \nabla_{\ve{x}} \cdot \ves{\Psi}(\ve{x}_j;\ves{\theta}) + \frac{1}{2} \| \ves{\Psi}(\ve{x}_j;\ves{\theta}) \|_2^2 \bigg].
-  \end{align*}
+  \begin{align} \label{eqn:score-matching}
+      J(\ves{\theta}) \approx \widehat{J}(\ves{\theta}) 
+      = \frac{1}{N} \sum_{j=1}^N \bigg[ \nabla_{\ve{x}} \cdot \ves{\Psi}(\ve{x}_j;\ves{\theta}) + \frac{1}{2} \| \ves{\Psi}(\ve{x}_j;\ves{\theta}) \|^2 \bigg].
+  \end{align}
   This means that we can now optimize for $\ves{\theta}$.
 
   \item Hyv\"{a}rinen also shows that optimizing for $J(\ves{\theta})$ would yield the right distribution.
@@ -230,26 +230,447 @@ I read the introductory blog post by Yang Song \cite{Song:2022}, but it seems th
   \end{theorem}
 
   \begin{corollary}
-    Under the assumption of Theorem~\ref{thm:score-matching-uniqueness}, the estimator $\tilde{J}(\ves{\theta})$ is consistent. In other words, it converges in probability towards the true value of $J(\ves{\theta})$ when the sample size approaches infinity.
+    Under the assumption of Theorem~\ref{thm:score-matching-uniqueness}, the estimator $\widehat{J}(\ves{\theta})$ is consistent. In other words, it converges in probability towards the true value of $J(\ves{\theta})$ when the sample size approaches infinity.
   \end{corollary}
+\end{itemize}
+
+\section{Denoising Score Matching [Vincent 2011]}
+
+\begin{itemize}
+  \item Minimizing the Fisher divergence using the estimate in Equation~\eqref{eqn:score-matching}, however, is still not practical. This is because we need to compute
+  \begin{align*}
+    \nabla_{\ve{x}} \cdot \ves{\Psi}(\ve{x}_j;\ves{\theta})
+    &= \sum_{i=1}^d \frac{\partial^2(\log p(\ve{x}_j;\ves{\theta}))}{\partial x_i^2},
+  \end{align*}
+  which requires computing second-order derivatives. While this can certainly be arranged using modern deep learning framework, it would entail computing the Hessian of large neural network $q(\cdot;\ves{\theta})$, which is not practical.
+
+  \item In 2011, Pascal Vincent discovered that, by changing the target distribution $p_{\mrm{data}}$ a little, we can rewrite $J(\ves{\theta})$ into a function that does not involve second-order derivatives \cite{Vincent:2011}.
+  
+  \item We change $p_{\mrm{data}}$ by convolving it with an isotropic Gaussian noise. Let us denote this corrupted distribution by $p^\sigma_{\mrm{data}}$ where $\sigma$ is the standard deviation of the Gaussian. The sampling process of this distribution is as follows.
+  \begin{enumerate}
+    \item Sample $\ve{x} \sim p_{\mrm{data}}$.
+    \item Sample $\widetilde{\ve{x}} \sim \mcal{N}(\ve{x}, \sigma^2I)$ and return $\widetilde{\ve{x}}$ as the output of the sampling process.
+  \end{enumerate}
+  In this way, we have that
+  \begin{align*}
+    p^\sigma_{\mrm{data}}(\widetilde{{\ve{x}}}) = \int k(\widetilde{\ve{x}}|\ve{x}) p_{\mrm{data}}(\ve{x})\, \dee\ve{x}.
+  \end{align*}
+  where
+  \begin{align*}
+    k(\tilde{\ve{x}}|\ve{x}) = \frac{1}{(\sqrt{2\pi}\sigma)^d} \exp\bigg( \frac{-\| \widetilde{\ve{x}} - \ve{x} \|^2}{2\sigma^2} \bigg)
+  \end{align*}
+  denotes the Gaussian kernel function.
+
+  \item We note that $p^\sigma_{\mrm{data}}$ would not be very different from $p_{\mrm{data}}$ if $\sigma$ is small enough.
+  
+  \item Let us perform score matching on $p^\sigma_{\mrm{data}}$. We have that the Fisher divergence is given by
+  \begin{align*}
+    J^\sigma(\ves{\theta}) 
+    &= \frac{1}{2} E_{\widetilde{\ve{x}} \sim p^\sigma_{\mrm{data}}} \Big[ \big\| \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}) - \ves{\Psi}^\sigma_{\mrm{data}}(\widetilde{\ve{x}}) \big\|^2 \Big] \\    
+    &= \frac{1}{2} E_{\widetilde{\ve{x}} \sim p^\sigma_{\mrm{data}}} \Big[ \big\langle \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}) - \ves{\Psi}^\sigma_{\mrm{data}}(\widetilde{\ve{x}}), \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}) - \ves{\Psi}^\sigma_{\mrm{data}}(\widetilde{\ve{x}}) \big\rangle \Big] \\
+    &= \frac{1}{2} E_{\widetilde{\ve{x}} \sim p^\sigma_{\mrm{data}}}  \Big[ \| \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}) \|^2 - 2 \big\langle \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}), \ves{\Psi}^\sigma_{\mrm{data}}(\widetilde{\ve{x}}) 
+    \big\rangle + \| \ves{\Psi}^\sigma_{\mrm{data}}(\widetilde{\ve{x}}) \|^2 \Big] \\
+    &= E_{\widetilde{\ve{x}} \sim p^\sigma_{\mrm{data}}}\bigg[ \frac{\| \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}) \|^2}{2} \bigg]
+    - E_{\widetilde{\ve{x}} \sim p^\sigma_{\mrm{data}}}\Big[ \big\langle \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}), \ves{\Psi}^\sigma_{\mrm{data}}(\widetilde{\ve{x}}) 
+    \big\rangle  \Big]
+    + E_{\widetilde{\ve{x}} \sim p^\sigma_{\mrm{data}}}\bigg[ \frac{\| \ves{\Psi}^\sigma_{\mrm{data}}(\widetilde{\ve{x}}) \|^2}{2} \bigg]
+  \end{align*}
+  Because $\| \ves{\Psi}^\sigma_{\mrm{data}}(\widetilde{\ve{x}}) \|^2$ is an expression that does not involve $\ves(\theta)$, we can treat as a constant that is irrelevent to the optimization process. As a result, we may write
+  \begin{align*}
+    J^\sigma(\ves{\theta}) 
+    &= E_{\widetilde{\ve{x}} \sim p^\sigma_{\mrm{data}}}\bigg[ \frac{\| \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}) \|^2}{2} \bigg]
+    - E_{\widetilde{\ve{x}} \sim p^\sigma_{\mrm{data}}}\Big[ \big\langle \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}), \ves{\Psi}^\sigma_{\mrm{data}}(\widetilde{\ve{x}}) 
+    \big\rangle  \Big] 
+    + C_1
+  \end{align*}
+  Looking at the middle term, we have that
+  \begin{align*}
+    E_{\widetilde{\ve{x}} \sim p^\sigma_{\mrm{data}}}\Big[ \big\langle \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}), \ves{\Psi}^\sigma_{\mrm{data}}(\widetilde{\ve{x}}) \big\rangle \Big]
+    &= \int_{\widetilde{\ve{x}}} p^\sigma_{\mrm{data}}(\widetilde{\ve{x}}) \big\langle \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}), \ves{\Psi}^\sigma_{\mrm{data}}(\widetilde{\ve{x}}) \big\rangle\, \dee\widetilde{\ve{x}} \\
+    &= \int_{\widetilde{\ve{x}}} p^\sigma_{\mrm{data}}(\widetilde{\ve{x}}) \bigg\langle \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}), \frac{\partial(\log p^\sigma_{\mrm{data}}(\widetilde{\ve{x}})) }{\partial 
+    \widetilde{\ve{x}}} \bigg\rangle\, \dee\widetilde{\ve{x}} \\
+    &= \int_{\widetilde{\ve{x}}} \bigg\langle \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}), p^\sigma_{\mrm{data}}(\widetilde{\ve{x}}) \frac{\partial (\log p^\sigma_{\mrm{data}}(\widetilde{\ve{x}})) }{\partial \widetilde{\ve{x}}} \bigg\rangle\, \dee\widetilde{\ve{x}}.
+  \end{align*}
+  Using the fact that
+  \begin{align*}
+    f(\ve{x}) \frac{\partial(\log f(\ve{x}))}{\partial \ve{x}} = \frac{\partial f(\ve{x})}{\partial \ve{x}}
+  \end{align*}
+  for any differentiable function $f$, we have that
+  \begin{align*}
+    p^\sigma_{\mrm{data}}(\widetilde{\ve{x}}) \frac{\partial (\log p^\sigma_{\mrm{data}}(\widetilde{\ve{x}})) }{\partial \widetilde{\ve{x}}} 
+    &= \frac{\partial p^\sigma_{\mrm{data}}(\widetilde{\ve{x}}) }{\partial \widetilde{\ve{x}}} 
+    = \frac{\partial }{\partial 
+    \widetilde{\ve{x}}} \int_{\ve{x}} k(\widetilde{\ve{x}}|\ve{x}) p_{\mrm{data}}(\ve{x}) \,\dee\ve{x}
+    = \int_{\ve{x}} p_{\mrm{data}}(\ve{x}) \frac{\partial k(\widetilde{\ve{x}}|\ve{x}) }{\partial \widetilde{\ve{x}}} \,\dee\ve{x} \\
+    &= \int_{\ve{x}} p_{\mrm{data}}(\ve{x}) k(\widetilde{\ve{x}}|\ve{x}) \frac{\partial (\log k(\widetilde{\ve{x}}|\ve{x})) }{\partial \widetilde{\ve{x}}} \,\dee\ve{x}
+  \end{align*}
+  Plugging the integral back, we have that
+  \begin{align*}
+    E_{\widetilde{\ve{x}} \sim p^\sigma_{\mrm{data}}}\Big[ \big\langle \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}), \ves{\Psi}^\sigma_{\mrm{data}}(\widetilde{\ve{x}}) \big\rangle \Big]    
+    &= \int_{\widetilde{\ve{x}}} \bigg\langle \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}), \int p_{\mrm{data}}(\ve{x}) k(\widetilde{\ve{x}}|\ve{x}) \frac{\partial (\log k(\widetilde{\ve{x}}|\ve{x})) }{\partial \widetilde{\ve{x}}} \,\dee\ve{x} \bigg\rangle\, \dee\widetilde{\ve{x}} \\
+    &= \int_{\widetilde{\ve{x}}} \int_{\ve{x}} p_{\mrm{data}}(\ve{x}) k(\widetilde{\ve{x}}|\ve{x}) \bigg\langle \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}),  \frac{\partial (\log k(\widetilde{\ve{x}}|\ve{x})) }{\partial \widetilde{\ve{x}}} \bigg\rangle\, \dee\ve{x}\,\dee\widetilde{\ve{x}} \\
+    &= \int_{\ve{x}} \int_{\widetilde{\ve{x}}} p_{\mrm{data}}(\ve{x}) k(\widetilde{\ve{x}}|\ve{x}) \bigg\langle \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}),  \frac{\partial (\log k(\widetilde{\ve{x}}|\ve{x})) }{\partial \widetilde{\ve{x}}} \bigg\rangle\,\dee\widetilde{\ve{x}}\, \dee\ve{x} \\
+    &= E_{\ve{x}\sim p_{\mrm{data}},\, \widetilde{\ve{x}} \sim k(\cdot|\ve{x})}\bigg[ \bigg\langle \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}),  \frac{\partial (\log k(\widetilde{\ve{x}}|\ve{x})) }{\partial \widetilde{\ve{x}}} \bigg\rangle \bigg].
+  \end{align*}
+  As a result,
+  \begin{align*}
+    J^\sigma(\ves{\theta}) 
+    &= 
+    E_{\widetilde{\ve{x}} \sim p^\sigma_{\mrm{data}}}\bigg[ \frac{\| \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}) \|^2}{2} \bigg]
+    - E_{\ve{x}\sim p_{\mrm{data}},\, \widetilde{\ve{x}} \sim k(\cdot|\ve{x})}\bigg[ \bigg\langle \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}),  \frac{\partial (\log k(\widetilde{\ve{x}}|\ve{x})) }{\partial \widetilde{\ve{x}}} \bigg\rangle \bigg]
+    + C_1.
+  \end{align*}
+  Looking at the first term, we have that
+  \begin{align*}
+    E_{\widetilde{\ve{x}} \sim p^\sigma_{\mrm{data}}}\bigg[ \frac{\| \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}) \|^2}{2} \bigg]
+    &= \int_{\widetilde{\ve{x}}} p^\sigma_{\mrm{data}}(\widetilde{\ve{x}})\frac{\| \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}) \|^2}{2} \, \dee\widetilde{\ve{x}}\\ 
+    &= \int_{\widetilde{\ve{x}}} \bigg( \int_{\ve{x}} k(\widetilde{\ve{x}}|\ve{x})p_{\mrm{data}}(\ve{x})\, \dee\ve{x}\bigg) \frac{\| \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}) \|^2}{2} \, \dee\widetilde{\ve{x}} \\
+    &= \int_{\ve{x}} \int_{\widetilde{\ve{x}}} p_{\mrm{data}}(\ve{x}) k(\widetilde{\ve{x}}|\ve{x}) \frac{\| \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}) \|^2}{2} \, \dee\widetilde{\ve{x}}\, \dee\ve{x} \\
+    &= E_{\ve{x}\sim p_{\mrm{data}},\, \widetilde{\ve{x}} \sim k(\cdot|\ve{x})}\bigg[ \frac{\| \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}) \|^2}{2} \bigg].
+  \end{align*}
+  So,
+  \begin{align*}
+    J^\sigma(\ves{\theta}) 
+    &= E_{\ve{x}\sim p_{\mrm{data}},\, \widetilde{\ve{x}} \sim k(\cdot|\ve{x})} \bigg[
+      \frac{\| \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}) \|^2}{2}
+      - \bigg\langle \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}),  \frac{\partial (\log k(\widetilde{\ve{x}}|\ve{x})) }{\partial \widetilde{\ve{x}}} \bigg\rangle \bigg] + C_1.
+  \end{align*}
+  Now, let
+  \begin{align*}
+    C_2 
+    &= E_{\ve{x}\sim p_{\mrm{data}},\, \widetilde{\ve{x}} \sim k(\cdot|\ve{x})} \bigg[ \frac{1}{2} \bigg\| \frac{\partial (\log k(\widetilde{\ve{x}}|\ve{x})) }{\partial \widetilde{\ve{x}}} \bigg\|^2 \bigg].
+  \end{align*}
+  We have that
+  \begin{align*}
+    J^\sigma(\ves{\theta}) 
+    &= E_{\ve{x}\sim p_{\mrm{data}},\, \widetilde{\ve{x}} \sim k(\cdot|\ve{x})} \bigg[
+      \frac{\| \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}) \|^2}{2}
+      - \bigg\langle \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}),  \frac{\partial (\log k(\widetilde{\ve{x}}|\ve{x})) }{\partial \widetilde{\ve{x}}} \bigg\rangle + \frac{1}{2} \bigg\| \frac{\partial (\log k(\widetilde{\ve{x}}|\ve{x})) }{\partial \widetilde{\ve{x}}} \bigg\|^2 \bigg] - C_2 + C_1 \\
+    &= \frac{1}{2} E_{\ve{x}\sim p_{\mrm{data}},\, \widetilde{\ve{x}} \sim k(\cdot|\ve{x})} \bigg[ \bigg\| \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}) - \frac{\partial (\log k(\widetilde{\ve{x}}|\ve{x})) }{\partial \widetilde{\ve{x}}} \bigg\|^2 \bigg] - C_2 + C_1.
+  \end{align*}
+  Letting $\widetilde{J}^\sigma(\ves(\theta))$ denote the expectation term on the RHS, the above equation becomes:
+  \begin{align*}
+    J^\sigma(\ves{\theta}) = \widetilde{J}^\sigma(\ves{\theta}) - C_2 + C_1.
+  \end{align*}
+  Because $C_1$ and $C_2$ are constants with respect to $\ves{\theta}$, we have that
+  \begin{align*}
+    \argmin_{\ves{\theta}} J^\sigma(\ves{\theta}) = \argmin_{\ves{\theta}} \widetilde{J}^\sigma(\ves{\theta}).
+  \end{align*}
+
+  \item The above lengthy derivation tells us that, instead of minimizing $J^\sigma(\ves{\theta})$, we may minimize $J^\sigma(\ves{\theta})$ instead. We can see that the new objective is much nicer because
+  \begin{align*}
+    \frac{\partial(\log k(\widetilde{\ve{x}}|\ve{x}))}{\partial \widetilde{\ve{x}}} 
+    &= \frac{\partial}{\partial \widetilde{\ve{x}}} \log \bigg( \frac{1}{(\sqrt{2\pi}\sigma)^2} \exp\bigg( \frac{-\| \widetilde{\ve{x}} - \ve{x} \|^2 }{2\sigma^2} \bigg)\bigg) 
+    = \frac{\partial}{\partial \widetilde{\ve{x}}} \bigg( \frac{-\| \widetilde{\ve{x}} - \ve{x} \|^2 }{2\sigma^2} \bigg)
+    = -\frac{\widetilde{\ve{x}}-\ve{x}}{\sigma^2}.
+  \end{align*}
+  So,
+  \begin{align*}
+    \widetilde{J}^\sigma(\ves{\theta})
+    &= \frac{1}{2 \sigma^4} E_{\ve{x}\sim p_{\mrm{data}},\, \widetilde{\ve{x}} \sim k(\cdot|\ve{x})} \Big[ \|
+    \sigma^2 \ves{\Psi}({\widetilde{\ve{x}};\ves{\theta}}) + (\widetilde{\ve{x}}-\ve{x})
+    \|^2 \Big].
+  \end{align*}
+  Dropping the $1/\sigma^4$ factor does not change the optimization problem, so we typically write the loss function as
+  \begin{align*}
+    \widetilde{J}^\sigma(\ves{\theta})
+    &= \frac{1}{2} E_{\ve{x}\sim p_{\mrm{data}},\, \widetilde{\ve{x}} \sim k(\cdot|\ve{x})} \Big[ \big\|
+    \sigma^2 \ves{\Psi}({\widetilde{\ve{x}};\ves{\theta}}) + (\widetilde{\ve{x}}-\ve{x})
+    \big\|^2 \Big] \\
+    &= \frac{1}{2} E_{\ve{x}\sim p_{\mrm{data}},\, \widetilde{\ve{x}} \sim k(\cdot|\ve{x})} \Big[ \big\|
+    \sigma^2 \nabla \log q(\widetilde{\ve{x}};\ves{\theta}) + (\widetilde{\ve{x}}-\ve{x})
+    \big\|^2 \Big] \\
+    &\approx \frac{1}{2N} \sum_{j=1}^N E_{\widetilde{\ve{x}} \sim k(\cdot|\ve{x}_j)} \Big[ \big\|
+    \sigma^2 \nabla \log q(\widetilde{\ve{x}};\ves{\theta}) + (\widetilde{\ve{x}}-\ve{x}_j) \big\|^2
+    \Big] \\
+    &\approx \frac{1}{2N} \sum_{j=1}^N E_{\ves{\xi} \sim \mcal{N}(\ve{0},\sigma^2 I )} \Big[ \big\|
+    \sigma^2 \nabla \log q(\ve{x}_j + \ves{\xi};\ves{\theta}) + \ves{\xi} \big\|^2
+    \Big],
+  \end{align*}
+  which does not have any second-order derivatives.
+
+  \item Let us summarize the above discussion into a theorem.
+  
+  \begin{theorem}
+    The score matching object can be recasted as a denoising objective. In other words, we have that
+    \begin{align*}
+      \argmin_{\ves{\theta}} J^\sigma(\ves{\theta}) = \argmin_{\ves{\theta}} \widetilde{J}^\sigma(\ves{\theta}).
+    \end{align*}
+    where
+    \begin{align*}
+      J^\sigma(\ves{\theta}) 
+      &= \frac{1}{2} E_{\widetilde{\ve{x}} \sim p^\sigma_{\mrm{data}}} \Big[ \big\| \nabla \log q(\ve{x}_j + \ves{\xi};\ves{\theta}) - \ves{\Psi}^\sigma_{\mrm{data}}(\widetilde{\ve{x}}) \big\|^2 \Big], \\
+      \widetilde{J}^\sigma(\ves{\theta}) &= 
+      \frac{1}{2} E_{\ve{x}\sim p_{\mrm{data}},\, \widetilde{\ve{x}} \sim k(\cdot|\ve{x})} \Big[ \big\|
+      \sigma^2 \nabla \log q(\ve{x}_j + \ves{\xi};\ves{\theta}) + (\widetilde{\ve{x}}-\ve{x})
+      \big\|^2 \Big].
+    \end{align*}
+  \end{theorem}
+
+  \item What the new objective suggests us to do is as follows.
+  \begin{itemize}
+    \item For each data point $\ve{x}_j$, we corrupt it by adding a Gaussian noise $\ves{\xi}$ sampled according to $\mcal{N}(\ve{0},\sigma^2I)$ to get $\widetilde{\ve{x}} = \ve{x}_j + \ves{\xi}$.
+    
+    \item We feed the corrupted data $\widetilde{\ve{x}}$ to our network, and let it produce the gradient $\nabla \log q(\widetilde{\ve{x}};\ves{\theta})$.
+    
+    \item We want $\sigma^2 \nabla \log q(\widetilde{\ve{x}};\ves{\theta})$ to be as close as possible to $-\ves{\xi}$. In other words, if we add it to $\widetilde{x}$, we should get the original signal $\ve{x}_j$ back. Phrasing this another way, {\bf we want to denoise $\widetilde{\ve{x}}$ back to $\ve{x}_j$.}
+  \end{itemize}
+
+  As a result, we match the score of $p^\sigma_{\mrm{data}}$ (and therefore $p_{\mrm{data}}$ if $\sigma$ is small enough) by training a denoiser!
+
+  \item Note that the result in this section bears a similarity to the following result in statistics.
+
+  \begin{theorem}[Tweedie's formula]
+    Suppose $\ve{x}$ and $\ve{y}$ are random variables that satisfy the distribution $\ve{y} \sim \mcal{N}(\ve{x}, \sigma^2 I)$. Then,
+    \begin{align*}
+      E[\ve{x}|\ve{y}] = \ve{y} + \sigma^2 \nabla \log p(\ve{y})
+    \end{align*}
+    where $p(\ve{y})$ is the probability density of $\ve{y}$.
+  \end{theorem}
 \end{itemize}
 
 \section{Sampling from a Score-Based Model}
 
 \begin{itemize}
-  \item 
-\end{itemize}
+  \item Suppose we have optimized $\ves{\theta}$ to match the score of $p_{\mrm{data}}$ (or $p_{\mrm{data}}^\sigma$ if we use denoising score matching). How do we sample from data points from $p_{\ves{\theta}}$ then?
+  
+  \item We actually do not have access to $p_{\ves{\theta}}$ because we do not know the normalizing constant $Z(\ves{\theta})$. We only know $q_{\ves{\theta}}$, which is unnormalized. This forces us to use techniques such as Markov Chain Monte Carlo (MCMC), which can sample from unnormalized distributions.
+  
+  \item There are many variants of MCMC algorithms \cite{KhungurnMcmc}, but we should use those that exploit the score $\nabla \log q_{\ves{\theta}}(\cdot)$, which is readily availble (because we have just spent a lot of time matching it). Two candidates naturally emerge:
+  \begin{itemize}
+    \item {\bf Hamiltonian Monte Carlo} (HMC).
+    \item {\bf Langevin algorithm}, for which there are two easy variants.
+    \begin{itemize}
+      \item {\bf Unadjusted Langevin algorithm} (ULA).
+      \item {\bf Metropolis-adjusted Langevin algorithm} (MALA).
+    \end{itemize}
+  \end{itemize}
 
-\section{Training a Score-Based Model Cheaply [Vincent 2011]}
+  \item ULA is the simplest of the bunch. It requires picking a small constant $\varepsilon > 0$ as a parameter, and it goes as follows:
+  \begin{itemize}
+    \item Start from a random point $\ve{x}_0$.
+    \item {\bf for} $m = 1, 2, 3, \dotsc$
+    \begin{itemize}
+      \item Sample $\ves{\xi} \sim \mcal{N}(\ve{0}, I)$.
+      \item Compute $\ve{x}_{m} \gets \ve{x}_{m-1} + \frac{\varepsilon}{2} \nabla \log q_{\ves{\theta}}(\ve{x}_{m-1}) + \sqrt{\varepsilon} \ves{\xi}$.
+    \end{itemize}
+    \item[] {\bf end for}
+  \end{itemize}
+  If our target distribution is not too nasty, then the Markov chain should approach a stationary distribution after being simulated for $M$ iterations for some big value of $M$. We can then take $\ve{x}_M$, $\ve{x}_{M+1}$, and so on as the output samples.
 
-\begin{itemize}
-  \item 
+  \item ULA has the following advantages:
+  \begin{itemize}
+    \item It only requires the ability to compute the score $\nabla \log q_{\ves{\theta}}(\ve{x}_{m-1})$. Hence, we can make our model take in the input sample $\ve{x}$ and output the score directly without having to worry about what the (unnormalized) probability of $\ve{x}$ would be. 
+    
+    \item This also greatly simplify training because, in denoising score matching, we do not have to compute any gradients with respect to $\ve{x}$. The only gradient we have to compute is that of $\widetilde{J}^\sigma(\ves{\theta})$ with respect to $\ves{\theta}$, which would be used in parameter optimization.
+  \end{itemize}
+  
+  \item However, ULA has several problems:
+  \begin{itemize}
+    \item It may not converge to a stationary distribution.
+    \item If it does converge, the stationary distribution might not be $p_{\ves{\theta}}$.
+  \end{itemize}
+  Nevertheless, according to Song and Ermon, people ignore these problems and use it anyway \cite{Song:2019}.
+
+  \item MALA and HMC, while guaranteeing the correct stationary distribution, are more complicated.
+  \begin{itemize}
+    \item They require the ability to evaluate $q_{\ves{\theta}}(\ve{x})$ when computing the acceptance probability.
+    
+    \item During sampling, we have to evaluate
+    \begin{align*}
+      \nabla \log q_{\ves{\theta}}(\ve{x}) 
+      = \frac{\partial (\log q_{\ves{\theta}}(\ve{x}))}{\partial \ve{x}}.
+    \end{align*}
+
+    \item Moreover, after evalutating the gradient above, we have to use it in the calculation of of the loss $\widetilde{J}^\sigma(\ves{\theta})$, which we must compute the gradient 
+    \begin{align*}
+      \frac{\partial}{\partial \ves{\theta}} \widetilde{J}^\sigma(\ves \theta)
+    \end{align*}
+    with respect to $\ves{\theta}$ for optimization. This can be done with modern deep learning libraries, but the implementation would be slower than that of ULA.
+  \end{itemize}
+
+  \item We have learned how to optimize a score-based model and also learned how to sample from it. This gives us a form of generative models.
 \end{itemize}
 
 \section{Noise-Conditional Score-Based Model [Song and Ermon, 2019]}
 
 \begin{itemize}
-  \item 
+  \item Vanilla score-based models are not practical generative models because of several reasons. The Song--Ermon paper has toy examples the illustrate these points.
+  \begin{itemize}
+    \item {\bf The manifold hypothesis.}
+    \begin{itemize}
+      \item Real-world datasets have some sort of constraints on their members, and this phenomenon is often thought of as each dataset residing in a low-dimensional manifold inside the ambient space. 
+      
+      \item This means that the score is zero almost everywhere in the ambient space. Vanilla score matching thus cannot work on real-world datasets. 
+      
+      \item Convolving $p_{\mrm{data}}$ with a Gaussian of small variance extends the support to the whole ambient space and allows for denoising score matching. 
+      
+      \item However, we are not in the clear yet.
+    \end{itemize}
+    
+    \item {\bf Low data density regions.}
+    \begin{itemize}
+      \item In practice, we only have a finite number of samples of the data. In areas where the $p_{\mrm{data}}$ is low, we might not enough samples to accurately estimate the scores in that area.
+      
+      \item When two modes of the data distribution are separated by low density regions, Langevin dynamics will not be able to correctly recover the relative weights of these two modes in reasonable time and so might not converge to the true distribution.
+    \end{itemize}
+  \end{itemize}
+
+  \item Song and Ermon observed that convolving the target distribution with a Guassian (i.e., working with $p_{\mrm{data}}^\sigma$ instead of $p_{\mrm{data}}$) solves both problems simultaneously.
+  \begin{itemize}
+    \item The support of any Gaussian distribution is the whole ambient space, so the data no longer resides in a low-dimensional manifold.
+    
+    \item If $\sigma$ is high enough of the Gaussian is high enough, it can fill areas where the data distribution is low.
+  \end{itemize}
+
+  \item We see that, as $\sigma$ becomes larger, the perturbed distribution $p^\sigma_{\mrm{data}}$ becomes more tractable but different from $p_{\mrm{data}}$. So, if we have a sequence of standard deviations $$\sigma_1 > \sigma_2 > \dotsb > \sigma_L,$$ then we have that $$p_{\mrm{data}}^{\sigma_1},\ p_{\mrm{data}}^{\sigma_1},\ \dotsc,\ p_{\mrm{data}}^{\sigma_L}$$ is a sequence of less and less tractable distributions that converge to $p_{\mrm{data}}$.
+  
+  \item The idea, then, is to do Langevin dynamics on the above sequence of probability distributions rather than on $p_{\mrm{data}}$ or on a single $p_{\mrm{data}}^\sigma.$
+  \begin{itemize}
+    \item The algorithm would have $L$ phases, and the $i$th phase would use the score of $p_{\mrm{data}}^{\sigma_i}$. 
+    
+    \item The hope is that the steps near the beginning would allow us to explore all significant regions of $p_{\mrm{data}}$, and the steps near the end would home us in on one of the modes.
+  \end{itemize}
+
+  \item The practice of starting with a tractable distribution and successively refine it to a target distribution is not new. It can be found in the method of {\bf simulated annealing} in the context of optimization \cite{Kirkpatrick:1983}, and {\bf annealed importance sampling} in statistics \cite{Neal:1998}.
+\end{itemize}
+  
+\subsection{Training and Sampling}
+
+\begin{itemize}
+  \item Song and Ermon propose to implement the above idea with the {\bf noise-conditional score networks} (NCSN). This is a single network $\ve{s}_{\ves{\theta}}(\ve{x}, \sigma)$ to estimate the score $\nabla \log p^\sigma_{\mrm{data}}(\ve{x})$ of the data distribution after being convolved with an isotropic Gaussian with standard deviation $\sigma$.
+
+  \item For training and sampling, the paper fixes a sequence of standard deviations $\{ \sigma_i \}_{i=1}^L$. It chooses one such that
+  \begin{align*}
+    \frac{\sigma_1}{\sigma_2} = \frac{\sigma_2}{\sigma_3} = \dotsb = \frac{\sigma_{L-1}}{\sigma_L} > 1.
+  \end{align*}
+  $\sigma_1$ should be learge enough to fill low density areas, and $\sigma_L$ should be small enough to minimize the effect on data.
+
+  \item The NCSN is trained with the following objective
+  \begin{align*}
+    \mcal{L}(\ves{\theta}) = \frac{1}{L} \sum_{i=1}^L \lambda(\sigma_i) \ell(\ves{\theta}, \sigma_i)
+  \end{align*}
+  where $\ell(\cdot, \cdot)$ is the denoising score matching objective
+  \begin{align*}
+    \ell(\ves{\theta},\sigma) = \frac{1}{2}E_{\ve{x}\sim p_{\mrm{data}}, \widetilde{x} \sim \mcal{N}(\ve{x},\sigma^2I)} \bigg[ \ve{s}_{\ves{\theta}}(\widetilde{\ve{x}},\sigma) + \frac{\widetilde{\ve{x}} - \ve{x}}{\sigma^2} \bigg].
+  \end{align*}
+  
+  \item The paper chooses the weight $\lambda(\sigma) = \sigma^2$ in order to make sure that the magnitude of $\lambda(\sigma) \ell(\ves{\theta},\sigma)$ does not depend on $\sigma$. This is based on the observation that, when $\ve{s}_{\ves{\theta}}$ is trained to optimality, we would have that $\| \ve{s}_{\ves{\theta}}(\widetilde{\ve{x}},\sigma) \|$ would be about $1/\sigma$. (See the paper for more details.)
+
+  \item The sampling algorithm, called {\bf annealed Langevin dynamics}, is as follows.
+  \begin{itemize}
+    \item[] Initialize $\widetilde{\ve{x}}_0$.
+    \item[] {\bf for} $i \gets 1$ to $L$ {\bf do}
+    \begin{itemize}
+      \item[] $\alpha_i \gets \varepsilon \cdot \sigma_i^2 / \sigma_L^2$      
+      \item[] {\bf for} $t \gets 1$ to $T$ {\bf do}
+      \begin{itemize}
+        \item[] Draw $\ves{\xi}_t \sim \mcal{N}(\ve{0},I)$.
+        \item[] $\widetilde{\ve{x}}_t \gets \widetilde{\ve{x}}_{t-1} + \frac{\alpha_i}{2}\ve{s}_{\ves{\theta}}(\widetilde{\ve{x}}_{t-1}, \sigma_i) + \sqrt{\alpha_i} \ve{\xi}_t $
+      \end{itemize}
+      \item[] {\bf end for}
+      \item[] $\widetilde{\ve{x}}_0 \gets \widetilde{\ve{x}}_T$
+    \end{itemize}
+    \item[] {\bf end for}
+    \item[] {\bf return} $\widetilde{\ve{x}}_0$.
+  \end{itemize}
+  Here $\varepsilon$ and $T$ are hyperparameters of the algorithm where $\varepsilon$ is the step size, and $T$ is the number of time steps Langevin dynamics is simulated for each standard deviation.
+
+  \item The paper chooses $\alpha_i \propto \sigma_i^2$ because it wants to make the signal to noise ratio $\frac{\| \alpha_i \ve{s}_{\ves{\theta}}(\ve{x},\sigma_i) \| }{2 \| \sqrt{\alpha_i} \xi \|}$ constant.
+\end{itemize}
+
+\subsection{Image Inpainting}
+
+\begin{itemize}
+  \item It is very easy to modify the annealed Langevin dynamics algorithm to do inpainting instead of image generation.
+  
+  \item The modified algorithm takes an image $\ve{x}$ and a mask $\ve{m}$ of the part of $\ve{x}$ that should be preserved.
+  
+  \item The inpainting algorithm is as follows:
+  \begin{itemize}
+    \item[] Initialize $\widetilde{\ve{x}}_0$.
+    \item[] {\bf for} $i \gets 1$ to $L$ {\bf do}
+    \begin{itemize}
+      \item[] $\alpha_i \gets \varepsilon \cdot \sigma_i^2 / \sigma_L^2$
+      \item[] Draw $\widetilde{\ves{\xi}} \sim \mcal{N}(\ve{0},\sigma^2_i I)$.
+      \item[] $\ve{y} \gets \ve{x} + \widetilde{\ves{\xi}}$.
+      \item[] {\bf for} $t \gets 1$ to $T$ {\bf do}
+      \begin{itemize}
+        \item[] Draw $\ves{\xi}_t \sim \mcal{N}(\ve{0},I)$.
+        \item[] $\widetilde{\ve{x}}_t \gets \widetilde{\ve{x}}_{t-1} + \frac{\alpha_i}{2}\ve{s}_{\ves{\theta}}(\widetilde{\ve{x}}_{t-1}, \sigma_i) + \sqrt{\alpha_i} \ve{\xi}_t $
+        \item[] $\widetilde{\ve{x}}_t \gets \widetilde{\ve{x}}_t \otimes (\ve{1} - \ve{m}) + \ve{y} \otimes \ve{m}$. 
+      \end{itemize}
+      \item[] {\bf end for}
+      \item[] $\widetilde{\ve{x}}_0 \gets \widetilde{\ve{x}}_T$
+    \end{itemize}
+    \item[] {\bf end for}
+    \item[] {\bf return} $\widetilde{\ve{x}}_0$.
+  \end{itemize}
+\end{itemize}
+
+\subsection{Network Architecture}
+
+\begin{itemize}
+  \item The network architecture used in the paper relies on three importance components.
+  \begin{itemize}
+    \item Conditional instance normalization.
+    \item Dilated convolutions.
+    \item U-Net architecture.
+  \end{itemize}
+
+  \item Conditional instance normalization.
+  \begin{itemize}
+    \item Let $\ve{x}$ denote a feature tensor with $C$ channels, and let $\ve{x}_k$ denote its $k$th channel. Let $\mu_k$ and $s_k$ denote the mean and the standard deviation of elements of $\ve{x}_k$. In standard instance normalization, the $k$th channel of the output tensor $\ve{z}$ is given by
+    \begin{align*}
+      \ve{z}_k = \gamma[k] \frac{\ve{x}_k - \mu_k}{s_k} + \beta[k]
+    \end{align*}
+    where $\ves{\gamma} = (\gamma[1],\gamma[2], \dotsc, \gamma[C])$ and $\ves{\beta} = (\beta[1], \beta[2], \dotsc, \beta[C])$ are learnable parameters.
+
+    \item The paper observed that instance normalization removes all information about $\mu_k$, and so may lead to color shifts when generating images. To alleviate this problem, it tries to introduce $\mu_k$ back as follows:
+    \begin{align*}
+      \ve{z}_k = \gamma[k] \frac{\ve{x}_k - \mu_k}{s_k} + \beta[k] + \alpha[k] \frac{\mu_k - m}{v}
+    \end{align*}
+    where $m$ is the mean of the $\mu_k$'s among the channels, $v$ is the standard deviation of the $\mu_k$'s, and $\ves{\alpha} = (\alpha[1],\dotsc,\alpha[C])$ is another learnable parameter.
+
+    \item The ``conditional'' part of the conditional instance normalization refers to the fact that the paper uses different $\ves{\alpha}$, $\ves{\beta}$, and $\ves{\gamma}$ for each of the $\sigma_i$. Hence, the equation becomes:
+    \begin{align*}
+      \ve{z}_k = \gamma[i,k] \frac{\ve{x}_k - \mu_k}{s_k} + \beta[i,k] + \alpha[i,k] \frac{\mu_k - m}{v}.
+    \end{align*}
+  \end{itemize}  
+  
+  \item Dilate convolution.
+  \begin{itemize}
+    \item The paper replaces all subsampling layers in its networks with dilated convolution, except the first subsampling layer.    
+  \end{itemize}
+
+  \item U-Net architecture.
+  \begin{itemize}
+    \item The overall architecture is that of RefineNet \cite{Lin:2016}, which is a U-Net that incorporates ResNet's design.
+    
+    \item Customizations:
+    \begin{itemize}
+      \item 4-cascaded RefineNet.
+      \item Pre-activation residual blocks.
+      \item Replace all batch normalization with conditional instance normalziation.
+      \item Replace max pooling layer in Refine Blocks with average pooling in order to get smoother images.
+      \item Add a conditional instance normalization before each convolution and average pooling in the Refine Blocks.
+      \item Activation function is ELU.
+      \item Use dilated convolutions instead of subsampling layers in residual blocks, except the first one.
+      \item Dilation is increased by a factor of 2 when going to the next cascade.
+    \end{itemize}
+  \end{itemize}
+\end{itemize}
+
+\subsection{Experimental and Training Setup}
+
+\begin{itemize}
+  \item The paper used NCSNs to generate images from MNIST, CelebA, and CIFAR-10. All images are of size $32 \times 32$. Each pixel has value in range $[0,1]$.
+  
+  \item The paper chooses $L = 10$, $\sigma_1 = 1$, and $\sigma_10 = 0.01$.
+  
+  \item For sampling the paper chooses $T = 10$ and $\varepsilon = 2 \times 10^{-5}$. The initial value of $\ve{x}_0$ is sampled from a uniform distribution.
+  
+  \item All models were trained with Adama with learning rate of $0.001$ for $200000$ iterations. The batch size was $128$.
 \end{itemize}
 
 \bibliographystyle{alpha}
