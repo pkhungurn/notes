@@ -77,7 +77,7 @@ I read the introductory blog post by Yang Song \cite{Song:2022}, but it seems th
   \item Hence, the focus would be on (1) how to estimate the parameters $\boldsymbol{\theta}$, and (2) how to sample from the model given the parameters.
 \end{itemize}
 
-\section{Score Matching [Hyv\"{a}rinen, 2005]}
+\section{Score Matching [Hyv\"{a}rinen 2005]}
 
 \begin{itemize}
   \item First, however, we need to take a detour from generative modeling and study a related problem: parameter estimation of unnormalized models.
@@ -492,7 +492,7 @@ I read the introductory blog post by Yang Song \cite{Song:2022}, but it seems th
   \item We have learned how to optimize a score-based model and also learned how to sample from it. This gives us a form of generative models.
 \end{itemize}
 
-\section{Noise-Conditional Score-Based Model [Song and Ermon, 2019]}
+\section{Noise-Conditional Score-Based Model [Song and Ermon 2019]}
 
 \begin{itemize}
   \item Vanilla score-based models are not practical generative models because of several reasons. The Song--Ermon paper has toy examples the illustrate these points.
@@ -535,7 +535,7 @@ I read the introductory blog post by Yang Song \cite{Song:2022}, but it seems th
   \item The practice of starting with a tractable distribution and successively refine it to a target distribution is not new. It can be found in the method of {\bf simulated annealing} in the context of optimization \cite{Kirkpatrick:1983}, and {\bf annealed importance sampling} in statistics \cite{Neal:1998}.
 \end{itemize}
   
-\subsection{Training and Sampling}
+\subsection{Training and Sampling} \label{sec:song-2019-training-and-sampling}
 
 \begin{itemize}
   \item Song and Ermon propose to implement the above idea with the {\bf noise-conditional score networks} (NCSN). This is a single network $\ve{s}_{\ves{\theta}}(\ve{x}, \sigma)$ to estimate the score $\nabla \log p^\sigma_{\mrm{data}}(\ve{x})$ of the data distribution after being convolved with an isotropic Gaussian with standard deviation $\sigma$.
@@ -566,7 +566,7 @@ I read the introductory blog post by Yang Song \cite{Song:2022}, but it seems th
       \item[] {\bf for} $t \gets 1$ to $T$ {\bf do}
       \begin{itemize}
         \item[] Draw $\ves{\xi}_t \sim \mcal{N}(\ve{0},I)$.
-        \item[] $\widetilde{\ve{x}}_t \gets \widetilde{\ve{x}}_{t-1} + \frac{\alpha_i}{2}\ve{s}_{\ves{\theta}}(\widetilde{\ve{x}}_{t-1}, \sigma_i) + \sqrt{\alpha_i} \ve{\xi}_t $
+        \item[] $\widetilde{\ve{x}}_t \gets \widetilde{\ve{x}}_{t-1} + \frac{\alpha_i}{2}\ve{s}_{\ves{\theta}}(\widetilde{\ve{x}}_{t-1}, \sigma_i) + \sqrt{\alpha_i} \ve{\xi}_t $ 
       \end{itemize}
       \item[] {\bf end for}
       \item[] $\widetilde{\ve{x}}_0 \gets \widetilde{\ve{x}}_T$
@@ -671,6 +671,185 @@ I read the introductory blog post by Yang Song \cite{Song:2022}, but it seems th
   \item For sampling the paper chooses $T = 10$ and $\varepsilon = 2 \times 10^{-5}$. The initial value of $\ve{x}_0$ is sampled from a uniform distribution.
   
   \item All models were trained with Adama with learning rate of $0.001$ for $200000$ iterations. The batch size was $128$.
+\end{itemize}
+
+\section{Improved Training [Song and Ermon 2020]}
+
+\begin{itemize}
+  \item Song and Ermon published a followed up paper \cite{Song:2020} to the one in the last section \cite{Song:2019}. It does not present a new algorithm but rather introduces various improvements to the model.
+  
+  \item It turns out that there are several problems with the model in \cite{Song:2019}.
+  \begin{itemize}
+    \item The hyperparameter settings such as $L = 10$, $\sigma_1 = 1$, and $\sigma_{10} = 0.01$ were all ad hoc.
+    
+    \item The authors couldn't train models to general images with resolution higher than $32 \times 32$.
+  \end{itemize}
+
+  \item To address the above problems, the authors propose several techniques to improve training. These include:
+  \begin{itemize}
+    \item A heuristic to choose the noise scale.
+    \item A simple improvement to the model architecture.
+    \item A recommendation to sue exponential moving average (EMA) of model parameters while training.
+  \end{itemize}
+
+  \item With all the techniques in the last item, the authors were able to train score-based models to on FFHQ and LSUN datasets to generate images with resolutions as large as $256 \times 256$.
+  
+  \item We will now talk about each of the techniques in more details.
+\end{itemize}
+
+\subsection{Technique 1: How to choose the initial noise scale}
+
+\begin{itemize}
+  \item In \cite{Song:2019}, $\sigma_1$ is set to $1$ perhaps because the pixel values are in the $[0,1]$ range.
+  
+  \item However, in real world images, it is typical to have two data points $\ve{x}_1$ and $\ve{x}_2$ where $\| \ve{x}_1 - \ve{x}_2 \| \gg 1$. Hence, even with the perturbed data distribution $p_{\mrm{data}}^{\sigma_1}$, it would be hard for Langevin dynamics to reach $\ve{x}_2$ when starting from $\ve{x}_1$, and this can lead to mode collapse.
+  
+  \item Hence, the paper propose the following technique:
+  
+  {\bf Technique 1.} Choose $\sigma_1$ to be as large as the maximum Euclidena distance between all pairs of training data points.
+\end{itemize}
+
+\subsection{Technique 2: How to choose other noise scales}
+
+\begin{itemize}
+  \item After choosing $\sigma_1$, we next have to choose $\sigma_2$, $\dotsc$, $\sigma_L$.
+  
+  \item In \cite{Song:2019}, the paper choose $\sigma_L$ to be a low value ($0.01$). The other noise scales are chosen so that the ratio $\sigma_{i-1}/\sigma_{i}$ is a constant.
+  
+  \item What we really want from the noise scales, however, is that the probability density $p_{\mrm{data}}^{\sigma_{i-1}}$ and $p_{\mrm{data}}^{\sigma_{i}}$ should be similar enough that we can transition from the former to the latter with few problems.
+  
+  \item The authors performed a simplified analysis where $p_{\mrm{data}}^{\sigma}$ is assumed to be $\mcal{N}(\ve{0},\sigma^2 I)$. They showed that, if we let $r = \| \ve{x} \|$, then it follows that, when the data is $D$-dimensional, 
+  \begin{align*}
+    p_{\mrm{data}}^{\sigma}(r) = \frac{1}{2^{D/2-1} \Gamma(D/2)} \frac{r^{D-1}}{\sigma^D} \exp\bigg( \frac{-r^2}{2\sigma^2} \bigg)
+  \end{align*}
+  where $\Gamma(\cdot)$ denotes the gamma function.
+
+  \item Moreover, they showed that
+  \begin{align*}
+    r - \sqrt{D}\sigma \rightarrow \mcal{N}(0, \sigma^2/2)
+  \end{align*}
+  as $D \rightarrow \infty$. Hence, for high resolution images, it is OK to assume that
+  \begin{align*}
+    p_{\mrm{data}}^\sigma(r) \approx \mcal{N}(\sqrt{D}\sigma, \sigma^2/2).
+  \end{align*}
+  
+  \item To simplify the notation, let $m_i$ denots $\sqrt{D}\sigma_i$ and $s_i$ denotes $\sqrt{\sigma^2_i/2}$. We have that
+  \begin{align*}
+    p_{\mrm{data}}^{\sigma_i}(r) \approx \mcal{N}(m_i, s_i^2).
+  \end{align*}
+
+  \item Now, we make sure that $p_{\mrm{data}}^{\sigma_{i-1}}$ and $p_{\mrm{data}}^{\sigma_{i}}$ are similar. So, we want to make sure that they overlap as much as possible. In other words, $p_{\mrm{data}}^{\sigma_{i}}$ should have high mass in areas where $p_{\mrm{data}}^{\sigma_{i-1}}$ has high mass.
+
+  \item $p_{\mrm{data}}^{\sigma_{i-1}}(r)$ has high mass in the interval $\mcal{I}_{i-1} = [m_{i-1} - 3s_{i-1}, m_{i-1} + 3s_{i-1}]$. The mass of $p_{\mrm{data}}^{\sigma_i}$ on the above interval is given by
+  \begin{align*}
+    p_{\mrm{data}}^{\sigma_i}(r \in \mcal{I}_{i-1}) 
+    = \mrm{erf}(\sqrt{2D}(\gamma_i - 1) + 3\gamma_i) - \mrm{erf}(\sqrt{2D}(\gamma_i - 1) - 3\gamma_i)
+  \end{align*}
+  where $\gamma_i = \sigma_{i-1} / \sigma_i$. We want the above quantity to be reasonably large.
+
+  \item {\bf Technique 2}. Chooose $\sigma_2$, $\dotsc$, $\sigma_L$ to be a geometric progression with common ratio $\gamma$ such that $$\mrm{erf}(\sqrt{2D}(\gamma - 1) + 3\gamma) - \mrm{erf}(\sqrt{2D}(\gamma - 1) - 3\gamma) \approx 0.5.$$
+  
+  \item I think how to choose $\sigma_L$ has not change: we fix it to $0.01$ or something lower.
+\end{itemize}
+
+\subsection{Technique 3: How to condition with the noise scale}
+
+\begin{itemize}
+  \item In \cite{Song:2019}, the noise scale is used to calculate the biases and scales of the instance normalization units.
+  
+  \item In \cite{Song:2020}, they significantly simplify the architecture based on the observation that $\| \ve{s}_{\ves{\theta}}(\ve{s},\sigma)  \| \approx 1/\sigma$.
+  
+  \item {\bf Technique 3}. Parameterize the NCSN with $\ve{s}_{\ves{\theta}}(\ve{x},\sigma) = \ve{s}_{\ves{\theta}}(\ve{x})/\sigma$ where $\ve{s}_{\ves{\theta}}$ is an unconditonal network.
+
+  \item The authors found that this new architecture achived similar training losses compared to the architecture employed in \cite{Song:2019}.
+\end{itemize}
+
+\subsection{Technique 4: How to configure Langevin dynamics}
+
+\begin{itemize}
+  \item In \cite{Song:2019}, for each noise scale, we run Langevin dynamics for $T$ timesteps with step size $\alpha = \varepsilon \cdot \sigma_i^2 / \sigma_L^2$. 
+  
+  \item The \cite{Song:2019} paper uses $\varepsilon = 2 \times 10^{-5}$ and $T = 100$.
+  
+  \item The authors performed another simplified analysis to understand the behavior of annealed Langevin dynamics.
+  \begin{itemize}
+    \item They assumed that $p_{\mrm{data}}^{\sigma_i} = \mcal{N}(\ve{0}, \sigma^2_i I)$.
+    
+    \item They would like to understand the behavior of running Langevin dynamics for $T$ iterations under a single noise level $\sigma_i$. In this setting, we start with $\ve{x}_0 \sim p_{\mrm{data}}^{\sigma_{i-1}} = \mcal{N}(\ve{0},\sigma_{i-1}^2I)$. Then, for $T$ times, we then run the update step
+    \begin{align} \label{eqn:song-2020-update-step}
+      \ve{x}_{t+1} \gets \ve{x}_t + \alpha \nabla_{\ve{x}} \log p_{\mrm{data}}^{\sigma_i} (\ve{x}_t) + \sqrt{2 \alpha} \ves{\xi}
+    \end{align}
+    where $\xi \sim \mcal{N}(\ve{0},I)$.\footnote{Note that \eqref{eqn:song-2020-update-step} is slightly different from $\widetilde{\ve{x}}_t \gets \widetilde{\ve{x}}_{t-1} + \frac{\alpha_i}{2}\ve{s}_{\ves{\theta}}(\widetilde{\ve{x}}_{t-1}, \sigma_i) + \sqrt{\alpha_i} \ves{\xi}_t,$ which was used in the annealed Langevin dynamics algorithm in Section~\ref{sec:song-2019-training-and-sampling}. However, one can see that they are essentially the same as we simply replaced $\alpha_i$ with $2\alpha$.}
+
+    \item It follows that $\ve{x}_T \sim N(\ve{0}, s_T^2 I)$ where
+    \begin{align*}
+      \frac{s_T^2}{\sigma_i^2} = \bigg( 1 - \frac{\varepsilon}{\sigma_L^2} \bigg)^{2T} 
+      \bigg( \gamma^2 - \frac{2\varepsilon}{\sigma_L^2 - \sigma^2_L (1 - \varepsilon/\sigma_L^2)^2} \bigg) + \frac{2\varepsilon}{\sigma_L^2 - \sigma^2_L (1 - \varepsilon/\sigma_L^2)^2}
+    \end{align*}
+    where $\gamma = \sigma_{i-1} / \sigma_i$.
+  \end{itemize}
+
+  \item The ideal behavior should be that $\ve{x}_T \sim \mcal{N}(\ve{0},\sigma_i^2 I)$. Hence, we should strive to make $s_T^2 / \sigma_i^2 = 1$.
+  
+  \item {\bf Technique 4}. Chooose $T$ as large as allowed by a computing budget and then select $\varepsilon$ that makes $s_T^2 / \sigma_i^2$ as close as possible to $1$.
+\end{itemize}
+
+\subsection{Technique 5: How to improve stability}
+
+\begin{itemize}
+  \item The authors observed that the images generated by the model of \cite{Song:2019} have unstable visual quality: the FID score fluctuated wildly during training. Moreover, the generated images show color shifts which varies wildly based on the number of training iterations.
+  
+  \item To improve the stability of the generated images, the authors recommended using exponential moving average (EMA) of the network weights when generating images at test time.
+  
+  \item {\bf Technique 5}. Apply exponential moving average to network parameters when sampling.
+\end{itemize}
+
+\section{Generalization to Stochastic Differental Equations [Song et al. 2021]}
+
+\begin{itemize}
+  \item In this new paper, the authors called the approach in the \cite{Song:2019} paper {\bf score matching with Langevin dynamics} (SMLD).
+
+  \item The {\bf denoising diffusion probability model} (DDPM) \cite{SohlDickstein:2015,Ho:2020} is another class of generative models whose generative process involves inverting corruption (in our case, denoising) done to a data item.
+  
+  \item By denoising, the DDPM implicitly computes the score, and so both DDPM and SMLD can be collectively called {\bf score-gased generative models}.
+  
+  \item In \cite{Song:2021}, the authors propose a framework that unify SMLD and DDPM through the lense of stochastic differential equations. This enables new sampling methods and extensions to the existing models.
+  
+  \item The framework.
+  \begin{itemize}
+    \item There is a continuous-time stochastic process called the {\bf forward process} that corrupts the data distrbution $p_{\mrm{data}}$ into a distribution that has a well-known form (most of the time, a multi-variate Gaussian distribution).
+    
+    \item The forward process is described by a stochastic differential equation (SDE) that has it as a solution.
+    
+    \item Given a forward process, there is a {\bf reverse process} that runs the process backwards in time. It is the solution of a reverse-time SDE \cite{Anderson:1982}.
+    
+    \item Generation can then be casted as simulating the reverse-time SDE, starting from the well-known distribution. This is, of course, done by a time-dependent neural network.
+  \end{itemize}
+
+  \item The above framework yielded the following benefits.
+  \begin{itemize}
+    \item The framework allows employment of any general-purpose SDE solver to do sampling. The paper proposes two algorithms.
+    \begin{itemize}
+      \item The {\bf Predictor--Corrector} (PC) samplers which has a Metropolis--Hastings-like correction step. Examples include the Langevin algorithm and HMC.
+      
+      \item The {\bf deterministic} samplers that are based on the probabiliy flow ordinary differential equation (ODE). This approach allows:
+      \begin{itemize}
+        \item Fast sampling via black-box ODE solvers.
+        \item Flexible dasta manipulation via latent codes.
+        \item Exact likelihood computation.
+      \end{itemize}
+
+      \item The generation process can be manipulated by conditioning on information not available during training. This allows:
+      \begin{itemize}
+        \item class-conditional generation,
+        \item image inpainting,
+        \item colorization, and
+        \item solving other inverse problems.
+      \end{itemize}
+    \end{itemize}
+  \end{itemize}
+
+  \item The paper also give a better architecture for SMLD that achieved new state-of-the-art Inception scores and FID scores.
 \end{itemize}
 
 \bibliographystyle{alpha}
