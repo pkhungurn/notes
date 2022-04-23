@@ -253,7 +253,7 @@ I read the introductory blog post by Yang Song \cite{Song:2022}, but it seems th
   \end{enumerate}
   In this way, we have that
   \begin{align*}
-    p^\sigma_{\mrm{data}}(\widetilde{{\ve{x}}}) = \int k(\widetilde{\ve{x}}|\ve{x}) p_{\mrm{data}}(\ve{x})\, \dee\ve{x}.
+    p^\sigma_{\mrm{data}}(\widetilde{{\ve{x}}}) = \int k^\sigma(\widetilde{\ve{x}}|\ve{x}) p_{\mrm{data}}(\ve{x})\, \dee\ve{x}.
   \end{align*}
   where
   \begin{align*}
@@ -300,91 +300,95 @@ I read the introductory blog post by Yang Song \cite{Song:2022}, but it seems th
     p^\sigma_{\mrm{data}}(\widetilde{\ve{x}}) \frac{\partial (\log p^\sigma_{\mrm{data}}(\widetilde{\ve{x}})) }{\partial \widetilde{\ve{x}}} 
     &= \frac{\partial p^\sigma_{\mrm{data}}(\widetilde{\ve{x}}) }{\partial \widetilde{\ve{x}}} 
     = \frac{\partial }{\partial 
-    \widetilde{\ve{x}}} \int_{\ve{x}} k(\widetilde{\ve{x}}|\ve{x}) p_{\mrm{data}}(\ve{x}) \,\dee\ve{x}
-    = \int_{\ve{x}} p_{\mrm{data}}(\ve{x}) \frac{\partial k(\widetilde{\ve{x}}|\ve{x}) }{\partial \widetilde{\ve{x}}} \,\dee\ve{x} \\
-    &= \int_{\ve{x}} p_{\mrm{data}}(\ve{x}) k(\widetilde{\ve{x}}|\ve{x}) \frac{\partial (\log k(\widetilde{\ve{x}}|\ve{x})) }{\partial \widetilde{\ve{x}}} \,\dee\ve{x}
+    \widetilde{\ve{x}}} \int_{\ve{x}} k^\sigma(\widetilde{\ve{x}}|\ve{x}) p_{\mrm{data}}(\ve{x}) \,\dee\ve{x}
+    = \int_{\ve{x}} p_{\mrm{data}}(\ve{x}) \frac{\partial k^\sigma(\widetilde{\ve{x}}|\ve{x}) }{\partial \widetilde{\ve{x}}} \,\dee\ve{x} \\
+    &= \int_{\ve{x}} p_{\mrm{data}}(\ve{x}) k^\sigma(\widetilde{\ve{x}}|\ve{x}) \frac{\partial (\log k^\sigma(\widetilde{\ve{x}}|\ve{x})) }{\partial \widetilde{\ve{x}}} \,\dee\ve{x}
   \end{align*}
   Plugging the integral back, we have that
   \begin{align*}
     E_{\widetilde{\ve{x}} \sim p^\sigma_{\mrm{data}}}\Big[ \big\langle \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}), \ves{\Psi}^\sigma_{\mrm{data}}(\widetilde{\ve{x}}) \big\rangle \Big]    
-    &= \int_{\widetilde{\ve{x}}} \bigg\langle \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}), \int p_{\mrm{data}}(\ve{x}) k(\widetilde{\ve{x}}|\ve{x}) \frac{\partial (\log k(\widetilde{\ve{x}}|\ve{x})) }{\partial \widetilde{\ve{x}}} \,\dee\ve{x} \bigg\rangle\, \dee\widetilde{\ve{x}} \\
-    &= \int_{\widetilde{\ve{x}}} \int_{\ve{x}} p_{\mrm{data}}(\ve{x}) k(\widetilde{\ve{x}}|\ve{x}) \bigg\langle \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}),  \frac{\partial (\log k(\widetilde{\ve{x}}|\ve{x})) }{\partial \widetilde{\ve{x}}} \bigg\rangle\, \dee\ve{x}\,\dee\widetilde{\ve{x}} \\
-    &= \int_{\ve{x}} \int_{\widetilde{\ve{x}}} p_{\mrm{data}}(\ve{x}) k(\widetilde{\ve{x}}|\ve{x}) \bigg\langle \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}),  \frac{\partial (\log k(\widetilde{\ve{x}}|\ve{x})) }{\partial \widetilde{\ve{x}}} \bigg\rangle\,\dee\widetilde{\ve{x}}\, \dee\ve{x} \\
-    &= E_{\ve{x}\sim p_{\mrm{data}},\, \widetilde{\ve{x}} \sim k(\cdot|\ve{x})}\bigg[ \bigg\langle \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}),  \frac{\partial (\log k(\widetilde{\ve{x}}|\ve{x})) }{\partial \widetilde{\ve{x}}} \bigg\rangle \bigg].
+    &= \int_{\widetilde{\ve{x}}} \bigg\langle \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}), \int p_{\mrm{data}}(\ve{x}) k^\sigma(\widetilde{\ve{x}}|\ve{x}) \frac{\partial (\log k^\sigma(\widetilde{\ve{x}}|\ve{x})) }{\partial \widetilde{\ve{x}}} \,\dee\ve{x} \bigg\rangle\, \dee\widetilde{\ve{x}} \\
+    &= \int_{\widetilde{\ve{x}}} \int_{\ve{x}} p_{\mrm{data}}(\ve{x}) k^\sigma(\widetilde{\ve{x}}|\ve{x}) \bigg\langle \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}),  \frac{\partial (\log k^\sigma(\widetilde{\ve{x}}|\ve{x})) }{\partial \widetilde{\ve{x}}} \bigg\rangle\, \dee\ve{x}\,\dee\widetilde{\ve{x}} \\
+    &= \int_{\ve{x}} \int_{\widetilde{\ve{x}}} p_{\mrm{data}}(\ve{x}) k^\sigma(\widetilde{\ve{x}}|\ve{x}) \bigg\langle \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}),  \frac{\partial (\log k^\sigma(\widetilde{\ve{x}}|\ve{x})) }{\partial \widetilde{\ve{x}}} \bigg\rangle\,\dee\widetilde{\ve{x}}\, \dee\ve{x} \\
+    &= E_{\ve{x}\sim p_{\mrm{data}},\, \widetilde{\ve{x}} \sim k^\sigma(\cdot|\ve{x})}\bigg[ \bigg\langle \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}),  \frac{\partial (\log k^\sigma(\widetilde{\ve{x}}|\ve{x})) }{\partial \widetilde{\ve{x}}} \bigg\rangle \bigg].
   \end{align*}
   As a result,
   \begin{align*}
     J^\sigma(\ves{\theta}) 
     &= 
     E_{\widetilde{\ve{x}} \sim p^\sigma_{\mrm{data}}}\bigg[ \frac{\| \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}) \|^2}{2} \bigg]
-    - E_{\ve{x}\sim p_{\mrm{data}},\, \widetilde{\ve{x}} \sim k(\cdot|\ve{x})}\bigg[ \bigg\langle \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}),  \frac{\partial (\log k(\widetilde{\ve{x}}|\ve{x})) }{\partial \widetilde{\ve{x}}} \bigg\rangle \bigg]
+    - E_{\ve{x}\sim p_{\mrm{data}},\, \widetilde{\ve{x}} \sim k^\sigma(\cdot|\ve{x})}\bigg[ \bigg\langle \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}),  \frac{\partial (\log k^\sigma(\widetilde{\ve{x}}|\ve{x})) }{\partial \widetilde{\ve{x}}} \bigg\rangle \bigg]
     + C_1.
   \end{align*}
   Looking at the first term, we have that
   \begin{align*}
     E_{\widetilde{\ve{x}} \sim p^\sigma_{\mrm{data}}}\bigg[ \frac{\| \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}) \|^2}{2} \bigg]
     &= \int_{\widetilde{\ve{x}}} p^\sigma_{\mrm{data}}(\widetilde{\ve{x}})\frac{\| \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}) \|^2}{2} \, \dee\widetilde{\ve{x}}\\ 
-    &= \int_{\widetilde{\ve{x}}} \bigg( \int_{\ve{x}} k(\widetilde{\ve{x}}|\ve{x})p_{\mrm{data}}(\ve{x})\, \dee\ve{x}\bigg) \frac{\| \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}) \|^2}{2} \, \dee\widetilde{\ve{x}} \\
-    &= \int_{\ve{x}} \int_{\widetilde{\ve{x}}} p_{\mrm{data}}(\ve{x}) k(\widetilde{\ve{x}}|\ve{x}) \frac{\| \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}) \|^2}{2} \, \dee\widetilde{\ve{x}}\, \dee\ve{x} \\
-    &= E_{\ve{x}\sim p_{\mrm{data}},\, \widetilde{\ve{x}} \sim k(\cdot|\ve{x})}\bigg[ \frac{\| \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}) \|^2}{2} \bigg].
+    &= \int_{\widetilde{\ve{x}}} \bigg( \int_{\ve{x}} k^\sigma(\widetilde{\ve{x}}|\ve{x})p_{\mrm{data}}(\ve{x})\, \dee\ve{x}\bigg) \frac{\| \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}) \|^2}{2} \, \dee\widetilde{\ve{x}} \\
+    &= \int_{\ve{x}} \int_{\widetilde{\ve{x}}} p_{\mrm{data}}(\ve{x}) k^\sigma(\widetilde{\ve{x}}|\ve{x}) \frac{\| \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}) \|^2}{2} \, \dee\widetilde{\ve{x}}\, \dee\ve{x} \\
+    &= E_{\ve{x}\sim p_{\mrm{data}},\, \widetilde{\ve{x}} \sim k^\sigma(\cdot|\ve{x})}\bigg[ \frac{\| \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}) \|^2}{2} \bigg].
   \end{align*}
   So,
   \begin{align*}
     J^\sigma(\ves{\theta}) 
-    &= E_{\ve{x}\sim p_{\mrm{data}},\, \widetilde{\ve{x}} \sim k(\cdot|\ve{x})} \bigg[
+    &= E_{\ve{x}\sim p_{\mrm{data}},\, \widetilde{\ve{x}} \sim k^\sigma(\cdot|\ve{x})} \bigg[
       \frac{\| \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}) \|^2}{2}
-      - \bigg\langle \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}),  \frac{\partial (\log k(\widetilde{\ve{x}}|\ve{x})) }{\partial \widetilde{\ve{x}}} \bigg\rangle \bigg] + C_1.
+      - \bigg\langle \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}),  \frac{\partial (\log k^\sigma(\widetilde{\ve{x}}|\ve{x})) }{\partial \widetilde{\ve{x}}} \bigg\rangle \bigg] + C_1.
   \end{align*}
   Now, let
   \begin{align*}
     C_2 
-    &= E_{\ve{x}\sim p_{\mrm{data}},\, \widetilde{\ve{x}} \sim k(\cdot|\ve{x})} \bigg[ \frac{1}{2} \bigg\| \frac{\partial (\log k(\widetilde{\ve{x}}|\ve{x})) }{\partial \widetilde{\ve{x}}} \bigg\|^2 \bigg].
+    &= E_{\ve{x}\sim p_{\mrm{data}},\, \widetilde{\ve{x}} \sim k^\sigma(\cdot|\ve{x})} \bigg[ \frac{1}{2} \bigg\| \frac{\partial (\log k^\sigma(\widetilde{\ve{x}}|\ve{x})) }{\partial \widetilde{\ve{x}}} \bigg\|^2 \bigg].
   \end{align*}
   We have that
   \begin{align*}
     J^\sigma(\ves{\theta}) 
-    &= E_{\ve{x}\sim p_{\mrm{data}},\, \widetilde{\ve{x}} \sim k(\cdot|\ve{x})} \bigg[
+    &= E_{\ve{x}\sim p_{\mrm{data}},\, \widetilde{\ve{x}} \sim k^\sigma(\cdot|\ve{x})} \bigg[
       \frac{\| \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}) \|^2}{2}
-      - \bigg\langle \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}),  \frac{\partial (\log k(\widetilde{\ve{x}}|\ve{x})) }{\partial \widetilde{\ve{x}}} \bigg\rangle + \frac{1}{2} \bigg\| \frac{\partial (\log k(\widetilde{\ve{x}}|\ve{x})) }{\partial \widetilde{\ve{x}}} \bigg\|^2 \bigg] - C_2 + C_1 \\
-    &= \frac{1}{2} E_{\ve{x}\sim p_{\mrm{data}},\, \widetilde{\ve{x}} \sim k(\cdot|\ve{x})} \bigg[ \bigg\| \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}) - \frac{\partial (\log k(\widetilde{\ve{x}}|\ve{x})) }{\partial \widetilde{\ve{x}}} \bigg\|^2 \bigg] - C_2 + C_1.
+      - \bigg\langle \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}),  \frac{\partial (\log k^\sigma(\widetilde{\ve{x}}|\ve{x})) }{\partial \widetilde{\ve{x}}} \bigg\rangle + \frac{1}{2} \bigg\| \frac{\partial (\log k^\sigma(\widetilde{\ve{x}}|\ve{x})) }{\partial \widetilde{\ve{x}}} \bigg\|^2 \bigg] - C_2 + C_1 \\
+    &= \frac{1}{2} E_{\ve{x}\sim p_{\mrm{data}},\, \widetilde{\ve{x}} \sim k^\sigma(\cdot|\ve{x})} \bigg[ \bigg\| \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}) - \frac{\partial (\log k^\sigma(\widetilde{\ve{x}}|\ve{x})) }{\partial \widetilde{\ve{x}}} \bigg\|^2 \bigg] - C_2 + C_1 \\
+    &= \frac{1}{2} E_{\ve{x}\sim p_{\mrm{data}},\, \widetilde{\ve{x}} \sim k^\sigma(\cdot|\ve{x})} \Big[ \Big\| \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}) - \nabla \log k^\sigma(\widetilde{\ve{x}}|\ve{x}) \Big\|^2 \Big] - C_2 + C_1.
   \end{align*}
   Letting $\widetilde{J}^\sigma(\ves(\theta))$ denote the expectation term on the RHS, the above equation becomes:
-  \begin{align*}
-    J^\sigma(\ves{\theta}) = \widetilde{J}^\sigma(\ves{\theta}) - C_2 + C_1.
-  \end{align*}
+  \begin{align} \label{eqn:j-tilde}
+    J^\sigma(\ves{\theta}) = \widetilde{J}^\sigma(\ves{\theta}) - C_2 + C_1. 
+  \end{align}
   Because $C_1$ and $C_2$ are constants with respect to $\ves{\theta}$, we have that
   \begin{align*}
     \argmin_{\ves{\theta}} J^\sigma(\ves{\theta}) = \argmin_{\ves{\theta}} \widetilde{J}^\sigma(\ves{\theta}).
   \end{align*}
 
   \item The above lengthy derivation tells us that, instead of minimizing $J^\sigma(\ves{\theta})$, we may minimize $J^\sigma(\ves{\theta})$ instead. We can see that the new objective is much nicer because
-  \begin{align*}
-    \frac{\partial(\log k(\widetilde{\ve{x}}|\ve{x}))}{\partial \widetilde{\ve{x}}} 
+  \begin{align} \label{eqn:transition-score}
+    \frac{\partial(\log k^\sigma(\widetilde{\ve{x}}|\ve{x}))}{\partial \widetilde{\ve{x}}} 
     &= \frac{\partial}{\partial \widetilde{\ve{x}}} \log \bigg( \frac{1}{(\sqrt{2\pi}\sigma)^2} \exp\bigg( \frac{-\| \widetilde{\ve{x}} - \ve{x} \|^2 }{2\sigma^2} \bigg)\bigg) 
     = \frac{\partial}{\partial \widetilde{\ve{x}}} \bigg( \frac{-\| \widetilde{\ve{x}} - \ve{x} \|^2 }{2\sigma^2} \bigg)
     = -\frac{\widetilde{\ve{x}}-\ve{x}}{\sigma^2}.
-  \end{align*}
+  \end{align}
   So,
   \begin{align*}
     \widetilde{J}^\sigma(\ves{\theta})
-    &= \frac{1}{2 \sigma^4} E_{\ve{x}\sim p_{\mrm{data}},\, \widetilde{\ve{x}} \sim k(\cdot|\ve{x})} \Big[ \|
-    \sigma^2 \ves{\Psi}({\widetilde{\ve{x}};\ves{\theta}}) + (\widetilde{\ve{x}}-\ve{x})
-    \|^2 \Big].
+    &= \frac{1}{2} E_{\ve{x}\sim p_{\mrm{data}},\, \widetilde{\ve{x}} \sim k^\sigma(\cdot|\ve{x})} \bigg[ \bigg\|
+    \ves{\Psi}({\widetilde{\ve{x}};\ves{\theta}}) + \frac{\widetilde{\ve{x}}-\ve{x}}{\sigma^2}
+    \bigg\|^2 \bigg] \\
+    &= \frac{1}{2} E_{\ve{x}\sim p_{\mrm{data}},\, \ves{\xi} \sim \mcal{N}(\ve{0},I)} \bigg[ \bigg\|
+    \ves{\Psi}(\ve{x} + \sigma \ves{\xi};\ves{\theta}) + \frac{\sigma \ves{\xi}}{\sigma^2}
+    \bigg\|^2 \bigg] \\
+    &= \frac{1}{2} E_{\ve{x}\sim p_{\mrm{data}},\, \ves{\xi} \sim \mcal{N}(\ve{0},I)} \bigg[ \bigg\|
+    \ves{\Psi}(\ve{x} + \sigma \ves{\xi};\ves{\theta}) + \frac{\ves{\xi}}{\sigma}
+    \bigg\|^2 \bigg] \\
+    &= \frac{\sigma^2}{2}  E_{\ve{x}\sim p_{\mrm{data}},\, \ves{\xi} \sim \mcal{N}(\ve{0},I)} \big[ \big\|
+    \sigma \ves{\Psi}(\ve{x} + \sigma \ves{\xi};\ves{\theta}) + \ves{\xi}
+    \big\|^2 \big].
   \end{align*}
-  Dropping the $1/\sigma^4$ factor does not change the optimization problem, so we typically write the loss function as
+  Dropping the $\sigma^2$ factor does not change the optimization problem, so we typically write the loss function as
   \begin{align*}
     \widetilde{J}^\sigma(\ves{\theta})
-    &= \frac{1}{2} E_{\ve{x}\sim p_{\mrm{data}},\, \widetilde{\ve{x}} \sim k(\cdot|\ve{x})} \Big[ \big\|
-    \sigma^2 \ves{\Psi}({\widetilde{\ve{x}};\ves{\theta}}) + (\widetilde{\ve{x}}-\ve{x})
-    \big\|^2 \Big] \\
-    &= \frac{1}{2} E_{\ve{x}\sim p_{\mrm{data}},\, \widetilde{\ve{x}} \sim k(\cdot|\ve{x})} \Big[ \big\|
-    \sigma^2 \nabla \log q(\widetilde{\ve{x}};\ves{\theta}) + (\widetilde{\ve{x}}-\ve{x})
-    \big\|^2 \Big] \\
-    &\approx \frac{1}{2N} \sum_{j=1}^N E_{\widetilde{\ve{x}} \sim k(\cdot|\ve{x}_j)} \Big[ \big\|
-    \sigma^2 \nabla \log q(\widetilde{\ve{x}};\ves{\theta}) + (\widetilde{\ve{x}}-\ve{x}_j) \big\|^2
-    \Big] \\
-    &\approx \frac{1}{2N} \sum_{j=1}^N E_{\ves{\xi} \sim \mcal{N}(\ve{0},\sigma^2 I )} \Big[ \big\|
-    \sigma^2 \nabla \log q(\ve{x}_j + \ves{\xi};\ves{\theta}) + \ves{\xi} \big\|^2
+    &= \frac{1}{2} E_{\ve{x}\sim p_{\mrm{data}},\, \ves{\xi} \sim \mcal{N}(\ve{0},I)} \big[ \big\|
+    \sigma \ves{\Psi}(\ve{x} + \sigma \ves{\xi};\ves{\theta}) + \ves{\xi}
+    \big\|^2 \big] \\        
+    &\approx \frac{1}{2N} \sum_{j=1}^N E_{\ves{\xi} \sim \mcal{N}(\ve{0},I )} \Big[ \big\|
+    \sigma \ves{\Psi}(\ve{x}_j + \sigma \ves{\xi}; \ves{\theta}) + \ves{\xi} \big\|^2
     \Big],
   \end{align*}
   which does not have any second-order derivatives.
@@ -392,35 +396,41 @@ I read the introductory blog post by Yang Song \cite{Song:2022}, but it seems th
   \item Let us summarize the above discussion into a theorem.
   
   \begin{theorem}
-    The score matching object can be recasted as a denoising objective. In other words, we have that
+    The score matching objective can be recasted as a denoising objective. In other words, we have that
     \begin{align*}
       \argmin_{\ves{\theta}} J^\sigma(\ves{\theta}) = \argmin_{\ves{\theta}} \widetilde{J}^\sigma(\ves{\theta}).
     \end{align*}
     where
     \begin{align*}
       J^\sigma(\ves{\theta}) 
-      &= \frac{1}{2} E_{\widetilde{\ve{x}} \sim p^\sigma_{\mrm{data}}} \Big[ \big\| \nabla \log q(\ve{x}_j + \ves{\xi};\ves{\theta}) - \ves{\Psi}^\sigma_{\mrm{data}}(\widetilde{\ve{x}}) \big\|^2 \Big], \\
-      \widetilde{J}^\sigma(\ves{\theta}) &= 
-      \frac{1}{2} E_{\ve{x}\sim p_{\mrm{data}},\, \widetilde{\ve{x}} \sim k(\cdot|\ve{x})} \Big[ \big\|
-      \sigma^2 \nabla \log q(\ve{x}_j + \ves{\xi};\ves{\theta}) + (\widetilde{\ve{x}}-\ve{x})
-      \big\|^2 \Big].
+      &= \frac{1}{2} E_{\widetilde{\ve{x}} \sim p^\sigma_{\mrm{data}}} \Big[ \big\| \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}) - \ves{\Psi}^\sigma_{\mrm{data}}(\widetilde{\ve{x}}) \big\|^2 \Big], \\
+      \widetilde{J}^\sigma(\ves{\theta}) 
+      &= \frac{1}{2} E_{\ve{x}\sim p_{\mrm{data}},\, \widetilde{\ve{x}} \sim k^\sigma(\cdot|\ve{x})} \Big[ \big\|
+      \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}) - \nabla \log k^\sigma(\widetilde{\ve{x}}|\ve{x})
+      \big\|^2 \Big] \\
+      &= \frac{\sigma^2}{2}  E_{\ve{x}\sim p_{\mrm{data}},\, \ves{\xi} \sim \mcal{N}(\ve{0},I)} \big[ \big\|
+      \sigma \ves{\Psi}(\ve{x} + \sigma \ves{\xi};\ves{\theta}) + \ves{\xi}
+      \big\|^2 \big] \\
+      &\approx \frac{\sigma^2}{2N} \sum_{j=1}^N E_{\ves{\xi} \sim \mcal{N}(\ve{0},I )} \Big[ \big\|
+      \sigma \ves{\Psi}(\ve{x}_j + \sigma \ves{\xi}; \ves{\theta}) + \ves{\xi} \big\|^2
+      \Big].
     \end{align*}
   \end{theorem}
 
   \item What the new objective suggests us to do is as follows.
   \begin{itemize}
-    \item For each data point $\ve{x}_j$, we corrupt it by adding a Gaussian noise $\ves{\xi}$ sampled according to $\mcal{N}(\ve{0},\sigma^2I)$ to get $\widetilde{\ve{x}} = \ve{x}_j + \ves{\xi}$.
+    \item For each data point $\ve{x}_j$, we corrupt it by adding a Gaussian noise $\sigma \ves{\xi}$ where $\ves{\theta}$ is sampled according to $\mcal{N}(\ve{0},I)$ to get $\widetilde{\ve{x}} = \ve{x}_j + \sigma \ves{\xi}$.
     
-    \item We feed the corrupted data $\widetilde{\ve{x}}$ to our network, and let it produce the gradient $\nabla \log q(\widetilde{\ve{x}};\ves{\theta})$.
+    \item We feed the corrupted data $\widetilde{\ve{x}}$ to our network, and let it produce the score $\ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}) = \nabla \log q(\widetilde{\ve{x}};\ves{\theta})$.
     
-    \item We want $\sigma^2 \nabla \log q(\widetilde{\ve{x}};\ves{\theta})$ to be as close as possible to $-\ves{\xi}$. In other words, if we add it to $\widetilde{x}$, we should get the original signal $\ve{x}_j$ back. Phrasing this another way, {\bf we want to denoise $\widetilde{\ve{x}}$ back to $\ve{x}_j$.}
+    \item We want $\sigma \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta})$ to be as close as possible to $-\ves{\xi}$. In other words, if we add $\sigma^2 \ves{\Psi}(\widetilde{\ve{x}};\ves{\theta}) \approx -\sigma \ves{\xi}$ to $\widetilde{\ve{x}}$, we should get the original signal $\ve{x}_j$ back. Phrasing this another way, {\bf we want to denoise $\widetilde{\ve{x}}$ back to $\ve{x}_j$.}
   \end{itemize}
 
   As a result, we match the score of $p^\sigma_{\mrm{data}}$ (and therefore $p_{\mrm{data}}$ if $\sigma$ is small enough) by training a denoiser!
 
   \item Note that the result in this section bears a similarity to the following result in statistics.
 
-  \begin{theorem}[Tweedie's formula]
+  \begin{theorem}[Tweedie's formula] \label{thm:tweedie}
     Suppose $\ve{x}$ and $\ve{y}$ are random variables that satisfy the distribution $\ve{y} \sim \mcal{N}(\ve{x}, \sigma^2 I)$. Then,
     \begin{align*}
       E[\ve{x}|\ve{y}] = \ve{y} + \sigma^2 \nabla \log p(\ve{y})
@@ -548,14 +558,16 @@ I read the introductory blog post by Yang Song \cite{Song:2022}, but it seems th
 
   \item The NCSN is trained with the following objective
   \begin{align*}
-    \mcal{L}(\ves{\theta}) = \frac{1}{L} \sum_{i=1}^L \lambda(\sigma_i) \ell(\ves{\theta}, \sigma_i)
-  \end{align*}
-  where $\ell(\cdot, \cdot)$ is the denoising score matching objective
-  \begin{align*}
-    \ell(\ves{\theta},\sigma) = \frac{1}{2}E_{\ve{x}\sim p_{\mrm{data}}, \widetilde{x} \sim \mcal{N}(\ve{x},\sigma^2I)} \bigg[ \ve{s}_{\ves{\theta}}(\widetilde{\ve{x}},\sigma) + \frac{\widetilde{\ve{x}} - \ve{x}}{\sigma^2} \bigg].
-  \end{align*}
+    \mcal{L}(\ves{\theta}) 
+    &= \frac{1}{L} \sum_{i=1}^L \lambda(\sigma_i) \widetilde{J}^{\sigma_i} (\ves{\theta})
+    = \frac{1}{L} \sum_{i=1}^L \lambda(\sigma_i) \frac{\sigma_i^2}{2}E_{\ve{x}\sim p_{\mrm{data}}, \ves{\xi} \sim \mcal{N}(\ve{0},I)} \big[ \big\| \sigma_i \ve{s}_{\ves{\theta}}(\ve{x} + \sigma_i \ves{\xi},\sigma) + \ves{\xi} \big\|^2 \big].
+  \end{align*}  
   
-  \item The paper chooses the weight $\lambda(\sigma) = \sigma^2$ in order to make sure that the magnitude of $\lambda(\sigma) \ell(\ves{\theta},\sigma)$ does not depend on $\sigma$. This is based on the observation that, when $\ve{s}_{\ves{\theta}}$ is trained to optimality, we would have that $\| \ve{s}_{\ves{\theta}}(\widetilde{\ve{x}},\sigma) \|$ would be about $1/\sigma$. (See the paper for more details.)
+  \item The paper chooses the weight $\lambda(\sigma) = 2/\sigma^2$ in order to make sure that the magnitude of $\lambda(\sigma) \ell(\ves{\theta},\sigma)$ does not depend on $\sigma$. So, the loss becomes
+  \begin{align} \label{eqn:ncsn-loss}
+    \mcal{L}(\ves{\theta}) 
+    = \frac{1}{L} \sum_{i=1}^L E_{\ve{x}\sim p_{\mrm{data}}, \ves{\xi} \sim \mcal{N}(\ve{0},I)} \big[ \big\| \sigma_i \ve{s}_{\ves{\theta}}(\ve{x} + \sigma_i \ves{\xi},\sigma) + \ves{\xi} \big\|^2 \big].
+  \end{align}
 
   \item The sampling algorithm, called {\bf annealed Langevin dynamics}, is as follows.
   \begin{itemize}
@@ -757,7 +769,7 @@ I read the introductory blog post by Yang Song \cite{Song:2022}, but it seems th
 \begin{itemize}
   \item In \cite{Song:2019}, the noise scale is used to calculate the biases and scales of the instance normalization units.
   
-  \item In \cite{Song:2020}, they significantly simplify the architecture based on the observation that $\| \ve{s}_{\ves{\theta}}(\ve{s},\sigma)  \| \approx 1/\sigma$.
+  \item In \cite{Song:2020}, they significantly simplify the architecture based on the observation that $\| \ve{s}_{\ves{\theta}}(\ve{x},\sigma)  \| \approx 1/\sigma$.
   
   \item {\bf Technique 3}. Parameterize the NCSN with $\ve{s}_{\ves{\theta}}(\ve{x},\sigma) = \ve{s}_{\ves{\theta}}(\ve{x})/\sigma$ where $\ve{s}_{\ves{\theta}}$ is an unconditonal network.
 
@@ -826,8 +838,29 @@ I read the introductory blog post by Yang Song \cite{Song:2022}, but it seems th
     
     \item Given a forward process, there is a {\bf reverse process} that runs the process backwards in time. It is the solution of a reverse-time SDE \cite{Anderson:1982}.
     
-    \item Generation can then be casted as simulating the reverse-time SDE, starting from the well-known distribution. This is, of course, done by a time-dependent neural network.
+    \item Generation can then be casted as simulating the reverse-time SDE, starting from the well-known distribution. This can be done by any SDE solver.
+    
+    \item The expression for the reverse SDE has the time-dependent score (i.e., $\nabla \log p_t(\ve{x})$) inside. As a result, any algorithm that claims to use this framework must be able to estimate this score.
   \end{itemize}
+
+  \begin{comment}
+  \item I think the main goal of the paper is to show the above framework is really powerful, so the authors went to great lengths to show that DDPM and SMLD can be talked about using the framework's language.
+  
+  \begin{itemize}
+    \item The author derived SDEs for both DDPM and SMLD.
+    \begin{itemize}
+      \item The derivation for the SMLD's SDE was okay.
+      \item The derivation of the DDPM's SDE was not at all rigourous. The derived SDE is similar in feeling but does not exactly match what the DDPM does.
+    \end{itemize}
+
+    \item They then recasted DDPM's sampling algorithm (which they called ``ancestral sampling'') as simply solving the DDPM's reverse-time SDE with a simple time discritization strategy.
+    \begin{itemize}
+      \item Because the DDPM's SDE does not quite actually agree mathematically with the DDPM, this was unnatural.
+    \end{itemize}
+
+    \item To show the power of the framework further, they also derived ancestral sampling for SMLD.
+  \end{itemize}
+  \end{comment}
 
   \item The above framework yielded the following benefits.
   \begin{itemize}
@@ -838,7 +871,7 @@ I read the introductory blog post by Yang Song \cite{Song:2022}, but it seems th
       \item The {\bf deterministic} samplers that are based on the probabiliy flow ordinary differential equation (ODE). This approach allows:
       \begin{itemize}
         \item Fast sampling via black-box ODE solvers.
-        \item Flexible dasta manipulation via latent codes.
+        \item Flexible data manipulation via latent codes.
         \item Exact likelihood computation.
       \end{itemize}
 
@@ -854,6 +887,588 @@ I read the introductory blog post by Yang Song \cite{Song:2022}, but it seems th
 
   \item The paper also give a better architecture for SMLD that achieved new state-of-the-art Inception scores and FID scores.
 \end{itemize}
+
+\subsection{Recap: SMLD and DDPM}
+
+\subsubsection{SMLD}
+
+\begin{itemize}
+  \item Similar to the previous sections, let $p_{\mrm{data}}^\sigma(\widetilde{\ve{x}})$ denote the distribution obtained by convolving $p_{\mrm{data}}$ with the spherical Gaussian $\mcal{N}(\ve{0},\sigma^2I)$.
+  \begin{align*}
+    p^\sigma_{\mrm{data}}(\widetilde{\ve{x}}) 
+    = \int p_{\mrm{data}}(\ve{x}) \mcal{N}(\widetilde{\ve{x}};\ve{x}, \sigma^2 I)\, \dee\ve{x}.
+  \end{align*}
+
+  \item We specify a sequence of noise scales $\sigma_{\min} = \sigma_1 < \sigma_2 < \dotsb < \sigma_n = \sigma_{\max}$.
+  \begin{itemize}
+    \item $\sigma_{\min}$ is small enough that $p_{\mrm{data}}^{\sigma_{\min}}(\ve{x}) \approx p_{\mrm{data}}(\ve{x})$.
+    
+    \item $\sigma_{\max}$ is big enough that $p_{\mrm{data}}^{\sigma_{\max}}(\ve{x}) \approx \mcal{N}(\ve{x};\ve{0},\sigma^2_{\max} I)$.
+  \end{itemize}
+
+  \item We traing a noice-conditional score network (NCSN) $\ve{s}_{\ves{\theta}}(\ve{x},\sigma)$ to estimate the score $\nabla \log p_{\mrm{data}}^\sigma(\ve{x})$.
+ 
+  \item The parameters of the NCSN can found by optimizing the optimization problem
+  \begin{align*}
+    \ves{\theta}^* = \argmin_{\ves{\theta}} \frac{1}{N} \sum_{i=1}^N E_{\ve{x}\sim p_{\mrm{data}}, \ves{\xi} \sim \mcal{N}(\ve{0},I)} \big[ \big\| \sigma_i \ve{s}_{\ves{\theta}}(\ve{x} + \sigma_i \ves{\xi},\sigma_i) + \ves{\xi} \big\|^2 \big] 
+  \end{align*}
+  where the loss function comes straight from \eqref{eqn:ncsn-loss}.
+    
+  \item To prepare for discussion in the next section, we shall rewrite the loss function. First, note that
+  \begin{align*}  
+    &E_{\ve{x}\sim p_{\mrm{data}}, \ves{\xi} \sim \mcal{N}(\ve{0},I)} \big[ \big\| \sigma_i \ve{s}_{\ves{\theta}}(\ve{x} + \sigma_i \ves{\xi},\sigma_i) + \ves{\xi} \big\|^2 \big] \\
+    &= \sigma_i^2 E_{\ve{x}\sim p_{\mrm{data}}, \ves{\xi} \sim \mcal{N}(\ve{0},I)} \bigg[ \bigg\| \ve{s}_{\ves{\theta}}(\ve{x} + \sigma_i \ves{\xi},\sigma_i) + \frac{\ves{\xi}}{\sigma_i} \bigg\|^2 \bigg] \\
+    &= \sigma_i^2 E_{\ve{x}\sim p_{\mrm{data}}, \widetilde{\ve{x}} \sim k^{\sigma_i}(\cdot | \ve{x})} \big[ \big\| \ve{s}_{\ves{\theta}}(\widetilde{\ve{x}},\sigma_i) - \nabla \log k^{\sigma_i}(\widetilde{\ve{x}}| \ve{x}) \big\|^2 \big].
+  \end{align*}
+  So, the optimization problem is equivalent to:  
+  \begin{align} \label{eqn:smlg-optimization}
+    \ves{\theta}^* = \argmin_{\ves{\theta}} \frac{1}{N} \sum_{i=1}^N \sigma_i^2 E_{\ve{x}\sim p_{\mrm{data}}, \widetilde{\ve{x}} \sim k^{\sigma_i}(\cdot | \ve{x})} \big[ \big\| \ve{s}_{\ves{\theta}}(\widetilde{\ve{x}},\sigma_i) - \nabla \log k^{\sigma_i}(\widetilde{\ve{x}}| \ve{x}) \big\|^2 \big].
+  \end{align}
+
+  \item To sample from an SMLD model, we start by sampling $\ve{x}_n^{(0)} \sim \mcal{N}(\ve{0}, \sigma_{\max}^2 I)$. Suppose that $\ve{x}_i^{(0)}$ has been sampled. We then run the Langevin algorithm for $M$ steps using the following update rule:
+  \begin{align*}
+    \ve{x}^{(j+1)}_i \gets \ve{x}^{(j)}_i + \varepsilon_i \ve{s}_{\ves{\theta}^*}(\ve{x}_i^{(j)}, \sigma_i) + \sqrt{2\varepsilon_i} \ves{\xi}
+  \end{align*}
+  where $\ves{\xi} \sim \mcal{N}(\ve{0},I)$. Having sampled $\ve{x}^{(M)}_i$, we then set $\ve{x}^{(0)}_{i-1} \gets \ve{x}^{(M)}_i$. We continue this process until we have sampled $\ve{x}_0^{(M)}$, which is the output of the sampling algorithm.
+
+  \item Observe that, after optimizing for $\ves{\theta}^*$, we would have that
+  \begin{align*}
+    E_{\ve{x} \sim p_{\mrm{data}}, \ves{\xi} \sim \mathcal{N}(\ve{0}, I)} \big[ \big\| \ves{\xi} + \sigma \ve{s}_{\ves{\theta}^*}(\ve{x} + \sigma_i \ves{\xi}, \sigma_i) \big\|^2 \big] \approx 0.
+  \end{align*}
+  In other words,
+  \begin{align*}
+    E_{\ves{\xi} \sim \mcal{N}(\ve{0},I)} [\| \ves{\xi} \|^2 ]
+    &\approx
+    E_{\ve{x}_0 \sim p_{\mrm{data}}, \ves{\xi} \sim \mcal{N}(\ve{0},I)} \big[ \big\| \sigma \ve{s}_{\ves{\theta}^*}(\ve{x} + \sigma_i \ves{\xi}, \sigma_i) \big\|^2 \big] 
+    = E_{\widetilde{\ve{x}} \sim p_{\mrm{data}}^{\sigma_i}} \big[ \big\| \sigma \ve{s}_{\ves{\theta}^*}(\widetilde{\ve{x}}, \sigma_i) \big\|^2 \big].
+  \end{align*}
+  If $\ves{\xi} \in \Real^d$, we have that $E_{\ves{\xi} \sim \mcal{N}(\ve{0},I)} [\| \ves{\xi} \|^2 ] = d$. So,
+  \begin{align*}
+    E_{\widetilde{\ve{x}} \sim p_{\mrm{data}}^{\sigma_i}} [\| \sigma \ve{s}_{\ves{\theta}^*} (\widetilde{\ve{x}}, \sigma_i) \|^2 ] \approx d,
+  \end{align*}
+  or 
+  \begin{align*}
+    E_{\widetilde{\ve{x}} \sim p_{\mrm{data}}^{\sigma_i}} [\| \nabla \log p_{\mrm{data}}^{\sigma_i}(\widetilde{\ve{x}}) \|^2 ] 
+    \approx E_{\widetilde{\ve{x}} \sim p_{\mrm{data}}^{\sigma_i}} [\| \ve{s}_{\ves{\theta}^*}(\widetilde{\ve{x}}, i) \|^2 ] \propto \frac{1}{\sigma^2}.
+  \end{align*}
+\end{itemize}
+
+\subsubsection{DDPM}
+
+\begin{itemize}
+  \item According to \cite{Ho:2020}, we specify a sequence of \emph{variance} scales $0 < \beta_1 < \beta_2 < \dotsb < \beta_n < 1$. In particular, we pick $n = 1000$, and $\beta_1, \dotsc, \beta_n$ forms an arithmetic progression with $\beta_1 = 10^{-4}$ and $\beta_n = 0.02$.
+  
+  \item The {\bf forward process} is a Markov chain $(\ve{x}_0, \ve{x}_1, \dotsc, \ve{x}_N)$ where $\ve{x}_0 \sim p_{\mrm{data}}$ and
+  \begin{align*}
+    \ve{x}_i \sim \mcal{N}(\sqrt{1 - \beta_i} \ve{x}_{i-1}, \beta_i I).
+  \end{align*}
+
+  \item It can be shown that
+  \begin{align*}
+    \ve{x}_i \sim \mcal{N}(\sqrt{\overline{\alpha}_i} \ve{x}_0, (1 - \overline{\alpha}_i) I)
+  \end{align*}
+  where $\alpha_i = 1 - \beta_i$, and $\overline{\alpha}_i = \alpha_1 \alpha_2 \dotsm \alpha_i$.
+
+  \item With $n$ and $\alpha_1, \dotsc, \alpha_n$ being chosen as in \cite{Ho:2020}, we would have that $\sqrt{\overline{\alpha}_n} \approx 0$, and $1 - \overline{\alpha}_n \approx 1$. Hence, $\ve{x}_n$'s distribution would be approximately $\mcal{N}(\ve{0}, I)$. In other words, the forward process corrupts $p_{\mrm{data}}$ by gradually adding noise and transforms it to the standard Gaussian distribution.
+  
+  \item We now would like to create another Markov chain called the {\bf reverse process} $(\ve{x}_n, \ve{x}_{n-1}, \dotsc, \ve{x}_0)$ where $\ve{x}_n \sim \mcal{N}(\ve{0},I)$ and $\ve{x}_{i-1}$ is obtained from $\ve{x}_i$ in such a way that reverts the forward transition from $\ve{x}_{i-1}$ to $\ve{x}_i$. In this way, $\ve{x}_0$ would be distributed according to a good approximation of $p_{\mrm{data}}$.
+  
+  \item Here's a heuristics to derive the reverse process's transition. Recall that 
+  \begin{align*}
+    \ve{x}_i \sim \mcal{N}(\sqrt{1 - \beta_i} \ve{x}_{i-1}, \beta_i I).
+  \end{align*}
+  By Tweedie's formula (Theorem~\ref{thm:tweedie}), we have that
+  \begin{align*}
+      E\Big[\sqrt{1-\beta_i} \ve{x}_{i-1}\Big|\ve{x}_i\Big] 
+      &= \ve{x}_i + \beta_i \nabla \log p(\ve{x}_{i}) \\
+      E[\ve{x}_{i-1}|\ve{x}_i]
+      &= \frac{\ve{x}_i + \beta_i \nabla \log p(\ve{x}_{i})}{\sqrt{1 - \beta_i}}
+  \end{align*}  
+  So, the distribution of $\ve{x}_i$ should be
+  \begin{align*}
+    \ve{x}_{i-1} \sim \mcal{N}\bigg( \frac{\ve{x}_i + \beta_i \nabla \log p(\ve{x}_i)}{\sqrt{1 - \beta_i}}, \beta_i I \bigg).
+  \end{align*}
+  (In theory, the covariance matrix of $\ve{x}_{i-1}| \ve{x}_i$ is not $\beta_i I$ but something quite close. According to \cite{Ho:2020}, $\beta_i I$ was chosen through experimentation.)
+
+  \item We will trian a network $\ve{s}_{\ves{\theta}}(\ve{x}_i, i)$ to estimate the score $\nabla \log p(\ve{x}_i)$.
+
+  \item The optimizing problem to find parameters of the network is the same as \eqref{eqn:smlg-optimization}. However, we need to recast the variables so that they fall in the DDPM context.
+  
+  For SMLD, at noise scale $\sigma_i$, we first sample $\ve{x} \sim p_{\mrm{data}}$, and then we sample $\widetilde{\ve{x}}$ according to the transition kernel $k^{\sigma_i}(\widetilde{\ve{x}}|\ve{x}) = \mcal{N}(\widetilde{\ve{x}}; \ve{x}, \sigma_i^2 I)$.
+
+  For DDPM, at noise scale $\beta_i$, we sample $\ve{x}_0 \sim p_{\mrm{data}}$, and then we sample $\ve{x}_i \sim \mcal{N}(\sqrt{\overline{\alpha}_i} \ve{x}_0, (1 - \overline{\alpha}_i) I)$. The transition kernel $k_i(\ve{x}_i|\ve{x})$ is given by $\mcal{N}(\ve{x}_i; \sqrt{\overline{\alpha}_i} \ve{x}_0, (1 - \overline{\alpha}_i) I).$
+
+  So, the optimization problem is:
+  \begin{align} \label{eqn:ddpm-optimization}
+    \ves{\theta}^* 
+    &= \argmin_{\ves{\theta}} \frac{1}{N} \sum_{i=1}^N (1 - \overline{\alpha}_i) E_{\ve{x}\sim p_{\mrm{data}}, \ve{x}_i \sim k_i(\cdot,\ve{x})} \big[ \big\| \ve{s}_{\ves{\theta}}(\ve{x}_i,i) - \nabla \log k_i(\ve{x}_i| \ve{x}) \big\|^2 \big]    
+  \end{align}
+
+  \item Now,
+  \begin{align*}
+    \nabla \log k_i(\ve{x}_i| \ve{x}) 
+    = \nabla \log \bigg( \frac{1}{\big(\sqrt{2\pi(1 - \overline{\alpha}_i)}\big)^d} \exp \bigg(  \frac{-\|\ve{x}_i - \sqrt{\overline{\alpha}_i}\ve{x}_0 \|^2 }{2(1 - \overline{\alpha}_i)} \bigg)\bigg)
+    = -\frac{\ve{x}_i - \sqrt{\overline{\alpha}_i}\ve{x}_0 }{1 - \overline{\alpha}_i}.
+  \end{align*}
+  So, the loss function can be rewritten as
+  \begin{align*}
+    \ves{\theta}^* 
+    &= \argmin_{\ves{\theta}} \frac{1}{N} \sum_{i=1}^N (1 - \overline{\alpha}_i) E_{\ve{x}\sim p_{\mrm{data}}, \ve{x}_i \sim k_i(\cdot,\ve{x})} \bigg[ \bigg\| \ve{s}_{\ves{\theta}}(\ve{x}_i,i) + \frac{\ve{x}_i - \sqrt{\overline{\alpha}_i}\ve{x}_0 }{1 - \overline{\alpha}_i} \bigg\|^2 \bigg] \\
+    &= \argmin_{\ves{\theta}} \frac{1}{N} \sum_{i=1}^N (1 - \overline{\alpha}_i) E_{\ve{x}\sim p_{\mrm{data}}, \ves{\xi} \sim \mcal{N}(\ve{0}, I)} \bigg[ \bigg\| \ve{s}_{\ves{\theta}}(\sqrt{\overline{\alpha}_i} \ve{x}_0 + \sqrt{1 - \overline{\alpha}_i}\ves{\xi},i) + \frac{ \sqrt{1 - \overline{\alpha}_i}\ves{\xi} }{1 - \overline{\alpha}_i} \bigg\|^2 \bigg] \\    
+    &= \argmin_{\ves{\theta}} \frac{1}{N} \sum_{i=1}^N E_{\ve{x}\sim p_{\mrm{data}}, \ves{\xi} \sim \mcal{N}(\ve{0}, I)} \big[ \big\| \sqrt{1 - \overline{\alpha}_i} \ve{s}_{\ves{\theta}}(\sqrt{\overline{\alpha}_i} \ve{x}_0 + \sqrt{1 - \overline{\alpha}_i}\ves{\xi},i) + \ves{\xi} \big\|^2 \big].
+  \end{align*}
+
+  \item We shall now derive the loss function to train $\ve{s}_{\ves{\theta}}(\cdot, \cdot)$ with. Once again, recall that
+  \begin{align*}
+    \ve{x}_i \sim \mcal{N}(\sqrt{\overline{\alpha}_i} \ve{x}_0, (1 - \overline{\alpha}_i) I).
+  \end{align*}
+  So, by Tweedie's formula,
+  \begin{align*}
+      E\big[\sqrt{\overline{\alpha}_i}\ve{x}_0 \big| \ve{x}_i \big] &= \ve{x}_i + (1 - \overline{\alpha}_i) \nabla \log p(\ve{x}_i).
+  \end{align*}
+  Going loose with mathematics, we may say that
+  \begin{align*}
+    \sqrt{\overline{\alpha}_i}\ve{x}_0 &\approx \ve{x}_i + (1 - \overline{\alpha}_i) \nabla \log p(\ve{x}_i) \\
+    \ve{0} &\approx \ve{x}_i - \sqrt{\overline{\alpha}_i}\ve{x}_0 + (1 - \overline{\alpha}_i) \nabla \log p(\ve{x}_i) \\
+    \ve{0} &\approx \ve{x}_i - \sqrt{\overline{\alpha}_i}\ve{x}_0 + (1 - \overline{\alpha}_i) \ve{s}_{\ves{\theta}}(\ve{x}_i, i).
+  \end{align*}
+  Because $\ve{x}_i \sim \mcal{N}(\sqrt{\overline{\alpha}_i} \ve{x}_0, (1 - \overline{\alpha}_i) I)$, we have that $\ve{x}_i = \sqrt{\overline{\alpha}_i} \ve{x}_0 + \sqrt{1 - \overline{\alpha}_i} \ves{\xi}$ where $\ves{\xi} \sim \mcal{N}(\ve{0}, I)$. As a result,
+  \begin{align*}
+    \ve{0} \approx \sqrt{1 - \overline{\alpha}_i} \ves{\xi} + (1 - \overline{\alpha}_i) \ve{s}_{\ves{\theta}}(\sqrt{\overline{\alpha}_i} \ve{x}_0 + \sqrt{1 - \overline{\alpha}_i} \ves{\xi}, i) \\
+    \ve{0} \approx \ves{\xi} + \sqrt{1 - \overline{\alpha}_i} \ve{s}_{\ves{\theta}}(\sqrt{\overline{\alpha}_i} \ve{x}_0 + \sqrt{1 - \overline{\alpha}_i} \ves{\xi}, i)
+  \end{align*}
+  In other words, a good parameter $\ves{\theta}$ is one such that the above ``equation'' holds. As result, the optimal parameter $\ves{\theta}^*$ can be found by solving the following optimization problem:
+  \begin{align*}
+    \ves{\theta}^* = \argmin_{\ves{\theta}} \frac{1}{N} \sum_{i=1}^N E_{\ve{x}_0 \sim p_{\mrm{data}}, \ves{\xi} \sim \mcal{N}(\ve{0},I)} \big[ \big\| \ves{\xi} + \sqrt{1 - \overline{\alpha}_i} \ve{s}_{\ves{\theta}}(\sqrt{\overline{\alpha}_i} \ve{x}_0 + \sqrt{1 - \overline{\alpha}_i} \ves{\xi}, i) \big\|^2 \big].
+  \end{align*}
+
+  \item To sample from a DDPM, we simply run the reverse process's Markov chain. We start by sampling $\ve{x}_N$ according to $\mcal{N}(\ve{0},I)$. Supposing that we have that sampled $\ve{x}_i$, we have that
+  \begin{align*}
+    \ve{x}_{i-1} \sim \mcal{N}\bigg( \frac{\ve{x}_i + \beta_i \nabla \log p(\ve{x}_i)}{\sqrt{1 - \beta_i}}, \beta_i I \bigg) \approx \mcal{N}\bigg( \frac{\ve{x}_i + \beta_i \ve{s}_{\ves{\theta}^*}(\ve{x}_i, i)}{\sqrt{1 - \beta_i}}, \beta_i I \bigg),
+  \end{align*}  
+  and so $\ve{x}_{i-1}$ can be sampled by:
+  \begin{align*}
+    \ve{x}_{i-1} \gets \frac{\ve{x}_i + \beta_i \ve{s}_{\ves{\theta}^*}(\ve{x}_i, i)}{\sqrt{1 - \beta_i}} + \sqrt{\beta_i}\ves{\xi}
+  \end{align*}
+  where $\ves{\xi} \sim \mcal{N}(\ve{0},I)$. This sampling process is called {\bf ancestral sampling} because it is identical to ancestral sampling (i.e., sampling according to the DAG) of the graphical model $$p(\ve{x}_0) = p(\ve{x}_N) \prod_{i=1}^n p(\ve{x}_{i-1}|\ve{x}_i).$$
+
+  \item Observe that, after optimizing for $\ves{\theta}^*$, we would have that
+  \begin{align*}
+    E_{\ve{x}_0 \sim p_{\mrm{data}}, \ves{\xi} \sim \mcal{N}(\ve{0},I)} \big[ \big\| \ves{\xi} + \sqrt{1 - \overline{\alpha}_i} \ve{s}_{\ves{\theta}^*}(\sqrt{\overline{\alpha}_i} \ve{x}_0 + \sqrt{1 - \overline{\alpha}_i} \ves{\xi}, i) \big\|^2 \big]
+    \approx 0.
+  \end{align*}
+  In other words,
+  \begin{align*}
+    E_{\ves{\xi} \sim \mcal{N}(\ve{0},I)} [\| \ves{\xi} \|^2 ]
+    &\approx
+    E_{\ve{x}_0 \sim p_{\mrm{data}}, \ves{\xi} \sim \mcal{N}(\ve{0},I)} \big[ \big\| \sqrt{1 - \overline{\alpha}_i} \ve{s}_{\ves{\theta}^*}(\sqrt{\overline{\alpha}_i} \ve{x}_0 + \sqrt{1 - \overline{\alpha}_i} \ves{\xi}, i) \big\|^2 \big] \\
+    &= E_{\ve{x}_i} \big[ \big\| \sqrt{1 - \overline{\alpha}_i} \ve{s}_{\ves{\theta}^*}(\ve{x}_i, i) \big\|^2 \big].
+  \end{align*}
+  If $\ves{\xi} \in \Real^d$, we have that $E_{\ves{\xi} \sim \mcal{N}(\ve{0},I)} [\| \ves{\xi} \|^2 ] = d$. So,
+  \begin{align*}
+    E_{\ve{x}_i} [\| \ve{s}_{\ves{\theta}^*}(\ve{x}_i, i) \|^2 ] \approx \frac{d}{1 - \overline{\alpha}_i},
+  \end{align*}
+  or 
+  \begin{align*}
+    E_{\ve{x}_i} [\| \nabla \log p(\ve{x}_i) \|^2 ] \approx E_{\ve{x}_i} [\| \ve{s}_{\ves{\theta}^*}(\ve{x}_i, i) \|^2 ] \propto \frac{1}{1 - \overline{\alpha}_i}.
+  \end{align*}
+\end{itemize}
+
+\subsection{Generalization with SDEs}
+
+\begin{itemize}
+  \item We would like to construct a stochastic process $\{ \ve{x}(t): 0 \leq t \leq T \}$ such that
+  \begin{itemize}
+    \item $\ve{x}(0) \sim p_0 = p_{\mrm{data}}$, and
+    \item $\ve{x}(T) \sim p_T$, where $p_T$ has a tractable form.
+  \end{itemize}
+  The distribution $p_T$ is typically an unstructured distribution with no information about $p_0$ such as a Gaussian distribution with fixed mean and variance.
+
+  \item The stochastic process can be modeled as a the solution of the SDE
+  \begin{align*}
+    \dee \ve{x} = \ve{f}(\ve{x},t)\, \dee t + g(t)\, \dee\ve{W},
+  \end{align*}
+  where
+  \begin{itemize}
+    \item $\ve{W}$ is the standard Wiener process in $\Real^d$,
+    \item $\ve{f}: \Real^d \rightarrow \Real^d$ is a vector function called the {\bf drift coefficient}, and
+    \item $g: \Real \rightarrow \Real$ is a scalar function called the {\bf diffusion coefficient}.
+  \end{itemize}
+
+  \item Let $p_t(\ve{x})$ denote the distribution of $\ve{x}(0)$, and\\ let $p_{st}(\ve{x}(t)|\ve{x}(s))$ denote the transition kernel from $\ve{x}(s)$ and $\ve{x}(t)$ where $0 \leq s < t \leq T$.
+  
+  \item According to Anderson \cite{Anderson:1982}, there is another stochastic process where time runs backward, starting from $\ve{x}(T) \sim p_T$ and ending at $\ve{x}(0) \sim p_0$. The stochastic process is the solution of the following SDE:
+  \begin{align*}
+    \dee \ve{x} = [\ve{f}(\ve{x},t) - g(t)^2 \nabla \log p_t(\ve{x})]\, \dee t + g(t)\, \dee\overline{\ve{W}}
+  \end{align*}
+  where $\overline{\ve{W}}$ is a standard Wiener process where time flows backward, and $\dee t$ is an infinitesimal negative timestemp.
+
+  \item Hence, if we know how to evaluate $\nabla \log p_t(\ve{x})$ for all $t$, we can sample by simulating the backward SDE starting from $p_T$ and going to $p_0$.
+  
+  \item We shall train a score network $\ve{s}_{\ves{\theta}}(\ve{x}, t)$ that estimates the score $\nabla \log p_t(\ve{x})$. The optimization problem for finding the parameters of the network is the continuous generalization of \eqref{eqn:smlg-optimization} and \eqref{eqn:ddpm-optimization}.
+  \begin{align} \label{eqn:sde-optimization-problem}
+    \ves{\theta}^* = \argmin_{\ves{\theta}} E_{t \sim \mrm{Uniform}(0,t), \ve{x}(0) \sim p_{\mrm{data}}, \ve{x}(t) \sim p_{0t}(\cdot|\ve{x}(0))} [\lambda(t)\ \| \ve{s}_{\ves{\theta}}(\ve{x}(t), t) - \nabla_{\ve{x}(t)} \log p_{0t}(\ve{x}(t)|\ve{x}(0))\|^2]
+  \end{align}
+  where $\lambda: [0,T] \rightarrow \Real^+$ is a positive weighting function. As in both SMLD and DDPM, we typically choose $\lambda(t)$ so that 
+  \begin{align*}
+    \lambda(t) \propto \frac{1}{E_{\ve{x}(t)} [ \| \nabla_{\ve{x}(t)} \log p_t(\ve{x}(t)) \|^2 ]}.
+  \end{align*}
+
+  \item In order to train, we need to know the transition kernel $p_{0t}(\ve{x}(t)|\ve{x}(0))$.
+  \begin{itemize}
+    \item For both SMLD and DDPM, the kernels are Gaussians. 
+    \item If $\ve{f}(\ve{x}, t)$ is an affine function of $\ve{x}$, thene the solution is a Gaussian process, which means that the kernel is also a Gaussian distribution \cite{Sarkka:2019}. 
+    \item The paper also discusses how to deal with other types of kernels. In such a case, denoising score matching cannot be used.
+  \end{itemize}
+
+  \item In the next two subsections, we will show that the SDE framework is a generalization of both SMLD and DDPM by deriving the SDEs of both approaches.
+\end{itemize}
+
+\subsubsection{SMLD's SDE}
+
+\begin{itemize}
+  \item First, we shall cast SMLD's noise scales in terms of a Markov chain. This will allow us to say that the chain is a discretization of an SMD.
+  
+  \item Let $\ve{x}_i \sim p_{\mrm{data}}^{\sigma_i}$. We have that the transition kernel from $\ve{x}_0$ to $\ve{x}_i$ is given by
+  \begin{align*}
+    k_{0i}(\ve{x}_i | \ve{x}_0) = \mcal{N}(\ve{x}_i;\ve{x}_0, \sigma_i^2).
+  \end{align*}
+
+  \item Now, consider the sequence $(\ve{x}_0, \ve{x}_1, \dotsc, \ve{x}_N)$. To cast it as a Markov chain, we need to find transition kernels between consecutive terms. It follows that you can write
+  \begin{align*}
+    \ve{x}_i = \ve{x}_{i+1} + \sqrt{\sigma_i^2 - \sigma_{i-1}^2} \ves{\xi}_i
+  \end{align*}
+  where $\ves{\xi}_i \sim \mcal{N}(0,I)$, and we set $\sigma_0 = 0$. To see if this is the case, we have that
+  \begin{align} \label{eqn:smld-markov-chain}
+    \ve{x}_{i} - \ve{x}_0 = \sum_{j=0}^i \sqrt{\sigma_j^2 - \sigma_{j-1}^2 } \ves{\xi}_j.
+  \end{align}
+  Because the $\ves{\xi}_j$s are Gaussians, it follows that $\ve{x}_i - \ve{x}_0$ is also a Gaussian. The mean and convariance matrix are given by
+  \begin{align*}
+    E[\ve{x}_i - \ve{x}_0] &= \sum_{j=1}^i \sqrt{\sigma_j^2 - \sigma_{j-1}^2 } E[\ves{\xi}_j] = \ve{0} \\
+    \Cov(\ve{x}_i - \ve{x}_0)
+    &= \sum_{j=1}^i (\sigma_j^2 - \sigma_{j-1}^2) \Cov(\ves{\xi}_j) = \sigma_i^2 \Cov(\ves{\xi}_i) = \sigma_i^2 I.
+  \end{align*}
+  This means that
+  \begin{align*}
+    k_{0i}(\ve{x}_i|\ve{x}_0) = \mcal{N}(\ve{x}_i; \ve{x}_0, \sigma^2_i I)
+  \end{align*}
+  as we have wanted.
+
+  \item To turn the Markov chain interpretation into an SDE, we first perform a cosmetic change. Let $t = i/n$ and $\Delta t = 1/n$. Moreover, we shall now parameterize the Markov chain with $t$ instead of $i$, so $\ve{x}_i$ becomes $\ve{x}(t)$, and $\sigma_i$ as $\sigma(t)$, and so on. Equation~\eqref{eqn:smld-markov-chain} can be rewritten as:
+  \begin{align*}
+    \ve{x}(t + \Delta t) 
+    &= \ve{x}(t) + \sqrt{\sigma(t + \Delta t)^2 - \sigma(t)^2} \ves{\xi} \\
+    \ve{x}(t + \Delta t) - \ve{x}(t) 
+    &\approx \sqrt{\frac{\dee [\sigma(t)^2]}{\dee t} \Delta t} \ves{\xi}(t)
+    = \sqrt{\frac{\dee [\sigma(t)^2]}{\dee t}} \Big( \sqrt{\Delta t}\ves{\xi} \Big)
+  \end{align*}
+  Note that we dropped $\ves{\xi}$'s dependence on $t$ because it doesn't have any to begin with. Now, according to the definition of the standard Wiener process, we  have that
+  \begin{align*}
+    \ve{W}(t+\Delta t) - \ve{W}(t) = \sqrt{\Delta t} \ves{\xi}.
+  \end{align*}
+  Hence, 
+  \begin{align*}
+    \ve{x}(t + \Delta t) - \ve{x}(t) 
+    &\approx \sqrt{\frac{\dee [\sigma(t)^2]}{\dee t}} (\ve{W}(t + \Delta t) + \ve{W}(t)).  
+  \end{align*}
+  Taking the limit as $n \rightarrow \infty$ (in other words, $\Delta t \rightarrow 0$), we have that
+  \begin{align*}
+    \dee \ve{x} = \sqrt{\frac{\dee [\sigma(t)^2]}{\dee t}} \dee \ve{W}.
+  \end{align*}
+  The paper calls this SDE the {\bf variance exploding} (VE) equation.
+
+  \item According to \cite{Sarkka:2019}, the VE SDE is a {\bf linear SDE} because both the coefficient functions of $\dee t$ and $\dee \ve{W}$ on the RHS are affine functions of $\ve{x}$. 
+
+  \item Moreover, the solution to a linear SDE is a Gaussian process, and its property is completely determined by the mean $$\ves{\mu}(t) = E[\ve{x}(t)]$$ and the covariance matrix $$\Sigma(t) = E[(\ve{x}(t) - \ves{\mu}(t))(\ve{x}(t) - \ves{\mu}(t))^T].$$
+  
+  \item Now, suppose we are an SDE of the form
+  \begin{align*}
+    \dee \ve{x} &= f(t)\ve{x}\, \dee t + g(t)\, \dee \ve{W}.
+  \end{align*}
+  Then, according to Equation (6.2) from \cite{Sarkka:2019}, the mean and the covariance matrix of the solution satisfy the following two equations:
+  \begin{align}
+    \frac{\dee \ves{\mu}(t)}{\dee t} &= f(t) \ves{\mu}(t) \label{eqn:linear-sde-mean} \\
+    \frac{\dee \Sigma(t)}{\dee t} &= 2 f(t) \Sigma(t) + (g(t))^2 I \label{eqn:linear-sde-covariance}.
+  \end{align}
+  
+  \item Applying \eqref{eqn:linear-sde-mean} to the VP SDE, we have that
+  \begin{align*}
+    \frac{\dee \ves{\mu}(t)}{\dee t} = \ve{0},
+  \end{align*}
+  which means that $\ves{\mu}(t) = \ves{\mu}(0)$ for all $t \geq 0$.
+
+  \item Applying \eqref{eqn:linear-sde-covariance} to the VP SDE, we have that
+  \begin{align*}
+    \frac{\dee \Sigma(t)}{\dee t} = \frac{\dee [\sigma(t)]^2}{\dee t} I.
+  \end{align*}
+  In other words, $\Sigma(t) = \Sigma(0) +  (\sigma^2(t) - \sigma^2(0))I$ for all $t \geq 0$.
+ 
+  \item Having derived $\ves{\mu}(t)$ and $\Sigma(t)$, we conclude that the transition kernel of the VE SDE is given by
+  \begin{align*}
+    p_{0t}(\ve{x}(t)|\ve{x}(0)) = \mcal{N}(\ve{x}(t);\ve{x}(0), (\sigma^2(t)- \sigma^2(0)) I).
+  \end{align*}
+  This is done by assuming that $\ve{x}(0)$ is a constant (so $\Sigma(0) = 0$).
+\end{itemize}
+
+\subsubsection{DDPM's SDE}
+
+\begin{itemize}
+  \item Unfortunately, the derivation in the \cite{Song:2021} was not at all rigorous. So, here I am trying to write a sensible derivation.
+  
+  \item The paper says that the following SDE generalizes DDPM:
+  \begin{align*}
+    \dee \ve{x} = -\frac{1}{2} \beta(t)\ve{x}\, \dee t + \sqrt{\beta(t)}\, \dee \ve{W}.
+  \end{align*}
+  The paper calls this the {\bf variance preserving} (VP) SDE.
+
+  \item Again, the VP SDE above is a linear SDE.
+  
+  \item Applying \eqref{eqn:linear-sde-mean}, the mean satisfies the differential equation
+  \begin{align*}
+    \frac{\dee \ves{\mu}(t)}{\dee t} = -\frac{1}{2} \beta(t) \ves{\mu}(t).
+  \end{align*}
+  This gives
+  \begin{align*}
+    \ves{\mu}(t) 
+    = \ves{\mu}(0) e^{-\frac{1}{2}\int_0^t \beta(s)\, \dee s}.
+  \end{align*}
+
+  \item Appling \eqref{eqn:linear-sde-covariance}, the covariance matrix satisfies the differential equation
+  \begin{align*}
+    \frac{\dee \Sigma(t)}{\dee t} 
+    = 2\bigg( -\frac{1}{2}\beta(t) \bigg) \Sigma(t) + \beta(t) I 
+    = -\beta(t) \Sigma(t) + \beta(t) I.
+  \end{align*}
+  We can solve it as follows:
+  \begin{align*}
+    \frac{\dee \Sigma(t)}{\dee t} + \beta(t) \Sigma(t) 
+    &= \beta(t) I \\
+    e^{\int_0^t \beta(s)\, \dee s} \frac{\dee \Sigma(t)}{\dee t} + \beta(t) e^{\int_0^t \beta(s)\, \dee s} \Sigma(t) 
+    &= \beta(t) e^{\int_0^t \beta(s)\, \dee s} I \\
+    \frac{\dee}{\dee t} \bigg[ e^{\int_0^t \beta(s)\, \dee s} \Sigma(t) \bigg]
+    &= \frac{\dee}{\dee t}\Big[ e^{\int_0^t \beta(s)\, \dee s}  \Big] I \\
+    e^{\int_0^t \beta(s)\, \dee s} \Sigma(t) - \Sigma(0)
+    &= (e^{\int_0^t \beta(s)\, \dee s} - 1) I \\
+    \Sigma(t) 
+    &= e^{- \int_0^t \beta(s)\, \dee s}\Sigma(0) + (1 - e^{- \int_0^t \beta(s)\, \dee s}) I.
+  \end{align*}
+
+  \item As a result, we have that the transition kernel is given by:
+  \begin{align*}
+    p_{0t}(\ve{x}(t)|\ve{x}(0)) = \mcal{N}(\ve{x}(t); e^{-\frac{1}{2} \int_0^s \beta(s)\, \dee s} \ve{x}(0), (1 - e^{- \int_0^t \beta(s)\, \dee s}) I).
+  \end{align*}  
+
+  \item Note that the transition kernel for the Markov chain of DDPM is
+  \begin{align*}
+    k_i(\ve{x}_i|\ve{x}_0) = \mcal{N}(\ve{x}_i; \sqrt{\overline{\alpha}_i} \ve{x}_0, (1-\overline{\alpha}_i) I).
+  \end{align*}
+  This is not exactly the same because $\alpha_i = 1 - \beta_i$. However, the two kernels are very similar in form. The mean is a product of square roots, and the variance is one minus the product of many noise scales.
+
+  \item So, I guess it is fine as a generalization, but the derivation in the paper gave me so many WTF moments that I decided not to follow it.
+\end{itemize}
+
+\subsubsection{Sub-VP SDE}
+
+\begin{itemize}
+  \item The paper also proposes another SDE called the {\bf sub-VP SDE}:
+  \begin{align*}
+    \dee \ve{x} = -\frac{1}{2} \beta(t)\ve{x}\, \dee t + \sqrt{\beta(t)(1 - e^{-2\int_0^t \beta(s)\, \dee s})}\, \dee\ve{W}.
+  \end{align*}
+
+  \item Its mean is the same as that of the VP SDE because the differential equation for the mean is the same.
+
+  \item However, the variance equation becomes
+  \begin{align*}
+    \frac{\dee \Sigma(t)}{\dee t} 
+    &= - \beta(t) \Sigma(t) + \beta(t) (1 - e^{-2 \int_0^s \beta(s)\, \dee s}) I.
+  \end{align*}
+  Solving the equation, we have that
+  \begin{align*}
+    e^{\int_0^t \beta(s)\, \dee s} \frac{\dee \Sigma(t)}{\dee t} + \beta(t) e^{\int_0^t \beta(s)\, \dee s} \Sigma(t) 
+    &= \beta(t) (e^{\int_0^t \beta(s)\, \dee s} - e^{-\int_0^t \beta(s)\, \dee s}) I \\
+    \frac{\dee}{\dee t} \bigg[ e^{\int_0^t \beta(s)\, \dee s} \Sigma(t) \bigg]
+    &= \frac{\dee}{\dee t}\Big[e^{\int_0^t \beta(s)\, \dee s} + e^{-\int_0^t \beta(s)\, \dee s}  \Big] I \\
+    e^{\int_0^t \beta(s)\, \dee s} \Sigma(t) - \Sigma(0)
+    &= (e^{\int_0^t \beta(s)\, \dee s} + e^{-\int_0^t \beta(s)\, \dee s} - 2) I \\
+    \Sigma(t) 
+    &= e^{-\int_0^t \beta(s)\, \dee s} \Sigma(0) + (1 + e^{-2\int_0^t \beta(s)\, \dee s} - 2e^{-\int_0^t \beta(s)\, \dee s}) I \\
+    \Sigma(t) 
+    &= e^{-\int_0^t \beta(s)\, \dee s} \Sigma(0) + (1 - e^{-\int_0^t \beta(s)\, \dee s})^2 I.
+  \end{align*}
+
+  \item As a result, the transition kernel is given by
+  \begin{align*}
+    p_{0t}(\ve{x}(t)|\ve{x}(0)) = \mcal{N}(\ve{x}(t); e^{-\frac{1}{2} \int_0^s \beta(s)\, \dee s} \ve{x}(0), (1 - e^{-\int_0^t \beta(s)\, \dee s})^2 I).
+  \end{align*}
+   
+  \item Because $$(1 - e^{-\int_0^t \beta(s)\, \dee s})^2 \leq 1 - e^{-\int_0^t \beta(s)\, \dee s},$$ it follows that $$\Sigma_{\mrm{subVP}}(t) \leq \Sigma_{\mrm{VP}}(t)$$ for all $t \geq 0$. Hence, the solution of the sub-VP SDE has less variance than the solution of the VP SDE. This is one of the advantage of using it insteads of the VP SDE.
+\end{itemize}
+
+\subsection{Sampling by Solving the Reverse SDE}
+
+\begin{itemize}
+  \item The discussion in the previous section gives us as number of SDEs. If we can compute and sample according to the transition kernel $p_{0t}(\ve{x}(t)|\ve{x}(0))$ of such an SDE, then we can train a score network $\ve{s}_{\ves{\theta}^*}$ according to \eqref{eqn:sde-optimization-problem}.
+  
+  \item After we have the score network, we can use it to construct the reverse-time SDE. We then simulate the SDE numerically in order to generate samples from $p_0 = p_{\mrm{data}}$.
+  
+  \item The paper discusses three approaches to solving the reverse-time SDE:
+  \begin{itemize}
+    \item Using general-purpose numerical SDE solvers.
+    \item Using predictor-corrector samplers (i.e., score-based MCMC).
+    \item Using neural ODEs.
+  \end{itemize}
+  We will discuss these approaches in turn.  
+\end{itemize}
+
+\subsubsection{General-Purpose Numerical SDE Solvers}
+
+\begin{itemize}
+  \item You can look up the solvers in \cite{Kloeden:2013}. All of them can be used.
+  
+  \item In the paper, though, the aim of mentioning this approach is to (1) to cast the ancestral sampling procedure of DDPM in terms of a numerical SDE solver, and (2) to derive an ancestral sampling procedure for SMLD.
+  
+  \item However, I will not derive ancestral sampling for SMLD in this note. This is because I think it has nothing to do with the framework at all. The paper simply use the derivation in \cite{Ho:2020} without connecting it to any SDEs.  
+\end{itemize}
+
+\paragraph{DDPM's Ancestral Sampling as Numerically Solving an 
+SDE}
+
+\begin{itemize}
+  \item Suppose we have an SDE of the form
+  \begin{align*}
+    \dee \ve{x} 
+    = \ve{f}(\ve{x},t)\, \dee t + g(t)\, \dee\ve{W}.
+  \end{align*}
+  Then, a way to discretize it would be
+  \begin{align*}
+    \ve{x}_{i+1}
+    &= \ve{x}_i + \ve{f}_i(\ve{x}_i) + g_i\ves{\xi}_i
+  \end{align*}
+  where $\ves{\xi}_i \sim \mcal{N}(\ve{0},I)$ for all $i = 0, 1, \dotsc, N-1$. Note that, here, we have absorbed the discretization times into $\ve{f}_i$ and $g_i$.
+
+  \item The reverse-time SDE of the above SDE is given by
+  \begin{align*}
+    \dee\ve{x}
+    = [\ve{f}(\ve{x},t) - g^2(t) \nabla \log p_t(\ve{x})]\, \dee t + g(t)\, \dee \overline{\ve{W}}.
+  \end{align*}
+  The paper proposes to discretize this in the same way as we did above, so we have
+  \begin{align} \label{eqn:reverse-diffusion-sampler}
+    \ve{x}_{i}
+    &= \ve{x}_{i+1} - f_{i+1}(\ve{x}_{i+1}) + g_{i+1}^2 \ve{s}_{\ves{\theta}}(\ve{x}_{i+1}, i+1) + g_{i+1} \ves{\xi}_{i+1}.
+  \end{align}
+  Here, we use the score network to estimate the score $\nabla \log p_t(\ve{x})$.
+
+  \item The paper calls using the discretization in \eqref{eqn:reverse-diffusion-sampler} to solve the reverse-time SDE the {\bf reverse diffusion sampler}.
+  
+  \item The paper wants to show that the DDPM update equation,
+  \begin{align} \label{eqn:ddpm-update}
+    \ve{x}_i = \frac{\ve{x}_i + \beta_{i+1} \ve{s}_{\ves{\theta}^*}(\ve{x}_{i+1}, i+1)}{\sqrt{1 - \beta_{i+1}}} + \sqrt{\beta_{i+1}}\ves{\xi}_{i+1},
+  \end{align}
+  can also be written in the form of \eqref{eqn:reverse-diffusion-sampler}. 
+  
+  \item However, we cannot do it exactly because of there is division by $\sqrt{1 - \beta_{i+1}}$ to both the $\ve{x}_{i+1}$ and the $\beta_{i+1} \ve{s}_{\ves{\theta}^*}(\ve{x}_{i+1}, i+1)$ term.
+  
+  \item The paper, instead, shows that \eqref{eqn:ddpm-update} can be written in the form of \eqref{eqn:reverse-diffusion-sampler} when we assume that $\beta_{i+1}$ is infinitesimally small.
+  
+  \item So, let us assume then that $\beta_{i+1}$ is infinitesimally small. In other words, we may assume that $\beta_{i+1}^2 \approx 0$. Taking the Taylor series of $1/\sqrt{1-\beta_{i+1}}$ around $\beta_{i+1} = 0$, we have that
+  \begin{align*}
+    \frac{1}{\sqrt{1 - \beta_{i+1}}} = 1 + \frac{1}{2}\beta_{i+1} + O(\beta_{i+1}^2),
+  \end{align*}
+  which allows us to perform the following approximation:
+  \begin{align*}
+    \frac{1}{\sqrt{1 - \beta_{i+1}}} \approx 1 + \frac{1}{2}\beta_{i+1}.
+  \end{align*}
+  We now have that
+  \begin{align*}
+    \ve{x}_{i}
+    &= \frac{1}{\sqrt{1 - \beta_{i+1}}} (\ve{x}_{i+1} + \beta_{i+1}\ve{s}_{\ves{\theta}^*}(\ve{x}_{i+1}, i+1)) + \sqrt{\beta_{i+1}} \ves{\xi}_{i+1} \\
+    &\approx \bigg(1 + \frac{1}{2}\beta_{i+1}\bigg)(\ve{x}_{i+1} + \beta_{i+1}\ve{s}_{\ves{\theta}^*}(\ve{x}_{i+1}, i+1)) + \sqrt{\beta_{i+1}} \ves{\xi}_{i+1} \\
+    &= \bigg(1 + \frac{1}{2}\beta_{i+1}\bigg)\ve{x}_{i+1} + \beta_{i+1}\ve{s}_{\ves{\theta}^*}(\ve{x}_{i+1}, i+1) + \frac{1}{2}\beta_{i+1}^2 \ve{s}_{\ves{\theta}^*}(\ve{x}_{i+1}, i+1) + \sqrt{\beta_{i+1}} \ves{\xi}_{i+1} \\
+    &\approx \bigg(1 + \frac{1}{2}\beta_{i+1}\bigg)\ve{x}_{i+1} + \beta_{i+1}\ve{s}_{\ves{\theta}^*}(\ve{x}_{i+1}, i+1) + \sqrt{\beta_{i+1}} \ves{\xi}_{i+1} \\
+    &= \ve{x}_{i+1} - \bigg(-\frac{1}{2}\beta_{i+1}\ve{x}_i\bigg) + \beta_{i+1}\ve{s}_{\ves{\theta}^*}(\ve{x}_{i+1}, i+1) + \sqrt{\beta_{i+1}} \ves{\xi}_{i+1}.
+  \end{align*}
+  This tells us that the DDPM update equation is an approximate discretization of the reverse-time SDE
+  \begin{align*}
+    \dee \ve{x} = \bigg( -\frac{1}{2}\beta(t)\ve{x} - \beta(t) \nabla \log p_t(\ve{x}) \bigg)\, \dee t + \sqrt{\beta(t)}\, \dee\overline{\ve{W}},
+  \end{align*}
+  which corresponds to the ordinary SDE
+  \begin{align*}
+    \dee \ve{x} = -\frac{1}{2}\beta(t)\ve{x}\, \dee t + \sqrt{\beta(t)}\, \dee\ve{W},
+  \end{align*}
+  which is the VP SDE.
+\end{itemize}
+
+\subsubsection{Predictor-Corrector Samplers}
+
+\begin{itemize}
+  \item The {\bf predictor--corrector sampler} is an attempt to cast the SMLD's sampling algorithm into the paper's framework of solving the reserve-time SDE.
+  
+  \item The idea is to combine a numerical SDE solver with score-based MCMC approaches such as the Langevin algorithm or HMC.
+  \begin{itemize}
+    \item At each time step, the numerical SDE solver gives an estimate of the sample at the next time step. This is the ``predictor'' step.
+    
+    \item After getting a sample from the predictor, we run several iterations of our score-based MCMC algorithm to make the sample comform more to the probability distribution at that time step. This is the ``corrector'' step.    
+  \end{itemize}
+
+  \item Here's the pseudocode for the sampler.
+  \begin{itemize}
+    \item[] Sample $\ve{x}_n \sim p_n$ where $p_n$ is a simple distribution.
+    \item[] {\bf for} $i \gets n-1$ {\bf to} $1$ {\bf do}
+    \begin{itemize}
+      \item[] Predict $\ve{x}_{i}$ from $\ve{x}_{i+1}$ with a step from a numerical SDE solver.
+      \item[] {\bf for} $j \gets 1$ {\bf do} $m$ {\bf do}
+      \begin{itemize}
+        \item[]  Update $\ve{x}_i$ with a score-based MCMC step.
+      \end{itemize}
+      \item[] {\bf end for}
+    \end{itemize}
+    \item[] {\bf end for}
+  \end{itemize}
+
+  \item The predictor--corrector sampler is a generalization of both the SMLD's sampler and the DDPM's sampler.
+  \begin{itemize}
+    \item For the SMLD's sampler, the predicitor step simply sets $\ve{x}_i \gets \ve{x}_{i+1}$. The corrector step applies the update step of the Langevin algorithm.
+    
+    \item For the DDPM's sampler, the predictor step is Equation~\ref{eqn:ddpm-update}. The corrector step does nothing and leaves $\ve{x}_i$ unchanged.
+  \end{itemize}
+
+  \item The paper also proposes new algorithms: the predictor--corrector samplers for the VE and VP SDEs. The pseudocodes are given below.
+  
+  \begin{itemize}
+    \item Predictor--corrector sampler for the VE SDE.
+    \begin{itemize}
+      \item[] Sample $\ve{x}_n \sim \mcal{N}(\ve{0},\sigma_{\max}^2 I)$.
+      \item[] {\bf for} $i \gets n-1$ {\bf to} $1$ {\bf do}
+      \begin{itemize}
+        \item[] Sample $\ves{\xi} \sim \mcal{N}(\ve{0}, I)$.
+        \item[] $\ve{x}_{i} \gets \ve{x}_{i+1} + (\sigma_{i+1}^2 - \sigma_i^2) \ve{s}_{\ves{\theta}^*}(\ve{x}_{i+1}, \sigma_{i+1}) + \sqrt{\sigma_{i+1}^2 - \sigma_i^2}\ves{\xi}$
+        \item[] {\bf for} $j \gets 1$ {\bf do} $m$ {\bf do}        
+        \item[] $\qquad$ Sample $\ves{\xi} \sim \mcal{N}(\ve{0}, I)$.
+        \item[] $\qquad$ $\ve{x}_i \gets \ve{x}_i + \varepsilon_i \ve{s}_{\ves{\theta}^*}(\ve{x}_{i}, \sigma_{i}) + \sqrt{2 \varepsilon_i} \ves{\xi}$.
+        \item[] {\bf end for}
+      \end{itemize}
+      \item[] {\bf end for}
+    \end{itemize}
+    
+    \item Predictor--corrector sampler for the VP SDE.
+    
+    \begin{itemize}
+      \item[] Sample $\ve{x}_n \sim \mcal{N}(\ve{0},I)$.
+      \item[] {\bf for} $i \gets n-1$ {\bf to} $1$ {\bf do}
+      \begin{itemize}
+        \item[] Sample $\ves{\xi} \sim \mcal{N}(\ve{0}, I)$.
+        \item[] $\ve{x}_{i} \gets \frac{\ve{x}_{i+1} + \beta_{i+1} \ve{s}_{\ves{\theta}^*}(\ve{x}_{i+1}, i+1)}{\sqrt{1 - \beta_{i+1}}} + \sqrt{\beta_{i+1}}\ves{\xi}$
+        \item[] {\bf for} $j \gets 1$ {\bf do} $m$ {\bf do}        
+        \item[] $\qquad$ Sample $\ves{\xi} \sim \mcal{N}(\ve{0}, I)$.
+        \item[] $\qquad$ $\ve{x}_i \gets \ve{x}_i + \varepsilon_i \ve{s}_{\ves{\theta}^*}(\ve{x}_{i}, \sigma_{i}) + \sqrt{2 \varepsilon_i} \ves{\xi}$.
+        \item[] {\bf end for}
+      \end{itemize}
+      \item[] {\bf end for}
+    \end{itemize}
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Neural ODE Approach}
 
 \bibliographystyle{alpha}
 \bibliography{score-based-generative-models}  
