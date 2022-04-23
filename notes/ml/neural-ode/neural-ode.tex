@@ -28,6 +28,7 @@
 
 \newcommand{\ve}[1]{\mathbf{#1}}
 \newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\ves}[1]{\boldsymbol{#1}}
 \newcommand{\etal}{{et~al.}}
 \newcommand{\sphere}{\mathbb{S}^2}
 \newcommand{\modeint}{\mathcal{M}}
@@ -46,14 +47,52 @@
 \newcommand{\Real}{\mathbb{R}}
 \newcommand{\sseq}{\subseteq}
 \newcommand{\ov}[1]{\overline{#1}}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
 
-\title{Title}
-\author{Author}
+\title{Neural Ordinary Differential Equations}
+\author{Pramook Khungurn}
 
 \begin{document}
-  \maketitle
+\maketitle
+
+This is a note on the paper ``Neural Ordinary Differential Equations'' by Chen \etal \cite{Chen:2018}.
+
+\section{Introduction}
+
+\begin{itemize}
+  \item Many existing neural networks models creates a sequence of hidden states $\ve{h}_0$, $\ve{h}_1$, $\ve{h}_2$, $\dotsc$ $\ve{h}_T$ by adding something to the previous state:
+  \begin{align*}
+    \ve{h}_{t+1} = \ve{h}_t + f(\ve{h}_t, t, \ves{\theta})
+  \end{align*}
+  Such models include such as residual networks \cite{He:2015}, recurrent neural networks, and normalizing flows \cite{Rezende:2015,Dinh:2014}.
+
+  \item What if we take the limit as the number of time step goes to infinity? We will have a differential equation:
+  \begin{align*}
+    \frac{\dee\ve{h}(t))}{\dee t} = f(\ve{h}(t), t, \ves{\theta}).
+  \end{align*}
+
+  \item To use the network, we simply say that $\ve{h}(0)$ is the input layer, and the output is $\ve{h}(T)$ at some time $T$. The output can be found by solving the initial value problem, and this can be done by any black-box differential equation solver. 
+\end{itemize}
+
+\section{How to train a neural ODE model}
+
+\begin{itemize}
+  \item The problem with the above approach is that it is unclear how to train such a neural ODE model.
+  \begin{itemize}
+    \item The computation of the solution can require a lot of time steps. Differentiating through these time steps to compute the gradient would requires saving a lot of information in memory.
+  \end{itemize}
+
+  \item The good news is that there is a method to compute the gradient using constant memory (i.e., does not depend on the number of time steps). This is called the {\bf adjoint sensitivity method}. It requires, however, an ODE solve, which can be done, again, by any ODE solver.
+  
+  \item To derive the method, we first change the notations.
+  \begin{itemize}
+    \item The hidden state at time $t$ is now denoted by $\ve{z}(t)$.
+    \item The start and end time is now $t_0$ and $t_1$ instead of $0$ and $T$, respectively.
+  \end{itemize}
+\end{itemize}
 
 
-  \bibliographystyle{apalike}
-  \bibliography{neural-ode}  
+\bibliographystyle{alpha}
+\bibliography{neural-ode}  
 \end{document}
