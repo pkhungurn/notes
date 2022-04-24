@@ -1,0 +1,335 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+\usepackage{verbatim}
+\usepackage{hyperref}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\Dee}{\mathrm{D}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\Var}{\mathrm{Var}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\ves}[1]{\boldsymbol{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+\newcommand{\ov}[1]{\overline{#1}}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+\title{Notation for Multivariable Derivatives}
+\author{Pramook Khungurn}
+
+\begin{document}
+\maketitle
+
+I have been reading many papers on deep learning and computer graphics, and its unavoidable to talk about multivariable derivatives: gradients, Jacobian matrices, and all that. It advantageous to develop a consistent system of notations when you talk about these things.
+
+\section{The Derivative}
+
+\begin{itemize}
+  \item We use the convention that inputs to functions are column vectors. So, if $\ve{x} \in \Real^n$, we mean that
+  \begin{align*}
+    \ve{x} = \begin{bmatrix}
+      x_1 \\ x_2 \\ \vdots \\ x_n
+    \end{bmatrix}. 
+  \end{align*}
+
+  \item To save space, we will also write $\ve{x} = (x_1, x_2, \dotsc, x_n)$. While the notation is horizontal, it denotes a column vector.
+  
+  \item If we want to denote a row vector horizontally, we can already write $\begin{bmatrix} x_1 & x_2 & \dotsc & x_n \end{bmatrix}$.
+
+  \item In this section, we focus on a function $\ve{f}: \Real^n \rightarrow \Real^m$. When we write $\ve{y} = \ve{f}(\ve{x})$, we mean that
+  \begin{align*}
+    (y_1, y_2, \dotsc, y_m)
+    = \begin{bmatrix}
+      y_1 \\
+      y_2 \\
+      \vdots \\
+      y_m
+    \end{bmatrix}
+    = \begin{bmatrix}
+      f_1(\ve{x}) \\
+      f_2(\ve{x}) \\
+      \vdots \\
+      f_m(\ve{x})
+    \end{bmatrix}
+    = \begin{bmatrix}
+      f_1(x_1, x_2, \dotsc, x_n) \\
+      f_2(x_1, x_2, \dotsc, x_n) \\
+      \vdots \\
+      f_m(x_1, x_2, \dotsc, x_n)
+    \end{bmatrix}
+  \end{align*}
+  where $f_i(\ve{x})$ denotes the $i$th component of $\ve{f}(\ve{x})$. Each $f_i: \Real^n \rightarrow \Real$ is naturally call a {\bf component function}.
+
+  \item The derivative of $\ve{f}$ is a function that sends each point in the domain $\Real^n$ to a matrix in $\Real^{m \times n}$. If we denote this function by $F: \Real^n \rightarrow \Real^{m \times n}$, then $F(\ve{x})$ is a linear approximation of $\ve{f}(\ve{x})$ near $\ve{x}$. In other words, for any small vector $\ves{\varepsilon}$, we have that
+  \begin{align*}
+    \ve{f}(\ve{x} + \ves{\varepsilon}) \approx \ve{f}(\ve{x}) + F(\ve{x}) \ves{\varepsilon}.
+  \end{align*}
+
+  \item The derivative can be denoted by a number of notations, including
+  \begin{align*}
+    D\ve{f}, \quad \nabla \ve{f}, \quad \frac{\partial \ve{f}}{\partial \ve{x}}.
+  \end{align*}
+  
+  \item While $\partial \ve{f} / \partial \ve{x}$ can make the chain rule looks pretty, I believe it should not be used in complicated situations.
+  \begin{itemize}
+    \item If you want to evaluate the derivative at point $\ve{x}_0$, you would have to write
+    \begin{align*}
+      \frac{\partial \ve{f}}{\partial \ve{x}}(\ve{x}_0)
+      \quad \mbox{or} \quad \frac{\partial \ve{f}}{\partial \ve{x}}\bigg|_{\ve{x} = \ve{x}_0}
+    \end{align*}
+    Both of them are quite handful to write.
+
+    \item If you want to discuss the derivative as a function of its input $\ve{x}$, the you may sometimes write
+    \begin{align*}
+      \frac{\partial \ve{f}}{\partial \ve{x}}(\ve{x}).
+    \end{align*}
+    However, you see that the two $\ve{x}$'s are not the same thing! The $\ve{x}$ after $\partial$ denotes the argument of $\ve{f}$. It is symbolic and should not be substituted with numbers. However, the $\ve{x}$ inside the parentheses is a free variable, which means that we can substitute numbers into it. This variable capture confused me countless times, and I wish to avoid it in the future.
+  \end{itemize}
+  
+  \item I, therefore, advocate the use of $\nabla \ve{f}$ because it makes $\nabla \ve{f}(\ve{x})$ totally unambiguous. It is also quite consistent with gradient of the scalar function $f$, which is written as $\nabla f$.
+  
+  \item With the advocated notation, the chain rule can be written as follows.
+  
+  \begin{theorem}[Chain rule]
+    Let $\ve{f}: \Real^n \rightarrow \Real^m$ and $\ve{g}: \Real^p \rightarrow \Real^n$ be differentiable functions. Let $\ve{h} = \ve{f} \circ \ve{g}$ be a function obtained by composing $\ve{f}$ with $\ve{g}$. In other words, for any $\ve{x} \in \Real^p$, we have that
+    \begin{align*}
+      \ve{h}(\ve{x}) = \ve{f}\big(\ve{g}(\ve{x})\big).
+    \end{align*}
+    Then, it follows that
+    \begin{align*}
+      \nabla \ve{h}(\ve{x}) = \nabla(\ve{f}\circ \ve{g})(\ve{x}) = \nabla \ve{f}\big( \ve{g}(\ve{x}) \big) \nabla \ve{g}(\ve{x}).
+    \end{align*}
+  \end{theorem}
+
+  \item Note that, in the above notation, it's totally clear where $\nabla \ve{f}(\cdot)$ and $\nabla\ve{g}(\cdot)$ are evaluated at. 
+  
+  \item With the partial derivative notation, the chain rule may be written as
+  \begin{align*}
+    \frac{\partial \ve{f}}{\partial \ve{x}}
+    &= \frac{\partial \ve{f}}{\partial \ve{g}} \frac{\partial \ve{g}}{\partial \ve{x}}.
+  \end{align*}
+  While it does look pretty and resembles the usual cancellation rule, it requires a lot of mental gymnastics to parse.
+  \begin{itemize}
+    \item First, the $\ve{f}$ on the LHS is not the same one as that on the RHS. The $\ve{f}$ on the LHS is an alternative notation for $\ve{h} = \ve{f} \circ \ve{g}$, which is a function with signature $\Real^p \rightarrow \Real^m$. On the other hand, the $\ve{f}$ on the RHS has signature $\Real^n \rightarrow \Real^m$.
+    
+    \item Again, note that $\ve{g}$ is a function by definition. But the $\ve{g}$ in $\partial \ve{f} / \partial \ve{g}$ is not a function! It denotes the argument of $\ve{f}: \Real^n \rightarrow \Real^m$. This is confusing as hell!
+    
+    \item It is not clear at all where the derivative functions are evaluated at.
+  \end{itemize}
+\end{itemize}
+
+\section{Partial Derivatives}
+
+\begin{itemize}
+  \item Since we have decided to do away with the partial derivate notation, we might as well do away with it at the scalar function level.
+  
+  \item Let $f: \Real^n \rightarrow \Real$ be a scalar function. The {\bf partial derivative with respect to the $i$th argument}, denoted by $\nabla_i f$, is a function of signature $\Real^n \rightarrow \Real$ such that
+  \begin{align*}
+    \nabla_i f(\ve{x}) = \lim_{\varepsilon \rightarrow 0} \frac{f(x_1, \dotsc, x_i+\varepsilon, \dotsc, x_n) - f(x_1, \dotsc, x_i, \dotsc, x_n)}{\varepsilon}.
+  \end{align*} 
+  In other words, if $\ve{e}_i$ be the one-hot vector whose $i$th component is $1$, then
+  \begin{align*}
+    f(\ve{x} + \varepsilon \ve{e}_i) \approx f(\ve{x}) + \varepsilon \nabla_i f(\ve{x})
+  \end{align*}
+  for all small $\varepsilon$.
+
+  \item Again, the advantage of using ``$\nabla_i f$'' over ``$\partial f / \partial x_i$'' is that we do not introduce a variable to denote the $i$th argument in ``$\nabla_i f$.''
+  
+  \item With the new notation for partial derivatives, the gradient $\nabla f(\ve{x})$ can be written as:
+  \begin{align*}
+    \nabla f(\ve{x}) 
+    = \begin{bmatrix}
+      \nabla_1 f(\ve{x}) &
+      \nabla_2 f(\ve{x}) &
+      \cdots &
+      \nabla_n f(\ve{x})
+    \end{bmatrix}
+  \end{align*}
+  It is clear that $\nabla f$ is a function of signagure $\Real^n \rightarrow \Real^{1 \times n}$.
+
+  \item The derivative $\nabla \ve{f}(\ve{x})$ can now be written as
+  \begin{align*}
+    \nabla \ve{f}(\ve{x})
+    = \begin{bmatrix}
+      \nabla_1 f_1(\ve{x}) & \nabla_2 f_1(\ve{x}) & \cdots & \nabla_n f_1(\ve{x}) \\
+      \nabla_1 f_2(\ve{x}) & \nabla_2 f_2(\ve{x}) & \cdots & \nabla_n f_2(\ve{x}) \\
+      \vdots & \vdots & \ddots & \vdots \\
+      \nabla_1 f_m(\ve{x}) & \nabla_2 f_m(\ve{x}) & \cdots & \nabla_n f_m(\ve{x})
+    \end{bmatrix}.
+  \end{align*}
+
+  \item We can also talk about the partial derivative of $\ve{f}$ with respect to the $i$th argument:
+  \begin{align*}
+    \nabla_i \ve{f}(\ve{x}) = \begin{bmatrix}
+      \nabla_i f_1(\ve{x}) \\
+      \nabla_i f_2(\ve{x}) \\
+      \vdots \\
+      \nabla_i f_m(\ve{x})
+    \end{bmatrix}.
+  \end{align*}
+
+  \item \begin{theorem}[Law of total derivatives]
+    Let $\ve{f}: \Real^n \rightarrow \Real^m$ and $\ve{g}: \Real^p \rightarrow \Real^n$. Let $\ve{h} = \ve{f} \circ \ve{g}$. Then,
+    \begin{align*}
+      \nabla_j h_i(\ve{x}) = \sum_{k=1}^n \nabla_k f_i(\ve{g}(\ve{x})) \nabla_j g_k(\ve{x}).
+    \end{align*}    
+  \end{theorem}
+  \begin{proof}
+    By the chain rule,
+    \begin{align*}
+      \nabla \ve{h}(\ve{x}) = \nabla \ve{f}(\ve{g}(\ve{x})) \nabla \ve{g}(\ve{x}).
+    \end{align*}
+    In other words
+    \begin{align*}
+      \begin{bmatrix}
+        \nabla_1 h_1(\ve{x}) & \cdots & \nabla_p h_1(\ve{x}) \\
+        \nabla_1 h_2(\ve{x}) & \cdots & \nabla_p h_2(\ve{x}) \\
+        \vdots & \ddots & \vdots \\
+        \nabla_1 h_m(\ve{x}) & \cdots & \nabla_p h_m(\ve{x})
+      \end{bmatrix}
+      = \begin{bmatrix}
+        \nabla_1 f_1(\ve{g}(\ve{x})) & \cdots & \nabla_n f_1(\ve{g}(\ve{x})) \\
+        \nabla_1 f_2(\ve{g}(\ve{x})) & \cdots & \nabla_n f_2(\ve{g}(\ve{x})) \\
+        \vdots & \ddots & \vdots \\
+        \nabla_1 f_m(\ve{g}(\ve{x})) & \cdots & \nabla_n f_m(\ve{g}(\ve{x}))
+      \end{bmatrix}
+      \begin{bmatrix}
+        \nabla_1 g_1(\ve{x}) & \cdots & \nabla_p g_1(\ve{x}) \\
+        \nabla_1 g_2(\ve{x}) & \cdots & \nabla_p g_2(\ve{x}) \\
+        \vdots & \ddots & \vdots \\
+        \nabla_1 g_n(\ve{x}) & \cdots & \nabla_p g_n(\ve{x})
+      \end{bmatrix}.
+    \end{align*}
+    Hence,
+    \begin{align*}
+      \nabla_j h_i(\ve{x}) 
+      &=
+      \begin{bmatrix}
+        \nabla_1 f_i(\ve{g}(\ve{x})) & 
+        \nabla_2 f_i(\ve{g}(\ve{x})) &
+        \cdots &
+        \nabla_n f_i(\ve{g}(\ve{x}))
+      \end{bmatrix}
+      \begin{bmatrix}
+        \nabla_j g_1(\ve{x}) \\
+        \nabla_j g_2(\ve{x}) \\
+        \vdots \\
+        \nabla_j g_n(\ve{x}).
+      \end{bmatrix} \\
+      &= \sum_{k=1}^n \nabla_k f_i(\ve{g}(\ve{x})) \nabla_j g_k(\ve{x}).
+    \end{align*}
+    as required.
+  \end{proof}
+
+  \item What's nice about the above theorem is that everything is done in terms of partial derivatives. No mental gymnastics is required to distinguish between the total differential $\dee x$ and the partial differential $\partial x$.
+\end{itemize}
+
+\section{Block Notations}
+
+\begin{itemize}
+  \item Again, let $\ve{f}: \Real^n \rightarrow \Real^m$. 
+  
+  \item For $\ve{x} \in \Real^n$, we can use the {\tt numpy} notation $\ve{x}[i:j]$ and $\ve{x}_{i:j}$ to denote $(x_i, x_{i+1}, \dotsc, x_j)$.
+  
+  \item Suppose we partition the range $1:n$ into $l$ blocks with the ranges
+  \begin{align*}
+    1:i_1, \quad (i_1+1):i_2, \quad (i_2+1):i_3, \quad \dotsc, \quad (i_{l-1}+1):n.
+  \end{align*}
+  Then, the blocks of $\ve{x}$ are
+  \begin{align*}
+    \ve{x}[1:i_1], \quad \ve{x}[(i_1+1):i_2], \quad \ve{x}[(i_2+1):i_3], \quad \dotsc, \quad \ve{x}[(i_{l-1}+1):n],
+  \end{align*}
+  or 
+  \begin{align*}
+    \ve{x}_{1:i_1}, \quad \ve{x}_{(i_1+1):i_2}, \quad \ve{x}_{(i_2+1):i_3}, \quad \dotsc, \quad \ve{x}_{(i_{l-1}+1):n}.
+  \end{align*}
+
+  \item However, the range notations are long, and we also need the index variables $i_1$, $\dotsc$, $i_{l-1}$. Instead, we shall denote the $j$th range by just $\S j$ (as in ``Chapter $j$''). The blocks do become much shorter:
+  \begin{align*}
+    \ve{x}[\S 1], \quad \ve{x}[\S 2], \quad \dotsc, \quad \ve{x}[\S l], 
+  \end{align*}
+  or 
+  \begin{align*}
+    \ve{x}_{\S 1}, \quad \ve{x}_{\S 2}, \quad \dotsc, \quad \ve{x}_{\S l}. 
+  \end{align*}
+  Now, we can succinctly write
+  \begin{align*}
+    \ve{x} = (\ve{x}_{\S1}, \ve{x}_{\S2}, \dotsc, \ve{x}_{\S l}).
+  \end{align*}
+
+  \item If we partition $\Real^n$ into $l$ blocks and $\Real^m$ into $k$ blocks, then we can view $\nabla \ve{f}(\ve{x})$ as a block matrix with $k \times l$ blocks. Naturally, the $(i,j)$-block is denoted by $$\nabla_{\S j} \ve{f}_{\S i}(\ve{x}).$$
+\end{itemize}
+
+\section{Subscription as Differentiation}
+
+\begin{itemize}
+  \item For brevity, we sometimes see $\partial f / \partial x$ being abbreviated as just $f_x$. We shall create this type of abbreviated, but unambiguous notation in this section.
+  
+  \item It is tempting to use $f_i$ to represent the partial derivative with respect to the $i$th argument. However, we already use $f_i$ to denote the $i$th component of $\ve{f}$.
+  
+  \item To disambiguate, we shall use $f_{\nabla i}$ to denote the partial derivative in question.
+  
+  \item In this way, we can denote the partial derivative with respect to the $j$th argument of $f_i$ with $(f_i)_{\nabla j}$ or just $f_{i \nabla j}$.
+  
+  \item In this way, the derivative $\nabla \ve{f}$ can also be written as $\ve{f}_\nabla$, and we have a very intuitive notation for the Jacobian matrix:
+  \begin{align*}
+    \ve{f}_{\nabla}(\ve{x}) 
+    = \begin{bmatrix}
+      f_{1\nabla 1}(\ve{x}) & f_{1\nabla 2}(\ve{x}) & \cdots & f_{1\nabla n}(\ve{x}) \\
+      f_{2\nabla 1}(\ve{x}) & f_{2\nabla 2}(\ve{x}) & \cdots & f_{2\nabla n}(\ve{x}) \\
+      \vdots & \vdots & \ddots & \vdots \\
+      f_{m\nabla 1}(\ve{x}) & f_{m\nabla 2}(\ve{x}) & \cdots & f_{m\nabla n}(\ve{x}).
+    \end{bmatrix}
+  \end{align*}
+
+  \item The notation for second-order derivatives would be $\nabla_i \nabla_j f$ or $f_{\nabla j \nabla i}$. This is getting long, so we introduce the following shorthands:
+  \begin{align*}
+    \nabla_{i,j} f &:= \nabla_i \nabla_j f, \\
+    f_{\nabla j, i} &:= f_{\nabla j \nabla i}. 
+  \end{align*}
+
+  \item Since the order of differentiation does not matter, we have that
+  \begin{align*}
+    f_{\nabla i,j} = f_{\nabla j,i}.
+  \end{align*}
+\end{itemize}
+
+\bibliographystyle{apalike}
+\bibliography{multivar-deriv-notations}  
+\end{document}
