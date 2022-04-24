@@ -28,6 +28,7 @@
 
 \newcommand{\ve}[1]{\mathbf{#1}}
 \newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\mtt}[1]{\mathtt{#1}}
 \newcommand{\ves}[1]{\boldsymbol{#1}}
 \newcommand{\etal}{{et~al.}}
 \newcommand{\sphere}{\mathbb{S}^2}
@@ -69,7 +70,7 @@ This is a note on the paper ``Neural Ordinary Differential Equations'' by Chen \
 
   \item What if we take the limit as the number of time step goes to infinity? We will have a differential equation:
   \begin{align*}
-    \frac{\dee\ve{h}(t))}{\dee t} = \ve{f}(\ve{h}(t), t, \ves{\theta}).
+    \frac{\dee\ve{h}(t)}{\dee t} = \ve{f}(\ve{h}(t), t, \ves{\theta}).
   \end{align*}
 
   \item To use the network, we simply say that $\ve{h}(0)$ is the input layer, and the output is $\ve{h}(T)$ at some time $T$. The output can be found by solving the initial value problem, and this can be done by any black-box differential equation solver. 
@@ -84,167 +85,198 @@ This is a note on the paper ``Neural Ordinary Differential Equations'' by Chen \
   \end{itemize}
 
   \item The good news is that there is a method to compute the gradient using constant memory (i.e., does not depend on the number of time steps). This is called the {\bf adjoint sensitivity method}. It requires, however, an ODE solve, which can be done, again, by any ODE solver.
+\end{itemize}  
   
-  \item To derive the method, we first change the notations.
-  \begin{itemize}
-    \item The hidden state at time $t$ is now denoted by $\ve{z}(t)$.
-    
-    \item The start and end time is now $t_0$ and $t_1$ instead of $0$ and $T$, respectively.
-    
-    \item With this notation, we have that, for any $t \geq t_0$,
-    \begin{align*}
-      \ve{z}(t) = \ve{z}(t_0) + \int_{t_0}^t \ve{f}(\ve{z}(u), u, \ves{\theta})\, \dee u.
-    \end{align*}
-    In this case, we view $\ve{z}(t)$ as a result of simulating the ODE forward in time from $t_0$ to $t$. It is thus probably better to write 
-    \begin{align*}
-      \ve{z}(t) = \ve{z}_0 + \int_{t_0}^t \ve{f}(\ve{z}(u), u, \ves{\theta})\, \dee u
-    \end{align*}
-    to emphasize the fact that $\ve{z}_0 := \ve{z}(t_0)$ is a part of the initial condition.
+\subsection{Problem Setup}
 
-    \item We also have that
-    \begin{align*}
-      \ve{z}(t) = \ve{z}(t_1) + \int_{t_1}^{t_0} \ve{f}(\ve{z}(u), u, t)\, \dee u.
-    \end{align*}
-    Here, we view $\ve{z}(t)$ as a resulf simulating the ODE {\it backward} in time from $t_1$ to $t$. This view will become important later on. Again, when taking this view, it is better to write
-    \begin{align*}
-      \ve{z}(t) = \ve{z}_1 + \int_{t_1}^{t_0} \ve{f}(\ve{z}(u), u, t)\, \dee u.
-    \end{align*}
-    instead.
-  \end{itemize}
-
-  \item The goodness of the output $\ve{z}(t_1)$ is computed by a loss function $L(\cdot)$ as $L(\ve{z}(t_1))$.
+\begin{itemize}
+  \item Let the hidden state be a vector in $\Real^n$. We typically denote it by $\ve{z}$.
   
-  \item Because $\ve{z}(t_1)$ is a function of $\ve{z}(t_0)$, $t_0$, and $\ves{\theta}$, we may define a function $$\mcal{L}: (\ve{z}(t_0), t_0, \ves{\theta}) \mapsto L(\ve{z}(t_1))$$
-  that maps the initial condition to the loss.
-
-  \item Now, for any $t \leq t_1$, it makes sense to talk about $$\mcal{L}(\ve{z}, t, \ves{\theta}).$$ This expression gives the loss if we simulate the ODE starting with the hidden state $\ve{z}$ at time $t$ until time $t_1$.
+  \item Let the neural network's parameters be a vector in $\Real^m$, and we typically denote it by $\ves{\theta}$.
   
-  \item It also makes sense to talk about three gradient functions
-  \begin{align*}
-    \nabla_1\mcal{L}(\ve{z},t,\ves{\theta})
-    & = \nabla_{\ve{z}}\mcal{L}(\ve{z},t,\ves{\theta})
-    = 
-    \frac{\partial \mcal{L}}{\partial \ve{z}} \bigg|_{(\ve{z}, t, \ves{\theta})}, \\
-    \nabla_2\mcal{L}(\ve{z},t,\ves{\theta})
-    & = \nabla_t \mcal{L}(\ve{z}, t, \ves{\theta})
-    = \frac{\partial \mcal{L}}{\partial t} \bigg|_{(\ve{z}, t, \ves{\theta})}, \\
-    \nabla_3\mcal{L}(\ve{z},t,\ves{\theta})
-    &= \nabla_{\ves{\theta}} \mcal{L}(\ve{z}, t, \ves{\theta})
-    = \frac{\partial \mcal{L}}{\partial \ves{\theta}} \bigg|_{(\ve{z}, t, \ves{\theta})}.
-  \end{align*}
-  These functions output linear transformations that can turn a perturbation on their associated variables into perturbation of the value of $\mcal{L}$. In particular, we have that
-  \begin{align*}
-    \mcal{L}(\ve{z} + \Delta\ve{z}, t, \ves{\theta})
-    - \mcal{L}(\ve{z}, t, \ves{\theta})
-    \approx \nabla_1 \mcal{L}(\ve{z}, t, \ves{\theta}) \Delta\ve{z}.
-  \end{align*}
-  Similar equations can written for $\nabla_2 \mcal{L}$ and $\nabla_3 \mcal{L}$. 
-
-  \item We use the convention that, for a vector function $\ve{f}(\ve{x}): \Real^n \rightarrow \Real^m$, the gradient  $\nabla_{\ve{x}} \ve{f} = \frac{\partial \ve{f}}{\partial \ve{x}}$ would be an $m \times n$ matrix.
-  \begin{itemize}
-    \item As a result, $\nabla_\ve{z}\mcal{L} = \frac{\partial \mcal{L}}{\partial \ve{z}}$ is a row vector in $\Real^{1 \times d}$.
-  \end{itemize}
-
-  \item Note that our end goal is to compute
-  \begin{align*}
-    \nabla_3\mcal{L}(\ve{z}_0, t_0, \ves{\theta}) = \frac{\partial \mcal{L}}{\partial \ves{\theta}}\bigg|_{(\ve{z}_0, t_0, \ves{\theta})}.
-  \end{align*}
-  This is the gradient that we will use to update $\ves{\theta}$ in any SGD algorithm.
+  \item We will work on a state space vector $\ve{r} = (\ve{z}, t, \ves{\theta}) \in \Real^{n+1+m}$.
   
-
-  \item To derive the adjoint sensitivity method, we focus on a trajectory of the hidden variable $\ve{z}$ during the time interval $[t_0, t_1]$. To avoid confusion, let us denote this fixed trajectory by $\ve{z}^*(t)$, and we say that it is determined by simulating the neural ODE backward in time from $t_1$. In other words,
+  \item We will want to see how $\ve{r}$ evolves through time. We denote the $\ve{r}$ at time $t$ with $\ve{r}_t = (\ve{z}_t, t, \ves{\theta})$. Note that $\ves{\theta}$ does not vary with $t$.
+  
+  \item It also makes sense to talk about the function that sends $t$ to $\ve{r}_t$. We denote this by $\ve{R}: \Real \rightarrow \Real^{n+1+m}$, and we can write
   \begin{align*}
-    \ve{z}^*(t) = \ve{z}^*_1 + \int_{t_1}^t \ve{f}(\ve{z}^*(u), u, \ves{\theta})\, \dee u.
+    \ve{r}_t = \ve{R}(t) = (\ve{Z}(t), T(t), \ves{\Theta}(t)) = (\ve{z}_t, t, \ves{\theta}).
   \end{align*}
-  We note that $\ve{z}^*(t)$ is a function of $t$, $\ve{z}^*_1$, $t_1$, and $\ves{\theta}$.
-   
-  \item We define the {\bf adjoint function}
+  Note that $T$ is the identity function, and $\ves{\Theta}$ is a constant function.
+
+  \item The act of solving the neural ODE is a function that maps $\ve{r}_{t}$ to some $\ve{r}_{t + \Delta t}$ for some $\Delta t \geq 0$. Let us denote this function by $\ve{s}_{\Delta t}^+: \Real^{n+1+m} \rightarrow \Real^{n+1+m}.$ (The letter $\ve{s}$ stands for ``solve.'') We have that
   \begin{align*}
-    \ve{a}: (t,\ves{\theta}) \mapsto \nabla_1 \mcal{L} (\ve{z}^*(t), t, \ves{\theta}).
+    \ve{s}^+_{\Delta t}(\ve{z}_t, t, \ves{\theta})     
+    = (\ve{z}_{t+\Delta}, t, \ves{\theta})
+    = \begin{bmatrix}
+      \ve{z}_{t + \Delta t} \\
+      t + \Delta t \\
+      \ves{\theta}
+    \end{bmatrix}
+    = \begin{bmatrix}
+      \ve{z}_t + \int_{t}^{t+\Delta t} \ve{f}(\ve{z}_u, u, \ves{\theta})\, \dee u \\
+      t + \Delta t \\
+      \ves{\theta}
+    \end{bmatrix}.
+  \end{align*}
+
+  \item The above function runs the ODE for a fixed time internal $\Delta t$. However, we can also talk about running the ODE until a fixed time $t_1$. We denote this by
+  \begin{align*}
+    \ve{s}^+_{\rightarrow t_1}(\ve{z}_t, t, \ves{\theta}) 
+    = \ve{s}^+_{t_1 - t}(\ve{z}_t, t, \ves{\theta})
+    = \begin{bmatrix}
+      \ve{z}_t + \int_{t}^{t_1} \ve{f}(\ve{z}_u, u, \ves{\theta})\, \dee u \\
+      t + \Delta t \\
+      \ves{\theta}
+    \end{bmatrix}.
+  \end{align*}
+
+  \item When optimizing a neural network, we need a loss function. In our case, the loss function is given by $L: \Real^{n+1+m} \rightarrow \Real$ that maps a state vector to a real number. When we write $L(\ve{r}) = L(\ve{z}, t, \ves{\theta})$, it is typical to say that the function only depends on $\ve{z}$, the produced hidden state. So, $$L(\ve{r}) = L(\ve{z},t,\ves{\theta}) = L(\ve{z}).$$ 
+  
+  \item When training a neural ODE, we start with the input state vector $\ve{r}_{t}$. We then solve the ODE to get the state $\ve{r}_{t_1}$. We then evaluate $L(\ve{r}_{t_1})$ to compute the loss. Let $\mcal{L}: \Real^{n+1+m} \rightarrow \Real$ be the function that maps the input state to the final loss. This function is thus given by
+  \begin{align*}
+    \mcal{L}(\ve{z}_t, t, \ves{\theta}) = L(\ve{s}^+_{\rightarrow t_1}(\ve{z}_t, t, \ves{\theta})).
+  \end{align*}
+
+  \item To train the neural network, we need the gradient
+  \begin{align*}
+    \nabla_{\S3} \mcal{L}(\ve{z}_{t_0}, t_0, \ves{\theta})
+  \end{align*}
+  where $t_0$ is the time we designate for the input, typically $0$. Here, we use the notations for multivariable derivatives from \cite{KhungurnDeriv} to avoid confusion. $\nabla_{\S3}\mcal{L}$ denotes the gradient with respect to the third block of arguments of $\mcal{L}$, which is the network parameters $\ves{\theta}$.  
+\end{itemize}
+
+\subsection{Adjoint Sensitivity Method}
+
+\begin{itemize}
+  \item Define the {\bf adjoint} to be the function $\ve{a}: \Real \rightarrow \Real^{1 \times (n+1+m)}$ such that
+  \begin{align*}
+    \ve{a}: t \mapsto \nabla \mcal{L}(\ve{z}_t, t, \ves{\theta}).
   \end{align*}
   In other words,
   \begin{align*}
-    \ve{a}(t,\ves{\theta}) = \frac{\partial \mcal{L}}{\partial \ve{z}}\bigg|_{(\ve{z}^*(t), t, \ves{\theta})}.
+    \ve{a}(t) = \mcal{L}(\ve{R}(t)) = L(\ve{s}^+_{\rightarrow t_1}(\ve{R}(t)))
   \end{align*}
+  or $\ve{a} = \mcal{L} \circ \ve{R} = L \circ s_{\rightarrow t_1}^+ \circ \ve{R}$.
 
-  \item We adjoint function has the following property.
+  \item With the adjoint function, our end goal is to evaluate $$\ve{a}_{\S3}(t_0) 
+  = \ve{a}(t_0)[:,\S3] 
+  = \nabla \mcal{L}(\ve{z}_{t_0}, t_0, \ves{\theta})[:, \S3] 
+  = \nabla_{\S3}\mcal{L}(\ve{z}_{t_0}, t_0, \ves{\theta}).$$
+
+  \item The adjoint sensivity method relies on the fact that we can express $\dee\ve{a} / \dee t$ in terms for $\ve{a}$ and $\ve{f}$.
   \begin{theorem}
+  We have that
   \begin{align*}
-    \frac{\partial \ve{a}}{\partial t}\bigg|_{(t,\ves{\theta})} = -\ve{a}(t,\ves{\theta}) \frac{\partial \ve{f}}{\partial \ve{z}}\bigg|_{(\ve{z}^*(t), t, \ves{\theta})}
+    \frac{\dee \ve{a}(t)}{\dee t}
+    = -\ve{a}(t)
+    \begin{bmatrix}
+      \nabla_{\S1}\ve{f}(\ve{z}_t, t, \ves{\theta})
+      & \nabla_{\S2}\ve{f}(\ve{z}_t, t, \ves{\theta})
+      & \nabla_{\S3}\ve{f}(\ve{z}_t, t, \ves{\theta}) \\
+      \ve{0} & 0 & \ve{0} \\
+      \ve{0} & \ve{0} & \ve{0}
+    \end{bmatrix}
+  \end{align*}
+  In particular,
+  \begin{align*}
+    \frac{ \dee \ve{a}_{\S 1}(t)}{\dee t} &= -\ve{a}_{\S1}(t) \nabla_{\S1}\ve{f}(\ve{z}_t, t, \ves{\theta}), \\
+    \frac{ \dee \ve{a}_{\S 3}(t)}{\dee t} &= -\ve{a}_{\S1}(t) \nabla_{\S3}\ve{f}(\ve{z}_t, t, \ves{\theta}). \\
   \end{align*}
   \end{theorem}
 
   \begin{proof}
-    By definition,
+    We have that 
     \begin{align*}
-      \frac{\partial \ve{a}}{\partial t}\bigg|_{(t,\ves{\theta})}
-      &= \lim_{\varepsilon \rightarrow 0^+} \frac{\ve{a}(t+ \varepsilon, \ves{\theta}) - \ve{a}(t, \ves{\theta})}{\varepsilon}.
+      \frac{\dee \ve{a}(t)}{\dee t} = \lim_{\varepsilon \rightarrow 0} \frac{\ve{a}(t + \varepsilon) + \ve{a}(t)}{\varepsilon}.
     \end{align*}
-    To evalute the above expression, we shall rewrite $\ve{a}(t,\ves{\theta})$ in terms of $\ve{a}(t+\varepsilon, \ves{\theta})$.
+    To prove the theorem, we shall write $\ve{a}(t)$ in terms of $\ve{a}(t+\varepsilon)$.
 
-    First, we note that
+    Consider the function $\mcal{L}$. We have that, for any $\varepsilon > 0$ such that $t + \varepsilon < t_1$, 
     \begin{align*}
-      \mcal{L}(\ve{z}^*(t), t, \ves{\theta}) 
-      = \mcal{L}(\ve{z}^*(t+\varepsilon), t + \varepsilon, \ves{\theta})
+      \mcal{L}(\ve{z}_t, t, \ves{\theta}) = \mcal{L}(\ve{z}_{t+\varepsilon}, t+\varepsilon, \ves{\theta}).
     \end{align*}
-    for any $0 \leq \varepsilon \leq t_1 - t$. This is because the loss should be the same if we start at any point on the trajectory $\{ \ve{z}^*(t) : t_0 \leq t \leq t_1 \}$. Hence, we can consider the process of computing $\mcal{L}(\ve{z}^*(t), t, \ves{\theta})$ by first sending $(\ve{z}^*(t), t, \ves{\theta})$ to $(\ve{z}^*(t + \varepsilon), t + \varepsilon, \ves{\theta})$ and then slapping $\mcal{L}$ on $(\ve{z}^*(t + \varepsilon), t + \varepsilon, \ves{\theta})$. Let $\ve{e}_\varepsilon$ be the function $(\ve{z}^*(t), t, \ves{\theta})$ to $(\ve{z}^*(t + \varepsilon), t + \varepsilon, \ves{\theta})$. It follows that
+    This is because both $(\ve{z}_t, t, \ves{\theta})$ and $(\ve{z}_{t+\varepsilon}, t+\varepsilon, \ves{\theta})$ are on the trajectory to the final state vector $(\ve{z}_{t_1}, t_1, \ves{\theta})$. So, starting running the ODE from either points would lead to the same result. As a result, we may say that
+    $$\mcal{L} = \mcal{L} \circ \ve{s}^+_\varepsilon$$
+    if $\varepsilon$ is small enough. Applying the chain rule, we have that
     \begin{align*}
-      \ve{e}_\varepsilon\left( \begin{bmatrix} \ve{z} \\ t \\ \ves{\theta} \end{bmatrix} \right)
-      &= \begin{bmatrix} \ve{z} \\ t \\ \ves{\theta} \end{bmatrix} 
-      + \varepsilon  \begin{bmatrix} \ve{f}(\ve{z}, t, \ves{\theta}) \\ 1 \\ \ve{0} \end{bmatrix} 
-      + O(\varepsilon^2).
+      \nabla \mcal{L}(\ve{z}_t, t, \ves{\theta})
+      &= \nabla \mcal{L}(\ve{s}^+_\varepsilon(\ve{z}_t, t, \ves{\theta})) \nabla \ve{s}_{\varepsilon}^+(\ve{z}_t, t, \ves{\theta}) \\
+      \nabla \mcal{L}(\ve{z}_t, t, \ves{\theta})
+      &= \nabla \mcal{L}(\ve{z}_{t+\varepsilon}, t+\varepsilon, \ves{\theta}) \nabla \ve{s}_{\varepsilon}^+(\ve{z}_t, t, \ves{\theta}) \\
+      \ve{a}(t) &= \ve{a}(t+\varepsilon) \nabla \ve{s}_{\varepsilon}^+(\ve{z}_t, t, \ves{\theta}).
+    \end{align*}
+    Now,
+    \begin{align*}
+      \ve{s}^+_\varepsilon(\ve{z}_t, t, \ves{\theta})
+      &= \begin{bmatrix}
+        \ve{z}_t + \int_{t}^{t+\varepsilon} \ve{f}(\ve{z}_u, u, \ves{\theta}) \, \dee u \\
+        t + \varepsilon \\
+        \ves{\theta}
+      \end{bmatrix} 
+      = \begin{bmatrix}
+        \ve{z}_t + \varepsilon \ve{f}(\ve{z}_t, t, \ves{\theta}) + O(\varepsilon^2) \\
+        t + \varepsilon \\
+        \ves{\theta}
+      \end{bmatrix} \\
+      &= \begin{bmatrix}
+        \ve{z}_t \\ t \\ \ves{\theta}
+      \end{bmatrix} 
+      + \varepsilon
+      \begin{bmatrix}
+        \ve{f}(\ve{z}_t, t, \ves{\theta}) \\
+        1 \\
+        \ve{0}
+      \end{bmatrix} 
+      + O(\varepsilon^2).      
     \end{align*}
     So,
     \begin{align*}
-      \frac{\partial \ve{e}_\varepsilon}{\partial (\ve{z}, t, \ves{\theta})}\bigg|_{(\ve{z}^*(t), t, \ves{\theta})}
+      \nabla \ve{s}^+_\varepsilon(\ve{z}_t, t, \ves{\theta})
       &= I + \varepsilon \begin{bmatrix}
-        \frac{\partial \ve{f}}{\partial\ve{z}}\big|_{(\ve{z}^*(t), t, \ves{\theta})}
-        & \frac{\partial \ve{f}}{\partial t}\big|_{(\ve{z}^*(t), t, \ves{\theta})}
-        & \frac{\partial \ve{f}}{\partial \ves{\theta}}\big|_{(\ve{z}^*(t), t, \ves{\theta})} \\
+        \nabla_{\S1}\ve{f}(\ve{z}_t, t, \ves{\theta})
+        & \nabla_{\S2}\ve{f}(\ve{z}_t, t, \ves{\theta})
+        & \nabla_{\S3}\ve{f}(\ve{z}_t, t, \ves{\theta}) \\
+        \ve{0} & 0 & \ve{0} \\
+        \ve{0} & \ve{0} & \ve{0}
+      \end{bmatrix} + O(\varepsilon^2).
+    \end{align*}
+    This gives
+    \begin{align*}
+      \ve{a}(t) 
+      &= \ve{a}(t + \varepsilon) 
+      + \varepsilon \ve{a}(t + \varepsilon) \begin{bmatrix}
+        \nabla_{\S1}\ve{f}(\ve{z}_t, t, \ves{\theta})
+        & \nabla_{\S2}\ve{f}(\ve{z}_t, t, \ves{\theta})
+        & \nabla_{\S3}\ve{f}(\ve{z}_t, t, \ves{\theta}) \\
+        \ve{0} & 0 & \ve{0} \\
+        \ve{0} & \ve{0} & \ve{0}
+      \end{bmatrix} + O(\varepsilon^2),
+    \end{align*}
+    and so
+    \begin{align*}
+      \frac{\ve{a}(t+\varepsilon) - \ve{a}(t)}{\varepsilon} 
+      &= -\ve{a}(t + \varepsilon) \begin{bmatrix}
+        \nabla_{\S1}\ve{f}(\ve{z}_t, t, \ves{\theta})
+        & \nabla_{\S2}\ve{f}(\ve{z}_t, t, \ves{\theta})
+        & \nabla_{\S3}\ve{f}(\ve{z}_t, t, \ves{\theta}) \\
+        \ve{0} & 0 & \ve{0} \\
+        \ve{0} & \ve{0} & \ve{0}
+      \end{bmatrix} + O(\varepsilon).
+    \end{align*}
+    Taking the limit as $\varepsilon \rightarrow 0$, we have that
+    \begin{align*}
+      \frac{\dee \ve{a}(t)}{\dee t}
+      &= -\ve{a}(t) \begin{bmatrix}
+        \nabla_{\S1}\ve{f}(\ve{z}_t, t, \ves{\theta})
+        & \nabla_{\S2}\ve{f}(\ve{z}_t, t, \ves{\theta})
+        & \nabla_{\S3}\ve{f}(\ve{z}_t, t, \ves{\theta}) \\
         \ve{0} & 0 & \ve{0} \\
         \ve{0} & \ve{0} & \ve{0}
       \end{bmatrix}
-      + O(\varepsilon^2).
     \end{align*}
-    Now, by the chain rule, we have that
-    \begin{align*}
-      \frac{\partial \mcal{L}}{\partial (\ve{z}, t, \ves{\theta})}\bigg|_{(\ve{z}^*(t),t,\ves{\theta})}
-      &= \frac{\partial \mcal{L}}{\partial \ve{e}_\varepsilon(\ve{z}(t), t, \ves{\theta})} \frac{\partial \ve{e}_\varepsilon (\ve{z}(t), t, \ves{\theta})}{\partial (\ve{z}(t), t, \ves{\theta})} \\
-      \begin{bmatrix}
-        \frac{\partial \mcal{L}}{\partial \ve{z}(t)} &
-        \frac{\partial \mcal{L}}{\partial t} &
-        \frac{\partial \mcal{L}}{\partial \ves{\theta}}
-      \end{bmatrix}
-      &= \begin{bmatrix}
-        \frac{\partial \mcal{L}}{\partial \ve{z}(t + \epsilon)} &
-        \frac{\partial \mcal{L}}{\partial (t + \epsilon)} &
-        \frac{\partial \mcal{L}}{\partial \ves{\theta}}
-      \end{bmatrix}
-      \bigg( I + \varepsilon \begin{bmatrix}
-        \frac{\partial \ve{f}}{\partial\ve{z}(t)}
-        & \frac{\partial \ve{f}}{\partial t}
-        & \frac{\partial \ve{f}}{\partial \ves{\theta}} \\
-        \ve{0} & 0 & \ve{0} \\
-        \ve{0} & \ve{0} & \ve{0}
-      \end{bmatrix}
-      + O(\varepsilon^2) \bigg).
-    \end{align*}
-    By multipling the matrices out, it follows that
-    \begin{align*}
-      \frac{\partial \mcal{L}}{\partial \ve{z}(t)}
-      &= \frac{\partial \mcal{L}}{\partial \ve{z}(t+\varepsilon)}
-      + \varepsilon \frac{\partial \mcal{L}}{\partial \ve{z}(t+\varepsilon)} \frac{\partial \ve{f}}{\partial \ve{z}(t)} + O(\varepsilon^2).
-    \end{align*}
-    In other words,
-    \begin{align*}
-      \frac{\partial \mcal{L}}{\partial \ve{z}}\bigg|_{(\ve{z},t,\ves{\theta})}
-      &= \frac{\partial \mcal{L}}{\partial \ve{z}}\bigg|_{(\ve{z+\varepsilon},t+\varepsilon,\ves{\theta})}
-      \frac{\partial \ve{f}}{\partial \ve{z}}\bigg|_{(\ve{z}(t), t, \ves{\theta})}
-    \end{align*}
-  \end{proof}  
-    
+    as required.
+  \end{proof}
 \end{itemize}
-
 
 \bibliographystyle{alpha}
 \bibliography{neural-ode}  
