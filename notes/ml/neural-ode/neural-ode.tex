@@ -164,7 +164,7 @@ This is a note on the paper ``Neural Ordinary Differential Equations'' by Chen \
   = \nabla_{\S3}\mcal{L}(\ve{z}_{t_0}, t_0, \ves{\theta}).$$
 
   \item The adjoint sensivity method relies on the fact that we can express $\dee\ve{a} / \dee t$ in terms for $\ve{a}$ and $\ve{f}$.
-  \begin{theorem}
+  \begin{theorem} \label{thm:adjoint-deriv}
   We have that
   \begin{align*}
     \frac{\dee \ve{a}(t)}{\dee t}
@@ -276,8 +276,14 @@ This is a note on the paper ``Neural Ordinary Differential Equations'' by Chen \
     \end{align*}
     as required.
   \end{proof}
+<<<<<<< HEAD
   \item In a typical traning process, we start from $\ve{r}_{t_0} = (\ve{z}_{t_0}, t_0, \ves{\theta})$, and we solve the neural SDE forward in time to obtain $\ve{r}_{t_1} = (\ve{z}_{t_1}, t_1, \ves{\theta})$. We assume that we do not save any intermediate information in the forward solving process. Now, we need to compute the gradient $\ve{a}_{\S3}(t_0) = \nabla_{\S3}\mcal{L}(\ve{z}_{t_0}, t_0, \ves{\theta}).$
     
+=======
+
+  \item In a typical traning process, we start from $\ve{r}_{t_0} = (\ve{z}_{t_0}, t_0, \ves{\theta})$, and we solve the neural SDE forward in time to obtain $\ve{r}_{t_1} = (\ve{z}_{t_1}, t_1, \ves{\theta})$. We assume that we do not save any intermediate information in the forward solving process. Now, we need to compute the gradient $\ve{a}_{\S3}(t_0) = \nabla_{\S3}\mcal{L}(\ve{z}_{t_0}, t_0, \ves{\theta}).$
+  
+>>>>>>> 59f7aea97bc71b38541aa8ae8fede48971e0efd5
   \item The idea is then to start at time $t_1$ and jointly solve the following differential equations backward in time to $t_0$:
   \begin{align*}
     \frac{\dee \ve{z}_t}{\dee t} &= \ve{f}(\ve{z}_t, t, \ves{\theta}), \\
@@ -302,7 +308,11 @@ This is a note on the paper ``Neural Ordinary Differential Equations'' by Chen \
   The last line follows from the fact that we assumed that $L$ does not depend on $\ves{\theta}$. All of these values are easy to compute.
 
   \item To solve the ODEs, we can use any black-box ODE solver. The interface for such a solver requires us to provide (1) an initial state vector, and (2) a function that computes the time derivative of the state vector given the time and the state vector. 
+<<<<<<< HEAD
 
+=======
+  
+>>>>>>> 59f7aea97bc71b38541aa8ae8fede48971e0efd5
   Here, our state vector would be $\ve{q}^{(t)} \in \Real^{n+n+m}$. It would be divided into three blocks $\ve{q}^{(t)} = (\ve{q}^{(t)}_{\S 1}, \ve{q}^{(t)}_{\S 2}, \ve{q}^{(t)}_{\S 3})$, and the blocks would correspond to $\ve{z}_t$, $\ve{a}_{\S 1}(t)^T$, and $\ve{a}_{\S 3}(t)^T$, respectively. The initial state vector would be
   \begin{align*}
     \ve{q}^{(t_1)} = \begin{bmatrix}
