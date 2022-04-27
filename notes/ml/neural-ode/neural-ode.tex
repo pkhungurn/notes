@@ -276,6 +276,101 @@ This is a note on the paper ``Neural Ordinary Differential Equations'' by Chen \
     \end{align*}
     as required.
   \end{proof}
+  \item In a typical traning process, we start from $\ve{r}_{t_0} = (\ve{z}_{t_0}, t_0, \ves{\theta})$, and we solve the neural SDE forward in time to obtain $\ve{r}_{t_1} = (\ve{z}_{t_1}, t_1, \ves{\theta})$. We assume that we do not save any intermediate information in the forward solving process. Now, we need to compute the gradient $\ve{a}_{\S3}(t_0) = \nabla_{\S3}\mcal{L}(\ve{z}_{t_0}, t_0, \ves{\theta}).$
+    
+  \item The idea is then to start at time $t_1$ and jointly solve the following differential equations backward in time to $t_0$:
+  \begin{align*}
+    \frac{\dee \ve{z}_t}{\dee t} &= \ve{f}(\ve{z}_t, t, \ves{\theta}), \\
+    \frac{\dee \ve{a}_{\S1}(t)}{\dee t} &= -\ve{a}_{\S 1}(t) \nabla_{\S 1}\ve{f}(\ve{z}_t, t, \ves{\theta}), \\
+    \frac{\dee \ve{a}_{\S3}(t)}{\dee t} &= -\ve{a}_{\S 1}(t) \nabla_{\S 3}\ve{f}(\ve{z}_t, t, \ves{\theta}).
+  \end{align*}
+  In other words, we would like to compute the following integrals:
+  \begin{align*}
+    \ve{z}_{t_0} &= \ve{z}_{t_1} + \int_{t_1}^{t_0} \ve{f}(\ve{z}_t, t, \ves{\theta})\, \dee t, \\
+    \ve{a}_{\S1}(t_0) &= \ve{a}_{\S1}(t_1) - \int_{t_1}^{t_0} \ve{a}_{\S 1}(\ve{z}_t, t, \ves{\theta}) \nabla_{\S 1}\ve{f}(\ve{z}_t, t, \ves{\theta})\, \dee t, \\
+    \ve{a}_{\S3}(t_0) &= \ve{a}_{\S3}(t_1) - \int_{t_1}^{t_0} \ve{a}_{\S 1}(\ve{z}_t, t, \ves{\theta}) \nabla_{\S 3}\ve{f}(\ve{z}_t, t, \ves{\theta})\, \dee t.
+  \end{align*}
+  The initial conditions include $\ve{z}_{t_1}$, which we just computed using the forward process. The other initial conditions are:
+  \begin{align*}
+    a_{\S1}(t_1) 
+    &= \nabla_{\S1}\mcal{L}(\ve{z}_{t_1},t_1,\ves{\theta}) = \nabla_{\S1}L(\ve{z}_{t_1},t_1,\ves{\theta}) = \nabla L(\ve{z}_{t_1}), \\
+    a_{\S3}(t_1) 
+    &= \nabla_{\S3}\mcal{L}(\ve{z}_{t_1},t_1,\ves{\theta})
+    = \nabla_{\S3}L(\ve{z}_{t_1},t_1,\ves{\theta}) 
+    = \ve{0}.
+  \end{align*} 
+  The last line follows from the fact that we assumed that $L$ does not depend on $\ves{\theta}$. All of these values are easy to compute.
+
+  \item To solve the ODEs, we can use any black-box ODE solver. The interface for such a solver requires us to provide (1) an initial state vector, and (2) a function that computes the time derivative of the state vector given the time and the state vector. 
+
+  Here, our state vector would be $\ve{q}^{(t)} \in \Real^{n+n+m}$. It would be divided into three blocks $\ve{q}^{(t)} = (\ve{q}^{(t)}_{\S 1}, \ve{q}^{(t)}_{\S 2}, \ve{q}^{(t)}_{\S 3})$, and the blocks would correspond to $\ve{z}_t$, $\ve{a}_{\S 1}(t)^T$, and $\ve{a}_{\S 3}(t)^T$, respectively. The initial state vector would be
+  \begin{align*}
+    \ve{q}^{(t_1)} = \begin{bmatrix}
+      \ve{z}_{t_1} \\
+      \nabla \big( L(\ve{z}_{t_1}) \big)^T \\
+      \ve{0}
+    \end{bmatrix}.
+  \end{align*}
+  The derivative would be given by
+  \begin{align*}
+    \frac{\dee \ve{q}^{(t)}}{\dee t}
+    &= \begin{bmatrix}
+      \ve{f}(\ve{q}_{\S 1}^{(t)}, t, \ves{\theta}) \\
+      -\big( \ve{q}^{(t)}_{\S 2}\big)^T \nabla_{\S 1}\ve{f}(\ve{q}_{\S 1}^{(t)}, t, \ves{\theta}) \\
+      -\big( \ve{q}^{(t)}_{\S 2} \big)^T \nabla_{\S 3}\ve{f}(\ve{q}_{\S 1}^{(t)}, t, \ves{\theta}) 
+    \end{bmatrix}.
+  \end{align*}
+  Note that both $\big( \ve{q}^{(t)}_{\S 2}\big)^T \nabla_{\S 1}\ve{f}(\ve{q}_{\S 1}^{(t)}, t, \ves{\theta})$ and $\big( \ve{q}^{(t)}_{\S 2} \big)^T \nabla_{\S 3}\ve{f}(\ve{q}_{\S 1}^{(t)}, t, \ves{\theta})$ are both vector-Jacobian products (i.e., they are directional derivatives). They can thus be evaluated efficiently using automatic differentiation at the cost proportational to the evaluation of $\ve{f}(\ve{q}_{\S 1}^{(t)}, t, \ves{\theta})$.
+
+  \item All in all, the adjoint sensitivity method allows us to compute the gradient without backpropagating through the operations of the forward solver. If we use forward-mode automatic differentiation, then the required memory is proportional to the size of the intermediate tensor vectors. There's no dependence on the network's depth at all. Hence, neural ODE is a very memory efficient architecture.
+\end{itemize}
+
+\section{Continuous Normalizing Flows}
+
+\begin{itemize}
+  \item {\bf Normalizing flows} refer to a body of techniques for modeling probability distributions that work by transforming a simple probability distribution (such as an isotropic Gaussian) to a more complicated one by compositing multiple simple transformations \cite{Kobyzev:2021}.
+  
+  \item More concretely, we may start with $\ve{z}_0 \sim p(\ve{z}_0)$ where $p(\ve{z}_0)$ is simple. We can now make the probability distribution more complex by applying a bijective function $\ve{g}_1$ to get
+  \begin{align*}
+    \ve{z}_1 = \ve{g}_1(\ve{z}_0).
+  \end{align*}
+  We have that
+  \begin{align*}
+    p(\ve{z}_1) = p(\ve{z}_0) |\det \nabla \ve{g}_1(\ve{z}_0) |^{-1}
+  \end{align*}
+  or
+  \begin{align*}
+    \log p(\ve{z}_1) = \log p(\ve{z}_0) - \log | \det \nabla \ve{g}_1(\ve{z}_0) |.
+  \end{align*}
+
+  \item In most normalizing flow techniques, multiple transformations are used:
+  \begin{align*}
+    \ve{z}_k = (\ve{g}_k \circ \ve{g}_{k-1} \circ \dotsb \circ \ve{g}_2 \circ \ve{g}_1)(\ve{z}_0)
+    = \ve{g}_k(\ve{g}_{k-1}(\dotsm\ve{g}_2(\ve{g}_1(\ve{z}_0)))),
+  \end{align*}
+  which implies
+  \begin{align} \label{eqn:normalizing-flow-log-p}
+    \log p(\ve{z}_k) = \log p(\ve{z_0}) - \sum_{i=1}^k |\det \nabla \ve{g}_i(\ve{z}_{i-1}) |.
+  \end{align}
+  This above expression allows us to (1) compute the probability, and (2) train the normalizing flow model with maximum likelihood.
+
+  \item Normalizing flows can be casted into the neural ODE framework if we require that all transformations have the same form
+  \begin{align*}
+    \ve{z}_{t+1} = \ve{g}_{t+1}(\ve{z}_t) = \ve{z}_t + \ve{f}(\ve{z}_t, t, \ves{\theta}).
+  \end{align*}
+  As usual, we take the limit as $t \gets \infty$ to obtain
+  \begin{align*}
+    \frac{\dee \ve{z}(t)}{\dee t} = \ve{f}(\ve{z}, t, \ves{\theta}),
+  \end{align*}
+  which gives us a continuous normalizing flow.
+
+  \item To compute probability and to train our neural ODE model, we need an expression like \eqref{eqn:normalizing-flow-log-p}. This is given by the following theorem.
+  \begin{theorem}[Instantataneous change of variables]
+    Let $\ve{z}(t)$ be a finite continuous random variable with probability $p(\ve{z}(t))$ dependent on time. Let $\dee \ve{z} / \dee t = \ve{f}(\ve{z}(t), t)$ be a differential equation governing the value of $\ve{z}$. Assuming that $\ve{f}$ is uninformly Lipschitz continuous in $\ve{z}$ and continuous in $t$. Then,
+    \begin{align*}
+      \frac{\dee \log p(\ve{z}(t))}{\dee t} = -\tr(\nabla_{\S1} \ve{f}(\ve{z}(t), t)).
+    \end{align*}
+  \end{theorem}
 \end{itemize}
 
 \bibliographystyle{alpha}
