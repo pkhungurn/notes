@@ -580,10 +580,38 @@ This is a note on the paper ``Neural Ordinary Differential Equations'' by Chen \
   from time $t_0$ to $t_1$. The second and the third block of the solution would give us $\nabla_{\S1} \log p^*(\ve{z}_{t_1}, t_1, \ves{\theta})$ and $\nabla_{\S3} \log p^*(\ve{z}_{t_1}, t_1, \ves{\theta})$.
 \end{itemize}
 
-\subsection{Continuous Planar Flow}
+\subsection{Continuous Planar Flows}
 
 \begin{itemize}
-  \item 
+  \item We previously mentioned that it is generally very expensive to evalutate $\tr(\nabla_{\S1} \ve{f}(\ve{z}_t, t, \ves{\theta}))$. This makes it very difficult to compute probabilities of continuous normalizing flow models.
+  
+  \item The paper, however, has to show that continuous normalizing flows has some merit. So it chooses $\ve{f}$ where the trace above is easy to compute and demonstates that it computes probabilities with it.
+  
+  \item The paper thus chooses an analogue of {\bf planar flow}, a transformation that was introduced by Rezende and Mohamed \cite{Rezende:2015}. In particular,
+  \begin{align*}
+    \ve{f}(\ve{z}_t, t, \ves{\theta}) = \ve{u} h(\ve{w}^T \ve{z}_t + b)
+  \end{align*}
+  where $\ves{\theta} = (\ve{u}, \ve{w}, b)$ and $h$ is a nonlinear function. In this case, we have that
+  \begin{align*}
+    \tr(\nabla_{\S1}\ve{f}(\ve{z}_t, t, \ves{\theta}))
+    &= \sum_{i=1}^n \frac{\partial (u_i h(\ve{w}^T\ve{z}_t + b))}{\partial z_{t,i}} \\
+    &= \sum_{i=1}^n u_i h'(\ve{w}^T\ve{z}_t + b) \frac{\ve{w}^T \ve{z}+ b}{\partial z_{z,i}} \\
+    &= \sum_{i=1}^n u_i w_i h'(\ve{w}^T\ve{z}_t + b) \\
+    &= \ve{u}^T \ve{w} h'(\ve{w}^T\ve{z}_t + b).
+  \end{align*}
+
+  \item In the Rezende and Mohamed paper, multiple planar flows are applied in succession. However, in the CNF formulation, there's only one planar flow being applied infinitely many times. So, to simulate the effect of multiple successive planar flows, the paper uses a linear combination of planar flows:
+  \begin{align*}
+    \ve{f}(\ve{z}_t, t, \ves{\theta}) = \sum_{k=1}^K \sigma_k(t) \ve{u}_k h(\ve{w}^T_k \ve{z}_t + b)
+  \end{align*}
+  where each $\sigma_k: \Real \rightarrow [0,1]$ is a neural network. Here, $\sigma_k$ tells how much the the $k$th planar flow is turned of on off at time $t$. This gives
+  \begin{align*}
+    \tr(\nabla_{\S1}\ve{f}(\ve{z}_t, t, \ves{\theta}))
+    = \sum_{i=1}^K \sigma_i(t)\, \tr \Big( \nabla_{\S1}\big( \ve{u}_k h(\ve{w}^T_k \ve{z}_t + b) \big)\Big)
+    = \sum_{i=1}^K \sigma_i(t) \ve{u}_k^T \ve{w}_k h(\ve{w}_k^T \ve{z}_t + b),
+  \end{align*}
+  which is still easy to compute.
+
 \end{itemize}
 
 \bibliographystyle{alpha}
