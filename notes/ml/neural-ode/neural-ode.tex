@@ -328,6 +328,8 @@ This is a note on the paper ``Neural Ordinary Differential Equations'' by Chen \
 
 \section{Continuous Normalizing Flows}
 
+\subsection{Introduction to (Discrete) Normalizing Flows}
+
 \begin{itemize}
   \item {\bf Normalizing flows} refer to a body of techniques for modeling probability distributions that work by transforming a simple probability distribution (such as an isotropic Gaussian) to a more complicated one by compositing multiple simple transformations \cite{Kobyzev:2021}.
   
@@ -351,10 +353,28 @@ This is a note on the paper ``Neural Ordinary Differential Equations'' by Chen \
   \end{align*}
   which implies
   \begin{align} \label{eqn:normalizing-flow-log-p}
-    \log p(\ve{z}_k) = \log p(\ve{z_0}) - \sum_{i=1}^k |\det \nabla \ve{g}_i(\ve{z}_{i-1}) |.
-  \end{align}
-  This above expression allows us to (1) compute the probability, and (2) train the normalizing flow model with maximum likelihood.
+    \log p(\ve{z}_k) = \log p(\ve{z_0}) - \sum_{j=1}^k |\det \nabla \ve{g}_j(\ve{z}_{j-1}) |.
+  \end{align}  
+  
+  \item To use normalizing flows for generative modeling, we just approximate the data distribution $p_{\mrm{data}}(\cdot)$ with $p_k(\cdot)$.
+  \begin{itemize}    
+    \item Model parameters can be obtained by maximum likelihood estimation. In other words, given a collection of data points $\{ \ve{z}^{(1)}_k, \ve{z}^{(2)}_k, \dotsc, \ve{z}^{(N)}_k \}$, we maximize
+    \begin{align*}
+      \frac{1}{N}\sum_{i=1}^N \log p(\ve{z}_k^{(i)})
+      &= \frac{1}{N} \log p(\ve{z_0}^{(i)}) - \frac{1}{N} \sum_{i=1}^N \sum_{j=1}^k |\det \nabla \ve{g}_j(\ve{z}^{(i)}_{j-1}) |
+    \end{align*}
+    Here, for each data point $\ve{z}_k^{(i)}$, the hidden states $\ve{z}_{k-1}^{(i)}$, $\ve{z}_{k-1}^{(i)}$, $\dotsc$, $\ve{z}_{0}^{(i)}$ can be obtained by applying the inverse functions $\ve{g}^{-1}_k$, $\ve{g}^{-1}_{k-1}$, $\dotsc$, $\ve{g}^{-1}_1$ in order.
 
+    \item Once the parameters are estimated, we can compute the probability of data point $\ve{p}_k$ by first computing the hidden states $\ve{z}_{k-1}$, $\dotsc$, $\ve{z}_0$ by applying the inverse transformations and then applying \eqref{eqn:normalizing-flow-log-p}.
+    
+    \item Also, we can sample a data point by first sampling $\ve{z}_0 \sim p_0$, which should be simple. We then apply $\ve{g}_1$, $\ve{g}_2$, $\dotsc$, $\ve{g}_k$ in order to obtain $\ve{z}_k$, which would be distributed according to $p_k \approx p_{\mrm{data}}$.    
+  \end{itemize}
+
+  \item In order to make normalizing flows work efficiently, we require transformations $\ve{g}_i$'s that are (1) easy to invert and (2) have Jacobians whose determinants are easy to compute and find gradients of. The survey article \cite{Kobyzev:2021} catalogs such transformations.
+\end{itemize}
+
+\subsection{Continuous Normalizing Flows and Its Distribution}
+\begin{itemize}
   \item Normalizing flows can be casted into the neural ODE framework if we require that all transformations have the same form
   \begin{align*}
     \ve{z}_{t+1} = \ve{g}_{t+1}(\ve{z}_t) = \ve{z}_t + \ve{f}(\ve{z}_t, t, \ves{\theta}).
@@ -366,12 +386,204 @@ This is a note on the paper ``Neural Ordinary Differential Equations'' by Chen \
   which gives us a continuous normalizing flow.
 
   \item To compute probability and to train our neural ODE model, we need an expression like \eqref{eqn:normalizing-flow-log-p}. This is given by the following theorem.
+  
   \begin{theorem}[Instantataneous change of variables]
-    Let $\ve{z}(t)$ be a finite continuous random variable with probability $p(\ve{z}(t))$ dependent on time. Let $\dee \ve{z} / \dee t = \ve{f}(\ve{z}(t), t)$ be a differential equation governing the value of $\ve{z}$. Assuming that $\ve{f}$ is uninformly Lipschitz continuous in $\ve{z}$ and continuous in $t$. Then,
+    Let $\ve{z}_t$ be a finite continuous random variable with probability $p(\ve{z}_t)$ dependent on time. Let $\dee \ve{z}_t / \dee t = \ve{f}(\ve{z}_t, t, \ves{\theta})$ be a differential equation governing the value of $\ve{z}_t$. Assuming that $\ve{f}$ is uninformly Lipschitz continuous in $\ve{z}$ and continuous in $t$. Then,
     \begin{align*}
-      \frac{\dee \log p(\ve{z}(t))}{\dee t} = -\tr(\nabla_{\S1} \ve{f}(\ve{z}(t), t)).
+      \frac{\dee \log p(\ve{z}_t)}{\dee t} = -\tr(\nabla_{\S1} \ve{f}(\ve{z}_t, t, \ves{\theta})).
     \end{align*}
   \end{theorem}
+
+  \begin{proof}
+    Because we assume that $\ve{f}$ is Lipschitz continuous in $\ve{z}_t$ and continuous in $t$, we have that every initial value problem has a unique solution by Picard's existence theorem. Because we assume that $\ve{z}_t$ is bounded, it implies that $\ve{f}$, $\ve{s}^+_\varepsilon$, and $\nabla_{\S1} \ve{s}^+_\varepsilon$ are all bounded.
+
+    Suppose that $\epsilon$ is small enough that $\ve{s}_{\varepsilon}^+$ is bijective. (It is in the limit as $\varepsilon \rightarrow 0$.) We have that
+    \begin{align*}
+      \ve{z}_{t+\varepsilon}  = \ve{s}_{\varepsilon}^+(\ve{z}_t, t, \ves{\theta})[\S1].
+    \end{align*}
+    So,
+    \begin{align*}
+      \log p(\ve{z}_{t+\varepsilon})  = \log p(\ve{z}_t) - \log |\det \nabla_{\S1} \ve{s}_\varepsilon^+(\ve{z}_t, t, \ves{\theta})|.
+    \end{align*}
+    Hence,
+    \begin{align*}
+      \frac{\dee \log p(\ve{z})}{\dee t}
+      &= \lim_{\varepsilon \rightarrow 0^+} \frac{\log p(\ve{z}_{t+\varepsilon}) - \log p(\ve{z}_t)}{\varepsilon} \\
+      &= \lim_{\varepsilon \rightarrow 0^+} \frac{\log p(\ve{z}_t) - \log |\det \nabla_{\S1} \ve{s}_\varepsilon^+(\ve{z}_t, t, \ves{\theta})| - \log p(\ve{z}_t)}{\varepsilon} \\
+      &= - \lim_{\varepsilon \rightarrow 0^+} \frac{\log |\det \nabla_{\S1} \ve{s}_\varepsilon^+(\ve{z}_t, t, \ves{\theta})|}{\varepsilon}.
+    \end{align*}
+    Applying L'Hospital's rule, we have
+    \begin{align*}
+      \frac{\dee \log p(\ve{z})}{\dee t}
+      &= -\lim_{\varepsilon \rightarrow 0^+} \frac{ \frac{\partial}{\partial \varepsilon} \log |\det \nabla_{\S1} \ve{s}_\varepsilon^+(\ve{z}_t, t, \ves{\theta})|}{ \frac{\partial}{\partial \varepsilon} \varepsilon} \\
+      &= -\lim_{\varepsilon \rightarrow 0^+} \frac{ \frac{\partial}{\partial \varepsilon} |\det \nabla_{\S1} \ve{s}_\varepsilon^+(\ve{z}_t, t, \ves{\theta})|}{ |\det \nabla_{\S1} \ve{s}_\varepsilon^+(\ve{z}_t, t, \ves{\theta})| }
+    \end{align*}
+    As $\varepsilon \rightarrow 0^+$, $\ve{s}_\varepsilon^+(\cdot)$ approachs the identity function. So, $\lim_{\varepsilon \rightarrow 0^+}|\det \nabla_{\S1} \ve{s}_\varepsilon^+(\ve{z}_t, t, \ves{\theta})| = 1 \neq 0.$ As result,
+    \begin{align*}
+      \frac{\dee \log p(\ve{z})}{\dee t} &= - \frac{ \lim_{\varepsilon \rightarrow 0^+} \frac{\partial}{\partial \varepsilon} |\det \nabla_{\S1} \ve{s}_\varepsilon^+(\ve{z}_t, t, \ves{\theta})|}{ \lim_{\varepsilon \rightarrow 0^+} |\det \nabla_{\S1} \ve{s}_\varepsilon^+(\ve{z}_t, t, \ves{\theta})| }
+      = -\lim_{\varepsilon \rightarrow 0^+} \frac{\partial}{\partial \varepsilon} |\det \nabla_{\S1} \ve{s}_\varepsilon^+(\ve{z}_t, t, \ves{\theta})|.
+    \end{align*}
+  Again, we note that, as $\varepsilon \rightarrow 0^+$, $\ve{s}_\varepsilon^+(\cdot)$ approachs the identity function. As a result, it cannot change orientation of the local frame. So, $\det \nabla_{\S1} \ve{s}_\varepsilon^+(\ve{z}_t, t, \ves{\theta})$ must be positive. As a result, we can drop the absolute function and write
+  \begin{align*}
+    \frac{\dee \log p(\ve{z})}{\dee t} 
+    &= -\lim_{\varepsilon \rightarrow 0^+} \frac{\partial}{\partial \varepsilon} \det \nabla_{\S1} \ve{s}_\varepsilon^+(\ve{z}_t, t, \ves{\theta}).
+  \end{align*}
+  Applying Jacobi's formula \cite{JacobisFormula}, we have that
+  \begin{align*}
+    \frac{\dee \log p(\ve{z})}{\dee t} 
+    &= - \lim_{\varepsilon \rightarrow 0^+} 
+    \tr \bigg( \mrm{adj}\big( \nabla_{\S1} \ve{s}_\varepsilon^+(\ve{z}_t, t, \ves{\theta}) \big) \frac{\partial \nabla_{\S1} \ve{s}_\varepsilon^+(\ve{z}_t, t, \ves{\theta}) }{\partial \varepsilon} \bigg) \\
+    &= - \tr \Bigg( 
+      \Big( \lim_{\varepsilon \rightarrow 0^+} \mrm{adj}\big( \nabla_{\S1} \ve{s}_\varepsilon^+(\ve{z}_t, t, \ves{\theta}) \big) \Big)
+      \bigg( \lim_{\varepsilon \rightarrow 0^+} \frac{\partial \nabla_{\S1} \ve{s}_\varepsilon^+(\ve{z}_t, t, \ves{\theta}) }{\partial \varepsilon} \bigg)
+    \Bigg)
+  \end{align*}
+  As $\varepsilon \rightarrow 0^+$, $\ve{s}_\varepsilon^+(\cdot)$ approachs the identity function, and so $\mrm{adj}\big( \nabla_{\S1} \ve{s}_\varepsilon^+(\ve{z}_t, t, \ves{\theta}) \big)$ approaches the identity matrix. Hence, 
+  \begin{align*}
+    \frac{\dee \log p(\ve{z})}{\dee t} 
+    &= - \tr \bigg( 
+      \lim_{\varepsilon \rightarrow 0^+} \frac{\partial \nabla_{\S1} \ve{s}_\varepsilon^+(\ve{z}_t, t, \ves{\theta}) }{\partial \varepsilon} 
+    \bigg) \\
+    &= - \tr \bigg( 
+      \lim_{\varepsilon \rightarrow 0^+} \frac{\partial }{\partial \varepsilon} \frac{\partial}{\partial \ve{z}_t}
+      \Big( 
+        \ve{z}_t + \varepsilon \ve{f}(\ve{z}_t, t, \ves{\theta}) + O(\varepsilon^2)
+      \Big) 
+    \bigg) \\
+    &= - \tr \bigg( 
+      \lim_{\varepsilon \rightarrow 0^+} \frac{\partial }{\partial \varepsilon} 
+      \Big( 
+        I + \varepsilon \frac{\partial}{\partial \ve{z}_t} \ve{f}(\ve{z}_t, t, \ves{\theta}) + O(\varepsilon^2)
+      \Big) 
+    \bigg) \\
+    &= - \tr \bigg( 
+      \lim_{\varepsilon \rightarrow 0^+} 
+      \Big( 
+        \frac{\partial}{\partial \ve{z}_t} \ve{f}(\ve{z}_t, t, \ves{\theta}) + O(\varepsilon)
+      \Big) 
+    \bigg) \\
+    &= - \tr \bigg( 
+        \frac{\partial}{\partial \ve{z}_t} \ve{f}(\ve{z}_t, t, \ves{\theta})
+    \bigg) \\
+    &= - \tr(\nabla_{\S1}  \ve{f}(\ve{z}_t, t, \ves{\theta}) )
+  \end{align*}  
+  as required.
+  \end{proof}
+
+  \item Note that computing $\tr(\nabla_{\S1}  \ve{f}(\ve{z}_t, t, \ves{\theta}) )$ exactly is expensive if we do not restrict the form of $\ve{f}$. The best we can do is to evaluate
+  \begin{align*}
+    \nabla_{\S1} f_1(\ve{z}_t, t, \ves{\theta}), 
+    \quad \nabla_{\S1} f_1(\ve{z}_t, t, \ves{\theta}), 
+    \quad \dotsc, 
+    \quad \nabla_{\S1} f_n(\ve{z}_t, t, \ves{\theta}), 
+  \end{align*}
+  and then add up the right components. This is equivalent to $n$ evaluations of $\ve{f}$ with automatic differentiation.
+
+  \item A follow-up work by pretty the same group of authors proposes an algorithm that can generate an unbiased estimate of $\tr(\nabla_{\S1}  \ve{f}(\ve{z}_t, t, \ves{\theta}) )$ with just one evaluation of $\ve{f}$ with automatic differentiation \cite{Grathwohl:2018}. It uses something called the Hutchinson's trace estimator \cite{Hutchinson:1989}. However, we will not discuss this technique here in this note.  
+\end{itemize}
+
+\subsection{Generative Modeling with Continuous Normalizing Flows}
+
+\begin{itemize}
+  \item We fix $p(\ve{z}_{t_0})$ to be a simple probability distribution such as the isotropic Gaussian. Then, we would approximate $p_{\mrm{data}}$ with $p(\ve{z}_{t_1})$.
+  
+  \item Sampling is easy. We sample a $\ve{z}_{t_0}$ according to $p(\ve{z}_{t_0})$. Then, we compute
+  \begin{align*}
+    \ve{p}_{t_1} = \ve{p}_{t_0} + \int_{t_0}^{t_1} \ve{f}(\ve{z}_t, t, \ves{\theta})\, \dee t
+  \end{align*}
+  with an ODE solver.
+
+  \item Given a data point $\ve{z}_{t_1}$, we can compute its probability by first noting that
+  \begin{align*}
+    \begin{bmatrix}
+      \ve{z}_{t_1} \\
+      \log p(\ve{z}_{t_1})
+    \end{bmatrix}
+    = \begin{bmatrix}
+      \ve{z}_{t_0} \\
+      \log p(\ve{z}_{t_0})
+    \end{bmatrix}
+    + \int_{t_0}^{t_1}
+    \begin{bmatrix}
+      \ve{f}(\ve{z}_t, t, \ves{\theta}) \\
+      -\tr(\nabla_{\S1}\ve{f}(\ve{z}_t, t, \ves{\theta}))
+    \end{bmatrix}\, \dee t.
+  \end{align*}
+  Rearranging, we have that
+  \begin{align*}
+    \begin{bmatrix}
+      \ve{z}_{t_0} \\
+      \log p(\ve{z}_{t_0}) - \log p(\ve{z}_{t_1})
+    \end{bmatrix}
+    = \begin{bmatrix}
+      \ve{z}_{t_1} \\
+      0
+    \end{bmatrix}
+    + \int_{t_1}^{t_0}
+    \begin{bmatrix}
+      \ve{f}(\ve{z}_t, t, \ves{\theta}) \\
+      -\tr(\nabla_{\S1}\ve{f}(\ve{z}_t, t, \ves{\theta}))
+    \end{bmatrix}\, \dee t.
+  \end{align*}
+  Hence, we can solve the reverse-time ODE
+  \begin{align*}
+    \frac{\dee}{\dee t} \begin{bmatrix}
+      \ve{z}_t \\
+      \log p(\ve{z}_t) - \log p(\ve{z}_{t_1})
+    \end{bmatrix}
+    &= \begin{bmatrix}
+      \ve{f}(\ve{z}_t, t, \ves{\theta}) \\
+      -\tr(\nabla_{\S1}\ve{f}(\ve{z}_t, t, \ves{\theta}))
+    \end{bmatrix}
+  \end{align*}
+  from $t_1$ to $t_0$ with the initial value $(\ve{z}_{t_1}, 0)$. With the solution, we can easily compute $\log p(\ve{z}_{t_0})$ and then derive $\log p(\ve{z}_{t_1})$.
+
+  \item Surprisingly, it is easier to find the gradient $\nabla_{\ve{z}_t} \log p(\ve{z}_{t_1})$ and $\nabla_{\ves{\theta}} \log p(\ve{z}_{t_1})$ and than to find $\log p(\ve{z}_{t_1})$. 
+  
+  First, though, let us redefine the probability function so that we can reuse consistent notation. Define the function $p^*$ as \begin{align*}
+    p^*(\ve{z}_t, t, \ves{\theta}) = p(\ve{z}_t).
+  \end{align*}
+  So, we can now write $\nabla_{\S1} \log p^*(\ve{z}_t, t, \ves{\theta})$ and $\nabla_{\S3} \log p^*(\ve{z}_t, t, \ves{\theta})$ instead of $\nabla_{\ve{z}_t} \log p(\ve{z}_{t})$ and $\nabla_{\ves{\theta}} \log p(\ve{z}_{t})$.
+
+  To find $\nabla_{\S1} \log p^*(\ve{z}_{t_1}, t_1, \ves{\theta})$ and $\nabla_{\S3} \log p^*(\ve{z}_{t_1}, t_1, \ves{\theta})$, we do the following. After being given $\ve{z}_{t_1}$, we can solve the neural ODE backward in time to find $\ve{z}_{t_0}$. Because $p(\ve{z}_{t_0})$ is fixed to a simple distribution, it should be simple to compute $p(\ve{z}_0)$ and
+  \begin{align*}
+    \nabla_{\S1}p^*(\ve{z}_{t_0}, t_0, \ves{\theta}) = \nabla p(\ve{z}_{t_0}).
+  \end{align*}
+  So, it is also easy toc compute $\nabla_{\S1} \log p^*(\ve{z}_{t_0}, t_0, \ves{\theta})$ because
+  \begin{align*}
+    \nabla_{\S1} \log p^*(\ve{z}_t, t, \ves{\theta}) 
+    = \frac{\nabla_{\S1} p^*(\ve{z}_t, t, \ves{\theta})}{p^*(\ve{z}_t, t, \ves{\theta})}
+    = \frac{\nabla p(\ve{z}_{t_0})}{p(\ve{z}_{t_0})}.
+  \end{align*}
+
+  Theorem~\ref{thm:adjoint-deriv} gives us the differential equation
+  \begin{align*}
+    \frac{\dee}{\dee t} \begin{bmatrix}
+      \ve{z}_t \\
+      \nabla_{\S1} \log p^*(\ve{z}_t, t, \ves{\theta}) \\
+      \nabla_{\S3} \log p^*(\ve{z}_t, t, \ves{\theta})
+    \end{bmatrix}
+    = \begin{bmatrix}
+      \ve{f}(\ve{z}_t, t, \ves{\theta}) \\
+      \nabla_{\S1} \log p^*(\ve{z}_t, t, \ves{\theta}) \nabla_{\S1} \ve{f}(\ve{z}_t, t, \ves{\theta}) \\
+      \nabla_{\S1} \log p^*(\ve{z}_t, t, \ves{\theta}) \nabla_{\S3} \ve{f}(\ve{z}_t, t, \ves{\theta})
+    \end{bmatrix},
+  \end{align*}  
+  which we can now solve with the initial condition
+  \begin{align*}
+    \begin{bmatrix}
+      \ve{z}_{t_0} \\
+      \nabla p(\ve{z}_{t_0}) / p(\ve{z}_{t_0}) \\
+      \ve{0}
+    \end{bmatrix}
+  \end{align*}
+  from time $t_0$ to $t_1$. The second and the third block of the solution would give us $\nabla_{\S1} \log p^*(\ve{z}_{t_1}, t_1, \ves{\theta})$ and $\nabla_{\S3} \log p^*(\ve{z}_{t_1}, t_1, \ves{\theta})$.
+\end{itemize}
+
+\subsection{Continuous Planar Flow}
+
+\begin{itemize}
+  \item 
 \end{itemize}
 
 \bibliographystyle{alpha}
