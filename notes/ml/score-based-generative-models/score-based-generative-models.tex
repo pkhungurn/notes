@@ -864,8 +864,10 @@ I read the introductory blog post by Yang Song \cite{Song:2022}, but it seems th
 
   \item The above framework yielded the following benefits.
   \begin{itemize}
-    \item The framework allows employment of any general-purpose SDE solver to do sampling. The paper proposes two algorithms.
+    \item The framework is amenable to a lot of solution techniques. The paper discusses the following approachs.
     \begin{itemize}
+      \item Using simple numerical SDE solvers.
+      
       \item The {\bf Predictor--Corrector} (PC) samplers which has a Metropolis--Hastings-like correction step. Examples include the Langevin algorithm and HMC.
       
       \item The {\bf deterministic} samplers that are based on the probabiliy flow ordinary differential equation (ODE). This approach allows:
@@ -874,15 +876,15 @@ I read the introductory blog post by Yang Song \cite{Song:2022}, but it seems th
         \item Flexible data manipulation via latent codes.
         \item Exact likelihood computation.
       \end{itemize}
+    \end{itemize}
 
-      \item The generation process can be manipulated by conditioning on information not available during training. This allows:
+    \item The generation process can be manipulated by conditioning on information not available during training. This allows:
       \begin{itemize}
         \item class-conditional generation,
         \item image inpainting,
         \item colorization, and
         \item solving other inverse problems.
       \end{itemize}
-    \end{itemize}
   \end{itemize}
 
   \item The paper also give a better architecture for SMLD that achieved new state-of-the-art Inception scores and FID scores.
@@ -1469,6 +1471,202 @@ SDE}
 \end{itemize}
 
 \subsubsection{Neural ODE Approach}
+
+\begin{itemize}
+  \item Recall that our SDE is 
+  \begin{align*}
+    \dee\ve{x} = \ve{f}(\ve{x},t)\, \dee t + g(t)\, \dee\ve{W}
+  \end{align*}
+  where $\ve{f}: \Real^d \times \Real \rightarrow \Real^d$ and $G: \Real^n \times \Real \rightarrow \Real^{n \times n}$.
+
+  \item The marginal probability density $p_t(\ve{x})$ is given by the Fokker--Planck equation
+  \begin{align*}
+    \frac{\partial p_t(\ve{x})}{\partial t}
+    &= - \sum_{i=1}^d \frac{\partial}{\partial x_i} \Big[ f_i(\ve{x},t)p_t(\ve{x}) \Big] + \frac{1}{2} \sum_{i=1}^d \frac{\partial^2 }{\partial x_i^2} [g(t)^2p_t(\ve{x})] \\
+    &= - \sum_{i=1}^d \frac{\partial}{\partial x_i} \Big[ f_i(\ve{x},t)p_t(\ve{x}) \Big] + \frac{1}{2} \sum_{i=1}^d \frac{\partial}{\partial x_i} \bigg[ g(t)^2 \frac{\partial p_t(\ve{x})}{\partial x_i} \bigg] \\
+    &= - \sum_{i=1}^d \frac{\partial}{\partial x_i} \bigg[ f_i(\ve{x},t)p_t(\ve{x}) - \frac{1}{2} g(t)^2 \frac{\partial p_t(\ve{x})}{\partial x_i} \bigg] \\
+    &= - \sum_{i=1}^d \frac{\partial}{\partial x_i} \bigg[ f_i(\ve{x},t)p_t(\ve{x}) - \frac{1}{2} g(t)^2 \frac{\partial \log p_t(\ve{x})}{\partial x_i} p_t(\ve{x}) \bigg] \\
+    &= - \sum_{i=1}^d \frac{\partial}{\partial x_i} \bigg[ \bigg(f_i(\ve{x},t) - \frac{1}{2} g(t)^2 \frac{\partial \log p_t(\ve{x})}{\partial x_i} \bigg) p_t(\ve{x}) \bigg].    
+  \end{align*}
+  Let
+  \begin{align*}
+    \widetilde{\ve{f}}(\ve{x}, t) = \ve{f}(\ve{x},t) - \frac{1}{2} g(t)^2 \nabla \log p_t(\ve{x}).
+  \end{align*}
+  We have that
+  \begin{align*}
+    \widetilde{f}_i(\ve{x},t) = f_i(\ve{x},t) - \frac{1}{2} g(t)^2 \frac{\partial \log p_t(\ve{x})}{\partial x_i}.
+  \end{align*}
+  As a result,
+  \begin{align*}
+    \frac{\partial p_t(\ve{x})}{\partial t} &= \sum_{i=1}^d \frac{\partial}{\partial x_j} \Big[\widetilde{\ve{f}}(\ve{x},t) p_t(\ve{x}) \Big].
+  \end{align*}
+
+  \item The above equation that the distribution $p_t(\ve{x})$ that corresponds to the following two SDEs are the same
+  \begin{align*}
+    \dee \ve{x} &= \ve{f}(\ve{x},t)\, \dee t + g(t)\, \dee\ve{W} \\
+    \dee \ve{x} &= \widetilde{\ve{f}}(\ve{x},t) \, \dee t.
+  \end{align*}
+  However, the second equation is an ODE.
+
+  \item Hence, once we have a way to estimate the score $\nabla \log p_t(\ve{x})$, we can do generative modeling by solving the ODE
+  \begin{align*}
+    \frac{\dee \ve{x}}{\dee t} = \ve{f}(\ve{x},t) - \frac{1}{2} g(t)^2 \nabla \log p_t(\ve{x}),
+  \end{align*}
+  and this can be done with the approach outlined in the neural ODE paper \cite{Chen:2018}. The above equation is called the {\bf probability flow equation}.
+
+  \item The benefit of using the neural ODE approach is as follows:
+  \begin{itemize}
+    \item The probability $p_0(\ve{x})$ can be computed exactly (if one is willing to pay for the cost). If the exact value is not required, an unbiased estimate can be computed quickly using Hutchinson's trace estimator \cite{Hutchinson:1989, Grathwohl:2018}.
+    
+    \item By solving the initial value problem with the input data point $\ve{x}(0)$, we get an encoding $\ve{x}(T)$ in a latent space. This latent code can be manipulated for image editing.
+    
+    \item By using a ODE solver with the desired property, one can control the trade-off between the quality of the generated samples and the speed at which they are generated.
+  \end{itemize}
+\end{itemize}
+
+\subsection{Controllable Generation}
+
+\begin{itemize}
+  \item For controllable generation, we would like to sample from $p_0(\ve{x}|\ve{y})$ for some fixed $\ve{y}$.
+  
+  \item If we solve 
+  \begin{align*}
+    \dee\ve{x} = \ve{f}(\ve{x}, t)\, \dee t + g(t)\, \dee\ve{W},
+  \end{align*}
+  with the initial condition $p_0(\ve{x}) = p_0(\ve{x}|\ve{y})$, then the distribution at time $t$ would be $p_t(\ve{x}|\ve{y})$, and the reverse-time SDE would be
+  \begin{align*}
+    \dee\ve{x} = [\ve{f}(\ve{x}, t) - g^2(t) \nabla \log p_t(\ve{x}|\ve{y})]\, \dee t + g(t)\, \dee\overline{\ve{W}}.
+  \end{align*}
+
+  \item Because
+  \begin{align*}
+    p_t(\ve{x}|\ve{y}) &= \frac{p_t(\ve{y}|\ve{x}) p_t(\ve{x})}{p_t(\ve{y})} \\
+    \log p_t(\ve{x}|\ve{y}) &= \log p_t(\ve{y}|\ve{x}) + \log p_t(\ve{x}) - \log p_t(\ve{y}) \\
+    \nabla \log p_t(\ve{x}|\ve{y}) &= \nabla  \log p_t(\ve{y}|\ve{x}) + \nabla \log p_t(\ve{x}).
+  \end{align*}
+  The term $\nabla \log p_t(\ve{y})$ disappears because the gradient is taken with respect to $\ve{x}$.
+
+  \item As the result, the reverse-time SDE becomes
+  \begin{align*}
+    \dee\ve{x} = [\ve{f}(\ve{x}, t) - g(t)^2 \nabla \log p_t(\ve{x}) - g(t)^2 \nabla \log p_t(\ve{y}|\ve{x})]\, \dee t + g(t)\, \dee\overline{\ve{W}}.
+  \end{align*}
+\end{itemize}
+
+\subsubsection{Class-Conditional Sampling}
+
+\begin{itemize}
+  \item When $\ve{y}$ represents class labels, we can train a time-dependent classifier $p_t(\ve{y}|\ve{x}(t))$. This is done as follows
+  \begin{itemize}
+    \item Start with a training example $(\ve{x}(0), \ve{y})$, and then run the forward SDE and obtiain $\ve{x}(t) \sim p_t(\ve{x}(t)|\ve{x}(0))$. This gives us a training example $(\ve{x}(t),\ve{y})$ for use at time $t$.
+    
+    \item To train the classifier, we can used a mixture of cross-entroppy losses over different time steps.
+  \end{itemize}
+
+  \item The paper experiment with using a Wide ResNet \cite{Zagoruyko:2018}. Time is provided into the network with random Fourier features \cite{Tancik:2020}.
+\end{itemize}
+
+\subsubsection{Image Inpaiting}
+
+\begin{itemize}
+  \item Let $\Omega(\ve{x})$ and $\overline{\Omega}(\ve{x})$ denote the known and unknown dimensions of $\ve{x}$, respectively.
+  
+  \item Let $\ve{f}_\Omega(\cdot, t)$ denote $\ve{f}(\cdot, t)$ restricted to the known dimensions (i.e., the unknown dimensions are $0$). Also, define $\ve{f}_{\overline{\Omega}}(\cdot, t)$ similarly.
+  
+  \item Our goal is to sample from $p_0\big(\overline{\Omega}(\ve{x}(0))\,|\,\Omega(\ve{x}(0)) = \ve{y}\big)$. Let $\ve{z}(t) = \overline{\Omega}(\ve{x}(t))$. Then, the SDE for $\ve{z}(t)$ can be written as
+  \begin{align*}
+    \dee\ve{z} = f_{\overline{\Omega}}(\ve{z},t)\, \dee t + G_{\overline{\Omega}}(t)\, \dee\ve{W}
+  \end{align*}
+  where $G_{\overline{\Omega}}(t)$ is the diagonal matrix where the entries correponding to the unknown dimensions are $g(t)$, and other entries are $0$.
+
+  \item $p_t(\ve{z}(t)\,|\,\Omega(\ve{x}(0)) = \ve{y})$ is hard to compute, but we can approximated it as follows.
+  \begin{align*}
+    p_t(\ve{z}(t)\,|\,\Omega(\ve{x}(0)) = \ve{y})
+    &= \int p_t(\ve{z}(t)\,|\,\Omega(\ve{x}(t)), \Omega(\ve{x}(0)) = \ve{y}) p_t(\Omega(\ve{x}(t))\,|\,\Omega(\ve{x}(0)) = \ve{y})\, \dee \Omega(x(t)) \\
+    &= E_{p_t(\Omega(\ve{x}(t))\,|\,\Omega(\ve{x}(0))=\ve{y})} \big[ p_t(\ve{z}(t)\,|\,\Omega(\ve{x}(t)), \Omega(\ve{x}(0)) = \ve{y}) \big] \\
+    &\approx E_{p_t(\Omega(\ve{x}(t))\,|\,\Omega(\ve{x}(0))=\ve{y})} \big[ p_t(\ve{z}(t)\,|\,\Omega(\ve{x}(t)) \big] \\
+    &\approx p_t(\ve{z}(t)\,|\, \widehat{\Omega}(\ve{x}(t)))
+  \end{align*}
+  where $\widehat{\Omega}(\ve{x}(t))$ is a random sample from $p_t(\Omega(\ve{x}(t))\,|\,\Omega(\ve{x}(0))=\ve{y})$, which is a tractable distribution. In this way, we have that
+  \begin{align*}
+    \nabla_{\ve{z}} p_t(\ve{z}(t)\,|\,\Omega(\ve{x}(0)) = \ve{y})
+    &\approx \nabla_{\ve{z}} p_t(\ve{z}(t)\,|\, \widehat{\Omega}(\ve{x}(t))) \\
+    &= \nabla_{\ve{z}} p_t(\ve{z}(t) + \widehat{\Omega}(\ve{x}(t))).
+  \end{align*}
+  The last line is true because
+  \begin{align*}
+    \nabla_{\ve{z}} p_t(\ve{z}(t) + \widehat{\Omega}(\ve{x}(t)))
+    &= \nabla_{\ve{z}} p_t(\ve{z}(t)\,|\, \widehat{\Omega}(\ve{x}(t))) + \nabla_{\ve{z}} p_t(\widehat{\Omega}(\ve{x}(t))) = \nabla_{\ve{z}} p_t(\ve{z}(t)\,|\, \widehat{\Omega}(\ve{x}(t))).
+  \end{align*}
+\end{itemize}
+
+\subsubsection{Colorization}
+
+\begin{itemize}
+  \item In the colorization problem, we are given a greyscale image where the RGB channels are all equal to one another. In fact, we are given an 3-channel image where using only one channel is able to fully describe it.
+  
+  \item The paper casts colorization as an inpainting problem. First, it multiples the RGB value with the following orthonormal matrix
+  \begin{align*}
+    A = \begin{bmatrix}
+      \frac{1}{\sqrt{3}} & \frac{1}{\sqrt{3}} & \frac{1}{\sqrt{3}} \\
+      -\frac{\sqrt{2}}{\sqrt{3}} & \frac{1}{\sqrt{6}} & \frac{1}{\sqrt{6}} \\
+      0 & \frac{1}{\sqrt{2}} & -\frac{1}{\sqrt{2}}
+    \end{bmatrix}
+  \end{align*}
+  to change it to an image where only the R-channel is non-zero. It then uses image impainting to fill in the other two channels, and then multiply the channels back with $A^{-1}$ to get the final color image.
+
+  \item One thing to note is that this all works because $A$ is orthonomal, so the standard Weiner process in the transform space is still the standard Weiner process.
+\end{itemize}
+
+\subsubsection{Solving General Inverse Problems}
+
+\begin{itemize}
+  \item Suppose we have to random variables $\ve{x}$ and $\ve{y}$ such that we know the process of generating $\ve{y}$ from $\ve{x}$, given by $p(\ve{y}\,|\, \ve{x})$.
+  
+  \item The inverse problem is to obtain $\ve{x}$ from $\ve{y}$. In other words, we want to sample from $p(\ve{x}\,|\,\ve{y})$.
+  
+  \item In the context of score-based generative models, we have a stochastic process $\{\ve{x}(t) : 0 \leq t \leq T\}$ that is the solution of an SDE. We train a network $\ve{s}_{\ves{\theta}^*}(\ve{x}, t)$ to estimate the score $\nabla_{\ve{x}} \log p_t(\ve{x}(t))$. 
+  
+  \item If we can estimate $\nabla_{\ve{x}} \log p_t(\ve{x}(t)\,|\,\ve{y})$, we can simulate the reverse-time SDE
+  \begin{align*}
+    \dee\ve{x} = [\ve{f}(\ve{x}, t) - g^2(t) \nabla_\ve{x} \log p_t(\ve{x}(t)\, |\, \ve{y})]\, \dee t + g(t)\, \dee\overline{\ve{W}}
+  \end{align*}
+  to sample from $p_0(\ve{x}(0)\,|\,\ve{y})$.
+
+  \item It is generally hard to compute $\nabla_\ve{x} \log p_t(\ve{x}(t)\, |\, \ve{y})$ exactly, but we can approximate it under assumptions. First, we have that
+  \begin{align*}
+    \nabla_\ve{x} \log p_t(\ve{x}(t)\, |\, \ve{y})
+    &= \nabla_\ve{x} \int p_t(\ve{x}(t)\,|\, \ve{y}(t), \ve{y}) p(\ve{y}(t)\,|\,\ve{y})\, \dee\ve{y}(t),
+  \end{align*}
+  where $\ve{y}(t)$ is defined via $\ve{x}(t)$ and the forward process $p(\ve{y}(t)\,|\,\ve{x}(t))$. Now, assume that
+  \begin{itemize}
+    \item The process governed by $p(\ve{y}(t)\,|\,\ve{y})$ is tractable.
+    \item $p_t(\ve{x}(t)\,|\,\ve{y}(t), \ve{y}) \approx p_t(\ve{x}(t)\, |\, \ve{y}(t))$.
+  \end{itemize}
+  With these two assumptions, we have that
+  \begin{align*}
+    \nabla_\ve{x} \log p_t(\ve{x}(t)\, |\, \ve{y})
+    &= \nabla_\ve{x} \int p_t(\ve{x}(t)\,|\, \ve{y}(t), \ve{y}) p(\ve{y}(t)\,|\,\ve{y})\, \dee\ve{y}(t) \\
+    &\approx \nabla_\ve{x} \log p_t(\ve{x}(t)\,|\,\widehat{\ve{y}}(t)) \\
+    &= \nabla_\ve{x} \log p_t(\ve{x}(t)) + \nabla_\ve{x} \log p_t(\widehat{\ve{y}}(t)\,|\,\ve{x}(t))\\
+    &\approx \ve{s}_{\ves{\theta}^*}(\ve{x}(t), t) + \nabla_\ve{x} \log p_t(\widehat{\ve{y}}(t)\,|\,\ve{x}(t)),
+  \end{align*}
+  where $\widehat{\ve{y}}(t)$ is a sample from $p(\ve{y}(t)\,|\,\ve{y})$.
+\end{itemize}
+
+\subsection{Architecture Improvement}
+
+\begin{itemize}
+  \item The architecture is based on \cite{Ho:2020}.
+  
+  \item Several components are changed.
+  \begin{itemize}
+    \item Upsampling and downsampling are done with anti-aliasing \cite{Zhang:2019}.
+    \item Rescaling all skip connections by $1/\sqrt{2}$.
+    \item Replace residual blocks in DDPM with residual blocks from BigGAN \cite{Brock:2018}.
+    \item Increase the number of residual blocks per resolution from 2 to 4.
+    \item Incorporating progressive growing architectures, both on the input side and the output side.
+  \end{itemize}
+\end{itemize}
 
 \bibliographystyle{alpha}
 \bibliography{score-based-generative-models}  
