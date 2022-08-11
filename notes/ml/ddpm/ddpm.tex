@@ -1,0 +1,203 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+\usepackage{verbatim}
+\usepackage{hyperref}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\Dee}{\mathrm{D}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\Var}{\mathrm{Var}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\ves}[1]{\boldsymbol{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+\newcommand{\ov}[1]{\overline{#1}}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+\title{Denoising Diffusion Probabilistic Models}
+\author{Pramook Khungurn}
+
+\begin{document}
+\maketitle
+
+This note is written to summarize papers related the {\bf denoising diffusion probabilistic models} (DDPMs), which are a new type of generative models that have become popular since 2020.
+
+\section{The Generative Modeling Problem}
+
+\begin{itemize}
+  \item We are given $n$ data items $\ve{x}_1^{(0)}$, $\ve{x}_2^{(0)}$, $\dotsc$, $\ve{x}_N^{(0)}$ that are sampled i.i.d. from a probability distribution $q(\ve{x}^{(0)})$, which is unknown to us.
+  \begin{itemize}
+    \item Each data item is a $d$-dimensional vector. In other words, $\ve{x}^{(0)}_i \in \Real^d$ for all $i$. 
+  \end{itemize}
+  
+  \item We are interested in modeling $q(\ve{x})$ by finding a model $p_{\boldsymbol{\theta}}(\ve{x}^{(0)})$ with parameters $\boldsymbol{\theta}$ that best approximates it.
+  \begin{itemize}
+    \item To reduce levels of subscription, we will sometimes write $p_{\boldsymbol{\theta}}(\ve{x}^{(0)})$ as $p(\ve{x}^{(0)};\boldsymbol{\theta})$.
+  \end{itemize}
+   
+  \item We would like to know (1) how to estimate the parameters $\boldsymbol{\theta}$ and (2) how to sample from the model given the parameters.
+\end{itemize}
+
+\section{Denoising Diffusion Probabilistic Models (DDPMs)}
+
+\begin{itemize}
+  \item Sohl-Dickstein \etal\ first described the idea of such a model in 2015 \cite{SohlDickstein:2015}, and then Ho \etal\ popularized it in 2020 \cite{Ho:2020}.
+  
+  \item The main ideas are as follows:
+  \begin{itemize}
+    \item There is a Markov chain $\ve{x}^{(0)}$, ${\ve{x}}^{(1)}$, $\dotsc$, ${\ve{x}}^{(T)}$ called the {\bf forward process}, with the following properties:
+    \begin{enumerate}
+      \item $\ve{x}^{(t)}$ is obtained by scaling $\ve{x}^{(t-1)}$ down and adding a small amount of noise.
+      \item $\ve{x}^{(T)}$ is very close to the isotropic Gaussian distribution $\mcal{N}(\ve{0}, I)$.
+    \end{enumerate}
+
+    \item Because each step of the forward process is simple, we can revert it to get $\ve{x}^{(t-1)}$ from $\ve{x}^{(t)}$.
+    
+    \item If we can do so, we can sample $\ve{x}^{(0)}$ according to $q(\ve{x}^{(0)})$ as follows:
+    \begin{itemize}
+      \item Sample $\ve{x}^{(T)}$ according to $\mcal{N}(\ve{0}, I)$.
+      \item Use the above reversal process to compute $\ve{x}^{(T-1)}$, $\ve{x}^{(T-2)}$, $\dotsc$, $\ve{x}^{(1)}$, and finally $\ve{x}^{(0)}$.
+    \end{itemize}
+  \end{itemize}
+\end{itemize}
+
+\subsection{The Forward Process}
+
+\begin{itemize}
+  \item Ho \etal\ uses the following Markov chain:
+  \begin{align*}
+    \ve{x}^{(0)} &\sim q(\ve{x}^{(0)}),\\
+    \ve{x}^{(t)} &\sim \mcal{N}(\sqrt{1 - \beta_t} \ve{x}^{(t-1)}, \beta_t I)
+  \end{align*}
+  for all $t = 1, 2, \dotsc, T$. Here, $\beta_1$, $\beta_2$, $\dotsc$, $\beta_T$ are small positive constants collectively called the {\bf variance schedule}.
+
+  \item They fix $T = 1000$.
+  
+  \item The picked a linear progression where $\beta_1 = 1e-4$ and $\beta_T = 0.02$ as the variance schedule.
+  
+  \item Note that we can write $\ve{x}^{(t)}$ in terms for $\ve{x}^{(t-1)}$ as follows:
+  \begin{align*}
+    \ve{x}^{(t)} &= \sqrt{1 - \beta_t} \ve{x}^{(t-1)} + \sqrt{\beta_t} \ves{\xi}
+  \end{align*}
+  where $\ves{\xi}$ is a random variable distributed according to $\mcal{N}(\ve{0},I)$. The conditional probability of $\ve{x}^{(t)}$ given $\ve{x}^{(t-1)}$ is given by:
+  \begin{align*}
+    q(\ve{x}^{(t)} | \ve{x}^{(t-1)}) = \mcal{N}(\ve{x}^{(t)}; \sqrt{1 - \beta_t} \ve{x}^{(t-1)}, \beta_t I) = \frac{1}{(2\pi \beta_t)^{d/2}}\exp\bigg( \frac{-\| \ve{x}^{(t)} - \sqrt{1 - \beta_t} \ve{x}^{(t-1)} \|_2^2}{2\beta_t} \bigg).
+  \end{align*}
+
+  \item After carrying out the $t$ transitions, here's what the forward process does to the original data.
+  \begin{proposition}
+    Let $\alpha_t = 1 - \beta_t$. Let $\overline{\alpha}_t = \prod_{i=1}^t \alpha_i$. For any $1 \leq t \leq T$, we have that 
+    \begin{align*}
+      q(\ve{x}^{(t)}|\ve{x}^{(0)}) = \mcal{N}(\ve{x}^{(t)}; \sqrt{\overline{\alpha}_t} \ve{x}^{(0)}, (1 - \overline{\alpha}_t) I ).
+    \end{align*}
+  \end{proposition}
+
+  \item The particular choice of the variance schedule in the Ho \etal\ paper yields $\overline{\alpha}_T \approx 10^{-4.385}$. 
+  
+  \item So, if $\ve{x}^{(0)}$'s components are always much smaller than $10^{-4.385 / 2} \approx 10^{2.192}$, then $\ve{x}^{(T)}$'s distribution would be very close to $\mcal{N}(\ve{0}, I)$.
+  \begin{itemize}
+    \item This would always happen if $q(\ve{x}^{(0)})$ is a distribution of RGB images because each component of $\ve{x}^{(0)}$ would be in the range $[0,1]$.
+  \end{itemize}
+\end{itemize}
+
+\subsection{The Backward Process}
+
+\begin{itemize}
+  \item The backward process is sometimes called the {\bf generative process}.
+\end{itemize}
+
+\section{Denoising Diffusion Implicit Models (DDIMs)}
+
+\begin{itemize}
+  \item The **denoising diffusion implicity model** (DDIM) was described by Song \etal\ in 2020 \cite{Song:2020}.
+  
+  \item The goal of the paper is to speed up the forward process.
+\end{itemize}
+
+\subsection{A Non-Markovian Forward Processes}
+
+\begin{itemize}
+  \item Recall that the forward process of the DDPM is given by
+  \begin{align*}
+    \ve{x}^{(0)} &\sim q(\ve{x}^{(0)}),\\
+    \ve{x}^{(t)} &\sim \mcal{N}(\sqrt{1 - \beta_t} \ve{x}^{(t-1)}, \beta_t I).
+  \end{align*}
+  In other words, we first sample $\ve{x}^{(0)}$, then we generative $\ve{x}^{(1)}$, then $\ve{x}^{(2)}$, and so on until we get $\ve{x}^{(1000)}$. We have that the following equality is true:
+  \begin{align*}
+    q(\ve{x}^{(t)}|\ve{x}^{(0)}) = \mcal{N}(\ve{x}^{(t)}; \sqrt{\overline{\alpha}_t}\ve{x}^{(0)}, (1 - \overline{\alpha}_t) I).
+  \end{align*}
+
+  \item The DDIM paper seeks to create another forward process.
+  \begin{itemize}
+    \item It is defined by the probability function $q_{\ves{\sigma}}$, where $\ves{\sigma} = (\sigma_1, \sigma_2, \dotsc, \sigma_T) \in [0,\infty)^T$.
+    \item First, sample $\ve{x}^{(0)}$ according to $q_{\ves{\sigma}}(\ve{x}^{(0)})$, which is defined to be the data distribution.
+    \item Then, sample $\ve{x}^{(T)}$, the last element, according to
+    \begin{align*}
+      q_{\ves{\sigma}}(\ve{x}^{(T)}|\ve{x}^{(0)}) = \mcal{N}(\ve{x}^{(T)}; \sqrt{\overline{\alpha}_T}\ve{x}^{(0)}, (1 - \overline{\alpha}_T) I).
+    \end{align*}
+    \item Given that $\ve{x}^{(t)}$ for some $t > 1$ has been sampled, sample $\ve{x}^{(t-1)}$ according to
+    \begin{align*}
+      q_{\ves{\sigma}}(\ve{x}^{(t-1)}|\ve{x}^{(t)}, \ve{x}^{(0)}) = \mcal{N}\bigg( \ve{x}^{(t-1)} ; \sqrt{\overline{\alpha}_{t-1}} \ve{x}_0 + \sqrt{1 - \overline{\alpha}_t - \sigma_t^2 } \frac{\ve{x}^{(t)} - \sqrt{\overline{\alpha}_t} \ve{x}^{(0)}}{\sqrt{1 - \overline{\alpha}_t}}, \sigma_t^2 I \bigg)
+    \end{align*}
+    \item So, this new process samples $\ve{x}^{(0)}$ and then $\ve{x}^{(T)}$. Then, it works backward from $\ve{x}^{(T)}$ to $\ve{x}^{(1)}$.
+  \end{itemize}
+
+  \item It can be shown that the new forward process has the same ``marginal'' probability as the old one.
+  \begin{proposition}
+    For all $1 \leq t \leq T$, we have that
+    \begin{align*}
+      q_{\ves{\sigma}}(\ve{x}^{(t)}|\ve{x}^{(0)}) = \mcal{N}(\ve{x}^{(t)}; \sqrt{\overline{\alpha}_t} \ve{x}_0, (1-\overline{\alpha}_t) I).
+    \end{align*}
+  \end{proposition}
+
+  \begin{proof}
+    We will prove the proposition by induction from $T$ down to $1$. The base case is $t = T$, which is already true by definition.
+
+    Suppose by way of induction that the proposition is true for some $t \leq T$. We have that
+    \begin{align*}
+      q(\ve{x}^{(t-1)}|\ve{x}^{(0)}) 
+      &= \int q(\ve{x}^{(t-1)}|\ve{x}^{(t)}, \ve{x}^{0}) q(\ve{x}^{(t)}|\ve{x}^{(0)})\, \dee\ve{x}^{(t)} \\
+      &= \int \mcal{N}(\ve{x}^{(t)}; \sqrt{\overline{\alpha}_t} \ve{x}_0, (1-\overline{\alpha}_t) I) \mcal{N}\bigg( \ve{x}^{(t-1)} ; \sqrt{\overline{\alpha}_{t-1}} \ve{x}_0 + \sqrt{1 - \overline{\alpha}_t - \sigma_t^2 } \frac{\ve{x}^{(t)} - \sqrt{\overline{\alpha}_t} \ve{x}^{(0)}}{\sqrt{1 - \overline{\alpha}_t}}, \sigma_t^2 I \bigg)\, \dee\ve{x}^{(t)}
+    \end{align*}
+  \end{proof}
+\end{itemize}
+
+\bibliographystyle{alpha}
+\bibliography{ddpm}  
+\end{document}
