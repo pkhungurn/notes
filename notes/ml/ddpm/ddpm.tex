@@ -115,9 +115,14 @@ This note is written to summarize papers related the {\bf denoising diffusion pr
   \begin{align*}
     \ve{x}^{(t)} &= \sqrt{1 - \beta_t} \ve{x}^{(t-1)} + \sqrt{\beta_t} \ves{\xi}
   \end{align*}
-  where $\ves{\xi}$ is a random variable distributed according to $\mcal{N}(\ve{0},I)$. The conditional probability of $\ve{x}^{(t)}$ given $\ve{x}^{(t-1)}$ is given by:
+  where $\ves{\xi}$ is a random variable distributed according to $\mcal{N}(\ve{0},I)$. The conditional probability of $\ve{x}^{(t)}$ given $\ve{x}^{(t-1)}$ (i.e., the transition kernel) is given by:
   \begin{align*}
     q(\ve{x}^{(t)} | \ve{x}^{(t-1)}) = \mcal{N}(\ve{x}^{(t)}; \sqrt{1 - \beta_t} \ve{x}^{(t-1)}, \beta_t I) = \frac{1}{(2\pi \beta_t)^{d/2}}\exp\bigg( \frac{-\| \ve{x}^{(t)} - \sqrt{1 - \beta_t} \ve{x}^{(t-1)} \|_2^2}{2\beta_t} \bigg).
+  \end{align*}
+
+  \item With the conditional probablity above, the probability of sampling $\ve{x}^{(0:T)} = (\ve{x}^{(0)}, \ve{x}^{(1)}, \dotsc, \ve{x}^{(T)})$ is given by
+  \begin{align*}
+    q(\ve{x}^{(0:T)}) = q(\ve{x}^{(0)}) \prod_{t=1}^T q(\ve{x}^{(t)}|\ve{x}^{(t-1)}).
   \end{align*}
 
   \item After carrying out the $t$ transitions, here's what the forward process does to the original data.
@@ -134,18 +139,78 @@ This note is written to summarize papers related the {\bf denoising diffusion pr
   \begin{itemize}
     \item This would always happen if $q(\ve{x}^{(0)})$ is a distribution of RGB images because each component of $\ve{x}^{(0)}$ would be in the range $[0,1]$.
   \end{itemize}
+
+  \item To streamline future discussion, we introduce new notations for the probability functions. Currently, it is necessary to have superscripts on the $\ve{x}$s of $q(\ve{x}^{(t)}|\ve{x}^{(t-1)})$ in order to know the step in the process we mean. A solution to this would be to move the indices to the function. So, we can write
+  \begin{align*}
+    q^{(t|t-1)}(\ve{x}^{(t)}|\ve{x}^{(t-1)})
+  \end{align*}
+  to mean the same thing as $q(\ve{x}^{(t)}|\ve{x}^{(t-1)})$. The great thing about this notation is that we can write
+  \begin{align*}
+    q^{(t-1|t)}(\ve{x}|\ve{x}'),
+  \end{align*}
+  and it is perfectly clear which step we would like to refer to.
 \end{itemize}
 
 \subsection{The Backward Process}
 
 \begin{itemize}
   \item The backward process is sometimes called the {\bf generative process}.
+  
+  \item It is denoted by the probability function $p_{\ves{\theta}}$ where $\ves{\theta}$ denotes trainable parameters. 
+  
+  \item It goes as follows:
+  \begin{enumerate}
+    \item Sample $\ve{x}^{(T)} \sim p_{\ves{\theta}}^{(T)} = \mcal{N}(\ve{0},I)$.
+    \item Sample $\ve{x}^{(t-1)} \sim p_{\ves{\theta}}^{(t-1|t)}(\cdot|\ve{x}^{(t)})$ for all $t = T, T-1, \dotsc, 1$.
+  \end{enumerate}
+  
+  \item With the above process, the probability of sampling $\ve{x}^{(0:T)} = (\ve{x}^{(0)}, \ve{x}^{(1)}, \dotsc, \ve{x}^{(T)})$ is
+  \begin{align*}
+    p_{\ves{\theta}}(\ve{x}^{(0:T)}) = p_{\ves{\theta}}(\ve{x}^{(T)}) \prod_{t=1}^T p_{\ves{\theta}}(\ve{x}^{(t-1)}|\ve{x}^{(t)}).
+  \end{align*}
+
+  \item To find the optimal parameters $\ves{\theta}$, the standard approach would be to optimize the log-likelihood $\log p_{\ves{\theta}}(\ve{x}^{(0)})$. Note that
+  \begin{align*}
+    p_{\ves{\theta}}(\ve{x}^{(0)}) 
+    &= \int p_{\ves{\theta}}(\ve{x}^{(0:T) })\, \dee\ve{x}^{(1:T)} \\
+    &= \int p_{\ves{\theta}}(\ve{x}^{(0:T) }) \frac{q(\ve{x}^{(1:T)}|\ve{x}^{(0)})}{q(\ve{x}^{(1:T)}|\ve{x}^{(0)})}\, \dee\ve{x}^{(1:T)} \\
+    &= \int q(\ve{x}^{(1:T)}|\ve{x}^{(0)}) \frac{p_{\ves{\theta}}(\ve{x}^{(0:T) })}{q(\ve{x}^{(1:T)}|\ve{x}^{(0)})}\, \dee\ve{x}^{(1:T)}\\
+    &= \int q(\ve{x}^{(1:T)}|\ve{x}^{(0)}) p_{\ves{\theta}}(\ve{x}^{(T)}) \frac{\prod_{t=1}^T p_{\ves{\theta}}(\ve{x}^{(t-1)}|\ve{x}^{(t)})}{\prod_{t=1}^T q(\ve{x}^{(t)}|\ve{x}^{(t-1)})}\, \dee\ve{x}^{(1:T)}\\
+    &= \int q(\ve{x}^{(1:T)}|\ve{x}^{(0)}) p_{\ves{\theta}}(\ve{x}^{(T)}) \prod_{t=1}^T \frac{ p_{\ves{\theta}}(\ve{x}^{(t-1)}|\ve{x}^{(t)})}{ q(\ve{x}^{(t)}|\ve{x}^{(t-1)})}\, \dee\ve{x}^{(1:T)} \\
+    &= E_{\ve{x}^{(1:T)} \sim q(\ve{x}^{(1:T)}|\ve{x}^{(0)})} \bigg[ p_{\ves{\theta}}(\ve{x}^{(T)}) \prod_{t=1}^T \frac{ p_{\ves{\theta}}(\ve{x}^{(t-1)}|\ve{x}^{(t)})}{ q(\ve{x}^{(t)}|\ve{x}^{(t-1)})} \bigg].
+  \end{align*}
+  So, the loss function would be
+  \begin{align}
+    &E_{\ve{x}^{(0)} \sim q} [-\log p_{\ves{\theta}}(\ve{x}^{(0)})] \notag \\
+    &= E_{\ve{x}^{(0)} \sim q} \bigg[ -\log \bigg( E_{\ve{x}^{(1:T)} \sim q(\ve{x}^{(1:T)}|\ve{x}^{(0)})} \bigg[ p_{\ves{\theta}}(\ve{x}^{(T)}) \prod_{t=1}^T \frac{ p_{\ves{\theta}}(\ve{x}^{(t-1)}|\ve{x}^{(t)})}{ q(\ve{x}^{(t)}|\ve{x}^{(t-1)})} \bigg] \bigg) \bigg]. \label{non-elbo-loss}
+  \end{align}
+  However, we are at a deadend because of the logartihm in the expectation.
+
+  \item The solution would be to apply a trick commonly used in variation inferrence: use Jensen's inequality. Because $\log$ is a concave function, we have that
+  \begin{align*}
+    E [\log f(X)] \leq \log E[f(X)]
+  \end{align*}
+  for any random variable $X$. In other words,
+  \begin{align*}
+    E [-\log f(X)] &\geq -\log E[f(X)] \\
+    -\log E[f(X)] &\leq E [-\log f(X)].
+  \end{align*}  
+  So, instead of minimizing $-\log E[f(X)]$ like in \eqref{non-elbo-loss}, we would be minimizing its upper bound $E[-\log f(X)]$.
+
+  \item So, we have that
+  \begin{align}    
+    &E_{\ve{x}^{(0)} \sim q} [-\log p_{\ves{\theta}}(\ve{x}^{(0)})] \notag \\
+    &\leq E_{\ve{x}^{(0)} \sim q} \bigg[ - E_{\ve{x}^{(1:T)} \sim q(\ve{x}^{(1:T)}|\ve{x}^{(0)})} \bigg[ \log \bigg( p_{\ves{\theta}}(\ve{x}^{(T)}) \prod_{t=1}^T \frac{ p_{\ves{\theta}}(\ve{x}^{(t-1)}|\ve{x}^{(t)})}{ q(\ve{x}^{(t)}|\ve{x}^{(t-1)})} \bigg) \bigg] \bigg] \notag \\
+    &= - E_{\ve{x}^{(0:T)}\sim q}\bigg[ \log p_{\ves{\theta}}(\ve{x}^{(T)}) + \sum_{t=1}^T \log p_{\ves{\theta}}(\ve{x}^{(t-1)}|\ve{x}^{(t)}) - \sum_{t=1}^T \log q(\ve{x}^{(t)}|\ve{x}^{(t-1)}) \bigg] \notag \\
+    &= E_{\ve{x}^{(0:T)}\sim q}\bigg[ \sum_{t=1}^T \log q(\ve{x}^{(t)}|\ve{x}^{(t-1)}) - \log p_{\ves{\theta}}(\ve{x}^{(T)}) - \sum_{t=1}^T \log p_{\ves{\theta}}(\ve{x}^{(t-1)}|\ve{x}^{(t)}) \bigg] \notag \\
+    &= E_{\ve{x}^{(0:T)} \sim q}\bigg[ \log q(\ve{x}^{(1:T)}|\ve{x}^{(0)}) - \log p_{\ves{\theta}}(\ve{x}^{(0:T)}) \bigg] \label{ddpm-elbo}
+  \end{align}
 \end{itemize}
 
 \section{Denoising Diffusion Implicit Models (DDIMs)}
 
 \begin{itemize}
-  \item The **denoising diffusion implicity model** (DDIM) was described by Song \etal\ in 2020 \cite{Song:2020}.
+  \item The {\bf denoising diffusion implicity model} (DDIM) was described by Song \etal\ in 2020 \cite{Song:2020}.
   
   \item The goal of the paper is to speed up the forward process.
 \end{itemize}
@@ -163,7 +228,7 @@ This note is written to summarize papers related the {\bf denoising diffusion pr
     q(\ve{x}^{(t)}|\ve{x}^{(0)}) = \mcal{N}(\ve{x}^{(t)}; \sqrt{\overline{\alpha}_t}\ve{x}^{(0)}, (1 - \overline{\alpha}_t) I).
   \end{align*}
 
-  \item The DDIM paper seeks to create another forward process.
+  \item The DDIM paper seeks to create another stochastic process.
   \begin{itemize}
     \item It is defined by the probability function $q_{\ves{\sigma}}$, where $\ves{\sigma} = (\sigma_1, \sigma_2, \dotsc, \sigma_T) \in [0,\infty)^T$.
     \item First, sample $\ve{x}^{(0)}$ according to $q_{\ves{\sigma}}(\ve{x}^{(0)})$, which is defined to be the data distribution.
@@ -173,7 +238,7 @@ This note is written to summarize papers related the {\bf denoising diffusion pr
     \end{align*}
     \item Given that $\ve{x}^{(t)}$ for some $t > 1$ has been sampled, sample $\ve{x}^{(t-1)}$ according to
     \begin{align*}
-      q_{\ves{\sigma}}(\ve{x}^{(t-1)}|\ve{x}^{(t)}, \ve{x}^{(0)}) = \mcal{N}\bigg( \ve{x}^{(t-1)} ; \sqrt{\overline{\alpha}_{t-1}} \ve{x}_0 + \sqrt{1 - \overline{\alpha}_t - \sigma_t^2 } \frac{\ve{x}^{(t)} - \sqrt{\overline{\alpha}_t} \ve{x}^{(0)}}{\sqrt{1 - \overline{\alpha}_t}}, \sigma_t^2 I \bigg)
+      q_{\ves{\sigma}}(\ve{x}^{(t-1)}|\ve{x}^{(t)}, \ve{x}^{(0)}) = \mcal{N}\bigg( \ve{x}^{(t-1)} ; \sqrt{\overline{\alpha}_{t-1}} \ve{x}^{(0)} + \sqrt{1 - \overline{\alpha}_{t-1} - \sigma_t^2 } \frac{\ve{x}^{(t)} - \sqrt{\overline{\alpha}_t} \ve{x}^{(0)}}{\sqrt{1 - \overline{\alpha}_t}}, \sigma_t^2 I \bigg)
     \end{align*}
     \item So, this new process samples $\ve{x}^{(0)}$ and then $\ve{x}^{(T)}$. Then, it works backward from $\ve{x}^{(T)}$ to $\ve{x}^{(1)}$.
   \end{itemize}
@@ -182,7 +247,7 @@ This note is written to summarize papers related the {\bf denoising diffusion pr
   \begin{proposition}
     For all $1 \leq t \leq T$, we have that
     \begin{align*}
-      q_{\ves{\sigma}}(\ve{x}^{(t)}|\ve{x}^{(0)}) = \mcal{N}(\ve{x}^{(t)}; \sqrt{\overline{\alpha}_t} \ve{x}_0, (1-\overline{\alpha}_t) I).
+      q_{\ves{\sigma}}(\ve{x}^{(t)}|\ve{x}^{(0)}) = \mcal{N}(\ve{x}^{(t)}; \sqrt{\overline{\alpha}_t} \ve{x}^{(0)}, (1-\overline{\alpha}_t) I).
     \end{align*}
   \end{proposition}
 
@@ -191,10 +256,276 @@ This note is written to summarize papers related the {\bf denoising diffusion pr
 
     Suppose by way of induction that the proposition is true for some $t \leq T$. We have that
     \begin{align*}
-      q(\ve{x}^{(t-1)}|\ve{x}^{(0)}) 
-      &= \int q(\ve{x}^{(t-1)}|\ve{x}^{(t)}, \ve{x}^{0}) q(\ve{x}^{(t)}|\ve{x}^{(0)})\, \dee\ve{x}^{(t)} \\
-      &= \int \mcal{N}(\ve{x}^{(t)}; \sqrt{\overline{\alpha}_t} \ve{x}_0, (1-\overline{\alpha}_t) I) \mcal{N}\bigg( \ve{x}^{(t-1)} ; \sqrt{\overline{\alpha}_{t-1}} \ve{x}_0 + \sqrt{1 - \overline{\alpha}_t - \sigma_t^2 } \frac{\ve{x}^{(t)} - \sqrt{\overline{\alpha}_t} \ve{x}^{(0)}}{\sqrt{1 - \overline{\alpha}_t}}, \sigma_t^2 I \bigg)\, \dee\ve{x}^{(t)}
+      q_{\ves{\sigma}}(\ve{x}^{(t-1)}|\ve{x}^{(0)}) 
+      &= \int q_{\ves{\sigma}}(\ve{x}^{(t-1)}|\ve{x}^{(t)}, \ve{x}^{0}) q_{\ves{\sigma}}(\ve{x}^{(t)}|\ve{x}^{(0)})\, \dee\ve{x}^{(t)} \\
+      &= \int \mcal{N}(\ve{x}^{(t)}; \sqrt{\overline{\alpha}_t} \ve{x}^{(0)}, (1-\overline{\alpha}_t) I) \\
+      & \qquad \mcal{N}\bigg( \ve{x}^{(t-1)} ; \sqrt{\overline{\alpha}_{t-1}} \ve{x}^{(0)} + \sqrt{1 - \overline{\alpha}_{t-1} - \sigma_t^2 } \frac{\ve{x}^{(t)} - \sqrt{\overline{\alpha}_t} \ve{x}^{(0)}}{\sqrt{1 - \overline{\alpha}_t}}, \sigma_t^2 I \bigg)\, \dee\ve{x}^{(t)}.
     \end{align*}
+
+    Now, the above equation is quite handful to write, so let us introduce some shorthands. Let
+    \begin{align*}
+      \gamma_t &= 1 - \overline{\alpha}_t \\
+      \delta_t &= 1 - \overline{\alpha}_{t-1} - \sigma_t^2.
+    \end{align*}
+    With them, the equation becomes,
+    \begin{align*}
+      q_{\ves{\sigma}}(\ve{x}^{(t-1)}|\ve{x}^{(0)}) 
+      &= \int \mcal{N}(\ve{x}^{(t)}; \sqrt{\overline{\alpha}_t} \ve{x}^{(0)}, \gamma_t I)
+      \mcal{N}\bigg(\ve{x}^{(t-1)};\sqrt{\overline{\alpha}_{t-1}} \ve{x}^{(0)} + \sqrt{\delta_t}\frac{\ve{x}^{(t)} - \sqrt{\overline{\alpha}_t}\ve{x}^{(0)}}{\sqrt{\gamma_t}}, \sigma^2_t I \bigg)\, \dee \ve{x}^{(t)} \\
+      &= \int \mcal{N}(\ve{x}^{(t)}; \sqrt{\overline{\alpha}_t} \ve{x}^{(0)}, \gamma_t I)
+      \mcal{N}\bigg(\ve{x}^{(t-1)};\sqrt{\overline{\alpha}_{t-1}} \ve{x}^{(0)} + \frac{\sqrt{\delta_t}\ve{x}^{(t)} - \sqrt{\delta_t \overline{\alpha}_t}\ve{x}^{(0)}}{\sqrt{\gamma_t}}, \sigma^2_t I \bigg)\, \dee \ve{x}^{(t)}.
+    \end{align*}
+
+    Because the dimensions of the random variables are independent, it suffices to prove the proposition for the 1D case. In this case, we have that
+    \begin{align*}
+      q_{\ves{\sigma}}(x^{(t-1)}|x^{(0)}) 
+      &= \int \mcal{N}(x^{(t)}; \sqrt{\overline{\alpha}_t} x^{(0)}, \gamma_t)
+      \mcal{N}\bigg(x^{(t-1)};\sqrt{\overline{\alpha}_{t-1}} x^{(0)} + \frac{\sqrt{\delta_t}x^{(t)} - \sqrt{\delta_t \overline{\alpha}_t}x^{(0)}}{\sqrt{\gamma_t}}, \sigma^2_t  \bigg)\, \dee x^{(t)}.
+    \end{align*}
+    Note that,
+    \begin{align*}
+      &\mcal{N}\bigg(x^{(t-1)};\sqrt{\overline{\alpha}_{t-1}} x^{(0)} + \frac{\sqrt{\delta_t}x^{(t)} - \sqrt{\delta_t \overline{\alpha}_t}x^{(0)}}{\sqrt{\gamma_t}}, \sigma^2_t  \bigg)\\
+      &= \mcal{N}\bigg(x^{(t-1)};\sqrt{\overline{\alpha}_{t-1}} x^{(0)} + \frac{\sqrt{\delta_t} }{\sqrt{\gamma_t}} x^{(t)} - \frac{\sqrt{\delta_t \overline{\alpha}_t} }{\sqrt{\gamma_t}} x^{(0)}, \sigma^2_t \bigg) \\
+      &= \mcal{N}\bigg(x^{(t-1)} - \frac{\sqrt{\delta_t} }{\sqrt{\gamma_t}} x^{(t)} ; \bigg( \sqrt{\overline{\alpha}_{t-1}}  - \frac{\sqrt{\delta_t \overline{\alpha}_t} }{\sqrt{\gamma_t}} \bigg) x^{(0)}, \sigma^2_t \bigg).
+    \end{align*}
+    Now, by applying Proposition~\ref{gaussian-scaling},
+    \begin{align*}
+      \mcal{N}(x^{(t)}; \sqrt{\overline{\alpha}_t}x^{(0)}, \gamma_t ) 
+      &= \frac{\sqrt{\delta_t} }{\sqrt{\gamma_t}} \mcal{N}\bigg( \frac{\sqrt{\delta_t} }{\sqrt{\gamma_t}} x^{(t)}; \frac{\sqrt{\delta_t} }{\sqrt{\gamma_t}} \sqrt{\overline{\alpha}_t}x^{(0)}, \frac{\delta_t }{\gamma_t} \gamma_t \bigg) \\
+      &= \frac{\sqrt{\delta_t} }{\sqrt{\gamma_t}} \mcal{N}\bigg( \frac{\sqrt{\delta_t} }{\sqrt{\gamma_t}} x^{(t)}; \frac{\sqrt{\delta_t} }{\sqrt{\gamma_t}} \sqrt{\overline{\alpha}_t}x^{(0)}, \delta_t \bigg) \\
+      &= \frac{\sqrt{\delta_t} }{\sqrt{\gamma_t}} \mcal{N}\bigg( \frac{\sqrt{\delta_t} }{\sqrt{\gamma_t}} x^{(t)}; \frac{\sqrt{\delta_t \overline{\alpha}_t} }{\sqrt{\gamma_t}} x^{(0)}, \delta_t \bigg)
+    \end{align*}
+    So,
+    \begin{align*}
+      &q_{\ves{\sigma}}(x^{(t-1)}|x^{(0)}) \\
+      &= \int \frac{\sqrt{\delta_t} }{\sqrt{\gamma_t}} 
+      \mcal{N}\bigg( 
+        \frac{\sqrt{\delta_t} }{\sqrt{\gamma_t}} x^{(t)}; 
+        \frac{\sqrt{\delta_t \overline{\alpha}_t} }{\sqrt{\gamma_t}} x^{(0)}, \delta_t \bigg) \, \dee x^{(t)} \mcal{N}\bigg(x^{(t-1)} - \frac{\sqrt{\delta_t} }{\sqrt{\gamma_t}} x^{(t)} ; \bigg( \sqrt{\overline{\alpha}_{t-1}}  - \frac{\sqrt{\delta_t \overline{\alpha}_t} }{\sqrt{\gamma_t}} \bigg) x^{(0)}, \sigma^2_t \bigg)\, \dee x^{(t)} \\
+      &= \int 
+      \mcal{N}\bigg( 
+        \frac{\sqrt{\delta_t} }{\sqrt{\gamma_t}} x^{(t)}; 
+        \frac{\sqrt{\delta_t \overline{\alpha}_t} }{\sqrt{\gamma_t}} x^{(0)}, \delta_t \bigg) \, \dee x^{(t)} \mcal{N}\bigg(x^{(t-1)} - \frac{\sqrt{\delta_t} }{\sqrt{\gamma_t}} x^{(t)} ; \bigg( \sqrt{\overline{\alpha}_{t-1}}  - \frac{\sqrt{\delta_t \overline{\alpha}_t} }{\sqrt{\gamma_t}} \bigg) x^{(0)}, \sigma^2_t \bigg)\, \frac{\sqrt{\delta_t} }{\sqrt{\gamma_t}} \dee x^{(t)}
+    \end{align*}
+    Let
+    $$u = \frac{\sqrt{\delta_t} }{\sqrt{\gamma_t}} x^{(t)}.$$ 
+    It follows that
+    \begin{align*}
+      \dee u = \frac{\sqrt{\delta_t} }{\sqrt{\gamma_t}} \dee x^{(t)}.
+    \end{align*}
+    Making the substitution from $\frac{\sqrt{\delta_t} }{\sqrt{\gamma_t}} x^{(t)}$ to $u$, we have that
+    \begin{align*}
+      &q_{\ves{\sigma}}(x^{(t-1)}|x^{(0)}) \\
+      &= \int 
+      \mcal{N}\bigg( u ; 
+      \frac{\sqrt{\delta_t \overline{\alpha}_t} }{\sqrt{\gamma_t}} x^{(0)}, \delta_t \bigg) \, \dee x^{(t)} \mcal{N}\bigg(x^{(t-1)} - u ; \bigg( \sqrt{\overline{\alpha}_{t-1}}  - \frac{\sqrt{\delta_t \overline{\alpha}_t} }{\sqrt{\gamma_t}} \bigg) x^{(0)}, \sigma^2_t \bigg)\, \dee u.
+    \end{align*}
+    Applying Proposition~\ref{gaussian-convolution}, we have that
+    \begin{align*}
+      q_{\ves{\sigma}}(x^{(t-1)}|x^{(0)})
+      &= \mcal{N}\bigg( x^{(t-1)}; \frac{\sqrt{\delta_t \overline{\alpha}_t} }{\sqrt{\gamma_t}} x^{(0)} + \bigg( \sqrt{\overline{\alpha}_{t-1}}  - \frac{\sqrt{\delta_t \overline{\alpha}_t} }{\sqrt{\gamma_t}} \bigg) x^{(0)}, \delta_t + \sigma_t^2 \bigg) \\
+      &= \mcal{N}\bigg( x^{(t-1)}; \sqrt{\overline{\alpha}_{t-1}} x^{(0)}, 1 - \overline{\alpha}_{t-1} - \sigma_t^2 + \sigma_t^2 \bigg) \\
+      &= \mcal{N}\bigg( x^{(t-1)}; \sqrt{\overline{\alpha}_{t-1}} x^{(0)}, 1 - \overline{\alpha}_{t-1} \bigg).
+    \end{align*}
+    As a result, the proposition is true for $t-1$ as well. By induction, we are done.
+  \end{proof}
+
+  \item The process above is not a ``forward'' process per se because it goes backward in time.
+  
+  \item However, a forward process can be defined by using Bayes' rule:
+  \begin{align*}
+    q_{\ves{\sigma}}(\ve{x}^{(t)}|\ve{x}^{(t-1)}, \ve{x}^{(0)}) = \frac{q_{\ves{\sigma}}(\ve{x}^{(t-1)}|\ve{x}^{(t)},\ve{x}^{(0)})q(\ve{x}^{(t)}|\ve{x}^{(0)})}{q_{\ves{\sigma}}(\ve{x}^{(t-1)}|\ve{x}^{(0)})}.
+  \end{align*}
+  It can be shown that $q_{\ves{\sigma}}(\ve{x}^{(t)}|\ve{x}^{(t-1)}, \ve{x}^{(0)})$ is a Gaussian, but this fact is not used in the paper. This forward process is not a Markov chain because $\ve{x}^{(t)}$ depends on both $\ve{x}^{(t-1)}$ and $\ve{x}^{(0)}$.
+
+  \item The parameters $\ves{\sigma} = (\sigma_1, \sigma_2, \dotsc, \sigma_T)$ controls how stochastic the process is. When $\ves{\sigma} = \ve{0}$, the process becomes deterministic because $\ve{x}^{(t-1)}$ is determined deterministicly from $\ve{x}^{(t)}$ and $\ve{x}^{(0)}$.
+\end{itemize}
+
+\subsection{The Backward Process}
+
+\begin{itemize}
+  \item Now, we shall derive a backward process that reverts the above non-Markovian forward process. The probability function of the backward process is denoted by $p_{\ves{\theta}}$, where $\ves{\theta}$ denote trainable parameters.
+  
+  \item The task of the backward process is to sample $\ve{x}^{(t-1)}$ when given $\ve{x}^{(t)}$. In other words, we would like to find the form of $p_{\ves{\theta}}(\ve{x}^{(t-1)}|\ve{x}^{(t)})$.
+  
+  \item This time, what is different from DDPM is that, we now have $q_{\ves{\sigma}}(\ve{x}^{(t-1)}|\ve{x}^{(t)}, \ve{x}^{0})$ that we can leverage. This is done by first making a prediction of $\ve{x}^{(0)}$ from $\ve{x}^{(t)}$. Then, we can use $q_{\ves{\sigma}}(\ve{x}^{(t-1)}|\ve{x}^{(t)}, \ve{x}^{0})$ to sample $\ve{x}^{(t-1)}$.
+  
+  \item Here's how we predict $\ve{x}^{(0)}$ from $\ve{x}^{(t)}$. Recall that $\ve{x}^{(t)} \sim \mcal{N}( \sqrt{\overline{\alpha}_t} \ve{x}^{(0)}, (1 - \overline{\alpha}_t) I)$. By Tweedie's formula,
+  \begin{align*}
+    E[\sqrt{\overline{\alpha}_t} \ve{x}^{(0)}|\ve{x}^{(t)}] 
+    &= \ve{x}^{(t)} + (1 - \overline{\alpha}_t) \nabla \log q_{\ves{\sigma}}^{(t)}(\ve{x}^{(t)}) \\
+    E[\ve{x}^{(0)}|\ve{x}^{(t)}] 
+    &= \frac{\ve{x}^{(t)}}{\sqrt{\overline{\alpha}_t}} + \frac{(1 - \overline{\alpha}_t)}{{\sqrt{\overline{\alpha}_t}} } \nabla \log q_{\ves{\sigma}}^{(t)}(\ve{x}^{(t)})
+  \end{align*}
+  So, the RHS of the above equation is the best prediction of $\ve{x}^{(0)}$ from $\ve{x}^{(t)}$. 
+
+  \item There are two ways to compute the RHS above.
+  \begin{enumerate}
+    \item The first way is the direct one. We shall train a {\bf score network} $\ve{s}_{\ves{\theta}}(\ve{x}, t)$ that would estimate $\nabla \log q_{\ves{\sigma}}^{(t)}(\ve{x}).$ Then, the prediction function would be
+    \begin{align*}
+      \ve{f}^{(t)}_{\ves{\theta}}(\ve{x}) = \frac{\ve{x}}{\sqrt{\overline{\alpha}_t}} + \frac{(1 - \overline{\alpha}_t)}{{\sqrt{\overline{\alpha}_t}} } \ve{s}_{\ves{\theta}}(\ve{x}, t).
+    \end{align*}
+
+    \item The second way uses the fact that
+    \begin{align*}
+      \ve{x}^{(t)} = \sqrt{\overline{\alpha}_t} \ve{x}^{(0)} + \sqrt{1 - \overline{\alpha}_t} \ves{\xi}
+    \end{align*}
+    where $\ves{\xi} \sim \mcal{N}(\ve{0},I)$. So, we train a {\bf noise network} $\ves{\epsilon}_{\ves{\theta}}(\ve{x},t)$ to predict the noise $\ves{\xi}$. Our prediction would then be
+    \begin{align*}
+      \ve{f}^{(t)}_{\ves{\theta}}(\ve{x}) = \frac{\ve{x}}{\sqrt{\overline{\alpha}_t}} - \frac{(\sqrt{1 - \overline{\alpha}_t})}{{\sqrt{\overline{\alpha}_t}} } \ves{\epsilon}_{\ves{\theta}}(\ve{x}, t).
+    \end{align*}
+  \end{enumerate}
+  Note, however, that $\ve{s}_{\ves{\theta}}(\ve{x}, t)$ and $\ve{\epsilon}_{\ves{\theta}}(\ve{x}, t)$ are equivalent. In general, when the parameters are optimal,
+  \begin{align*}
+    \ve{s}_{\ves{\theta}}(\ve{x}, t) = - \frac{\ves{\epsilon}_{\ves{\theta}}(\ve{x},t)}{\sqrt{1 - \overline{\alpha}_t}}.
+  \end{align*}
+  We shall use the score network approach.
+  
+  \item With the prediction function defined, we are ready to define the backward process. It is given by
+  \begin{align*}
+    p^{(t-1|t)}(\ve{x}|\ve{x}') =
+    \begin{cases}
+      \mcal{N}(\ve{x}; \ve{f}_{\ves{\theta}}^{(1)}(\ve{x}'), \sigma^2_1 I), & t = 1 \\
+      q_{\ves{\sigma}}^{(t-1|t,0)}(\ve{x}|\ve{x}',\ve{f}^{(t)}_{\ves{\theta}}(\ve{x}')), & 1 < t \leq T
+    \end{cases}
+  \end{align*}
+
+  \item The loss function that we will be minimizing is \eqref{ddpm-elbo}.
+  \begin{align*}
+    &J_{\ves{\sigma}}(\ves{\theta}) \\
+    &= E_{\ve{x}^{(0:T)} \sim q_{\ves{\sigma}}} [ \log q_{\ves{\sigma}}(\ve{x}^{(1:T)}|\ve{x}^{(0)}) - \log p_{\ves{\theta}}(\ve{x}^{(0:T)}) ] \\
+    &= E_{\ve{x}^{(0:T)} \sim q_{\ves{\sigma}}} \bigg[ 
+      \log q_{\ves{\sigma}}(\ve{x}^{(T)}|\ve{x}^{(0)})
+      + \sum_{t=2}^T \log q_{\ves{\sigma}}(\ve{x}^{(t-1)}|\ve{x}^{(t)},\ve{x}^{(0)}) 
+      - \sum_{t=1}^T \log p_{\ves{\theta}}(\ve{x}^{(t-1)}|\ve{x}^{(t)}) 
+      - \log p_{\ves{\theta}}(\ves{x}^{(T)})
+    \bigg]
+  \end{align*}
+
+  \item Recall that the (weighted) version of the loss for the DDPM is given by
+  \begin{align*}
+    L_{\ve{w}}(\ves{\theta})
+    = \sum_{t=1}^T w_t E_{\ve{x}^{(0)} \sim q, \ves{\xi} \sim \mcal{N}(\ve{0},I)} \Big[ 
+      \big\| \ves{\xi} + \sqrt{1-\overline{\alpha}_t} \ve{s}_{\ves{\theta}}(\sqrt{\overline{\alpha}_t} \ve{x}_0 + \sqrt{1 - \overline{\alpha}_t} \ves{\xi} , t) \big\|^2_2
+    \Big]
+  \end{align*}
+  where $\ve{w} = (w_1, w_2, \dotsc, w_T) \in [0,\infty)^T$.
+
+  \item The paper shows that the two losses are equivalent.
+  \begin{theorem}
+    For each $\ves{\sigma} \in [0,\infty)^T$, there exists $\ve{w} \in [0,\infty)^T$ and $C \in \Real$ such that $J_{\ves{\sigma}}(\ves{\theta}) = L_{\ve{w}}(\ves{\theta}).$
+  \end{theorem}  
+\end{itemize}
+
+\appendix
+
+\section{Gaussian Identities}
+
+\begin{itemize}
+  \item \begin{proposition} \label{gaussian-scaling}
+    $$\mcal{N}(ax + b; \mu, \sigma^2) = \frac{1}{|a|} \mcal{N}\bigg( x ; \frac{\mu - b}{a}, \frac{\sigma^2}{a^2} \bigg)$$
+  \end{proposition}
+  \begin{proof}
+    \begin{align*}
+    \mcal{N}(ax + b; \mu, \sigma^2)
+    &= \frac{1}{\sqrt{2\pi}\sigma} \exp\bigg(-\frac{1}{2\sigma^2} (ax+b-\mu)^2 \bigg) \\
+    &= \frac{1}{\sqrt{2\pi}\sigma} \exp\bigg(-\frac{a^2}{2\sigma^2} \bigg(x-\frac{\mu-b}{a} \bigg)^2 \bigg) \\
+    &= \frac{1}{\sqrt{2\pi}\sigma} \exp\bigg(-\frac{1}{2(\sigma^2/a^2)} \bigg(x-\frac{\mu-b}{a} \bigg)^2 \bigg) \\
+    &= \frac{1}{|a|} \frac{1}{\sqrt{2\pi}(\sigma / |a|)} \exp\bigg(-\frac{1}{2(\sigma^2/a^2)} \bigg(x-\frac{\mu-b}{a} \bigg)^2 \bigg) \\
+    &= \frac{1}{|a|}\mcal{N}\bigg( x ; \frac{\mu - b}{a}, \frac{\sigma^2}{a^2} \bigg)
+    \end{align*}
+    as required.
+  \end{proof}
+
+  \item \begin{proposition} \label{gaussian-convolution}
+    \begin{align*}
+    \mcal{N}(x;\mu_1, \sigma_1^2) * \mcal{N}(x;\mu_2, \sigma_2^2)
+    &= \int \mcal{N}(t;\mu_1, \sigma_1^2) \mcal{N}(x-t;\mu_1, \sigma_1^2)\, \dee t
+    = \mcal{N}(x; \mu_1 + \mu_2, \sigma_1^2 + \sigma_2^2).
+    \end{align*}
+  \end{proposition}
+  \begin{proof}
+    Let $X_1$ be a random variable distributed according to $\mcal(\mu_1, \sigma_1^2)$, and let $X_2$ be a random variable distributed according to $\mcal(\mu_2, \sigma_2^2)$. Let $X_1$ and $X_2$ be indepdendnet of each other. Define $X = X_1 + X_2$. Then,
+    we have that the probability distribution function of $X$ is given by
+    \begin{align*}
+      p_X(x) = \mcal{N}(x;\mu_1, \sigma_1^2) * \mcal{N}(x;\mu_2, \sigma_2^2).
+    \end{align*}
+    Observe that 
+    \begin{align*}
+      E[X] &= E[X_1] + E[X_2] = \mu_1 + \mu_2.
+    \end{align*}
+    Moreover,
+    \begin{align*}
+      \Var(X_1 + X_2) = \Var(X_1) + \Var(X_2) = \sigma_1^2 + \sigma_2^2.
+    \end{align*}
+    So, the proposition would be true if we can show that $p_X(x)$ is a Gaussian. In other words, if we can show that there are constants $A$, $B$, and $C$ such that
+    \begin{align*}
+      p_X(x) = A \exp\big(-B(x - C)^2\big)
+    \end{align*}    
+    with $A, B > 0$, then we would be done.
+
+    So, let us that that
+    \begin{align*}
+      \mcal{N}(t;\mu_1, \sigma^2) &= A_1 \exp\big(-B_1(t - C_1)^2\big), \\
+      \mcal{N}(x - t;\mu_2, \sigma^2) &= A_2 \exp\big(-B_2(x - t - C_2)^2\big)
+    \end{align*}
+    with $A_1, B_1, A_2, B_2 > 0$.
+    It follows that
+    \begin{align*}
+      p_X(x) 
+      &= \int A_1 \exp\big(-B_1(t - C_1)^2\big)A_2 \exp\big(-B_2(x - t - C_2)^2\big)\, \dee t \\
+      &= A_1 A_2 \int \exp\big(-B_1(t - C_1)^2 - B_2(x - t - C_2)^2 \big)\, \dee t.
+    \end{align*}
+    Now, we have that
+    \begin{align*}
+      &-B_1(t-C_1)^2 - B_2(x - t - C_2)^2 \\
+      &= -B_2x^2 + 2B_2 C_2 x - (B_1 + B_2)t^2 +2(B_1 C_1 + B_2 x - B_2C_2) t - B_1C_1^2 -B_2C_2^2.
+    \end{align*}
+    Now, let's simplify the expression by given the constants new names.
+    \begin{align*}
+      -B_1(t-C_1)^2 - B_2(x - t - C_2)^2
+      &= -B_2 x^2 + 2D_2 x - (B_1 + B_2) t^2 + 2(B_2x + D_4)t + D_5.
+    \end{align*}
+    We know that $D_3 = B_1 + B_2 > 0$. Let's complete the square of the polynomial that involves $t$. We have that
+    \begin{align*}
+      &-(B_1 + B_2) t^2 + 2(B_2x + D_4)t \\
+      &= -(B_1 + B_2)\bigg( t^2 - 2\frac{B_2 x + D_4}{B_1 + B_2} t \bigg) \\
+      &= -(B_1 + B_2)\bigg( t^2 - 2\frac{B_2 x + D_4}{B_1 + B_2} t + \frac{(B_2 x + D_4)^2}{(B_1 + B_2)^2} - \frac{(B_2 x + D_4)^2}{(B_1 + B_2)^2} \bigg) \\
+      &= -(B_1 + B_2)\bigg( t^2 - 2\frac{B_2 x + D_4}{B_1 + B_2} t + \frac{(B_2 x + D_4)^2}{(B_1 + B_2)^2}  \bigg) + \frac{(B_2 x + D_4)^2}{B_1 + B_2} \\
+      &= -(B_1 + B_2)\bigg( t - \frac{B_2 x + D_4}{B_1 + B_2} \bigg)^2 + \frac{(B_2 x + D_4)^2}{B_1 + B_2} \\
+      &= -(B_1 + B_2)( t - D_6 x - D_7)^2 + \frac{B_2^2}{B_1+B_2} x^2 + 2D_8x + D_9.
+    \end{align*}
+    So,
+    \begin{align*}
+      &-B_2 x^2 + 2D_2 x - (B_1 + B_2) t^2 + 2(B_2x + D_4)t + D_5 \\
+      &= -B_2 x^2 + 2D_2 x -(B_1 + B_2)( t - D_6 x - D_7)^2 + \frac{B_2^2}{B_1+B_2} x^2 + 2D_8x + D_9 + D_5 \\
+      &= -\bigg( B_2 - \frac{B_2^2}{B_1 + B_2} \bigg) x^2  + 2(D_2 + D_8) x -(B_1 + B_2)( t - D_6 x - D_7)^2 + D_{10} \\
+      &= -\bigg( \frac{B_1 B_2}{B_1 + B_2} \bigg) x^2  + 2(D_2 + D_8) x -(B_1 + B_2)( t - D_6 x - D_7)^2 + D_{10}.
+    \end{align*}
+    Note that, because $B_1, B_2 > 0$, we have that $B_1B_2/(B_1 + B_2) > 0$. Now, we can complete the square of the terms that involve $x$:
+    \begin{align*}
+      -\bigg( \frac{B_1 B_2}{B_1 + B_2} \bigg) x^2  + 2(D_2 + D_8) x
+      &= -\bigg( \frac{B_1 B_2}{B_1 + B_2} \bigg)(x - D_{11})^2 + D_{12}.
+    \end{align*}
+    This gives
+    \begin{align*}
+      &-\bigg( \frac{B_1 B_2}{B_1 + B_2} \bigg) x^2  + 2(D_2 + D_8) x -(B_1 + B_2)( t - D_6 x - D_7)^2 + D_{10} \\
+      &= -\bigg( \frac{B_1 B_2}{B_1 + B_2} \bigg)(x - D_{11})^2 -(B_1 + B_2)( t - D_6 x - D_7)^2 + D_{10} + D_{12} \\
+      &= -\bigg( \frac{B_1 B_2}{B_1 + B_2} \bigg)(x - D_{11})^2 -(B_1 + B_2)( t - D_6 x - D_7)^2 + D_{13}.
+    \end{align*}
+    In other words,
+    \begin{align*}
+      -B_1(t-C_1)^2 - B_2(x - t - C_2)^2 = -D_{14}(x - D_{11})^2 - D_{15}(t - D_6x - D_7)^2 + D_{13}
+    \end{align*}
+    for some $D_{14}, D_{15} > 0$.
+
+    Hence,
+    \begin{align*}
+      p_X(x) 
+      &= A_1 A_2 \int \exp\big( -D_{14}(x - D_{11})^2 - D_{15}(t - D_6x - D_7)^2 + D_{13}  \big)\, \dee t \\
+      &= A_1 A_2 e^{D_{13}} \bigg( \int \exp( - D_{15}(t - D_6x - D_7)^2 )\, \dee t \bigg) \exp(-D_{14}(x - D_{11})^2) .
+    \end{align*}
+    The integral on the last line is a positive constant because it is an integral of a Gaussian. So, $p_X(x)$ is a Gaussian. We are done.
   \end{proof}
 \end{itemize}
 
