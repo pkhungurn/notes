@@ -240,14 +240,15 @@ So, instead of minimizing $-\log E[f(X)]$ like in \eqref{non-elbo-loss}, we woul
 
 \item Using Jensen's inequality, we can show that
 \begin{align}
-  E_{\ve{x}^{(0)} \sim q} [-\log p_{\ves{\theta}}(\ve{x}^{(0)})]  \leq E_{\ve{x}^{(0:T)} \sim q}\Big[ \log q(\ve{x}^{(1:T)}|\ve{x}^{(0)}) - \log p_{\ves{\theta}}(\ve{x}^{(0:T)}) \Big] \label{ddpm-elbo}
+  E_{\ve{x}^{(0)} \sim q} [-\log p_{\ves{\theta}}(\ve{x}^{(0)})]  \leq E_{\ve{x}^{(0:T)} \sim q}\Big[ \log q(\ve{x}^{(1:T)}|\ve{x}^{(0)}) - \log p_{\ves{\theta}}(\ve{x}^{(0:T)}) \Big] \label{ddpm-vlb-first-appearance}
 \end{align}
-Again, see the proof in Claim~\ref{ddpm-elbo-claim} of Appendix~\ref{sec:ddpm-proofs}. Our goal, then, becomes minimizing the RHS of \eqref{ddpm-elbo}. 
+Again, see the proof in Claim~\ref{ddpm-vlb-claim} of Appendix~\ref{sec:ddpm-proofs}. Our goal, then, becomes minimizing the RHS of \eqref{ddpm-vlb-first-appearance}. 
 
-\item To faciliate further discussion, let us call the RHS of \eqref{ddpm-elbo} ``$L$.''
-\begin{align*}
-  L := E_{\ve{x}^{(0:T)} \sim q}\Big[ \log q(\ve{x}^{(1:T)}|\ve{x}^{(0)}) - \log p_{\ves{\theta}}(\ve{x}^{(0:T)}) \Big].
-\end{align*}
+\item To faciliate further discussion, let us call the RHS of \eqref{ddpm-vlb-first-appearance} ``$L$.''
+\begin{align}
+  L := E_{\ve{x}^{(0:T)} \sim q}\Big[ \log q(\ve{x}^{(1:T)}|\ve{x}^{(0)}) - \log p_{\ves{\theta}}(\ve{x}^{(0:T)}) \Big]. \label{ddpm-vlb}
+\end{align}
+We will also refer to it as the ``variational lower bound'' or the ``evidence lower bound'' of the log-likelihood (because $L$ is the upperbound of the negative log-likelihood).
 
 \item We can write $L$ as a sum of three terms:
 \begin{align*}
@@ -256,7 +257,7 @@ Again, see the proof in Claim~\ref{ddpm-elbo-claim} of Appendix~\ref{sec:ddpm-pr
   &\phantom{=} + \underbrace{E_{\ve{x}^{(0,1)} \sim q} \bigg[ - \log p_{\ves{\theta}}(\ve{x}^{(0)}|\ve{x}^{(1)}) \bigg] }_{L_0} \\
   &\phantom{=} + \sum_{t = 2}^T \underbrace{E_{\ve{x}^{(0,t)}\sim q} \Big[ D_{KL}\big( q(\ve{x}^{(t-1)}|\ve{x}^{(0)},\ve{x}^{(t)})  \big\| p_{\ves{\theta}}(\ve{x}^{(t-1)}|\ve{x}^{(t)}) \big) \Big]}_{L_{t-1}}.
 \end{align*}
-See the proof in Claim~\ref{ddpm-elbo-three-terms} of Appendix~\ref{sec:ddpm-proofs}.
+See the proof in Claim~\ref{ddpm-vlb-three-terms} of Appendix~\ref{sec:ddpm-proofs}.
 
 \item We will now consider how to minimize each term in turn.
 \end{itemize}
@@ -372,8 +373,8 @@ using the derivation in the proof of Claim~\ref{ddpm-l0-rewrite}. As a result,
   \item Ho \etal\ simplifies the above loss function further, dropping all the norm squared's coefficients. So, the optimization problem becomes
   \begin{align}
     \ves{\theta}^* 
-    &= \argmin_{\ves{\theta}} \bigg( \sum_{t=1}^T E_{\ve{x}^{(0)} \sim q, \ves{\xi} \sim \mcal{N}(\ve{0}, I)} \Big[ \big\| \ves{\xi} - \ves{\xi}_{\ves{\theta}}(\sqrt{\overline{\alpha}_t}\ve{x}^{(0)} + \sqrt{1 - \overline{\alpha}_t}\ves{\xi}, t) \big\|^2 \Big] \bigg) \notag \\
-    &= \argmin_{\ves{\theta}} \bigg( E_{t \sim \{ 1, 2, \dotsc, T \}, \ve{x}^{(0)} \sim q, \ves{\xi} \sim \mcal{N}(\ve{0}, I)} \Big[ \big\| \ves{\xi} - \ves{\xi}_{\ves{\theta}}(\sqrt{\overline{\alpha}_t}\ve{x}^{(0)} + \sqrt{1 - \overline{\alpha}_t}\ves{\xi}, t) \big\|^2 \Big] \bigg). \label{ddpm-noise-optimization}
+    &= \argmin_{\ves{\theta}} \bigg( \sum_{t=1}^T E_{\ve{x}^{(0)} \sim q, \ves{\xi} \sim \mcal{N}(\ve{0}, I)} \Big[ \big\| \ves{\xi} - \ves{\xi}_{\ves{\theta}}(\sqrt{\overline{\alpha}_t}\ve{x}^{(0)} + \sqrt{1 - \overline{\alpha}_t}\ves{\xi}, t) \big\|^2 \Big] \bigg) \label{ddpm-noise-optimization-sum} \\
+    &= \argmin_{\ves{\theta}} \bigg( E_{t \sim \{ 1, 2, \dotsc, T \}, \ve{x}^{(0)} \sim q, \ves{\xi} \sim \mcal{N}(\ve{0}, I)} \Big[ \big\| \ves{\xi} - \ves{\xi}_{\ves{\theta}}(\sqrt{\overline{\alpha}_t}\ve{x}^{(0)} + \sqrt{1 - \overline{\alpha}_t}\ves{\xi}, t) \big\|^2 \Big] \bigg). \label{ddpm-noise-optimization-sample}
   \end{align}
 
   \item The process to train $\ves{\xi}_{\ves{\theta}}$ is as follows.
@@ -495,7 +496,7 @@ using the derivation in the proof of Claim~\ref{ddpm-l0-rewrite}. As a result,
   \end{align}
   Now, if we find the solution $\ve{\theta}^*$ to this optimziation problem, we will have that $\ve{s}_{\ves{\theta}^*}(\ve{x}^{(t)}, t)$ would be a good approximation for $\nabla \log q(\ve{x}^{(t)})$ for all $t = 1, 2, \dotsc, T$.
 
-  \item We can see that the optimization problem in \eqref{ddpm-score-optimization} is similar to \eqref{ddpm-noise-optimization}. This gives us a relationship between $\ve{s}_{\ves{\theta}}$ and $\xi_{\ves{\theta}}$ when the parameters are optimal:
+  \item We can see that the optimization problem in \eqref{ddpm-score-optimization} is similar to \eqref{ddpm-noise-optimization-sample}. This gives us a relationship between $\ve{s}_{\ves{\theta}}$ and $\xi_{\ves{\theta}}$ when the parameters are optimal:
   \begin{align} \label{noise-score-relationship}
     \ves{\xi}_{\ves{\theta}}(\ve{x}^{(t)}, t) \equiv -\sqrt{1 - \overline{\alpha}_t} \ve{s}_{\theta}(\ve{x}^{(t)}, t).
   \end{align}
@@ -552,6 +553,12 @@ using the derivation in the proof of Claim~\ref{ddpm-l0-rewrite}. As a result,
   It can be shown that $q_{\ves{\sigma}}(\ve{x}^{(t)}|\ve{x}^{(t-1)}, \ve{x}^{(0)})$ is a Gaussian, but this fact is not used in the paper. This forward process is not a Markov chain because $\ve{x}^{(t)}$ depends on both $\ve{x}^{(t-1)}$ and $\ve{x}^{(0)}$.
 
   \item The parameters $\ves{\sigma} = (\sigma_1, \sigma_2, \dotsc, \sigma_T)$ controls how stochastic the process is. When $\ves{\sigma} = \ve{0}$, the process becomes deterministic because $\ve{x}^{(t-1)}$ is determined deterministicly from $\ve{x}^{(t)}$ and $\ve{x}^{(0)}$.
+  
+  \begin{itemize}
+    \item When the model becomes deterministic, it becomes an {\bf implicit model}, a deterministic procedure for turning noise into a data sample \cite{Mohamed:2016}.
+    
+    \item This is why the model is called a denoising diffusion ``implicit'' model (DDIM).
+  \end{itemize}
 \end{itemize}
 
 \subsection{The Backward Process}
@@ -599,19 +606,35 @@ using the derivation in the proof of Claim~\ref{ddpm-l0-rewrite}. As a result,
     \end{cases}
   \end{align*}
 
-  \item The loss function that we will be minimizing is \eqref{ddpm-elbo}.
+  \item The above distribution tells us to sample $\ve{x}^{(t-1)}$ from $\ve{x}^{(t)}$ by evaluating
   \begin{align*}
-    &J_{\ves{\sigma}}(\ves{\theta}) \\
-    &= E_{\ve{x}^{(0:T)} \sim q_{\ves{\sigma}}} [ \log q_{\ves{\sigma}}(\ve{x}^{(1:T)}|\ve{x}^{(0)}) - \log p_{\ves{\theta}}(\ve{x}^{(0:T)}) ] \\
-    &= E_{\ve{x}^{(0:T)} \sim q_{\ves{\sigma}}} \bigg[ 
-      \log q_{\ves{\sigma}}(\ve{x}^{(T)}|\ve{x}^{(0)})
-      + \sum_{t=2}^T \log q_{\ves{\sigma}}(\ve{x}^{(t-1)}|\ve{x}^{(t)},\ve{x}^{(0)}) 
-      - \sum_{t=1}^T \log p_{\ves{\theta}}(\ve{x}^{(t-1)}|\ve{x}^{(t)}) 
-      - \log p_{\ves{\theta}}(\ves{x}^{(T)})
-    \bigg]
+    \ve{x}^{(t-1)} 
+    &= \sqrt{\overline{\alpha}_{t-1}} \cdot \ve{f}_{\ves{\theta}}^{(t)}(\ve{x}^{(t)}) 
+    + \sqrt{1 - \overline{\alpha}_{t-1} - \sigma_t^2} \frac{\ve{x}^{(t)} - \sqrt{\overline{\alpha}_t}\cdot\ve{f}_{\ves{\theta}}(\ve{x}^{(t-1)})}{\sqrt{1 - \overline{\alpha}_t}}
+    + \sigma_t \ves{\xi} \\
+    &= \sqrt{\overline{\alpha}_{t-1}} \underbrace{\bigg( \frac{\ve{x}^{(t)} - \sqrt{1 - \overline{\alpha}_{t}} \cdot \ves{\xi}_{\ves{\theta}}(\ve{x}^{(t)}, t)}{\sqrt{\overline{\alpha}_t}} \bigg)}_{\mrm{predicted}\ \ve{x}^{(0)}}
+    + \underbrace{\sqrt{1 - \overline{\alpha}_{t-1} - \sigma_t^2} \cdot \ves{\xi}_{\ves{\theta}}(\ve{x}^{(t)}, t)}_{\mrm{diretion}\ \mrm{pointing}\ \mrm{to}\ \ve{x}^{(t)}}
+    + \underbrace{\sigma_t \ves{\xi}}_{\mrm{random}\ \mrm{noise}}.
+  \end{align*}
+  Here, $\ves{\xi} \sim \mcal{N}(\ve{0},I)$ as usual.
+
+  \item Again, we note that, for the sampling process above,  different choices of $\ves{\sigma}$ result in different generative process.
+  \begin{itemize}
+    \item When $\ves{\sigma} = \ves{0}$, the generative process becomes deterministic.
+    
+    \item When $\sigma_t = \sqrt{(1 - \overline{\alpha}_{t-1})/(1 - \overline{\alpha}_t)} \sqrt{\beta_t}$ for all $t$, the generative process becomes the same as that of the DDPM. 
+  \end{itemize}
+\end{itemize}
+
+\subsection{Training}
+
+\begin{itemize}
+  \item The loss function that we will be minimizing is \eqref{ddpm-vlb}.
+  \begin{align*}
+    &J_{\ves{\sigma}}(\ves{\theta}) = E_{\ve{x}^{(0:T)} \sim q_{\ves{\sigma}}} [ \log q_{\ves{\sigma}}(\ve{x}^{(1:T)}|\ve{x}^{(0)}) - \log p_{\ves{\theta}}(\ve{x}^{(0:T)}) ].
   \end{align*}
 
-  \item Recall that the (weighted) version of the loss for the DDPM is given by
+  \item Recall from \eqref{ddpm-noise-optimization-sum} that the (weighted) version of the loss for the vanilla DDPM is given by
   \begin{align*}
     L_{\ve{w}}(\ves{\theta})
     = \sum_{t=1}^T w_t E_{\ve{x}^{(0)} \sim q, \ves{\xi} \sim \mcal{N}(\ve{0},I)} \Big[ 
@@ -621,9 +644,130 @@ using the derivation in the proof of Claim~\ref{ddpm-l0-rewrite}. As a result,
   where $\ve{w} = (w_1, w_2, \dotsc, w_T) \in [0,\infty)^T$.
 
   \item The paper shows that the two losses are equivalent.
-  \begin{theorem}
+  \begin{theorem} \label{ddim-loss-equivalence}
     For each $\ves{\sigma} \in [0,\infty)^T$, there exists $\ve{w} \in [0,\infty)^T$ and $C \in \Real$ such that $J_{\ves{\sigma}}(\ves{\theta}) = L_{\ve{w}}(\ves{\theta}) + C.$
-  \end{theorem}  
+  \end{theorem}
+
+  \item Consider the loss $L_{\ve{w}}(\ves{\theta})$.
+  \begin{itemize}
+    \item If the parameters $\ves{\theta}$ for $\ves{\xi}_{\ves{\theta}}(\cdot, t)$ are not shared between different $t$'s, then the parameters do not depend on the weights $\ve{w}$.
+    
+    \item The above assertion justifies the use of $L_{\ve{1}}$ as a surrogate for \eqref{ddpm-vlb}.    
+  \end{itemize}
+
+  \item Now, consider the loss $J_{\ves{\sigma}}$.
+  \begin{itemize}
+    \item By Theorem~\ref{ddim-loss-equivalence}, $J_{\ves{\sigma}}$ is equivalent to some $L_{\ve{w}}$.
+    
+    \item So, if parameters are not shared across different $t$'s, it must be the case that the optimal solution to $J_{\ves{\sigma}}$ must the the same as that of $L_{\ve{1}}$.
+    
+    \item As a result, $L_{\ve{1}}$ can be used as surrogate for $J_{\ves{\sigma}}$ as well.
+  \end{itemize}
+
+  \item The above reasoning tells us to train a DDIM in the same way we train a DDPM in the Ho \etal\ paper. In other words, a DDPM can be turned into a DDIM by just changing the sampling method.
+  \begin{itemize}
+    \item Of course, the model we train in practice will share parameters across all $t$'s. The conclusion we just derived above would not be true, but we still use $L_{\ve{1}}$ any way.
+  \end{itemize}
+\end{itemize}
+
+\subsection{Advantanges of DDIM}
+
+\begin{itemize}
+  \item There are two main advantages.
+  \begin{enumerate}
+    \item Sampling can be done much faster.
+    \item The sampling process can be made deterministic by setting $\ves{\sigma} = \ve{0}$.
+  \end{enumerate}
+\end{itemize}
+
+\subsubsection{Faster Sampling}
+
+\begin{itemize}
+  \item Instead of generating a sample using all time steps from the sequence $(T, T-1, \dotsc, 1)$, Song \etal\ experimented with using a subsequence $\ves{\tau} = (\tau_S, \tau_{S-1}, \dotsc, \tau_1)$.
+  
+  \item They found that:
+  \begin{itemize}
+    \item The FID score of DDIMs for CIFAR10 and CelebA are worse than those of DDPMs when the full set of steps are used.
+    
+    \item However, when subsequences of the full sequence of time steps are used, DDIMs performed much better across the board.
+    
+    \item In their experiments, the full sequence has 1000 time steps. The subsequences have 10, 20, 50, and 100 time steps. FID score deteriorates as fewer time steps are used. However, for subsequences with 50 and 100 steps, it seems that the FID scores did not become much worse.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Determinism}
+
+\begin{itemize}
+  \item Because the backward process can be made deterministic, we can treat $\ve{x}^{(T)}$ as a latent code of a data sample.
+  
+  \item Song \etal\ experimented with interpolating between two latent codes. It seems to work just like GAN.
+  
+  \item It is also possible to find a latent code ($\ve{x}^{(T)}$) corresponding a data item $\ve{x}^{(0)}$. A process to do so will be discussed in the next section.
+\end{itemize}
+
+\subsection{Connection to Neural ODE}
+
+\begin{itemize}
+  \item With $\ves{\sigma} = \ves{0}$, the update equation becomes
+  \begin{align*}
+    \ve{x}^{(t-1)} 
+    &= \sqrt{\overline{\alpha}_{t-1}} \bigg( \frac{\ve{x}^{(t)} - \sqrt{1 - \overline{\alpha}_{t}} \cdot \ves{\xi}_{\ves{\theta}}(\ve{x}^{(t)}, t)}{\sqrt{\overline{\alpha}_t}} \bigg)
+    + \sqrt{1 - \overline{\alpha}_{t-1}} \cdot \ves{\xi}_{\ves{\theta}}(\ve{x}^{(t)}, t).
+  \end{align*}
+  In other words,
+  \begin{align}
+    \frac{\ve{x}^{(t-1)}}{\sqrt{\overline{\alpha}_{t-1}}} - \frac{\ve{x}^{(t)}}{\sqrt{\overline{\alpha}_t}}
+    &= \bigg( \frac{\sqrt{1 - \overline{\alpha}_{t-1}}}{\sqrt{\overline{\alpha}_{t-1}}} - \frac{\sqrt{1 - \overline{\alpha}_t}}{\sqrt{\overline{\alpha}_t}} \bigg)
+    \ves{\xi}(\ve{x}^{(t)}, t). \label{ddim-update-equation}
+  \end{align}
+
+  \item We can turn the above difference equation. First, we think of $t$ as a continuous variable and treat $\ve{x}^{(t)}$, $\overline{\alpha}_t$ as functions of $t$. In other words, we make the following transformations
+  \begin{align*}
+    \ve{x}^{(t)} &\rightarrow \ve{x}(t),\\
+    \overline{\alpha}_t &\rightarrow \overline{\alpha}(t).
+  \end{align*}
+  Second, we define
+  \begin{align*}
+    \sigma(t) &:= \sqrt{\frac{1 - \overline{\alpha}(t)}{\overline{\alpha}(t)}} = \sqrt{\frac{1}{\overline{\alpha}(t)} - 1}, \\
+    \overline{\ve{x}}(t)
+    &:= \frac{\ve{x}(t)}{\sqrt{\overline{\alpha}(t)}} = \sqrt{1 + \sigma^2(t)} \cdot \ve{x}(t).    
+  \end{align*}
+  Writing $t-1$ in \eqref{ddim-update-equation} as $t - \Delta t$, we have that
+  \begin{align*}
+    \overline{\ve{x}}(t - \Delta t) - \overline{\ve{x}}(t)
+    &= \big( \sigma(t - \Delta t) - \sigma(t) \big) \ves{\xi}(\ve{x}(t), t)
+    = \big( \sigma(t - \Delta t) - \sigma(t) \big) \ves{\xi}_{\ves{\theta}}\bigg(\frac{\overline{\ve{x}}(t)}{\sqrt{1 + \sigma^2(t)}}, t\bigg).
+  \end{align*}
+  Dividing both sides by $-\Delta t$, we have that
+  \begin{align*}
+    \frac{\overline{\ve{x}}(t) - \overline{\ve{x}}(t - \Delta t)}{\Delta t}
+    = \frac{\sigma(t) - \sigma(t - \Delta t)}{\Delta t} \ves{\xi}_{\ves{\theta}}\bigg( \frac{\overline{\ve{x}}(t)}{\sqrt{1 + \sigma^2(t)}}, t \bigg).
+  \end{align*}
+  Taking the limit as $\Delta t \rightarrow 0$, we have
+  \begin{align}
+    \frac{\dee \overline{\ve{x}}(t)}{\dee t}
+    &= \frac{\dee \sigma(t)}{\dee t} \ves{\xi}_{\ves{\theta}}\bigg( \frac{\overline{\ve{x}}(t)}{\sqrt{1 + \sigma^2(t)}}, t \bigg) \notag \\
+    \dee \overline{\ve{x}}(t) &= \ves{\xi}_{\ves{\theta}}\bigg( \frac{\overline{\ve{x}}(t)}{\sqrt{1 + \sigma^2(t)}}, t \bigg) \dee \sigma(t). \label{ddim-ode}
+  \end{align}
+
+  \item The above ODE can be used to sample a data item by solving the initial value problem where the initial condition is $\overline{\ve{x}}(t) \sim \mcal{N}(0, 1 + \sigma^2(T))$.
+  \begin{itemize}
+    \item Here, note that, because we want $\overline{\alpha}(t)$ to be small, $1 + \sigma^2(t)$ would be very large.
+  \end{itemize}
+
+  \item The ODE can also be used to find the corresponding $\ve{x}^{(T)}$ for each $\ve{x}^{(0)}$ by running it forward:
+  \begin{align*}
+    \overline{\ve{x}}(t+1) - \overline{\ve{x}}(t)
+    &= (\sigma(t + 1) - \sigma(t)) \ves{\xi}_{\ves{\theta}}\bigg( \frac{\overline{\ve{x}}(t)}{\sqrt{1 + \sigma^2(t)}}, t \bigg).
+  \end{align*}
+  In other words,
+  \begin{align*}
+    \frac{\ve{x}^{(t+1)}}{\sqrt{\overline{\alpha}_{t+1}}} - \frac{\ve{x}^{(t)}}{\sqrt{\overline{\alpha}_t}}
+    &= \bigg( \frac{\sqrt{1 - \overline{\alpha}_{t+1}}}{\sqrt{\overline{\alpha}_{t+1}}} - \frac{\sqrt{1 - \overline{\alpha}_t}}{\sqrt{\overline{\alpha}_t}} \bigg)
+    \ves{\xi}(\ve{x}^{(t)}, t).
+  \end{align*}
+
+  \item The paper also notes that the ODE \eqref{ddim-ode} is equivalent to the ``variance-exploding SDE'' in the score-based SDE paper by Yang Song \etal, which is also published in the same year \cite{Song:2022:sde}. However, we will not go into the details of the derivation.
 \end{itemize}
 
 \appendix
@@ -809,7 +953,7 @@ using the derivation in the proof of Claim~\ref{ddpm-l0-rewrite}. As a result,
   as required.
 \end{proof}
 
-\item \begin{claim} \label{ddpm-elbo-claim}
+\item \begin{claim} \label{ddpm-vlb-claim}
 \begin{align*}
   E_{\ve{x}^{(0)} \sim q} [-\log p_{\ves{\theta}}(\ve{x}^{(0)})] \leq E_{\ve{x}^{(0:T)} \sim q}\Big[ \log q(\ve{x}^{(1:T)}|\ve{x}^{(0)}) - \log p_{\ves{\theta}}(\ve{x}^{(0:T)}) \Big].
 \end{align*}
@@ -827,8 +971,8 @@ using the derivation in the proof of Claim~\ref{ddpm-l0-rewrite}. As a result,
   as required.
 \end{proof}
 
-\item \begin{claim} \label{ddpm-elbo-three-terms}
-Let $L$ be the RHS of \eqref{ddpm-elbo}. Then, it can be rewritten as
+\item \begin{claim} \label{ddpm-vlb-three-terms}
+Let $L$ be the RHS of \eqref{ddpm-vlb}. Then, it can be rewritten as
 \begin{align*}
   L
   &= \underbrace{E_{\ve{x}^{(0)} \sim q} \Big[ D_{KL}\big(q(\ve{x}^{(T)}|\ve{x}^{(0)})\, \big\|\, p_{\ves{\theta}}(\ve{x}^{(T)})\big) \Big]}_{L_T} \\
