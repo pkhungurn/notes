@@ -750,7 +750,7 @@ using the derivation in the proof of Claim~\ref{ddpm-l0-rewrite}. As a result,
     \dee \overline{\ve{x}}(t) &= \ves{\xi}_{\ves{\theta}}\bigg( \frac{\overline{\ve{x}}(t)}{\sqrt{1 + \sigma^2(t)}}, t \bigg) \dee \sigma(t). \label{ddim-ode}
   \end{align}
 
-  \item The above ODE can be used to sample a data item by solving the initial value problem where the initial condition is $\overline{\ve{x}}(t) \sim \mcal{N}(0, 1 + \sigma^2(T))$.
+  \item The above ODE can be used to sample a data item by solving the initial value problem where the initial condition is $\overline{\ve{x}}(T) \sim \mcal{N}(0, 1 + \sigma^2(T))$.
   \begin{itemize}
     \item Here, note that, because we want $\overline{\alpha}(t)$ to be small, $1 + \sigma^2(t)$ would be very large.
   \end{itemize}
