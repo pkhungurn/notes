@@ -1,0 +1,300 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+\usepackage{verbatim}
+\usepackage{hyperref}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\Dee}{\mathrm{D}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\Var}{\mathrm{Var}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\ves}[1]{\boldsymbol{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+\newcommand{\ov}[1]{\overline{#1}}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\newcommand{\N}{\mathcal{N}}
+\newcommand{\data}{\mathrm{data}}
+
+\title{Classifer-Free Diffusion Guidance}
+\author{Pramook Khungurn}
+
+\begin{document}
+\maketitle
+
+This note is written as I read the paper ``Classifer-Free Diffusion Guidance'' by Ho and Salimans \cite{Ho:2022}.
+
+\section{Introduction}
+
+\begin{itemize}
+\item Classifier guidance.
+\begin{itemize}
+  \item First derived by Sohl-Dicksteing \etal\ in 2015 \cite{SohlDickstein:2015}.
+  
+  \item Popularized by Dhariwal and Nichol in 2021 \cite{Dhariwal:2021}.
+  
+  \item The technique allows us to force a DDPM to generate images of a certain class.
+  
+  \item It also allows a DDPM to trade diversity of generated data items for their fidelity.
+  \begin{itemize}
+    \item This helps improve metrics such as FID, sFID, and precision.
+    \item It is similar to the way GANs can improve their metrics by utilizing the ``trucation trick.''
+  \end{itemize}
+
+  \item We train a DDPM as usual. However, we also need to train a classifier $p_{\ves{\phi}}(y|\ves{x}^{(t)})$ on degraded samples $\ve{x}^{(t)}$.
+  
+  \item In the backward process, when sampling $\ve{x}^{(t-1)}$ from $\ve{x}^{(t)}$, we use the distribution
+  \begin{align*}
+    p_{\ves{\theta}, \ves{\phi}}(\ve{x}^{(t-1)}|\ve{x}^{(t)}, y)
+    &= \mcal{N}\big(\ve{x}^{(t-1)}; \ves{\mu} + s \Sigma \nabla \log p_{\ves{\theta}}(y | \ves{\mu})\big)
+  \end{align*}
+  where
+  \begin{itemize}
+    \item $\ves{\mu} = \ves{\mu}_{\ves{\theta}}(\ve{x}^{(t)},t)$ is the mean of the backward transition,
+    \item $\Sigma = \Sigma_{\ves{\theta}}(\ve{x}^{(t)},t)$ is the covariance matrix of the backward transition, and
+    \item $s$ is a scaling factor.
+  \end{itemize}
+  
+  \item See more details in another note of mine \cite{Khungurn:2022a}.
+\end{itemize}
+
+\item Research question: can guidance be performed without a classifier?
+\begin{itemize}
+  \item To use a classifier guidance, we need to train a classifier from scratch.
+  \begin{itemize}
+    \item Existing ones cannot be used because we need to train them on degraded samples.
+  \end{itemize}
+
+  \item Their use in DDPM sampling is also cumbersome.
+  \begin{itemize}
+    \item Need to evaluate the gradient of the log of the probability.
+    
+    \item The most convenient way to do this is to use automatic differentiation in deep learning packages. Still, this is still a hassle.
+  \end{itemize}
+
+  \item Ho and Salimans also worry that classifier guidance makes DDPMs similar to GANs.
+    \begin{itemize}
+      \item Classifier guidance is an ``attack'' on a certain classifier because it tries to fool that classifier to think that the generated samples are from a certain class.
+      
+      \item So, in a sense, classifier guidance is similar to adversarial training.
+      
+      \item Do we have a non-GAN-like way to trade diversity for fidelity?
+    \end{itemize}
+\end{itemize}
+\end{itemize}
+
+\section{Background}
+
+\begin{itemize}
+  \item Ho and Salimans introduced new formalism and notations for DDPM.
+  \begin{itemize}
+    \item They just break away with the notations in \cite{Ho:2020} despite the fact that Johathan Ho is one of the authors.
+  \end{itemize}
+
+  \item The new notations.
+  \begin{itemize}
+    \item $\ve{x}$ denoted a data item that is sampled from a data distribution $p(\ve{x})$.
+  
+    \item A degraded data item is now denoted by $\ve{z}_\lambda$, which is indexed by $\lambda \in [\lambda_{\min}, \lambda_{\max}] \subseteq \Real$ like this $\ve{z}_\lambda$. Here, $\lambda$ can be negative.
+    
+    \item The forward process is now denoted by $q$, so we have something like $q(\ve{z}_\lambda | \ve{x})$ and $q(\ve{z}_{\lambda} | \ve{z}_{\lambda'})$.
+
+    \item The paper set
+    \begin{align*}
+      q(\ve{z}_\lambda | \ve{x}) &= \N(\alpha_\lambda \ve{x}, \sigma_\lambda^2 I)      
+      &&\mbox{where }\alpha_\lambda^2 = 1/(1 + e^{-\lambda})\mbox{ and }\sigma_\lambda^2 = 1 - \alpha_\lambda^2 \\
+      q(\ve{z}_{\lambda}|\ve{z}_{\lambda'}) &= \N((\alpha_\lambda/\alpha_{\lambda'})\ve{z}_{\lambda'}), \sigma^2_{\lambda|\lambda'} I)
+      &&\mbox{where }\lambda < \lambda'\mbox{ and }\sigma^2_{\lambda|\lambda'} = (1 - e^{\lambda - \lambda'} \sigma^2_{\lambda}).
+    \end{align*}    
+  \end{itemize}
+
+  
+\end{itemize}
+
+\appendix
+
+\section{Gaussian Identities}
+
+\begin{itemize}
+  \item Many of these identities come from a lecture note by Marc Toussaint \cite{Toussaint:2011}.
+  
+  \item A multivariate Gaussian with mean $\ves{\mu}$ and covariance matrix $\Sigma$, denoted by $\N(\ves{\mu},\Sigma)$ is the distribution:
+  \begin{align*}
+  \N(\ve{x}; \ves{\mu}, \Sigma) = \frac{1}{(\det 2\pi\Sigma)^{1/2}} \exp\bigg(-\frac{1}{2} (\ve{x}-\ves{\mu})^T \Sigma^{-1} (\ve{x}-\ves{\mu}) \bigg).
+  \end{align*}
+  It is defined only if the covariance matrix is positive definite.  
+  
+  \item \begin{proposition}
+    For any invertible matrix $A$ and any vector $\ve{b}$, we have that
+    \begin{align*}
+    \N(A\ve{x} + \ve{b}; \ves{\mu}, \Sigma) = \frac{1}{|\det A|} \N(\ve{x}, A^{-1}(\ves{\mu} - \ve{b}), A^{-1}\Sigma A^{-T}).
+    \end{align*}
+  \end{proposition}
+
+  \begin{proof}
+    \begin{align*}
+    \N(\ve{x}; \ves{\mu}, \Sigma) 
+    &= \frac{1}{(\det 2\pi\Sigma)^{1/2}} \exp\bigg(-\frac{1}{2} (A\ve{x} + \ve{b} -\ves{\mu})^T \Sigma^{-1} (A\ve{x} + \ve{b} -\ves{\mu}) \bigg) \\
+    &= \frac{1}{(\det 2\pi\Sigma)^{1/2}} \exp\bigg(-\frac{1}{2} (A\ve{x} + \ve{b} -\ves{\mu})^T A^{-T} A^T \Sigma^{-1} A A^{-1} (A\ve{x} + \ve{b} -\ves{\mu}) \bigg) \\
+    &= \frac{1}{(\det 2\pi\Sigma)^{1/2}} \exp\bigg(-\frac{1}{2} (\ve{x} - A^{-1}(\ves{\mu} - \ve{b}))^T (A^{-1} \Sigma A^{-T})^{-1} (\ve{x} + A^{-1}(\ves{\mu} - \ve{b})) \bigg) \\
+    &= \frac{1}{(\det AA^T)^{1/2}} \frac{1}{ (\det A^{-1}A^{-T})^{1/2} (\det 2\pi\Sigma)^{1/2}} \\
+    & \qquad \exp\bigg(-\frac{1}{2} (\ve{x} - A^{-1}(\ves{\mu} - \ve{b}))^T (A^{-1} \Sigma A^{-T})^{-1} (\ve{x} + A^{-1}(\ves{\mu} - \ve{b})) \bigg) \\
+    &= \frac{1}{|\det A|} \frac{1}{ (\det 2\pi A^{-1}\Sigma A^{-T})^{1/2}} \\
+    & \qquad \exp\bigg(-\frac{1}{2} (\ve{x} - A^{-1}(\ves{\mu} - \ve{b}))^T (A^{-1} \Sigma A^{-T})^{-1} (\ve{x} + A^{-1}(\ves{\mu} - \ve{b})) \bigg) \\
+    &= \frac{1}{|\det A|} \N(\ve{x}, A^{-1}(\ves{\mu} - \ve{b}), A^{-1}\Sigma A^{-T})
+    \end{align*}
+    as required.
+  \end{proof}  
+
+  \item \begin{corollary}
+    if $a \in \Real$ and $\ve{b} \in \Real^d$ is a vector, then
+    \begin{align*}
+      \N(a\ve{x} + \ve{b}; \ves{\mu}, \Sigma)
+      &= \frac{1}{|a|^d} \N\bigg(\ve{x}; \frac{\ves{\mu} - \ve{b}}{a}, \frac{\Sigma}{a^2}\bigg).
+    \end{align*}
+  \end{corollary}
+
+  \item \begin{proposition}
+    \begin{align*}
+      \N(\ve{x};\mu_1, \Sigma_1) \N(\ve{x};\mu_2, \Sigma_2) = \N(\mu_1; \mu_2, \Sigma_1 + \Sigma_2) \N(\ve{x}; \mu_3, \Sigma_3)
+  \end{align*}
+  where
+  \begin{align*}
+  \mu_3 &= \Sigma_2(\Sigma_1 + \Sigma_2)^{-1} \mu_1 + \Sigma_1(\Sigma_1 + \Sigma_2)^{-1} \mu_2, \\
+  \Sigma_3 &= \Sigma_1 (\Sigma_1 + \Sigma_2)^{-1} \Sigma_2.
+  \end{align*}
+  \end{proposition}
+
+  We will not prove this proposition. It looks painful.
+
+  \item \begin{proposition} \label{gaussian-convolution}
+    \begin{align*}
+    \mcal{N}(x;\mu_1, \sigma_1^2) * \mcal{N}(x;\mu_2, \sigma_2^2)
+    &= \int \mcal{N}(t;\mu_1, \sigma_1^2) \mcal{N}(x-t;\mu_1, \sigma_1^2)\, \dee t
+    = \mcal{N}(x; \mu_1 + \mu_2, \sigma_1^2 + \sigma_2^2).
+    \end{align*}
+  \end{proposition}
+  \begin{proof}
+    Let $X_1$ be a random variable distributed according to $\mcal(\mu_1, \sigma_1^2)$, and let $X_2$ be a random variable distributed according to $\mcal(\mu_2, \sigma_2^2)$. Let $X_1$ and $X_2$ be indepdendnet of each other. Define $X = X_1 + X_2$. Then,
+    we have that the probability distribution function of $X$ is given by
+    \begin{align*}
+      p_X(x) = \mcal{N}(x;\mu_1, \sigma_1^2) * \mcal{N}(x;\mu_2, \sigma_2^2).
+    \end{align*}
+    Observe that 
+    \begin{align*}
+      E[X] &= E[X_1] + E[X_2] = \mu_1 + \mu_2.
+    \end{align*}
+    Moreover,
+    \begin{align*}
+      \Var(X_1 + X_2) = \Var(X_1) + \Var(X_2) = \sigma_1^2 + \sigma_2^2.
+    \end{align*}
+    So, the proposition would be true if we can show that $p_X(x)$ is a Gaussian. In other words, if we can show that there are constants $A$, $B$, and $C$ such that
+    \begin{align*}
+      p_X(x) = A \exp\big(-B(x - C)^2\big)
+    \end{align*}    
+    with $A, B > 0$, then we would be done.
+
+    So, let us that that
+    \begin{align*}
+      \mcal{N}(t;\mu_1, \sigma^2) &= A_1 \exp\big(-B_1(t - C_1)^2\big), \\
+      \mcal{N}(x - t;\mu_2, \sigma^2) &= A_2 \exp\big(-B_2(x - t - C_2)^2\big)
+    \end{align*}
+    with $A_1, B_1, A_2, B_2 > 0$.
+    It follows that
+    \begin{align*}
+      p_X(x) 
+      &= \int A_1 \exp\big(-B_1(t - C_1)^2\big)A_2 \exp\big(-B_2(x - t - C_2)^2\big)\, \dee t \\
+      &= A_1 A_2 \int \exp\big(-B_1(t - C_1)^2 - B_2(x - t - C_2)^2 \big)\, \dee t.
+    \end{align*}
+    Now, we have that
+    \begin{align*}
+      &-B_1(t-C_1)^2 - B_2(x - t - C_2)^2 \\
+      &= -B_2x^2 + 2B_2 C_2 x - (B_1 + B_2)t^2 +2(B_1 C_1 + B_2 x - B_2C_2) t - B_1C_1^2 -B_2C_2^2.
+    \end{align*}
+    Now, let's simplify the expression by given the constants new names.
+    \begin{align*}
+      -B_1(t-C_1)^2 - B_2(x - t - C_2)^2
+      &= -B_2 x^2 + 2D_2 x - (B_1 + B_2) t^2 + 2(B_2x + D_4)t + D_5.
+    \end{align*}
+    We know that $D_3 = B_1 + B_2 > 0$. Let's complete the square of the polynomial that involves $t$. We have that
+    \begin{align*}
+      &-(B_1 + B_2) t^2 + 2(B_2x + D_4)t \\
+      &= -(B_1 + B_2)\bigg( t^2 - 2\frac{B_2 x + D_4}{B_1 + B_2} t \bigg) \\
+      &= -(B_1 + B_2)\bigg( t^2 - 2\frac{B_2 x + D_4}{B_1 + B_2} t + \frac{(B_2 x + D_4)^2}{(B_1 + B_2)^2} - \frac{(B_2 x + D_4)^2}{(B_1 + B_2)^2} \bigg) \\
+      &= -(B_1 + B_2)\bigg( t^2 - 2\frac{B_2 x + D_4}{B_1 + B_2} t + \frac{(B_2 x + D_4)^2}{(B_1 + B_2)^2}  \bigg) + \frac{(B_2 x + D_4)^2}{B_1 + B_2} \\
+      &= -(B_1 + B_2)\bigg( t - \frac{B_2 x + D_4}{B_1 + B_2} \bigg)^2 + \frac{(B_2 x + D_4)^2}{B_1 + B_2} \\
+      &= -(B_1 + B_2)( t - D_6 x - D_7)^2 + \frac{B_2^2}{B_1+B_2} x^2 + 2D_8x + D_9.
+    \end{align*}
+    So,
+    \begin{align*}
+      &-B_2 x^2 + 2D_2 x - (B_1 + B_2) t^2 + 2(B_2x + D_4)t + D_5 \\
+      &= -B_2 x^2 + 2D_2 x -(B_1 + B_2)( t - D_6 x - D_7)^2 + \frac{B_2^2}{B_1+B_2} x^2 + 2D_8x + D_9 + D_5 \\
+      &= -\bigg( B_2 - \frac{B_2^2}{B_1 + B_2} \bigg) x^2  + 2(D_2 + D_8) x -(B_1 + B_2)( t - D_6 x - D_7)^2 + D_{10} \\
+      &= -\bigg( \frac{B_1 B_2}{B_1 + B_2} \bigg) x^2  + 2(D_2 + D_8) x -(B_1 + B_2)( t - D_6 x - D_7)^2 + D_{10}.
+    \end{align*}
+    Note that, because $B_1, B_2 > 0$, we have that $B_1B_2/(B_1 + B_2) > 0$. Now, we can complete the square of the terms that involve $x$:
+    \begin{align*}
+      -\bigg( \frac{B_1 B_2}{B_1 + B_2} \bigg) x^2  + 2(D_2 + D_8) x
+      &= -\bigg( \frac{B_1 B_2}{B_1 + B_2} \bigg)(x - D_{11})^2 + D_{12}.
+    \end{align*}
+    This gives
+    \begin{align*}
+      &-\bigg( \frac{B_1 B_2}{B_1 + B_2} \bigg) x^2  + 2(D_2 + D_8) x -(B_1 + B_2)( t - D_6 x - D_7)^2 + D_{10} \\
+      &= -\bigg( \frac{B_1 B_2}{B_1 + B_2} \bigg)(x - D_{11})^2 -(B_1 + B_2)( t - D_6 x - D_7)^2 + D_{10} + D_{12} \\
+      &= -\bigg( \frac{B_1 B_2}{B_1 + B_2} \bigg)(x - D_{11})^2 -(B_1 + B_2)( t - D_6 x - D_7)^2 + D_{13}.
+    \end{align*}
+    In other words,
+    \begin{align*}
+      -B_1(t-C_1)^2 - B_2(x - t - C_2)^2 = -D_{14}(x - D_{11})^2 - D_{15}(t - D_6x - D_7)^2 + D_{13}
+    \end{align*}
+    for some $D_{14}, D_{15} > 0$.
+
+    Hence,
+    \begin{align*}
+      p_X(x) 
+      &= A_1 A_2 \int \exp\big( -D_{14}(x - D_{11})^2 - D_{15}(t - D_6x - D_7)^2 + D_{13}  \big)\, \dee t \\
+      &= A_1 A_2 e^{D_{13}} \bigg( \int \exp( - D_{15}(t - D_6x - D_7)^2 )\, \dee t \bigg) \exp(-D_{14}(x - D_{11})^2) .
+    \end{align*}
+    The integral on the last line is a positive constant because it is an integral of a Gaussian. So, $p_X(x)$ is a Gaussian. We are done.
+  \end{proof}
+\end{itemize}
+
+\bibliographystyle{alpha}
+\bibliography{ddpm-classifier-free-guidance}  
+\end{document}
