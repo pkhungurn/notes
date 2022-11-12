@@ -51,6 +51,8 @@
 \DeclareMathOperator*{\argmin}{arg\,min}
 \newcommand{\N}{\mathcal{N}}
 \newcommand{\data}{\mathrm{data}}
+\newcommand{\SNR}{\mathrm{SNR}}
+\newcommand{\sigmoid}{\mathrm{sigmoid}}
 
 \title{Classifer-Free Diffusion Guidance}
 \author{Pramook Khungurn}
@@ -122,26 +124,64 @@ This note is written as I read the paper ``Classifer-Free Diffusion Guidance'' b
 \section{Background}
 
 \begin{itemize}
-  \item Ho and Salimans introduced new formalism and notations for DDPM.
-  \begin{itemize}
-    \item They just break away with the notations in \cite{Ho:2020} despite the fact that Johathan Ho is one of the authors.
-  \end{itemize}
+  \item Ho and Salimans use the formalism developed in Kingma \etal's paper \cite{Kingma:2021} with some modifications.  
 
-  \item The new notations.
   \begin{itemize}
     \item $\ve{x}$ denoted a data item that is sampled from a data distribution $p(\ve{x})$.
-  
-    \item A degraded data item is now denoted by $\ve{z}_\lambda$, which is indexed by $\lambda \in [\lambda_{\min}, \lambda_{\max}] \subseteq \Real$ like this $\ve{z}_\lambda$. Here, $\lambda$ can be negative.
     
-    \item The forward process is now denoted by $q$, so we have something like $q(\ve{z}_\lambda | \ve{x})$ and $q(\ve{z}_{\lambda} | \ve{z}_{\lambda'})$.
+    \item The time parameter $t$ is dropped in favor of $\lambda$. A degraded data item is denoted by $\ve{z}_\lambda$, which is indexed by $\lambda \in [\lambda_{\min}, \lambda_{\max}] \subseteq \Real$ like this $\ve{z}_\lambda$. Here, $\lambda$ can be negative.
+    
+    \item The forward process is denoted by $q$, so we have probabilities like $q(\ve{z}_\lambda | \ve{x})$ and $q(\ve{z}_{\lambda} | \ve{z}_{\lambda'})$.
 
-    \item The paper set
+    \item We define
     \begin{align*}
-      q(\ve{z}_\lambda | \ve{x}) &= \N(\alpha_\lambda \ve{x}, \sigma_\lambda^2 I)      
-      &&\mbox{where }\alpha_\lambda^2 = 1/(1 + e^{-\lambda})\mbox{ and }\sigma_\lambda^2 = 1 - \alpha_\lambda^2 \\
-      q(\ve{z}_{\lambda}|\ve{z}_{\lambda'}) &= \N((\alpha_\lambda/\alpha_{\lambda'})\ve{z}_{\lambda'}), \sigma^2_{\lambda|\lambda'} I)
-      &&\mbox{where }\lambda < \lambda'\mbox{ and }\sigma^2_{\lambda|\lambda'} = (1 - e^{\lambda - \lambda'} \sigma^2_{\lambda}).
-    \end{align*}    
+      \alpha_{\lambda}^2 
+      &= \sigmoid(\lambda) = \frac{1}{1 + e^{-\lambda}}, 
+      \\
+      \sigma_\lambda^2       
+      &= 1 - \alpha^2_\lambda = \frac{e^{-\lambda}}{1 + e^{-\lambda}} = \frac{1}{1 + e^{\lambda}} = \sigmoid(-\lambda), 
+      \\
+      \alpha^2_{\lambda_0|\lambda_1} 
+      &= \frac{\alpha^2_{\lambda_0}}{\alpha^2_{\lambda_1}} = \frac{1 + e^{-\lambda_1}}{1 + e^{-\lambda_0}}, 
+      \\
+      \sigma^2_{\lambda_0|\lambda_1}
+      &= \sigma^2_{\lambda_0} - \alpha^2_{\lambda_0|\lambda_1} \sigma^2_{\lambda_1} 
+      = 1 - \alpha^2_{\lambda_0} - \frac{\alpha_{\lambda_0}^2}{\alpha_{\lambda_1}^2} (1 - \alpha^2_{\lambda_1}) 
+      = 1 - \alpha_{\lambda_0}^2 - \frac{\alpha_{\lambda_0}^2}{\alpha_{\lambda_1}^2} + \alpha_{\lambda_0}^2
+      = 1 - \frac{\alpha_{\lambda_0}^2}{\alpha_{\lambda_1}^2} 
+      \\
+      &= 1 - \frac{1 + e^{-\lambda_1}}{1 + e^{-\lambda_0}} 
+      = \frac{e^{-\lambda_0} - e^{-\lambda_1}}{1 + e^{-\lambda_0}}
+      = \frac{e^{\lambda_0}(e^{-\lambda_0} - e^{-\lambda_1})}{e^{\lambda_0}(1 + e^{-\lambda_0})}
+      = \frac{1 - e^{\lambda_0-\lambda_1'}}{1 + e^{\lambda_0}} 
+      \\
+      &= (1 - e^{\lambda_0-\lambda_1'}) \sigma_{\lambda_0}^2.
+    \end{align*}
+    Note that the formula for $\sigma_{\lambda_0|\lambda_1}^2$ works only when $\lambda_0 \leq \lambda_1$. Otherwise, we would have $\sigma^2_{\lambda_0|\lambda_1} < 0$.
+
+    \item The signal-to-noise ratio (SNR) is given by
+    \begin{align*}
+      \SNR(\lambda) = \frac{\alpha^2_\lambda}{\sigma^2_\lambda} = \frac{1 + e^{\lambda}}{1 + e^{-\lambda}} = \frac{e^{\lambda}(1 + e^{-\lambda})}{1 + e^{-\lambda}} = e^{\lambda}.
+    \end{align*}
+    So,
+    \begin{align*}
+      \lambda = \log \frac{\alpha_\lambda^2}{\sigma^2_\lambda} = \log \SNR(\lambda).
+    \end{align*}
+
+    \item As a result, the forward process starts from $\lambda_{\max}$ (highest SNR, least noise) and goes to $\lambda_{\min}$ (lower SNR, most noise). The backward process does the opposite.
+    
+    \item As usual, we set
+    \begin{align*}
+      q(\ve{z}_\lambda | \ve{x}) &= \N(\alpha_\lambda \ve{x}, \sigma_\lambda^2 I), \\
+      q(\ve{z}_{\lambda_0}|\ve{z}_{\lambda_1}) &= \N(\alpha_{\lambda_0|\lambda_1} \ve{x}, \sigma^2_{\lambda_0|\lambda_1} I).
+    \end{align*}
+    for any $\lambda$, $\lambda_0$, and $\lambda_1$ with the condition that $\lambda_0 < \lambda_1$.
+  
+    \item Given $\lambda_0 < \lambda_1$, we can show that
+    \begin{align*}
+      q(\ve{z}_{\lambda_1} | \ve{z}_{\lambda_0}, \ve{x})
+      &= \N(\ve{z}_{\lambda_1}; \ves{\mu}_{\lambda_1|\lambda_0}(\ve{z}_{\lambda_0}, \ve{x}), \tilde{\sigma}^2_{\lambda_1|\lambda_0}I)
+    \end{align*}
   \end{itemize}
 
   
