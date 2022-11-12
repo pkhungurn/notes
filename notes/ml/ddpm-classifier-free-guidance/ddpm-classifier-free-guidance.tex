@@ -126,49 +126,42 @@ This note is written as I read the paper ``Classifer-Free Diffusion Guidance'' b
 \begin{itemize}
   \item Ho and Salimans use the formalism developed in Kingma \etal's paper \cite{Kingma:2021} with some modifications.  
 
+  \item $\ve{x}$ denoted a data item that is sampled from a data distribution $p(\ve{x})$.
+  
+  \item The time parameter $t$ is dropped in favor of a new parameter $\lambda$. A degraded data item is denoted by $\ve{z}_\lambda$, which is indexed by $\lambda \in [\lambda_{\min}, \lambda_{\max}] \subseteq \Real$ like this $\ve{z}_\lambda$. Here, $\lambda$ can be negative.
+  
+  \item We define
+  \begin{align*}
+    \alpha_{\lambda}^2 
+    &= \frac{1}{1 + e^{-\lambda}} = \sigmoid(\lambda), &
+    \\
+    \sigma_\lambda^2       
+    &= 1 - \alpha^2_\lambda = \frac{e^{-\lambda}}{1 + e^{-\lambda}} = \frac{1}{1 + e^{\lambda}} = \sigmoid(-\lambda), 
+    &
+    \\
+    \alpha^2_{\lambda_0|\lambda_1} 
+    &= \frac{\alpha^2_{\lambda_0}}{\alpha^2_{\lambda_1}} = \frac{1 + e^{-\lambda_1}}{1 + e^{-\lambda_0}},
+    & 
+    \\
+    \sigma^2_{\lambda_0|\lambda_1}
+    &= \sigma^2_{\lambda_0} - \alpha^2_{\lambda_0|\lambda_1} \sigma^2_{\lambda_1} 
+    = (1 - e^{\lambda_0-\lambda_1}) \sigma_{\lambda_0}^2.
+    & (\mbox{Proposition~\ref{thm:sigma-lambda-simplified}})
+  \end{align*}
+  Note that the formula for $\sigma_{\lambda_0|\lambda_1}^2$ works only when $\lambda_0 \leq \lambda_1$. Otherwise, we would have $\sigma^2_{\lambda_0|\lambda_1} < 0$.
+
+  \item The signal-to-noise ratio (SNR) is given by
+  \begin{align*}
+    \SNR(\lambda) = \frac{\alpha^2_\lambda}{\sigma^2_\lambda} = \frac{1 + e^{\lambda}}{1 + e^{-\lambda}} = \frac{e^{\lambda}(1 + e^{-\lambda})}{1 + e^{-\lambda}} = e^{\lambda}.
+  \end{align*}
+  So,
+  \begin{align*}
+    \lambda = \log \frac{\alpha_\lambda^2}{\sigma^2_\lambda} = \log \SNR(\lambda).
+  \end{align*}
+
+  \item The forward process is denoted by $q$, so we have probabilities like $q(\ve{z}_\lambda | \ve{x})$ and $q(\ve{z}_{\lambda} | \ve{z}_{\lambda'})$.
   \begin{itemize}
-    \item $\ve{x}$ denoted a data item that is sampled from a data distribution $p(\ve{x})$.
-    
-    \item The time parameter $t$ is dropped in favor of $\lambda$. A degraded data item is denoted by $\ve{z}_\lambda$, which is indexed by $\lambda \in [\lambda_{\min}, \lambda_{\max}] \subseteq \Real$ like this $\ve{z}_\lambda$. Here, $\lambda$ can be negative.
-    
-    \item The forward process is denoted by $q$, so we have probabilities like $q(\ve{z}_\lambda | \ve{x})$ and $q(\ve{z}_{\lambda} | \ve{z}_{\lambda'})$.
-
-    \item We define
-    \begin{align*}
-      \alpha_{\lambda}^2 
-      &= \sigmoid(\lambda) = \frac{1}{1 + e^{-\lambda}}, 
-      \\
-      \sigma_\lambda^2       
-      &= 1 - \alpha^2_\lambda = \frac{e^{-\lambda}}{1 + e^{-\lambda}} = \frac{1}{1 + e^{\lambda}} = \sigmoid(-\lambda), 
-      \\
-      \alpha^2_{\lambda_0|\lambda_1} 
-      &= \frac{\alpha^2_{\lambda_0}}{\alpha^2_{\lambda_1}} = \frac{1 + e^{-\lambda_1}}{1 + e^{-\lambda_0}}, 
-      \\
-      \sigma^2_{\lambda_0|\lambda_1}
-      &= \sigma^2_{\lambda_0} - \alpha^2_{\lambda_0|\lambda_1} \sigma^2_{\lambda_1} 
-      = 1 - \alpha^2_{\lambda_0} - \frac{\alpha_{\lambda_0}^2}{\alpha_{\lambda_1}^2} (1 - \alpha^2_{\lambda_1}) 
-      = 1 - \alpha_{\lambda_0}^2 - \frac{\alpha_{\lambda_0}^2}{\alpha_{\lambda_1}^2} + \alpha_{\lambda_0}^2
-      = 1 - \frac{\alpha_{\lambda_0}^2}{\alpha_{\lambda_1}^2} 
-      \\
-      &= 1 - \frac{1 + e^{-\lambda_1}}{1 + e^{-\lambda_0}} 
-      = \frac{e^{-\lambda_0} - e^{-\lambda_1}}{1 + e^{-\lambda_0}}
-      = \frac{e^{\lambda_0}(e^{-\lambda_0} - e^{-\lambda_1})}{e^{\lambda_0}(1 + e^{-\lambda_0})}
-      = \frac{1 - e^{\lambda_0-\lambda_1'}}{1 + e^{\lambda_0}} 
-      \\
-      &= (1 - e^{\lambda_0-\lambda_1'}) \sigma_{\lambda_0}^2.
-    \end{align*}
-    Note that the formula for $\sigma_{\lambda_0|\lambda_1}^2$ works only when $\lambda_0 \leq \lambda_1$. Otherwise, we would have $\sigma^2_{\lambda_0|\lambda_1} < 0$.
-
-    \item The signal-to-noise ratio (SNR) is given by
-    \begin{align*}
-      \SNR(\lambda) = \frac{\alpha^2_\lambda}{\sigma^2_\lambda} = \frac{1 + e^{\lambda}}{1 + e^{-\lambda}} = \frac{e^{\lambda}(1 + e^{-\lambda})}{1 + e^{-\lambda}} = e^{\lambda}.
-    \end{align*}
-    So,
-    \begin{align*}
-      \lambda = \log \frac{\alpha_\lambda^2}{\sigma^2_\lambda} = \log \SNR(\lambda).
-    \end{align*}
-
-    \item As a result, the forward process starts from $\lambda_{\max}$ (highest SNR, least noise) and goes to $\lambda_{\min}$ (lower SNR, most noise). The backward process does the opposite.
+    \item The forward process starts from $\lambda_{\max}$ (highest SNR, least noise) and goes to $\lambda_{\min}$ (lower SNR, most noise). The backward process does the opposite.
     
     \item As usual, we set
     \begin{align*}
@@ -180,159 +173,219 @@ This note is written as I read the paper ``Classifer-Free Diffusion Guidance'' b
     \item Given $\lambda_0 < \lambda_1$, we can show that
     \begin{align*}
       q(\ve{z}_{\lambda_1} | \ve{z}_{\lambda_0}, \ve{x})
-      &= \N(\ve{z}_{\lambda_1}; \ves{\mu}_{\lambda_1|\lambda_0}(\ve{z}_{\lambda_0}, \ve{x}), \tilde{\sigma}^2_{\lambda_1|\lambda_0}I)
+      &= \N(\ve{z}_{\lambda_1}; \ves{\mu}_{\lambda_1|\lambda_0}(\ve{z}_{\lambda_0}, \ve{x}), \widetilde{\sigma}^2_{\lambda_1|\lambda_0}I)
     \end{align*}
+    where
+    \begin{align*}
+      \ves{\mu}_{\lambda_1|\lambda_0}(\ve{z}_{\lambda_0}, \ve{x})
+      &= \frac{\alpha_{\lambda_0|\lambda_1} \sigma_{\lambda_1}^2}{\sigma_{\lambda_0}^2} \ve{z}_{\lambda_0} + \frac{\alpha_{\lambda_1} \sigma^2_{\lambda_0|\lambda_1}}{\sigma^2_{\lambda_0}} \ve{x}
+      = e^{\lambda_0 - \lambda_1} \frac{\alpha_{\lambda_1}}{\alpha_{\lambda_0}} \ve{z}_{\lambda_0} + (1 - e^{\lambda_0 - \lambda_1})\alpha_{\lambda_1} \ve{x}, \\
+      \widetilde{\sigma}^{2}_{\lambda_1 | \lambda_0} 
+      &= \frac{ \sigma^2_{\lambda_0|\lambda_1}\sigma^2_{\lambda_1}}{\sigma^2_{\lambda_0}} 
+      = (1 - e^{\lambda_0 - \lambda_1})\sigma^2_{\lambda_1}.
+    \end{align*}
+    See Proposition~\ref{thm:backward-conditional-prob-simplified} for the proof.  
   \end{itemize}
 
+  \item The backward process is denoted by $p_{\ves{\theta}}$.
+  \begin{itemize}
+    \item With $\lambda_{\min}$ low enough, we may set $p_{\ves{\theta}}(\ve{z}_{\lambda_{\min}}) = \N(\ve{z}_{\lambda_{\min}}; \ve{0}, I).$
+    
+    \item The transition probability from $\ve{z}_{\lambda_0}$ to $\ve{z}_{\lambda_1}$ is given by
+    \begin{align*}
+      p_{\ves{\theta}}(\ve{z}_{\lambda_1} | \ve{z}_{\lambda_0})
+      &= \N(\ve{z}_{\lambda_1}; \mu_{\lambda_1|\lambda_0}(\ve{z}_{\lambda_0}, \ve{x}_{\ves{\theta}}(\ve{z}_{\lambda_0}, \lambda_0)), (\widetilde{\sigma}^2_{\lambda_0|\lambda_1})^{1-v}(\sigma^2_{\lambda_1|\lambda_0})^v I)
+    \end{align*}
+    where $\ve{x}_{\ves{\theta}}(\ve{z}_{\lambda_0}, \lambda_0)$ is the denoising model the tries to predict $\ve{x}$ from $\ve{z}_{\lambda_0}$.
+
+    \item The variance of the backward transition is taken from Dhariwal and Nichol \cite{Dhariwal:2021}, which specifies that it is an interpolated value in log space between $\widetilde{\sigma}^2_{\lambda_0|\lambda_1}$ and $\sigma^2_{\lambda_1|\lambda_0}$.\
+    \begin{itemize}
+      \item The paper found it effective to use a constant hyperparameter $v$ instance of a learned $v$ that depends on $\ve{z}_{\lambda_0}$.
+    \end{itemize}
+
+    \item During sampling, we apply the transition along an increasing sequence $$\lambda_{\min} = \lambda_1 < \lambda_2 < \dotsb < \lambda_T = \lambda_{\max}.$$
+    This is the standard ancestral sampling used in \cite{Ho:2020}.
+
+    \item The denosing model $\ve{x}_{\ves{\theta}}$ is parameterized in the terms of the noise prediction model $\ves{\xi}_{\ves{\theta}}$ such that there relationship is given by
+    \begin{align*}
+      \ve{x}_{\ves{\theta}}(\ve{z}_{\lambda}, \lambda)
+      &= \frac{\ve{z}_\lambda - \sigma_\lambda \ves{\xi}_{\ves{\theta}}(\ve{z}_\lambda, \lambda)}{\alpha_\lambda}.
+    \end{align*}
+
+    \item The noise prediction model is trained to minimize the loss
+    \begin{align*}
+      \mcal{L} = E_{\ve{x} \sim p(\ve{x}), \lambda \sim p(\lambda), \ves{\xi} \sim \N(\ve{0},I)} \big[
+        \| \ves{\xi} - \ves{\xi}_{\ves{\theta}}(\alpha_\lambda \ve{x} + \sigma_\lambda \ves{\xi}, \lambda) \|^2
+      \big]
+    \end{align*}
+    where $\ve{x}$ is drawn from the data distribution $p(\ve{x})$. 
+    
+    \item $\lambda$ is drawn from the distribution $p(\lambda)$ where $\lambda$ is sampled through the expression
+    \begin{align*}
+      \lambda := -2 \log \tan(au + b(1-u))
+    \end{align*}
+    where $u$ is sampled unformly from interval $[0,1]$, $a = \arctan(e^{-\lambda_{\min}/2})$, and $b = \arctan(e^{-\lambda_{\max}/2})$.
+
+    \item If the noise prediction model is optimized well enough, it would predict the scaled version of the score of $p_{\lambda}$. In other words,
+    \begin{align*}
+      \ves{\xi}_{\ves{\theta}}(\ve{z}_{\lambda}, \lambda) \approx -\sigma_\lambda \nabla \log q(\ve{z}_\lambda).
+    \end{align*}
+  \end{itemize}  
+
+  \item For conditional generation, we are given conditioning information $\ve{c}$. We are required to sample from $p(\ve{x}|\ve{c})$. The derivation above remains the same except for the fact that we need to add the conditioning information to everything. In particular,
+  \begin{align*}
+    p(\ve{x}) &\mapsto p(\ve{x}|\ve{c}), \\
+    q(\ve{z}_\lambda) &\mapsto q(\ve{z}_{\lambda}|\ve{c}), \\
+    \ve{\xi}_{\ves{\theta}}(\ve{z}_\lambda, \lambda) &\mapsto \ve{\xi}_{\ves{\theta}}(\ve{z}_\lambda, \lambda, \ve{c}). 
+  \end{align*}
+
+  \item Classifier guidance, when written using the notation of the present paper is equivalent to predicting the noise with
+  \begin{align*}
+    \widetilde{\ves{\xi}}_{\ves{\theta}}(\ve{z}_\lambda, \lambda, \ve{c})
+    = \ves{\xi}_{\ves{\theta}}(\ve{z}_\lambda, \lambda) - w\sigma_\lambda \nabla \log p(\ve{c}|\ve{z}_\lambda)
+  \end{align*}
+  where $p(\ve{c}|\ve{z}_\lambda, \lambda)$ denote the classifier, and $w$ is a scaling factor.
+  \begin{itemize}
+    \item We are not using the mean $\mu_{\lambda + \Delta\lambda|\lambda}(\ve{z}_\lambda, \ve{x}_{\ves{\theta}}(\ve{z}_\lambda,\lambda))$ to compute the classifier gradient here because (1) it's what people do even if the derivation tell them other words, and (2) it makes sense when you take the limit as the step size approaches $0$, making the model a continuous-time model.
+  \end{itemize}
+
+  \item The paper notes that the best result in \cite{Dhariwal:2021} is obtained by applying classifier-guidance on top of an already conditional model. In other words, the noise prediction model can be written as:
+  \begin{align} \label{eq:classifier-guidance}
+    \widetilde{\ves{\xi}}_{\ves{\theta}}(\ve{z}_\lambda, \lambda, \ve{c})
+    = \ves{\xi}_{\ves{\theta}}(\ve{z}_\lambda, \lambda, \ve{c}) - w\sigma_\lambda \nabla \log p(\ve{c}|\ve{z}_\lambda).
+  \end{align}
+\end{itemize}
+
+\section{Classifier-Free Guidance}
+
+\begin{itemize}
+  \item Instead of training a separate classifier model, we train an unconditional model $p_{\ves{\theta}}(\ve{x})$ togother with a conditional model $p_{\ves{\theta}}(\ve{x}|\ve{c})$.
   
+  \item We use a single neural network $\ve{\xi}_{\ves{\theta}}(\ve{z}_\lambda, \lambda, \ve{c})$ to serve as our noise prediction model. When we want the network to predict unconditional noise, we simply set the conditioning information to $\ve{c} = \mbox{\O}$ where $\mbox{\O}$ is a special token.
+  
+  \item During training, $\ve{c}$ is set to $\mbox{\O}$ with some probability $p_{\mrm{uncond}}$, which is a hyperparameter.
+  
+  \item Sampling is performed using the following linear combination of noise estimate:
+  \begin{align*}
+    \widetilde{\ves{\xi}}_{\ves{\theta}}(\ve{z}_\lambda, \lambda, \ve{c})
+    = (1 + w) \ves{\xi}_{\ves{\theta}}(\ve{z}_\lambda, \lambda, \ve{c}) - w \ves{\xi}_{\ves{\theta}}(\ve{z}_\lambda, \lambda).
+  \end{align*}
+
+  \item The above noise estimate is derived from the fact that
+  \begin{align*}
+    q(\ve{c}| \ve{z}_\lambda) \approx \frac{q(\ve{z}_\lambda | \ve{c})}{q(\ve{z}_\lambda)}
+  \end{align*}
+  As a result,
+  \begin{align*}
+    \nabla \log q(\ve{c}|\ve{z}_\lambda) = \nabla \log q(\ve{z}_\lambda|\ve{c}) - \nabla \log q(\ve{z}_\lambda).
+  \end{align*}
+  Hence, using the classifier guidance equation \eqref{eq:classifier-guidance}, we have that
+  \begin{align*}
+    \widetilde{\ves{\xi}}_{\ves{\theta}}(\ve{z}_\lambda, \lambda, \ve{c})
+    &= \ves{\xi}_{\ves{\theta}}(\ve{z}_\lambda, \lambda, \ve{c}) - w\sigma_\lambda \nabla \log p(\ve{c}|\ve{z}_\lambda) \\
+    &= \ves{\xi}_{\ves{\theta}}(\ve{z}_\lambda, \lambda, \ve{c}) - w\sigma_\lambda (\nabla \log q(\ve{z}_\lambda|\ve{c}) - \nabla \log q(\ve{z}_\lambda) ) \\
+    &= \ves{\xi}_{\ves{\theta}}(\ve{z}_\lambda, \lambda, \ve{c}) + w ( \ves{\xi}_{\ves{\theta}}(\ve{z}_\lambda, \lambda, \ve{c}) - \ves{\xi}_{\ves{\theta}}(\ve{z}_\lambda, \lambda) ) \\
+    &= (1 + w) \ves{\xi}_{\ves{\theta}}(\ve{z}_\lambda, \lambda, \ve{c}) - w \ves{\xi}_{\ves{\theta}}(\ve{z}_\lambda, \lambda).
+  \end{align*}
+\end{itemize}
+
+\section{Experiments}
+
+\begin{itemize}
+  \item The experiments were performed on the scaled-down ($64 \times 64$ and $128 \times 128$) versions of ImageNet.
+
+  \item The paper uses the same architecture as that of Dhariwal and Nichol \cite{Dhariwal:2021} with some modifications.
+  \begin{itemize}
+    \item The interpolating parameter $v$ is not learned, but fixed.
+    \begin{itemize}
+      \item For the $64 \times 64$ model, the paper fixes $v = 0.3$.
+      \item For the $128 \times 128$ model, the paper fixes $v = 0.2$.
+    \end{itemize}
+
+    \item $\lambda_{\min} = -20$ and $\lambda_{\max} = 20$.
+    \item The models were trained for $2.7$ million steps.
+  \end{itemize}
+
+  \item The paper experimented with $w \in \{0, 0.1, 0.2, \dotsc, 4\}$ and $p_{\mrm{uncond}} = \{ 0.1, 0.2, 0.5 \}$. 
+  \begin{itemize}
+    \item For FID, it dropped until $w = 0.1$ where the best score was atttained with $p_{\mrm{uncond}} = 0.1$. Then, FID increased as $w$ increase.
+    \item IS increases with $w$. The best IS was attained at $w = 4$ and $p_{\mrm{uncond}} = 0.1$.
+    \item $p_{\mrm{uncond}}$ of $0.1$ and $0.2$ performed about equally well, but $0.5$ was the worst.
+  \end{itemize}
+
+  \item The author draws two conclusion.
+  \begin{itemize}
+    \item Classifier-free guidance can trade diversity for fidelity like classifier guidance can.
+    \begin{itemize}
+      \item This is evident from the fact that IS scores (which depends much on fidelity) improved as $w$ increases.
+      \item FID is more complicated as it depends on both fidelity and diversity.
+    \end{itemize}
+
+    \item Only a small portion of the model capacity is needed for unconditional generation.
+  \end{itemize}
 \end{itemize}
 
 \appendix
 
-\section{Gaussian Identities}
+\section{Derivations}
 
 \begin{itemize}
-  \item Many of these identities come from a lecture note by Marc Toussaint \cite{Toussaint:2011}.
-  
-  \item A multivariate Gaussian with mean $\ves{\mu}$ and covariance matrix $\Sigma$, denoted by $\N(\ves{\mu},\Sigma)$ is the distribution:
+\item \begin{proposition} \label{thm:sigma-lambda-simplified}
+  For $\lambda_0 < \lambda_1$, it holds that
+  $\sigma^2_{\lambda_0|\lambda_1} = (1 - e^{\lambda_0 - \lambda_1})\sigma_{\lambda_0}^2.$
+\end{proposition}
+
+\begin{proof} We have that
   \begin{align*}
-  \N(\ve{x}; \ves{\mu}, \Sigma) = \frac{1}{(\det 2\pi\Sigma)^{1/2}} \exp\bigg(-\frac{1}{2} (\ve{x}-\ves{\mu})^T \Sigma^{-1} (\ve{x}-\ves{\mu}) \bigg).
+    \sigma^2_{\lambda_0|\lambda_1}
+    &= \sigma^2_{\lambda_0} - \alpha^2_{\lambda_0|\lambda_1} \sigma^2_{\lambda_1} 
+    = 1 - \alpha^2_{\lambda_0} - \frac{\alpha_{\lambda_0}^2}{\alpha_{\lambda_1}^2} (1 - \alpha^2_{\lambda_1}) 
+    = 1 - \alpha_{\lambda_0}^2 - \frac{\alpha_{\lambda_0}^2}{\alpha_{\lambda_1}^2} + \alpha_{\lambda_0}^2
+    = 1 - \frac{\alpha_{\lambda_0}^2}{\alpha_{\lambda_1}^2} 
+    \\
+    &= 1 - \frac{1 + e^{-\lambda_1}}{1 + e^{-\lambda_0}} 
+    = \frac{e^{-\lambda_0} - e^{-\lambda_1}}{1 + e^{-\lambda_0}}
+    = \frac{e^{\lambda_0}(e^{-\lambda_0} - e^{-\lambda_1})}{e^{\lambda_0}(1 + e^{-\lambda_0})}
+    = \frac{1 - e^{\lambda_0-\lambda_1}}{1 + e^{\lambda_0}} 
+    \\
+    &= (1 - e^{\lambda_0-\lambda_1}) \sigma_{\lambda_0}^2
   \end{align*}
-  It is defined only if the covariance matrix is positive definite.  
-  
-  \item \begin{proposition}
-    For any invertible matrix $A$ and any vector $\ve{b}$, we have that
-    \begin{align*}
-    \N(A\ve{x} + \ve{b}; \ves{\mu}, \Sigma) = \frac{1}{|\det A|} \N(\ve{x}, A^{-1}(\ves{\mu} - \ve{b}), A^{-1}\Sigma A^{-T}).
-    \end{align*}
-  \end{proposition}
+  as required.
+\end{proof}
 
-  \begin{proof}
-    \begin{align*}
-    \N(\ve{x}; \ves{\mu}, \Sigma) 
-    &= \frac{1}{(\det 2\pi\Sigma)^{1/2}} \exp\bigg(-\frac{1}{2} (A\ve{x} + \ve{b} -\ves{\mu})^T \Sigma^{-1} (A\ve{x} + \ve{b} -\ves{\mu}) \bigg) \\
-    &= \frac{1}{(\det 2\pi\Sigma)^{1/2}} \exp\bigg(-\frac{1}{2} (A\ve{x} + \ve{b} -\ves{\mu})^T A^{-T} A^T \Sigma^{-1} A A^{-1} (A\ve{x} + \ve{b} -\ves{\mu}) \bigg) \\
-    &= \frac{1}{(\det 2\pi\Sigma)^{1/2}} \exp\bigg(-\frac{1}{2} (\ve{x} - A^{-1}(\ves{\mu} - \ve{b}))^T (A^{-1} \Sigma A^{-T})^{-1} (\ve{x} + A^{-1}(\ves{\mu} - \ve{b})) \bigg) \\
-    &= \frac{1}{(\det AA^T)^{1/2}} \frac{1}{ (\det A^{-1}A^{-T})^{1/2} (\det 2\pi\Sigma)^{1/2}} \\
-    & \qquad \exp\bigg(-\frac{1}{2} (\ve{x} - A^{-1}(\ves{\mu} - \ve{b}))^T (A^{-1} \Sigma A^{-T})^{-1} (\ve{x} + A^{-1}(\ves{\mu} - \ve{b})) \bigg) \\
-    &= \frac{1}{|\det A|} \frac{1}{ (\det 2\pi A^{-1}\Sigma A^{-T})^{1/2}} \\
-    & \qquad \exp\bigg(-\frac{1}{2} (\ve{x} - A^{-1}(\ves{\mu} - \ve{b}))^T (A^{-1} \Sigma A^{-T})^{-1} (\ve{x} + A^{-1}(\ves{\mu} - \ve{b})) \bigg) \\
-    &= \frac{1}{|\det A|} \N(\ve{x}, A^{-1}(\ves{\mu} - \ve{b}), A^{-1}\Sigma A^{-T})
-    \end{align*}
-    as required.
-  \end{proof}  
-
-  \item \begin{corollary}
-    if $a \in \Real$ and $\ve{b} \in \Real^d$ is a vector, then
-    \begin{align*}
-      \N(a\ve{x} + \ve{b}; \ves{\mu}, \Sigma)
-      &= \frac{1}{|a|^d} \N\bigg(\ve{x}; \frac{\ves{\mu} - \ve{b}}{a}, \frac{\Sigma}{a^2}\bigg).
-    \end{align*}
-  \end{corollary}
-
-  \item \begin{proposition}
-    \begin{align*}
-      \N(\ve{x};\mu_1, \Sigma_1) \N(\ve{x};\mu_2, \Sigma_2) = \N(\mu_1; \mu_2, \Sigma_1 + \Sigma_2) \N(\ve{x}; \mu_3, \Sigma_3)
-  \end{align*}
-  where
+\item \begin{proposition} \label{thm:backward-conditional-prob-simplified}
+  For $\lambda_0 < \lambda_1$, it holds that
   \begin{align*}
-  \mu_3 &= \Sigma_2(\Sigma_1 + \Sigma_2)^{-1} \mu_1 + \Sigma_1(\Sigma_1 + \Sigma_2)^{-1} \mu_2, \\
-  \Sigma_3 &= \Sigma_1 (\Sigma_1 + \Sigma_2)^{-1} \Sigma_2.
+    \ves{\mu}_{\lambda_0|\lambda_1} (\ve{z}_{\lambda_0}, \ve{x})
+    &= e^{\lambda_0 - \lambda_1} \frac{\alpha_{\lambda_1}}{\alpha_{\lambda_0}} \ve{z}_{\lambda_0} + (1 - e^{\lambda_0 - \lambda_1})\alpha_{\lambda_1} \ve{x}.
   \end{align*}
-  \end{proposition}
+\end{proposition}
 
-  We will not prove this proposition. It looks painful.
-
-  \item \begin{proposition} \label{gaussian-convolution}
-    \begin{align*}
-    \mcal{N}(x;\mu_1, \sigma_1^2) * \mcal{N}(x;\mu_2, \sigma_2^2)
-    &= \int \mcal{N}(t;\mu_1, \sigma_1^2) \mcal{N}(x-t;\mu_1, \sigma_1^2)\, \dee t
-    = \mcal{N}(x; \mu_1 + \mu_2, \sigma_1^2 + \sigma_2^2).
-    \end{align*}
-  \end{proposition}
-  \begin{proof}
-    Let $X_1$ be a random variable distributed according to $\mcal(\mu_1, \sigma_1^2)$, and let $X_2$ be a random variable distributed according to $\mcal(\mu_2, \sigma_2^2)$. Let $X_1$ and $X_2$ be indepdendnet of each other. Define $X = X_1 + X_2$. Then,
-    we have that the probability distribution function of $X$ is given by
-    \begin{align*}
-      p_X(x) = \mcal{N}(x;\mu_1, \sigma_1^2) * \mcal{N}(x;\mu_2, \sigma_2^2).
-    \end{align*}
-    Observe that 
-    \begin{align*}
-      E[X] &= E[X_1] + E[X_2] = \mu_1 + \mu_2.
-    \end{align*}
-    Moreover,
-    \begin{align*}
-      \Var(X_1 + X_2) = \Var(X_1) + \Var(X_2) = \sigma_1^2 + \sigma_2^2.
-    \end{align*}
-    So, the proposition would be true if we can show that $p_X(x)$ is a Gaussian. In other words, if we can show that there are constants $A$, $B$, and $C$ such that
-    \begin{align*}
-      p_X(x) = A \exp\big(-B(x - C)^2\big)
-    \end{align*}    
-    with $A, B > 0$, then we would be done.
-
-    So, let us that that
-    \begin{align*}
-      \mcal{N}(t;\mu_1, \sigma^2) &= A_1 \exp\big(-B_1(t - C_1)^2\big), \\
-      \mcal{N}(x - t;\mu_2, \sigma^2) &= A_2 \exp\big(-B_2(x - t - C_2)^2\big)
-    \end{align*}
-    with $A_1, B_1, A_2, B_2 > 0$.
-    It follows that
-    \begin{align*}
-      p_X(x) 
-      &= \int A_1 \exp\big(-B_1(t - C_1)^2\big)A_2 \exp\big(-B_2(x - t - C_2)^2\big)\, \dee t \\
-      &= A_1 A_2 \int \exp\big(-B_1(t - C_1)^2 - B_2(x - t - C_2)^2 \big)\, \dee t.
-    \end{align*}
-    Now, we have that
-    \begin{align*}
-      &-B_1(t-C_1)^2 - B_2(x - t - C_2)^2 \\
-      &= -B_2x^2 + 2B_2 C_2 x - (B_1 + B_2)t^2 +2(B_1 C_1 + B_2 x - B_2C_2) t - B_1C_1^2 -B_2C_2^2.
-    \end{align*}
-    Now, let's simplify the expression by given the constants new names.
-    \begin{align*}
-      -B_1(t-C_1)^2 - B_2(x - t - C_2)^2
-      &= -B_2 x^2 + 2D_2 x - (B_1 + B_2) t^2 + 2(B_2x + D_4)t + D_5.
-    \end{align*}
-    We know that $D_3 = B_1 + B_2 > 0$. Let's complete the square of the polynomial that involves $t$. We have that
-    \begin{align*}
-      &-(B_1 + B_2) t^2 + 2(B_2x + D_4)t \\
-      &= -(B_1 + B_2)\bigg( t^2 - 2\frac{B_2 x + D_4}{B_1 + B_2} t \bigg) \\
-      &= -(B_1 + B_2)\bigg( t^2 - 2\frac{B_2 x + D_4}{B_1 + B_2} t + \frac{(B_2 x + D_4)^2}{(B_1 + B_2)^2} - \frac{(B_2 x + D_4)^2}{(B_1 + B_2)^2} \bigg) \\
-      &= -(B_1 + B_2)\bigg( t^2 - 2\frac{B_2 x + D_4}{B_1 + B_2} t + \frac{(B_2 x + D_4)^2}{(B_1 + B_2)^2}  \bigg) + \frac{(B_2 x + D_4)^2}{B_1 + B_2} \\
-      &= -(B_1 + B_2)\bigg( t - \frac{B_2 x + D_4}{B_1 + B_2} \bigg)^2 + \frac{(B_2 x + D_4)^2}{B_1 + B_2} \\
-      &= -(B_1 + B_2)( t - D_6 x - D_7)^2 + \frac{B_2^2}{B_1+B_2} x^2 + 2D_8x + D_9.
-    \end{align*}
-    So,
-    \begin{align*}
-      &-B_2 x^2 + 2D_2 x - (B_1 + B_2) t^2 + 2(B_2x + D_4)t + D_5 \\
-      &= -B_2 x^2 + 2D_2 x -(B_1 + B_2)( t - D_6 x - D_7)^2 + \frac{B_2^2}{B_1+B_2} x^2 + 2D_8x + D_9 + D_5 \\
-      &= -\bigg( B_2 - \frac{B_2^2}{B_1 + B_2} \bigg) x^2  + 2(D_2 + D_8) x -(B_1 + B_2)( t - D_6 x - D_7)^2 + D_{10} \\
-      &= -\bigg( \frac{B_1 B_2}{B_1 + B_2} \bigg) x^2  + 2(D_2 + D_8) x -(B_1 + B_2)( t - D_6 x - D_7)^2 + D_{10}.
-    \end{align*}
-    Note that, because $B_1, B_2 > 0$, we have that $B_1B_2/(B_1 + B_2) > 0$. Now, we can complete the square of the terms that involve $x$:
-    \begin{align*}
-      -\bigg( \frac{B_1 B_2}{B_1 + B_2} \bigg) x^2  + 2(D_2 + D_8) x
-      &= -\bigg( \frac{B_1 B_2}{B_1 + B_2} \bigg)(x - D_{11})^2 + D_{12}.
-    \end{align*}
-    This gives
-    \begin{align*}
-      &-\bigg( \frac{B_1 B_2}{B_1 + B_2} \bigg) x^2  + 2(D_2 + D_8) x -(B_1 + B_2)( t - D_6 x - D_7)^2 + D_{10} \\
-      &= -\bigg( \frac{B_1 B_2}{B_1 + B_2} \bigg)(x - D_{11})^2 -(B_1 + B_2)( t - D_6 x - D_7)^2 + D_{10} + D_{12} \\
-      &= -\bigg( \frac{B_1 B_2}{B_1 + B_2} \bigg)(x - D_{11})^2 -(B_1 + B_2)( t - D_6 x - D_7)^2 + D_{13}.
-    \end{align*}
-    In other words,
-    \begin{align*}
-      -B_1(t-C_1)^2 - B_2(x - t - C_2)^2 = -D_{14}(x - D_{11})^2 - D_{15}(t - D_6x - D_7)^2 + D_{13}
-    \end{align*}
-    for some $D_{14}, D_{15} > 0$.
-
-    Hence,
-    \begin{align*}
-      p_X(x) 
-      &= A_1 A_2 \int \exp\big( -D_{14}(x - D_{11})^2 - D_{15}(t - D_6x - D_7)^2 + D_{13}  \big)\, \dee t \\
-      &= A_1 A_2 e^{D_{13}} \bigg( \int \exp( - D_{15}(t - D_6x - D_7)^2 )\, \dee t \bigg) \exp(-D_{14}(x - D_{11})^2) .
-    \end{align*}
-    The integral on the last line is a positive constant because it is an integral of a Gaussian. So, $p_X(x)$ is a Gaussian. We are done.
-  \end{proof}
+\begin{proof}
+  We have that
+  \begin{align*}
+    \ves{\mu}_{\lambda_0|\lambda_1} (\ve{z}_{\lambda_0}, \ve{x})
+    &= \frac{\alpha_{\lambda_0|\lambda_1} \sigma_{\lambda_1}^2}{\sigma_{\lambda_0}^2} \ve{z}_{\lambda_0} + \frac{\alpha_{\lambda_1} \sigma^2_{\lambda_0|\lambda_1}}{\sigma^2_{\lambda_0}} \ve{x}.
+  \end{align*}
+  Now,
+  \begin{align*}
+    \frac{\alpha_{\lambda_0|\lambda_1} \sigma_{\lambda_1}^2}{\sigma_{\lambda_0}^2}
+    &= \frac{\alpha_{\lambda_0} \sigma_{\lambda_1}^2}{\alpha_{\lambda_1} \sigma^2_{\lambda_0}}
+    = \frac{\alpha^2_{\lambda_0} \sigma_{\lambda_1}^2}{\alpha_{\lambda_1}^2 \sigma^2_{\lambda_0}} \frac{\alpha_{\lambda_1}}{\alpha_{\lambda_0}}
+    = \frac{\alpha^2_{\lambda_0} (1 - \alpha_{\lambda_1}^2)}{\alpha_{\lambda_1}^2 (1-\alpha^2_{\lambda_0})} \frac{\alpha_{\lambda_1}}{\alpha_{\lambda_0}}
+    = \frac{\alpha^{-2}_{\lambda_1} - 1}{\alpha^{-2}_{\lambda_0}-1} \frac{\alpha_{\lambda_1}}{\alpha_{\lambda_0}}
+    = \frac{e^{-\lambda_1}}{e^{-\lambda_0}} \frac{\alpha_{\lambda_1}}{\alpha_{\lambda_0}}
+    = e^{\lambda_0 - \lambda_1} \frac{\alpha_{\lambda_1}}{\alpha_{\lambda_0}},
+  \end{align*}
+  and
+  \begin{align*}
+    \frac{\alpha_{\lambda_1} \sigma^2_{\lambda_0|\lambda_1}}{\sigma^2_{\lambda_0}}
+    &= \frac{\alpha_{\lambda_1}(1-e^{\lambda_0 - \lambda_1}) \sigma_{\lambda_0}^2}{\sigma^2_{\lambda_0}}
+    = \alpha_{\lambda_1}(1-e^{\lambda_0 - \lambda_1})
+    = (1-e^{\lambda_0 - \lambda_1})\alpha_{\lambda_1}.
+  \end{align*}
+  We are done.
+\end{proof}
 \end{itemize}
 
 \bibliographystyle{alpha}
