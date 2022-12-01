@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>Textual Inversion</title>
+
+    <!-- Bootstrap -->
+    <link href="../../../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../../../css/theme.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+      TeX: { equationNumbers: {autoNumber: "AMS"} }
+    });
+    </script>
+    <script type="text/javascript"
+            src="../../../MathJax/MathJax.js?config=TeX-AMS_HTML-full">
+    </script>
+
+    <script type="text/javascript" src="../../../js/jquery-3.4.1.min.js"></script>
+    <script type="text/javascript" src="../../../js/bigfoot.min.js"></script>
+
+    <link rel="stylesheet" type="text/css" href="../../../css/bigfoot-default.css">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.1/styles/default.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.1/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
+</head>
+<body>
+<div class="container">
+    <span style="visibility: hidden;">
+        \(
+        \def\sc#1{\dosc#1\csod}
+        \def\dosc#1#2\csod{{\rm #1{\small #2}}}
+
+        \newcommand{\dee}{\mathrm{d}}
+        \newcommand{\Dee}{\mathrm{D}}
+        \newcommand{\In}{\mathrm{in}}
+        \newcommand{\Out}{\mathrm{out}}
+        \newcommand{\pdf}{\mathrm{pdf}}
+        \newcommand{\Cov}{\mathrm{Cov}}
+        \newcommand{\Var}{\mathrm{Var}}
+
+        \newcommand{\ve}[1]{\mathbf{#1}}
+        \newcommand{\ves}[1]{\boldsymbol{#1}}
+        \newcommand{\mrm}[1]{\mathrm{#1}}
+        \newcommand{\etal}{{et~al.}}
+        \newcommand{\sphere}{\mathbb{S}^2}
+        \newcommand{\modeint}{\mathcal{M}}
+        \newcommand{\azimint}{\mathcal{N}}
+        \newcommand{\ra}{\rightarrow}
+        \newcommand{\mcal}[1]{\mathcal{#1}}
+        \newcommand{\X}{\mathcal{X}}
+        \newcommand{\Y}{\mathcal{Y}}
+        \newcommand{\Z}{\mathcal{Z}}
+        \newcommand{\x}{\mathbf{x}}
+        \newcommand{\y}{\mathbf{y}}
+        \newcommand{\z}{\mathbf{z}}
+        \newcommand{\tr}{\mathrm{tr}}
+        \newcommand{\sgn}{\mathrm{sgn}}
+        \newcommand{\diag}{\mathrm{diag}}
+        \newcommand{\Real}{\mathbb{R}}
+        \newcommand{\sseq}{\subseteq}
+        \newcommand{\ov}[1]{\overline{#1}}
+        \DeclareMathOperator*{\argmax}{arg\,max}
+        \DeclareMathOperator*{\argmin}{arg\,min}
+
+        \newcommand{\data}{\mathrm{data}}
+        \newcommand{\N}{\mathcal{N}}
+        \newcommand{\Hil}{\mathcal{H}}
+        \)
+    </span>
+
+    <br>
+    <h1>Textual Inversion</h1>
+    
+    <p>This note is written as I read the paper "An Image is Worth One Word: Personalizing Text-to-Image Generation using Textual Inversion," commonly referred to as "textual inversion." The paper is by <a href="https://rinongal.github.io/">Rinon Gal</a> and his team at Tel-Aviv University. It as uploaded to arXiv on August 2, 2022. Here's the project page: <a href="https://textual-inversion.github.io/">https://textual-inversion.github.io/</a>.</p>
+
+    <hr>
+
+    <h2>1 &nbsp; Introduction</h2>
+
+    <ul>
+      <li>We now have a number of powerful text-to-image generation models.
+      <ul>
+        <li><a href="https://openai.com/dall-e-2/">Dall-E 2</a> <a href="https://arxiv.org/abs/2204.06125">[Ramesh et al. 2022]</a></li>
+        <li><a href="https://imagen.research.google/">Imagen</a> <a href="https://arxiv.org/abs/2205.11487">[Saharia et al. 2022]</a></li>
+        <li><a href="https://github.com/CompVis/stable-diffusion">Stable Diffusion</a>
+        <ul>
+          <li>Based on the <a href="https://github.com/CompVis/latent-diffusion">Latent Diffusion Model</a> (LDM) by Rombach et al. <a href="https://arxiv.org/abs/2112.10752">[2022]</a></li>
+        </ul>
+        </li>
+      </ul>
+      </li>
+
+      <li>The problem this paper tries to "few-shot generation using a pre-trained text-to-image model."
+      <ul>
+        <li>Inputs
+        <ul>
+          <li>A pre-trained text-to-image model.</li>
+          <li>A few images (3-5) that are examples of a concept.
+          <ul>
+            <li>Photos of a specific object (e.g. <a href="https://textual-inversion.github.io/static/images/editing/teaser.JPG">some pieces of sculptures</a>).</li>
+
+            <li><a href="https://textual-inversion.github.io/static/images/style/style.JPG">Drawings created with the same style.</a></li>
+
+            <li>Unfortunately, I don't think this method works well for "a specific person" or "a specific character" yet.
+              <ul>
+                <li>See <a href="https://webbigdata.jp/ai/post-15075">this web page</a> where the author tries to textually invert <a href="https://ghibli.fandom.com/wiki/Nausica%C3%A4">Nausicaa</a> and found that the method seems to be inadequate.</li>
+              </ul>
+            </li>
+          </ul>
+          </li>
+
+          <li>A placeholder string (typically "*") that can be used to represent the concept in text.</li>
+
+          <li>A starter word that should coarsely describe the subject.
+          <ul>
+            <li>"Sculpture," "cat," "cartoon", etc.</li>
+          </ul>
+          </li>
+        </ul>        
+        </li>
+
+        <li>Outputs
+        <ul>
+          <li>A learned token embedding (i.e., one or several real vectors) that represents the concept.</li>
+        </ul>
+        </li>
+
+        <li>Relationship between inputs and outputs
+        <ul>
+          <li>When the user gives the pre-trained text-to-image model a prompt that contains "*", the model generate an image accordingly, interpreting "*" as referring to the input concept.</li>
+
+          <li>Example prompts:
+          <ul>
+            <li>"An oil painting of *."</li>
+            <li>"App icon of *."</li>
+            <li>"Elmo sitting in the same pose as *."</li>
+            <li>"Painting of two * fishing on a boat."</li>
+            <li>"A * backpack."</li>
+            <li>"Banksy art of *."</li>
+            <li>"A * themed lunchbox."</li>
+          </ul>
+          </li>
+
+          <li>Internally, we replace the default token embedding of the placeholder string with the learned embedding before feeding the token embeddings of the whole prompt to the rest of the system.
+          <ul>
+            <li>More details on this in the next section.</li>
+          </ul>
+          </li>
+        </ul>
+        </li>
+      </ul>
+      </li>
+    </ul>
+
+    <hr>
+    <h2>2 &nbsp; Background</h2>
+
+    <ul>
+      <li>To understand how the paper works, it is crucial to understand how a text-to-image model work.</li>
+
+      <li>The paper uses the text-conditioned LDM <a href="https://arxiv.org/abs/2112.10752">[Rombach et al. 2022]</a> as the text-to-image model, so we shall briefly explain how it works.</li>
+
+      <li>As of 2022, SOTA text-to-image models (Dall-E 2, Imagen, Stable Diffusion) consist to two main components.
+      <ul>
+        <li>A text embedder $c(\cdot)$ that turns a text prompt $y$ into a conditioning tensor $\ve{y}.$ 
+        </li>
+
+        <li>A conditional image generator $g(\cdot)$ that outputs an image $\ve{x}$ conditioned on $\ve{y}$.</li>
+      </ul>
+      </li>
+
+      <li>The text embedder for the text-conditioned LDM outputs $y \in \Real^{77 \times 768}$. It works as follows.
+      <ol>
+        <li>First, the prompt text $y$ is passed to a tokenizer to get a series of tokens $\overline{y}$.</li>
+
+        <li>The token sequence $\overline{y}$ is processed with the following steps:
+        <ul>
+          <li>The sequence of tokens $\overline{y}$ is truncated to at most $75$ tokens.</li>
+
+          <li>The start-of-sentence (SOS) is added to the front, and the end-of-sentence (EOS) is added to the end.</li>
+
+          <li>The sequence is then padded with null tokens so that it has $77$ tokens in total.</li>          
+        </ul>
+        </li>
+
+        <li>The token indices in $\overline{y}$ are then used to look up the token embedding dictionary in order to turn each token in to a vector in $\Real^{768}$.
+        <ul>
+          <li>Let us call the output of this stage $\overline{\ve{y}}$. It is a member of $\Real^{77 \times 768}$.</li>
+        </ul>
+        </li>
+
+        <li>The conditioning tensor $\ve{y}$ is obtained by passing $\overline{\ve{y}}$ to a transformer (a BERT).</li>
+      </ol>
+      </li>
+
+      <li>Let us introduce notations for the above process.
+      <ul>
+        <li>Let us denote Step 1 to Step 3 with the function $c_{token}$. So, $\overline{\ve{y}} = c_{token}(y)$</li>
+
+        <li>Let us represent the transformer with the function $c_{trans}$. So, $\ve{y} = c_{trans}(\overline{\ve{y}}) = c_{trans}(c_{token}(y))$.</li>
+      </ul>
+      </li>
+
+      <li>The image generator $g$ is in a conditional LDM. It has two component networks.
+      <ul>
+        <li>An autoencoder $(\mathcal{E}, \mathcal{D})$.
+        <ul>
+          <li>For any image $\ve{x}$, we have that $\mathcal{D}(\mathcal{E}(\ve{x})) \approx \ve{x}$.</li>
+          <li>The latent vector $\ve{z} = \mcal{E}(\ve{x})$ is an image-like tensor that has a lower resolution than $\ve{x}$.</li>
+        </ul>
+        </li>
+
+        <li>A conditional noise estimator $\hat{\ves{\xi}}$ such that $$\widehat{\ves{\xi}}(\ve{z}_t, t, \ve{y})$$ estimates the gaussian noise $\ves{\xi} \sim \mcal{N}(\ve{0},I)$ that was used compute $$\ve{z}_t = \alpha_t \ve{z} + \sigma_t \ves{\xi} $$ where
+        <ul>
+          <li>$t$ is a time step,</li>
+          <li>$\sigma_t > 0$ are the "noise schedule" at time step $t$,</li>
+          <li>$\alpha_t = \sqrt{1 - \sigma_t^2}$</li>
+          <li>$\ve{z} = \mathcal{D}(\ve{x})$, and</li>
+          <li>$\ve{x}$ is an image that satisfies the conditioning tensor $\ve{y} = c(y)$.</li>
+        </ul>
+      </ul>
+      </li>
+    </ul>
+
+    <hr>
+    <h2>3 &nbsp; Method</h2>
+
+    <ul>
+      <li>The method works by learning a new token embedding of the place holder string "*" so that the token embedding comes to corresponding with the concept in the example images.</li>
+
+      <li>Let us denote this token embedding by $\overline{\ve{y}}_* \in \Real^{\ell \times 768}$.
+      <ul>
+        <li>$\overline{\ve{y}}_*$ is initialized to be the token embedding of the starter word. So, $\ell$ is the number of tokens that are needed to represent the starter word.</li>        
+      </ul>
+      </li>
+
+      <li>To make the system use the learned token embedding, we intervene in the process of computing the conditining tensor $\ve{y} = c(y)$.
+      <ul>
+        <li>Let us first assume that $y$ contains the placeholder string.</li>
+        <li>After computing the token embedding $\overline{\ve{y}} = c_{token}(y)$, we search for the tokens corresponding to the placeholder string and replace them with $\overline{\ve{y}}_*$.
+        <ul>
+          <li>Let us denote this operation by $c_{sub}(\overline{\ve{y}}, \overline{\ve{y}}_*)$</li>
+        </ul>
+        </li>
+        <li>We can the compute the conditioning tensor $\ve{y}$ from the sequence of tokens that has been subsituted. In other words, $$ \ve{y} = c_{trans}(c_{sub}(\overline{\ve{y}}, \overline{\ve{y}}_*)) = c_{trans}(c_{sub}(c_{token}(y), \overline{\ve{y}}_*)) $$.</li>
+        <li>Note that, in order to do this, we must be able to identify the tokens corresponding to the placeholder string in the embedding $\overline{y}$.
+        <ul>
+          <li>This seems to be easy in English because spaces around each word would help.</li>
+          <li>In languages where word segmentation is needed (i.e., Thai and Japanese), the placeholder string must be chosen so that the segmentation algorithm does not break the placeholder string into two pieces.</li>
+        </ul>
+        </li>
+      </ul>
+      </li>
+
+      <li>We optimize $\overline{\ve{y}}_*$ so that the system would generate one of the given example images when conditioned with texts such as:
+      <ul>
+        <li>"a photo of *.",</li>
+        <li>"a rendering of a *.",</li>
+        <li>"the photo of a *.",</li>
+        <li>"a photo of a clean *.",</li>
+        <li>"a photo of the *.",</li>
+        <li>etc.</li>
+      </ul>
+      </li>
+
+      <li>Let us say that we have
+      <ul>
+        <li>$N$ example images $\ve{x}_1$, $\ve{x}_2$, $\dotsc$, $\ve{x}_N$ and</li>
+        <li>$M$ prompt texts $y_1$, $y_2$, $y_3$, $\dotsc$, $y_M$.</li>
+      </ul>
+      We solve the following optimization problem:
+      \begin{align*}
+        \argmin_{\overline{\ve{y}}_*} 
+        E_{
+          \substack{
+          m \sim \mcal{U}\{1:M\}, \\
+          n \sim \mcal{U}\{1:N\}, \\
+          t \sim \mcal{U}\{1:T\}, \\
+          \ves{\xi} \sim \mcal{N}(\ve{0},I)}
+        } \Big[ \big\| 
+          \ves{\xi} - \hat{\ves{\xi}}(\alpha_t \mcal{E}(\ve{x}_n) + \sigma_t \ves{\xi}, t, c_{tran}(c_{sub}(c_{token}(y_m), \overline{\ve{y}}_*)) 
+        \big\|^2 \Big]
+      \end{align*}
+      Here, $\mcal{U}\{1:M\}$ denote the uniform distribution on the set $\{1, 2, \dotsc, M\}$. Note also that the networks of the LDM model are fixed during training.
+      </li>
+
+      <li>The paper uses the settings that were used to train the LDM model with the following exceptions.
+      <ul>
+        <li>The base learning rate is $0.005$. It is scaled up by the batch size and the number of GPUs.
+        <ul>
+          <li>This paper used 2 GPUs and a batch size of $4$ for each.</li>
+          <li>So, the effective learning rate is $0.04$.</li>
+        </ul>
+        </li>
+
+        <li>5,000 optimization steps were performed.</li>
+      </ul>
+      </li>
+
+      <li>After we have the learned embedding $\overline{\ve{y}}_*$, we can use system to generate new images of the concept by conditioning the diffusion model with $c_{tran}(c_{sub}(c_{token}(y), \overline{\ve{y}}_*))$ for any prompt $y$ that contains the placeholder string.</li>
+    </ul>
+
+    <hr>
+    <h2>4 &nbsp; Code</h2>
+
+    <ul>
+      <li>The repository for the paper's code is located at <a href="https://github.com/rinongal/textual_inversion">https://github.com/rinongal/textual_inversion</a>.</li>
+
+      <li>The logic for substituting the learned token is implemented in the <a href="https://github.com/rinongal/textual_inversion/blob/6bb3efcaea7dbee3f5108124789b9a6ce26243ff/ldm/modules/embedding_manager.py">EmbeddingManger</a> class.</li>
+
+      <li>Here's the most important bits of code:
+<pre><code class="python">
+  # If there's only one vector per token, we can do a simple replacement
+  if self.max_vectors_per_token == 1: 
+    placeholder_idx = torch.where(tokenized_text == placeholder_token.to(device))
+    embedded_text[placeholder_idx] = placeholder_embedding
+  # otherwise, need to insert and keep track of changing indices
+  else: 
+    :
+    :
+</code></pre>
+      </li>
+    </ul>
+
+    <hr>
+    <div class="page-header"></div>
+    <p>Last modified: 2022/12/02</p>
+</div>
+
+<script type="text/javascript">
+$.bigfoot();
+</script>
+
+</body>
+</html>
