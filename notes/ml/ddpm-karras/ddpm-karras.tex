@@ -27,6 +27,7 @@
 \newcommand{\Var}{\mathrm{Var}}
 
 \newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\ves}[1]{\boldsymbol{#1}}
 \newcommand{\mrm}[1]{\mathrm{#1}}
 \newcommand{\etal}{{et~al.}}
 \newcommand{\sphere}{\mathbb{S}^2}
@@ -46,14 +47,72 @@
 \newcommand{\Real}{\mathbb{R}}
 \newcommand{\sseq}{\subseteq}
 \newcommand{\ov}[1]{\overline{#1}}
+\newcommand{\N}{\mathcal{N}}
+\newcommand{\data}{\mathrm{data}}
+\newcommand{\SNR}{\mathrm{SNR}}
 
-\title{Title}
-\author{Author}
+\title{Karras \etal's DDPM Improvements}
+\author{Pramook Khungurn}
 
 \begin{document}
-  \maketitle
+\maketitle
 
+This note is written as I read ``Elucidating the Design Space of Diffusion-Based Generative Models'' by Karras \etal~\cite{Karras:2022}. I have to admit that it is very hard for me to read the paper because it requires so much background to understand, and all the derivations are folded into the appendix.
 
-  \bibliographystyle{apalike}
-  \bibliography{ddpm-karras}  
+\section{Introduction}
+
+\begin{itemize}
+  \item The paper casts a number of previous works on DDPM and score-based generative models into a common framework and suggests improvements to multiple parts of generative models in the framework.
+  
+  \item The previous works include:
+  \begin{itemize}
+    \item The stochastic differential equation paper by Song \etal~\cite{Song:2021}.
+    \item The improved DDPM paper by Nichol and Dharival~\cite{Nichol:2021}.
+    \item The DDIM paper by Song \etal~\cite{Song:DDIM:2020}.
+    \item The adaptive step-size SDE solver paper by Jolicoeur-Martineau \etal~\cite{Jolicoeur-Martineau:2021}.
+  \end{itemize}
+
+  \item The end results are score improvements on several datasets.
+  \begin{itemize}
+    \item SOTA FID score on CIFAR-10.
+    \item Near-SOTA FID score on ImageNet-64 without retraining.
+    \item SOTA FID score on ImageNet-64 with retraining.
+  \end{itemize}
+
+  \item I also believe that the Heun's 2nd order solver introduced in this paper has been include as a sampler in Stable Diffusion.
+  \begin{itemize}
+    \item Actually, this is why I try to read the paper.
+  \end{itemize}
+\end{itemize}
+
+\section{A Common Framework for Diffusion Models}
+
+\begin{itemize}
+  \item Let each data item be a vector in $\Real^d$. We typically denote one with the letter $\ve{x}$.
+  
+  \item Let $p_{\data}(\ve{x})$ denote the data distribution.
+  
+  \item All diffusion model works with the distribution $p(\ve{x};\sigma)$ obtained by adding i.i.d. Gaussian noise of standard deviation $\sigma$ to the data sampled from $p_{\data}$.
+  \begin{itemize}
+    \item $p(\ve{x}; 0) = p_{\data}(\ve{x})$.
+    \item If $\sigma_{\max} \gg \sigma_{\data}$, then $p(\ve{x};\sigma_{\max})$ would be very close to $\mcal{N}(\ve{0}, \sigma_{\max}^2 I)$.
+  \end{itemize}
+
+  \item In general, here's how a diffusion model generates a sample.
+  \begin{enumerate}
+    \item We specify a number of noise levels $0 = \sigma_1 < \sigma_2 < \dotsb < \sigma_T = \sigma_{\max}$.
+    \item We first sample a point $\ve{x}_T$ from $\mcal{N}(\ve{0}, \sigma_{\max}^2 I)$ and simply assume that it comes from $p(\ve{x}; \sigma_{\max})$.
+    \item Given a point $\ve{x}_t$ that comes from $p(\ve{x}; \sigma_t)$, we revert the noising process inherent in $p(\ve{x}; \sigma_t)$ to produce a point $\ve{x}_{t-1}$ that should come from $p(\ve{x};\sigma_{t-1})$.
+    \item Starting from $\ve{x}_T$, we repeat Step 3 until we reach $\ve{x}_0$, which is returned as the output of the sampling process.
+  \end{enumerate}
+
+  \item In \cite{Song:2021}, Song \etal\ suggests that the noising process (i.e., $p(\ve{x}, \sigma)$) can be modeled by stochastic differential equations.
+  \begin{itemize}
+    \item The sequence $\sigma_1$, $\sigma_2$, $\dotsc$, $\sigma_T$ becomes a continuous function $\sigma(t)$ of time where $t \in [0,T]$.
+    \item 
+  \end{itemize}
+\end{itemize}
+
+\bibliographystyle{alpha}
+\bibliography{ddpm-karras}  
 \end{document}
