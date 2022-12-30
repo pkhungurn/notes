@@ -1151,7 +1151,7 @@ Materials are from \cite{Bartle:1995}, \cite{Jacod:2004}, \cite{Williams:1991}, 
     Let $X: \Omega \rightarrow T$ be a random variable. Then, $\sigma(X) = \{ X^{-1}(\mathtt{T}) : \mathtt{T} \in \mcal{T} \}$.
   \end{proposition}
 
-  \item \begin{proposition}[probability distribution measure of a random variable]
+  \item \begin{proposition}[probability distribution measure of a random variable] \label{thm:probability-distribution-measure}
     Let $X: \Omega \rightarrow T$ be a random variable. The function $P_X: \mcal{T} \rightarrow [0,1]$ given by $P_X(\mathtt{T}) = P(X^{-1}(\mathtt{T})) = P(X \in \mathtt{T})$ for all $\mathtt{T} \in \mcal{T}$ is a probability measure on $\mcal{T}$. It is called the {\bf probability distribution measure of $X$} .
   \end{proposition}
 
@@ -1308,7 +1308,7 @@ Materials are from \cite{Bartle:1995}, \cite{Jacod:2004}, \cite{Williams:1991}, 
     \end{align*}
   \end{corollary}
 
-  \item \begin{proposition}[properites of integral of non-negative function]
+  \item \begin{proposition}[properites of integral of non-negative function] \label{thm:non-negative-integral-prop}
     Let $f,g \in M^+(S, \mcal{S})$ and $c \geq 0$. The following properties are true.
     \begin{enumerate}
       \item $\int cf\, \dee\mu = c \int f\, \dee\mu.$
@@ -1452,6 +1452,31 @@ Materials are from \cite{Bartle:1995}, \cite{Jacod:2004}, \cite{Williams:1991}, 
   \end{theorem}
 \end{itemize}
 
+\section{Radon--Nikodym Thoerem}
+
+\begin{itemize}
+  \item From  Proposition~\ref{thm:non-negative-integral-prop}, we can create a measure from a non-negative extended real-valued measurable function by integrating with respect to an existing measure.
+  
+  \item The Radon--Nikodym theorem is the converse of the above property. It indicates when a measure $\lambda$ can be expressed as an integration of a function $f$ with respect to an existing measure $\mu$. Hence, it is useful in deriving probability density functions.
+  
+  \item A necessary and sufficient condition for the theorem to hold is given below.
+  \begin{definition}[absolute continuity]
+    Let $\lambda$ and $\mu$ be measures on $\mcal{S}$. We say that $\lambda$ is {\bf absolutely continuous with respect to} $\mu$ if $\mu(E) = 0$ implies $\lambda(E) = 0$ for all $E \in \mcal{S}$. We write $\lambda \ll \mu$.
+  \end{definition}
+
+  \item \begin{proposition}
+    Let $\lambda$ and $\mu$ be finite measures on $\mcal{S}$. Then, $\lambda \ll \mu$ if and only if, for every $\varepsilon > 0$, there exists a $\delta(\varepsilon) > 0$ such that $\lambda(E) < \varepsilon$ for all $E$ such that $\mu(E) < \delta(\varepsilon)$.
+  \end{proposition}
+
+  \item \begin{theorem}[Radon--Nikodym theorem]
+    Let $\lambda$ and $\mu$ be $\sigma$-finite measures defined on $\mcal{S}$, and suppose that $\lambda$ is absolutely continous with respect to $\mu$. Then, there exists a function $f \in M^+(S,\mcal{S})$ such that 
+    \begin{align*}
+      \lambda(E) = \int_E f\, \dee\mu.
+    \end{align*}
+    Moreover, the function $f$ is uniquely determined $\mu$-almost everywhere. The function is called the {\bf Random--Nikodym derivative} of $\lambda$ with respective to $\mu$, and it is denoted by $$\frac{\dee \lambda}{\dee \mu}.$$
+  \end{theorem}
+\end{itemize}
+
 \section{Random Variables and Their Expectations}
 
 \begin{itemize}
@@ -1462,11 +1487,16 @@ Materials are from \cite{Bartle:1995}, \cite{Jacod:2004}, \cite{Williams:1991}, 
     \begin{align*}
       P(X \in B) = P_X(B) = \int_B f_X(x)\, \dee x = \int_B f_X(x)\, \ell^*(\dee x) = \int_B f_X\, \dee\ell^* 
     \end{align*}  
-    where $\ell^*$ is the Lebesgue measure on $\Real$ (Definition~\ref{def:lebesgue-measure-1d}). In this case, we may say that $f_X$ is the derivative of $P_X$ with respect to $\ell^*$:
+    where $\ell^*$ is the Lebesgue measure on $\Real$ (Definition~\ref{def:lebesgue-measure-1d}).    
+  \end{definition}
+
+  \item \begin{proposition}
+    If $P_X$ is absolutely continuous with respect to the Lebesgue measure $\ell^*$, then $f_X$ exists and is unique $\ell^*$-almost everywhere. In particular,
     \begin{align*}
-      f_X = \frac{\dee P_X}{\dee \ell^*}.
-    \end{align*}    
-  \end{definition}  
+      f_X = \frac{\dee P_X}{\dee \ell^*}
+    \end{align*}
+    where the RHS is the Radon--Nikodym derivative.
+  \end{proposition}
 
   \item \begin{proposition}
     Let $X$ be a real-valued random variable with PDF $f_X$. Then, its CDF, $F_X$, is given by
@@ -1905,7 +1935,7 @@ Materials are from \cite{Bartle:1995}, \cite{Jacod:2004}, \cite{Williams:1991}, 
 \section{Two Random Variables Considered Together}
 
 \begin{itemize}
-  \item \begin{definition}[joint distribution probability distribution measure]
+  \item \begin{definition}[joint probability distribution measure]
     Let $X: \Omega \rightarrow U$ and $Y: \Omega \rightarrow V$ be random variables (with associated $\sigma$-algebras $\mcal{U}$ and $\mcal{V}$, respectively). Then, $Z = (X,Y)$ is a random variable that maps $\Omega$ to $\mcal{U} \times \mcal{V}$. The {\bf joint probability distribution measure of $X$ and $Y$} is the function $P_Z: \mcal{U} \otimes \mcal{V} \rightarrow [0,1]$ such that
     \begin{align*}
       P_Z(W) = P(Z^{-1}(W)) = P(\{ \omega : (X(\omega), Y(\Omega)) \in W \})
@@ -1927,11 +1957,16 @@ Materials are from \cite{Bartle:1995}, \cite{Jacod:2004}, \cite{Williams:1991}, 
     \begin{align*}
       P((X,Y) \in W) = \int_W f_{X,Y}(x,y)\, \dee v^2(x,y) 
     \end{align*}
-    where $v^2$ is the Lebesgue measure in $\Real^2$ (i.e., the area measure). So, we may say that
-    \begin{align*}
-      f_{X,Y} = \frac{\dee P_{X,Y}}{\dee v^2}.
-    \end{align*}
+    where $v^2$ is the Lebesgue measure in $\Real^2$ (i.e., the area measure).
   \end{definition}
+
+  \item \begin{proposition}
+    If the joint probability distribution measure $P_{X,Y}$ is absolutely continuous with respect to the area measure $v^2$, then the PDF $f_{X,Y}$ exists and is unique $v^2$-almost everywhere. In particular,
+    \begin{align*}
+      f_{X,Y} = \frac{\dee P_{X,Y}}{\dee v^2}
+    \end{align*}
+    where the RHS is the Radon--Nikodym derivative.
+  \end{proposition}
 
   \item \begin{proposition}
     Let $X$ and $Y$ be two real-valued random variables with joint PDF $f_{X,Y}$ and joint CDF $F_{X,Y}$. We have that
@@ -1997,7 +2032,6 @@ Materials are from \cite{Bartle:1995}, \cite{Jacod:2004}, \cite{Williams:1991}, 
     The random variables are independent if and only if $P_{X,Y} = P_X \times P_Y$.
   \end{proposition}
 
-\begin{comment}
   \item \begin{theorem}[second Borel--Cantelli lemma]
     If $\{ E_n : n \in \Nat \}$ be a sequence of independent events, then
     \begin{align*}
@@ -2017,9 +2051,8 @@ Materials are from \cite{Bartle:1995}, \cite{Jacod:2004}, \cite{Williams:1991}, 
   \item \begin{theorem}[Kolmogorov's zero-one law]
     Let $X_1$, $X_2$, $X_3$, $\dotsc$ be a sequence of independent random variables. Let $\mcal{E}_\infty$ be the associated tail $\sigma$-algebra. Then, if $E \in \mcal{E}_\infty$, then $P(E) = 0$ or $P(E) = 1$.
   \end{theorem}
-\end{comment}
 
-  \item \begin{theorem}]
+  \item \begin{theorem}
     Let $X$ and $Y$ be random variables in $\mcal{L}^2(\Omega, \mcal{E}, P)$. Then, if $X$ and $Y$ are independent, then $E[XY] = E[X]E[Y]$.
   \end{theorem}
 
@@ -2294,31 +2327,638 @@ Materials are from \cite{Bartle:1995}, \cite{Jacod:2004}, \cite{Williams:1991}, 
   Consider the sample space $\Omega$. We have that we may think of $\Omega$ as being partitioned into a collection of disjoint sets $\{ X = x_1 \}$, $\{ X = x_2 \}$, and so on. We have that
   \begin{align*}
     \int_{\{ X = x_j \}} \hat{Y}\, \dee P
-    = \sum_{i=1}^\infty y_i P(Y = y_i \wedge X = x_j)
-    = \int_{\{ X = x_j \}} Y \, \dee P.
+    &= \bigg( \sum_{i=1}^\infty y_i P(Y = y_i|X=x_j)\bigg) P(X = x_j)\\
+    &= \sum_{i=1}^\infty y_i P(Y = y_i \wedge X = x_j) \\
+    &= \int_{\{ X = x_j \}} Y \, \dee P.
   \end{align*}
   
   Now, consider the $\sigma$-algebra generated by $X$. We have that it contains sets of the form $\{ \omega: X(\omega) \in E \}$ where $E \subseteq \{ x_1, x_2, \dotsc \}$. Hence, such a set is a disjoint union of the $\{ X \in x_j \}$'s. As a result, we have that
   \begin{align*}
-    \int_E \hat{Y}\, \dee P
-    = \sum_{x_j \in E} \sum_{i=1}^\infty y_i P(Y = y_i \wedge X = x_j)
-    = \int_E Y \, \dee P.
+    \int_E \hat{Y}\, \dee P = \int_E Y \, \dee P.
   \end{align*}
   This is the identity we will be using to define conditinal expectation in the general case.
 
-  \item \begin{definition}[Kolmogorov, 1933]
+  \item \begin{theorem}[Kolmogorov, 1933] \label{thm:conditional-expectation}
     Let $X \in \mcal{L}^1(\Omega, \mcal{E}, P)$. Let $\mcal{F}$ be a sub-$\sigma$-algebra of $\mcal{E}$. Then, there exists a random variable $Y$ such that the following properties hold.
     \begin{enumerate}
       \item $Y$ is $\mcal{L}^1(\Omega, \mcal{F}, P)$.
       \item For every set $F \in \mcal{F}$, we have that $\int_F Y\, \dee P = \int_F X\, \dee P$.
     \end{enumerate}
     Moreover, if $Y'$ is another random variable with these properties, then $Y' = Y$ almost surely (i.e., $P(Y' = Y) = 1$). A random variable with the above properties is called a version of {\bf the conditional expectation $E[X|\mcal{F}]$ of $X$ given $\mcal{F}$}. We write $Y = E[X|\mcal{F}]$. 
+  \end{theorem} 
+
+  \item One way to prove a special case of the theorem is to use the Radon--Nikodym theorem. If $X$ is a non-negative random variable in $\mcal{L}^1(\Omega, \mcal{E}, P)$, then we can define a measure $Q: \mcal{F} \rightarrow [0,\infty]$ by
+  \begin{align*}
+    Q(F) = \int_F X \, \dee P
+  \end{align*}
+  for all $F \in \mcal{F}$. Because $E[|X|] = \int |X|\, \dee P < \infty$, we have that $Q(F) \leq E[|X|] < \infty$ for all $F$, so it is a finite measure. If we assume further that $Q \ll P$ (i.e., no point masses and other pathologies), then the Radon--Nikodym derivative exists and is unique $P$-almost everywhere. We can now define $Y := \dee Q / \dee P$, and $Y$ would have all the properties that we want.
+
+  \item Note, however, there are proofs of Theorem~\ref{thm:conditional-expectation} that does not require the Radon--Nikodym theorem. They are presented in \cite{Williams:1991} and \cite{Jacod:2004}.
+
+  \item \begin{definition}
+    Let $X, Y \in \mcal{L}^1(\Omega, \mcal{E}, P)$. The {\bf conditional expectation $E[Y|X]$} is defined to be $E[Y|\sigma(X)]$. Also, for $X_1, X_2, \dotsc \in \mcal{L}^1(\Omega, \mcal{E}, P)$, we denote $E[Y|\sigma(X_1, x_2, \dotsc)]$ with $E[Y|X_1,X_2,\dotsc]$.
   \end{definition}
 
   \item \begin{definition}
-    Let $X$ be a random variable, and $Y \in \mcal{L}^1(\Omega, \mcal{E}, P)$. The {\bf conditional expectation $E[Y|X]$} is defined to be $E[Y|\sigma(X)]$.
+    Let $X: \Omega \rightarrow \Real^d$ and $Y: \Omega \rightarrow \Real$ be random variables. Then, $Y$ is $\sigma(X)$-measurable if and only if there exists a Borel function $f: \Real^d \rightarrow \Real$ such that $Y = f(X)$.
   \end{definition}
+
+  \item \begin{corollary}
+    Let $X \in \mcal{L}^2(\Omega, \mcal{E}, P)$, and $\mcal{F}$ be a sub-$\sigma$-algebra of $\mcal{E}$. Then, the conditional expectation $Y = E[X|\mcal{F}]$ is a version of the projection of $X$ onto the Hilbert subspace $L^2(\Omega,\mcal{F},P)$. As a result, $Y$ (or any other function in the same equivalent class) is a $\mcal{F}$-measurable function that minimizes $\| Y - X \|_2$ or, equivalently, $E[(Y - X)^2]$.
+  \end{corollary}
   
+  \item \begin{corollary}
+    $Y = E[X|\mcal{F}]$ (as an equivalent class) is the unique element in $L^2(\Omega,\mcal{F},P)$ such that
+    \begin{align*}
+      E[XZ] = E[YZ]
+    \end{align*}
+    for all $Z \in L^2(\Omega,\mcal{F},P)$.
+  \end{corollary}
+
+  \item \begin{theorem}[properties of conditional expectation]
+    Let $X \in \mcal{L}^1(\Omega,\mcal{E},P)$. Let $\mcal{F}$ and $\mcal{G}$ be sub-$\sigma$-algebras of $\mcal{E}$. The following properties are true.
+    \begin{enumerate}
+      \item If $X$ is $\mcal{F}$-measurable, then $E[X|\mcal{F}] = X$.
+      \item If $Y$ is any version of $E[X|\mcal{F}]$, then $E[Y] = E[X]$. (In other words, $E[E[X|\mcal{F}]] = E[X]$.)
+      \item (Linearity) Let $X_1$ and $X_2$ be random variables and $a_1, a_2 \in G$. Then, $$E[a_1 X_1 + a_2 X_2 | \mcal{F}] = a_1 E[X_1|\mcal{F}] + a_2 E[X_2|\mcal{F}].$$
+      \item (Positivity) If $X \geq 0$, then $E[X|\mcal{F}] \geq 0$.      
+      \item (Tower property) If $\mcal{G}$ is a sub-$\sigma$-algebra of $\mcal{F}$, then $E[E[X|\mcal{F}]|\mcal{G}] = E[X|\mcal{G}]$.
+      \item (Monotone convergence theorem) If $0 \leq X_n$ for all $n$ and $X_n \uparrow X$, then, $E[X_n|\mcal{F}] \uparrow E[X|\mcal{F}]$.
+      \item (Fatou's lemma) If $X_n \geq 0$, then $E[\liminf_{n \rightarrow} X_n|\mcal{F}] = \liminf_{n \rightarrow \infty} E[X_n|\mcal{F}]$.
+      \item (Dominated convergence theorem) Let $Y \in \mcal{L}^1(\Omega, \mcal{E}, P)$. If $|X_n(\omega) \leq Y(\omega)$ for all $n$ and $X_n \rightarrow X$ almost surely, then $E[X_n|\mcal{F}]   \rightarrow E[X|\mcal{F}]$.
+      \item (Jensen's inequality) If $c: \Real \rightarrow \Real$ is convex and $|c(X)| \in \mcal{L}^1(\Omega,\mcal{E},P)$, then $E[c(X)|\mcal{F}] \geq c(E[X|\mcal{F}])$ almost surely.
+      \item $\| E[X|\mcal{F}] \|_p \leq \| X \|_p$ for all $p \geq 1$.
+      \item If $Y$ is $\mcal{F}$-measurable and bounded, then $E[YX|\mcal{F}] = YE[X|\mcal{F}]$ almost surely.
+      \item If $\mcal{G}$ is independent of $\sigma(\sigma(X),\mcal{F})$, then $E[X|\sigma(\mcal{F},\mcal{G})] = E[X|\mcal{F}]$ almost surely. In particular, if $X$ is independent of $\mcal{F}$, then $E[X|\mcal{F}] = E[X]$.
+    \end{enumerate}
+  \end{theorem}
+
+  \item Let $X$ and $Z$ be random variables with joint PDF $f_{X,Z}(x,z)$. The marginal PDF  of $X$ and $Z$ are given by 
+  \begin{align*}
+    f_X(x) &= \int_{\Real} f_{X,Z}(x,z)\, \dee z, \\
+    f_Z(z) &= \int_{\Real} f_{X,Z}(x,z)\, \dee x.
+  \end{align*}  
+  We can define {\bf elementary conditional pdf $f_{X|Z}$ of $X$ given $Z$} as follow:
+  \begin{align*}
+    f_{X|Z}(x|z) = \begin{cases}
+      f_{X,Z}(x,z) / f_Z(z), & \mbox{if }f_Z(z) \neq 0 \\
+      0, & \mbox{otherwise}
+    \end{cases}.
+  \end{align*}
+  \begin{proposition}
+    Let $h: \Real \rightarrow \Real$ be a Borel function such that
+    \begin{align*}
+      E[|h(X)|] = \int_\Real |h(x)|f_X(x)\, \dee x < \infty.
+    \end{align*}
+    Set
+    \begin{align*}
+      g(z) = \int_\Real h(x)f_{X|Z}(x|z)\, \dee x.
+    \end{align*}
+    Then, $Y = g(Z)$ is a version of the conditional expection of $h(X)$ given $\sigma(Z)$.
+  \end{proposition}
+\end{itemize}
+
+\section{Martingales}
+
+\begin{itemize}
+  \item \begin{definition}[filtration]
+    Let $\mcal{E}$ be a $\sigma$-algebra. A sequence of sub-$\sigma$-algebras $\{ \mcal{E}_n \subseteq \mcal{E} : n \geq 0 \}$ is called a {\bf filtration in $\mcal{E}$} if $\mcal{E}_0 \subseteq \mcal{E}_1 \subseteq \mcal{E}_2 \subseteq \dotsb \subseteq \mcal{E}$. We define
+    \begin{align*}
+      \mcal{E}_\infty = \sigma \bigg( \bigcup_{n=0}^\infty \mcal{E}_n \bigg).
+    \end{align*}
+  \end{definition}
+  Note that $\mcal{E}_\infty \subseteq \mcal{E}$.
+
+  \item Here's a way to think about filtrations. At the start of our random experiment, an element of the sample space $\omega$ is picked according to $P$. The sample $\omega$ determines which events would occur. At each time step, we observe more and more events. Each $\mcal{E}_n$ as representing all observable events up to time $n$. Typically, $\mcal{E}_0 = \{ \emptyset, \Omega \}$, which means that there's no information available at all at the start of our observation.
+
+  \item \begin{definition}[filtered space]
+    A {\bf filtered space} is a quadruple $(\Omega, \mcal{E}, \{ \mcal{E}_n \}_{n \geq 0}, P)$ where $(\Omega, \mcal{E}, P)$ is a probability space and $\{ \mcal{E}_n \}_{n \geq 0}$ is a filteration in $\mcal{E}$.
+  \end{definition}
+
+  \item \begin{definition}[discrete-time stochastic process]
+    A {\bf (discrete-time) stochastic process} is a sequence $\ve{X} = \{ X_n \}_{n \geq 0}$ of random variables. It induces the {\bf natural filtration} $\mcal{E}_n = \sigma(X_0, X_1, \dotsc, X_n)$.
+  \end{definition}
+
+  \item \begin{definition}[adapted process]
+    A stochastic process $\{ X_n \}_{n \geq 0}$ is said to be adapted to a filtration $\{ \mcal{E}_n \}_{n \geq 0}$ if $X_n$ is $\mcal{E}_n$-measurable for all $n \geq 0$.
+  \end{definition} 
+
+  \item Here's one way to think about adapted process. Again, recall that $\omega$ is picked at the start to the random experiment. Then, from time $n = 0, 1, 2, \dotsc$, information about $\omega$ is revealed to us through the value of $X_n$. When the process is adapted to $\{ \mcal{E} \}_{n \geq 0}$, the $\sigma$-algebra $\mcal{E}_n$ is one where all of $X_0$, $X_1$, $\dotsc$, $X_n$ are measurable, so it would allow us to evaluate $P(X_i \in E)$ for any $\mcal{E} \in \mcal{E}$. So, $\mcal{E}_n$ contains all relevant information about $X_0$, $X_1$, $\dotsc$, $X_n$.
+  
+  \item It should be clear that a stochastic process is adapted to its natural filtration.
+  
+  \item \begin{definition}[martingle]
+    A stochastic process $\ve{X}$ is called a {\bf martingle relative to $(\{ \mcal{E}_n\}_{n \geq 0}, P)$} if the followign conditions are satisfied.
+    \begin{enumerate}
+      \item $\ve{X}$ is adapted to $\{ \mcal{E}_n \}_{n \geq 0}$.
+      \item $X_n \in \mcal{L}^1(\Omega,\mcal{E},P)$ for all $n$.
+      \item $E[X_n|\mcal{E}_{n-1}] = X_{n-1}$ almost surely for all $n \geq 1$.
+    \end{enumerate}
+    A {\bf supermartingle} is defined similarly with Condition 3 replaced by ``$E[X_n|\mcal{E}_{n-1}] \leq X_{n-1}$ almost surely.'' A {\bf submatingle} is defined with Condition 3 replaced by ``$E[X_n|\mcal{E}_{n-1}] \geq X_{n-1}$ almost surely.''
+  \end{definition}
+
+  \item The word martingle comes from a gambling context. Let's see an example. We can imagine that we can play a gambling games in rounds. In each round, you flip a coin. If it turns up head, you win \$1. If it turns up tail, you lose \$1. You may say $X_n$ is the money you have won at the end of round $n$. So, $X_0 = 0$. Moreover,
+  \begin{align*}
+    X_n = \begin{cases}
+      X_{n-1} + 1, & \mbox{with probability }p, \\
+      X_{n-1} - 1, & \mbox{with probability }1-p.
+    \end{cases}
+  \end{align*}
+  So,
+  \begin{align*}
+    E[X_n|\mcal{E}_{n-1}] = E[X_n|X_{n-1}] = X_{n-1} + 2p - 1.
+  \end{align*}
+  If $p = 0.5$, then $\ve{X}$ is a martingle. The game is fair because
+  \begin{align*}
+    E[X_n - X_{n-1}|\mcal{E}_{n-1}] = 0.
+  \end{align*}
+  On the other hand, if $p < 0.5$, then $\ve{X}$ is a supermartingale, and the game is stacked against you. If $p > 0.5$, then $\ve{X}$ is a submartingale, and the game is rigged in your favor.
+
+  \item \begin{proposition}
+    If $\ve{X}$ is a martingle relative to $\{ \mcal{E}_n \}_{n \geq 0}$, then $E[X_n | \mcal{E}_m] = X_m$ for all $m \leq n$. The equation changes to $E[X_n|\mcal{E}_m] \leq X_m$ for a supermartingale and $E[X_n|\mcal{E}_m] \geq X_m$ for a submartingale.
+  \end{proposition}
+
+  \item \begin{proposition}
+    If $\ve{X}$ is a martingle, then $E[X_n] = E[X_0]$ for all $n$.
+  \end{proposition}
+  \begin{proof}
+    $E[X_n] = E[E[X_n|\mcal{F}_0]] = E[X_0]$.
+  \end{proof}
+
+  \item \begin{proposition}
+    If $\ve{X}$ is a martingale, and if $f$ is a convex function and $f(X_n) \in \mcal{L}^1(\Omega,\mcal{E},P)$ for each $n$, then $\{ f(X_n) \}_{n \geq 0}$ is a submartingale.
+  \end{proposition}
+  This means that if $\ve{X}$ is a martingale, then $|\ve{X}| = \{ |X_n| \}_{n \geq 0}$ is a submartingale.
+
+  \item \begin{theorem}[Doob decomposition]
+    Let $\ve{X}$ be a submartingale adapted to $\{ \mcal{E}_n \}_{n \geq 0}$. There exists a martingale $\mcal{M}$ and a stochastic process $\ve{A}$ with $A_{n+1} \geq A_n$ almost surely and $A_{n+1}$ being $\mcal{E}_n$ measurable for all $n \geq 0$ such that
+    \begin{align*}
+      X_n = X_0 + M_n + A_n
+    \end{align*}
+    with $M_0 = A_0 = 0$. Moreover, such a decomposition in unique. If $\ve{X}$ is a supermartingale, the decomposition is
+    \begin{align*}
+      X_n = X_0 + M_n - A_n.
+    \end{align*}
+  \end{theorem}  
+
+  \item Let $\{ \mcal{E}_n \}_{n \geq 0}$ be a filtration. Let $Y \in \mcal{L}^1(\Omega,\mcal{E},P)$. Define $X_n = E[Y|\mcal{E}_n]$. We have that
+  \begin{align*}
+    E[X_n|\mcal{E}_{n-1}] = E[E[Y|\mcal{E}_n]|\mcal{E}_{n-1}] = E[Y|\mcal{E}_{n-1}] = X_{n-1}.
+  \end{align*}
+  So, $\ve{X}$ is a martingle. A way to think about this martingle is as follows. With each $\mcal{E}_n$, we get more information about $\omega$. $X_n = E[Y|\mcal{E}_n]$ is the closest random variable to $Y$ given the information we have so far. So, $X_\infty$ is the best approximation to $Y$ given all the information.
+
+  \item \begin{definition}
+    Let $Y \in \mcal{L}^1(\Omega,\mcal{E},P)$. A martingle $\ve{X}$ adapted to $\{ \mcal{E}_n \}_{n \geq 0}$ is said to be {\bf closed by $Y$}  if $X_n = E[Y|\mcal{E}_n]$.
+  \end{definition}
+\end{itemize}
+
+\section{Stopping Times}
+
+\begin{itemize}
+  \item \begin{definition}[stopping time]
+    A map $T: \Omega \rightarrow \{ 0, 1, 2, \dotsc, \infty \}$ is called a {\bf stopping time} if $$\{ T \leq n \} = \{ \omega: T(\omega) \leq n \} \in \mcal{F}_n$$ for all $n \leq \infty$ or, equivalently, if $$ \{ T = n \} = \{ \omega: T(\omega) \leq n \} \in \mcal{F}_n$$
+    for all $n \leq \infty$.
+  \end{definition}
+  Intuitively, with the information up to the $n$-th time step, we have all the information to decide whether $T \leq n$.
+
+  \item For example, let $\ve{X}$ be adapted to $\{ \mcal{E}_n \}_{n \geq 0}$. Let $B \in \mcal{B}(\Real)$. Let $T = \inf \{ n \geq 0: X_n \in B \}$. In other words, $T$ is the first time $X_n$ enters $B$. Obviously, $T$ is a stopping time because we can decide whether $T \leq n$ by the history of $X_0$, $X_1$, $\dotsc$, $X_n$ only.
+  
+  \item \begin{definition}[bounded stopping time]
+    We say that a stopping time $T$ is {\bf bounded} if there exists a constant $c$ such that $P(T \leq c) = 1$.
+  \end{definition}
+
+  \item \begin{definition}
+    If $T$ is a finite stopping time, we denote by $X_T$ the random variable $X_{T(\omega)}(\omega)$. This random variable takes the value $X_n$ whenever $T = n$.
+  \end{definition}
+
+  \item \begin{proposition}
+    Let $T$ be a stopping time bounded by $c$, and let $\ve{X}$ be a martingle. Then, $$E[X_T] = E[X_0].$$
+  \end{proposition}
+
+  \item \begin{definition}[stopping time $\sigma$-algebra]
+    Let $T$ be a stopping time. The {\bf stopping time $\sigma$-algebra $\mcal{E}_T$} is defined to be
+    \begin{align*}
+      \mcal{E}_T = \{ E \in \mcal{E} : E \cap \{ T \leq n \} \in \mcal{E}_n \mbox{ for all } n \}
+    \end{align*}
+  \end{definition}
+
+  \item \begin{proposition}
+    The stopping time $\sigma$-algebra is a $\sigma$-algebra.
+  \end{proposition}
+
+  \item \begin{proposition}
+    Let $S,T$ be stopping times with $S \leq T$. Then, $\mcal{E}_S \subseteq \mcal{E}_T$.
+  \end{proposition}
+
+  \item \begin{proposition}
+    $X_T$ is $\mcal{F}_T$-measurable.
+  \end{proposition}
+
+  \item \begin{theorem}[Doob's optinal sampling theorem]
+    Let $\ve{X}$ be a martingle. Let $S,T$ be stopping times bounded by a constant $c$ with $S \leq T$. Then, $E[X_T|\mcal{E}_S] = X_S$ almost surely.
+  \end{theorem}
+
+  \item \begin{theorem}
+    Let $\ve{X}$ be a stochastic process adapted to $\{ \mcal{E}_n \}_{n \geq 0}$. Suppose $X_n \in \mcal{L}^1(\Omega, \mcal{E}, P)$ for all $n$, and $E[X_T] = E[X_0]$ for all bounded stopping time $T$. Then, $\ve{X}$ is a martingale.
+  \end{theorem}
+
+  \item \begin{theorem}
+    Let $T$ be a stopping time bounded by $c \in \Nat$. Let $\ve{X}$ be a submartingale. Then, $E[X_T] \leq E_c$.
+  \end{theorem}
+  In particular, $E[X_{\min(T,n)}] \leq E[X_n]$.
+\end{itemize}
+
+\section{Martingale Inequalities}
+
+\begin{itemize}  
+  \item We will now discuss various inequalities concerning martintgales. We shall deal with a filtered space $(\Omega, \mcal{E}, \{ \mcal{E}_n \}_{n \geq 0}, P)$. We let $\ve{X} = \{ X_n \}_{n \geq 0}$ be a sequence of random variables adapted to $\{ \mcal{E}_n \}_{n \geq 0}$ that is integrable (i.e., $X_n \in \mcal{L}^1(\Omega, \mcal{E}_n, P)$). Let $X^*_n = \sup_{i\leq n} |X_i|$. We have that $\{ X^*_n \}_{n \geq 0}$ is a non-negative and non-decreasing stochastic process and a submartingale.
+  
+  \item \begin{theorem}[Doob's first martingale inequality]
+    Let $\ve{X}$ be a martingale or a non-negative submartingle. Then
+    \begin{align*}
+      P(X^*_n \geq a) \leq \frac{E[|X_n|]}{a}.
+    \end{align*}
+  \end{theorem}
+
+  \item \begin{theorem}[Doob's $\mcal{L}^p$ martingle inequalities \#1] 
+    Let $\ve{X}$ be a martingale or a non-negative submartingle. Let $1 < p < \infty$. There exists a constant $c$ depending on $p$ such that
+    \begin{align*}
+      E[(X^*_n)^p] \leq c E[|X_n|^p].
+    \end{align*}
+  \end{theorem}
+
+  \item \begin{theorem}[Doob's $\mcal{L}^p$ martingle inequalities \#2] 
+    Let $\ve{X}$ be a martingale or a non-negative submartingle. Let $1 < p < \infty$. There exists a constant $c$ depending on $p$ such that
+    \begin{align*}
+      E[(X^*_n)^p]^{\frac{1}{p}} \leq \frac{p}{p-1} E[|X_n|^p]^{\frac{1}{p}}.
+    \end{align*}
+    Equivalently,
+    \begin{align*}
+      \|X^*_n\|_p \leq \frac{p}{p-1} \| M_n \|_p.
+    \end{align*}
+  \end{theorem}
+
+  \item \begin{definition}[upcrossing]
+    Let $\ve{X}$ be a submartingale. Let $a < b$. The {\bf number of upcrossings of an inteval $[a,b]$} is the nujmber of times a process crosses from below $a$ to above $b$ at a later time.
+  \end{definition}
+
+  \item The number of upcrossing can be defined as follows. We define stopping times $T_0, T_1, \dotsc$ and $S_1, S_2, \dotsc$ recursively. We start with
+  \begin{align*}
+    T_0 = 0.
+  \end{align*}
+  Then,
+  \begin{align*}
+    S_{j+1} &= \min\{ k > T_j : X_k \leq a \}, \\
+    T_{j+1} &= \min\{ k > S_{j-1}: X_k \geq b \}.
+  \end{align*}
+  So,
+  \begin{align*}
+    S_{j+1} &= \mbox{earliest time when $\ve{X}$ first dropped down to $a$ after the $j$th time it goes above $b$}, \\
+    T_{j+1} &= \mbox{earliest time when $\ve{X}$ goes above $b$ after the $(j+1)$th time it drops down to $a$}.
+  \end{align*}
+  We can now define
+  \begin{align*}
+    U_n = \max\{j : T_j \leq n\},
+  \end{align*}
+  and this equals to the number of upcrossings of $[a,b]$ before time $n$.
+
+  \item \begin{theorem}[Doob's upcrossing inquality]
+    Let $\ve{X}$ be a submartingale. Let $a < b$, and let $U_n$ be the number of upcrossings of $[a,b]$ before time $n$. Then,
+    \begin{align*}
+      E[U_n] \leq \frac{1}{b-a} E[\max(X_n - a, 0)].
+    \end{align*}
+  \end{theorem}
+\end{itemize}
+
+\section{Convergence of Random Variables}
+
+\begin{itemize}
+  \item In this section, we deal with a sequence of random variable $\{ X_n \}_{n \in \Nat}$.
+
+  \item \begin{definition}[pointwise convergence]
+    We say that $\{ X_n \}_{n \in \Nat}$ {\bf converges (pointwise)} to a random variable $X$ if
+    \begin{align*}
+      \lim_{n \rightarrow \infty} X_n(\omega) = X(\omega)
+    \end{align*}
+    for all $\omega$. We write ``$X_n \rightarrow X$.''
+  \end{definition}
+  This notion of convergence is often too strong. We introduce three more notions of convergence that are weaker.
+  
+  \item \begin{definition}[almost sure convergence]
+    We say that $\{ X_n \}_{n \in \Nat}$ {\bf converges almost surely} to a random variable $X$ if
+    \begin{align*}
+    P(N) = 0 \qquad \mbox{where} \qquad N = \bigg\{ \omega: \lim_{n \rightarrow \infty} X_n(\omega) \neq X(\omega) \bigg\}.
+    \end{align*}
+    We write ``$X_n \rightarrow X$ almost surely'' or ``$X_n \rightarrow X$ a.s\@.'' or ``$X_n \xrightarrow[]{a.s.} X$.''
+  \end{definition}
+
+  \item \begin{definition}[convergence in $\mcal{L}^p$]
+    Let $1 \leq p < \infty$. We say that $\{ X_n \}_{n \in \Nat}$ {\bf converges in $\mcal{L}^p$} to a random variable $X$ if $X_n, X$ are in $\mcal{L}^p(\Omega, \mcal{E},P)$ and
+    \begin{align*}
+      \lim_{n \rightarrow \infty} E\big[|X_n - X|^p\big] 
+      = \lim_{n \rightarrow \infty} \big(\| X_n - X \|_p\big)^p 
+      = 0.
+    \end{align*}
+    We write ``$X_n \xrightarrow[]{\mcal{L}^p} X$.''
+  \end{definition}
+
+  \item \begin{definition}[convergence in probability]
+    We say that $\{ X_n \}_{n \in \Nat}$ {\bf converges in probability} to a random variable $X$ if, for any $\varepsilon > 0$, we have
+    \begin{align*}
+      \lim_{n \rightarrow \infty} P\big( \{ \omega : |X_n(\omega) - X(\omega)| > \varepsilon \} \big) = 0.
+    \end{align*}
+    Equivalently, for any $\varepsilon > 0$, $\delta > 0$, there exists $N = N(\varepsilon, \delta)$ such that $P(|X_n - X| > \varepsilon) < \delta$ for all $n \geq N$.
+    We write ``$X_n \xrightarrow[]{P} X$.''
+  \end{definition}
+
+  \item \begin{theorem}
+    $X_n \xrightarrow[]{P} X$ if and only if
+    \begin{align*}
+      \lim_{n \rightarrow \infty} E\bigg[ \frac{|X_n - X|}{1 + |X_n - X|} \bigg] = 0.
+    \end{align*}
+  \end{theorem}
+
+  \item Convergence in probability is the weakest notion of convergence that has been introduced so far.
+  \begin{proposition}
+    The following are true.
+    \begin{enumerate}
+      \item $X_n \xrightarrow[]{\mcal{L}^p} X \implies X_n \xrightarrow[]{P} X$.
+      \item $X_n \xrightarrow[]{a.s.} X \implies X_n \xrightarrow[]{P} X$.
+    \end{enumerate}
+  \end{proposition}
+
+  \item \begin{proposition}
+    If $X_n \xrightarrow[]{P} X$, then there exists a subsequence $\{ n_k \}_{k \in \Nat}$ such that $X_{n_k} \rightarrow X$ almost surely.
+  \end{proposition}
+
+  \item \begin{proposition}
+    Let $Y \in \mcal{L}^p(\Omega, \mcal{E},P)$. Let $X_n \xrightarrow[]{P} X$ and $|X_n| \leq Y$ for all $n$. Then, we have that $|X| \in \mcal{L}^p(\Omega, \mcal{E},P)$ and $X_n \xrightarrow[]{\mcal{L}^p} X$.
+  \end{proposition}
+
+  \item \begin{proposition}
+    Let $f$ be a continuous function.
+    \begin{enumerate}
+      \item $X_n \xrightarrow[]{a.s.} X \implies f(X_n) \xrightarrow[]{a.s.} f(X).$
+      \item $X_n \xrightarrow[]{P} X \implies f(X_n) \xrightarrow[]{P} f(X).$
+    \end{enumerate}
+  \end{proposition}
+\end{itemize}
+
+\section{Martingale Convergence Theorems}
+
+\begin{itemize}
+  \item \begin{theorem}[martingale convergence theorem \#1]
+    Let $\{X_n\}_{n \geq 0}$ be a submartingale such that $\sup_{n \geq 0} E[\max(X_n, 0)] < \infty$. Then, $X = \lim_{n \rightarrow \infty} X_n$ exists almost surely. Moreover, $X \in \mcal{L}^1(\Omega,\mcal{E},P)$.
+  \end{theorem}
+  However, it is not true in general that $X_n \xrightarrow[]{\mcal{L}^1} X$.
+
+  \item \begin{corollary}
+    Let $\{X_n\}_{n \geq 0}$ is a non-negative supermartingale or a martingle bounded above or bounded below. Then, $X = \lim_{n \rightarrow \infty} X_n$ exists almost surely. Moreover, $X \in \mcal{L}^1(\Omega,\mcal{E},P)$.
+  \end{corollary}
+
+  \item \begin{definition}[uniformly integrable collection of random variables]
+    A subset $H$ of $L^1$ is said to be {\bf uniformly integrable collection of random variables} if
+    \begin{align*}
+      \lim_{c \rightarrow \infty} \sup_{X \in H} E[\one_{\{ |X| \geq c \}}|X|] = 0.
+    \end{align*}
+  \end{definition}
+
+  \item \begin{proposition}
+    Let $H$ be a class of random variables.
+    \begin{enumerate}
+      \item If $\sup_{X \in H} E[|X|^p] < \infty$ for some $p > 1$, then $H$ is uniformly integrable.
+      \item If there exists a random variable $Y \in \mcal{L}^1(\Omega,\mcal{E},P)$ such that $|X| < Y$ almost surely for all $X \in H$, then $H$ is uniformly integrable. 
+    \end{enumerate}
+  \end{proposition}
+
+  \item \begin{theorem}[martingale convergence theorem \#2]
+    Let $\ve{X}$ be a martingale that is a uniformly integrable collection of random variables. Then, $\lim_{n \rightarrow \infty} X_n = X_\infty$ exists almost surely, $X_\infty \in \mcal{L}^1(\Omega, \mcal{E}, P)$, and $X_n \xrightarrow[]{\mcal{L}^1} X_\infty$. Moreover, $X_n = E[X|\mcal{F}_\infty]$.
+
+    Conversely, let $Y \in \mcal{L}^1(\Omega,\mcal{E},P)$. Consider the martingle $X_n = E[Y|\mcal{E}_n]$ that is closed by $Y$. Then, $\{ X_n \}_{n \geq 0}$ is a uniformly integrable collection of random variables.
+  \end{theorem}
+
+  \item \begin{corollary}
+    Let $\{ \mcal{E}_n \}_{n \geq 0}$ be a filtration. Let $\mcal{E}_\infty = \sigma(\bigcup_{n=0}^\infty \mcal{E}_n)$. If $Y \in \mcal{L}^1(\Omega,\mcal{E}_\infty,P)$, then $E[Y|\mcal{E}_n] \xrightarrow[]{\mcal{L}^1} Y$.
+  \end{corollary}
+
+  \item When we define martingales, the indices of the random variables are non-negative. However, we can also consider non-positive indices.
+
+  \begin{definition}[backwards martingale]
+    Let $\{ \mcal{E}_{-n}\}_{n \geq 0}$ be an increasing sequence of sub-$\sigma$-algebras of $\mcal{E}$. (That is, $\mcal{E}_{-n-1} \subseteq \mcal{E}_{-n}$ for all $n \geq 0$. In other words, a filtration with non-positive indices.) A {\bf backwards martingale} is a sequence $\{ X_{-n} \}_{n \geq 0}$ of random variables such that the following properties are satisfied.
+    \begin{enumerate}
+      \item $X_{-n}$ is $\mcal{E}_{-n}$-measurable for all $n \geq 0$.
+      \item $X_{-n} \in \mcal{L}^1(\Omega,\mcal{E},P)$ for all $n \geq 0$.
+      \item $E[X_{-n}|\mcal{E}_{-n-1}] = X_{-n-1}$ for all $n \geq 0$.
+    \end{enumerate}
+    
+  \end{definition}
+
+  \item \begin{theorem}[backwards martingale convergence theorem]
+    Let $\{ X_{-n}\}_{n \geq 0}$ be a backward martingale adapted to a filtration $\{ \mcal{E}_{-n} \}_{n \geq 0}$. Let $\mcal{E}_{-\infty} = \bigcap_{n=0}^\infty \mcal{E}_{-n}$. Then, the sequence $\{ X_{-n}\}_{n \geq 0}$ converges almost surely and in $\mcal{L}^1$ to a limit $X$ as $n \rightarrow \infty$. This $X$ is a member of $\mcal{L}^1(\Omega, \mcal{E}, P)$.
+  \end{theorem}
+
+  \item \begin{theorem}[strong law of large numbers]
+    Let $\{ X_n : n \in \Nat \}$ be a sequence of i.i.d. random variables in $\mcal{L}^1(\Omega,\mcal{E},P)$. Then,
+    \begin{align*}
+      \frac{X_1 + X_2 + \dotsm + X_n}{n} \xrightarrow[]{a.s.} E[X_1].
+    \end{align*}    
+  \end{theorem}
+\end{itemize}
+
+\section{Weak Convergence}
+
+\begin{itemize}
+  \item The notion of weak convergence deals with convergence of probability measures. When applied to the probabiliy measures induced by random variables, it gives another notion of convergence or random variables. However, the values of the random variable in question is not of any concern at all. As a result, weak convergence is very different from other types of convergence discussed in the last section.
+  
+  \item \begin{definition}[weak convergence]
+    Let $\{ \mu_n \}_{n \geq 0}$ and $\mu$ be probability measures on $(\Real^d, \mcal{B}(\Real^d))$. We say that $\{ \mu_n \}_{n \geq 0}$ {\bf converges weakly to $\mu$} if
+    \begin{align*}
+      \lim_{n \rightarrow \infty} \int f\, \dee\mu_n = \int f\, \dee\mu
+    \end{align*}
+    for each $f: \Real^d \rightarrow \Real$ that is continuous and bounded.
+  \end{definition}
+
+  \item \begin{definition}[convergence in distribution]
+    Let $\{ X_n \}_{n \in \Nat}$ be a sequence of $\Real^d$-valued random variables. We say that $X_n$ {\bf converges in distribution} to $X$ if the distribution measures $\{ P_{X_n} \}_{n \in \Nat}$ converges weakly to $P_X$. In other words,
+    \begin{align*}
+      \lim_{n\rightarrow \infty} E[f(X_n)] = E[f(X)]
+    \end{align*}
+    for all $f:\Real^d \rightarrow \Real$ that is continuous and bounded. We write ``$X_n \xrightarrow[]{\mcal{D}} X.$''
+  \end{definition}
+
+  \item One thing to note is that the limit $X$ might not be in the same probability space as the $X_n$'s. So, convergence in distribution is really different from other notions of convergence.
+  
+  \item However, if the limit is in the same space as the sequence, we can say nice things about it.
+  
+  \begin{proposition}
+    Let $\{ X_n \}_{n \in \Nat}$ and $X$ be random variables defined on a given probability space $(\Omega,\mcal{E},P)$. Then, $$X_n \xrightarrow[]{P} X \implies X_n \xrightarrow[]{\mcal{D}} X.$$
+  \end{proposition}
+
+  \item \begin{proposition}
+    Let $\{ X_n \}_{n \in \Nat}$ and $X$ be random variables defined on a given probability space $(\Omega,\mcal{E},P)$. If $X_n \xrightarrow[]{\mcal{D}} X.$ and $X$ is equal to a constant almost surely, then $X_n \xrightarrow[]{P} X$.
+  \end{proposition}
+
+  \item \begin{proposition}
+    Let $\{ X_n \}_{n \in \Nat}$ be a sequence of real-valued random variables.
+    \begin{enumerate}
+      \item If $X_n \xrightarrow[]{\mcal{D}} X$, then $F_{X_n}(x) \rightarrow F_X(x)$ for all $x$ in the set $D$ of continuity points of $F_X$. That is, $$D = \{ x : F_X(x^-) = F_X(x) \}.$$ We also have that $D$ is a dense subset of $\Real$.
+      
+      \item If $F_{X_n}(x) \rightarrow F_X(x)$ for all $x$ in a dense subset of $\Real$, then $X_n \xrightarrow[]{\mcal{D}} X$.
+    \end{enumerate}
+  \end{proposition}
+
+  \item \begin{proposition}
+    Let $\{ X_n \}_{n \in \Nat}$ and $X$ be $\Real^d$-valued random variables with probability densitie functions $\{f_{X_n} \}_{n \in \Nat}$ and $f_X$, respetively. If $f_n \rightarrow f$ pointwisely, then $X_n \xrightarrow[]{\mcal{D}} X$.
+  \end{proposition}
+
+  \item \begin{proposition}
+    Let $\{ \mu_n \}_{n \in \Nat}$ be a sequence of probability measures on $\mcal{B}(\Real)$. Suppose
+    \begin{align*}
+      \lim_{m \rightarrow \infty} \sup_{n \in \Nat} \mu_n([-m,m]^c) = 0.
+    \end{align*}
+    Then, there exists a subsequence $\{ n_k \}_{k \in \Nat}$ such that $\{ \mu_{n_k} \}_{k \in \Nat}$ converges weakly.
+  \end{proposition}
+
+  \item \begin{definition}[Lipschitz continuity]
+    A function $f: \Real^d \ra \Real$ is said to be {\bf Lipschitz continous} if $| f(\ve{x}) - f(\ve{y}) | \leq k\| \ve{x} - \ve{y} \|$ for some constant $k > 0$ and for all $\ve{x}, \ve{y} \in \Real^d$.
+  \end{definition}
+
+  \item \begin{proposition}
+    Let $\{ X_n \}_{n \in \Nat}$ and $X$ be $\Real^d$-valued random variables. Then, $X_n \xrightarrow[]{\mcal{D}} X$ if and only if $E[g(X_n)] \rightarrow E[g(X)]$ for all bounded Lipschitz continuous function $g: \Real^d \ra \Real$.
+  \end{proposition}
+
+  \item \begin{definition}[uniform continuity]
+    A function $f: \Real^d \ra \Real$ is said to be {\bf uniformly continuous} if, for any $\varepsilon > 0$, there exists a $\delta > 0$ such that, for any $\ve{x}, \ve{y} \in \Real^d$, we have that $\| \ve{x} - \ve{y} \| < \delta \implies | f(\ve{x}) - f(\ve{y}) | < \varepsilon.$
+  \end{definition}
+
+  \item \begin{corollary}
+    Let $\{ X_n \}_{n \in \Nat}$ and $X$ be $\Real^d$-valued random variables. Then, $X_n \xrightarrow[]{\mcal{D}} X$ if and only if $E[g(X_n)] \rightarrow E[g(X)]$ for all bounded uniformly continuous function $g: \Real^d \ra \Real$.
+  \end{corollary}
+  This follows from the fact that any Lipschitz continuous function is also uniformly continuous. 
+
+  \item \begin{theorem}[Slutsky's theorem]
+    Let $X$, $\{ X_n \}_{n \in \Nat}$, and $\{ Y_n \}_{n \in \Nat}$ be $\Real^d$-valued random variables. If $X_n \xrightarrow[]{\mcal{D}} X$ and $\| X_n - Y_n \| \xrightarrow[]{P} 0$, then $Y_n \xrightarrow[]{\mcal{D}} X$.
+  \end{theorem}
+
+  \item \begin{proposition}
+    Let $\{ X_n \}_{n \in \Nat}$ and $X$ be random variables that take at most countably infinitely many values. Then, $X_n \xrightarrow[]{\mcal{D}} X$ if and only if $P(X_n = x) = P(X = x)$ for all possible values $x$ that these varialbles can take. 
+  \end{proposition}
+\end{itemize}
+
+\section{Characteristic Functions}
+
+\begin{itemize}
+  \item \begin{definition}[Fourier transform of a measure]
+    Let $\mu$ be a measure on $\mcal{B}(\Real^d)$. Its {\bf Fourier transform} is a complex-valued function $\hat{\mu}: \Real^d \rightarrow \mathbb{C}$ defined by
+    \begin{align*}
+      \hat\mu(\ves{\xi}) 
+      = \int e^{i(\ves{\xi} \cdot \ve{x})}\, \dee\mu(\ve{x})
+      = \int \cos(\ves{\xi} \cdot \ve{x})\, \dee\mu(\ve{x})
+      + i \int \sin(\ves{\xi} \cdot \ve{x})\, \dee\mu(\ve{x})
+    \end{align*}
+    for any $\ves{\xi} \in \Real^d$.
+  \end{definition}
+
+  \item \begin{definition}[characteristic function]
+    Let $X$ be a $\Real^d$-valued random variable. Its {\bf characteristic function} is the function $\varphi_X: \Real^d \rightarrow \mathbb{C}$ defined by
+    \begin{align*}
+      \varphi_X(\ves{\xi}) = E[e^{i(\ves{\xi} \cdot X)}] = \int e^{i(\ves{\xi} \cdot \ve{x})}\, \dee P_X(\ve{x})
+      = \widehat{P_X}(\ves{\xi})
+    \end{align*}
+    where $P_X$ is the probability distribution measure (Proposition~\ref{thm:probability-distribution-measure}) of $X$.
+  \end{definition}
+
+  \item Why do we study characteristic functions? Well, it can do several things.
+  \begin{enumerate}
+    \item It can be used to compute its random variable's moments: $E[X]$, $E[X^2]$, $E[X^3]$, $\dotsc$
+    \item It can be used to prove the Central Limit Theorem.
+  \end{enumerate}
+
+  \item \begin{proposition}[properties of characteristic functions]
+    Let $X$ be $\Real^d$-valued random variable.
+    \begin{enumerate}
+      \item $\varphi_X(\ve{0}) = 1$.
+      \item $|\varphi_X(\ves{\xi})| \leq 1$ for all $\ves{\xi} \in \Real^d$.
+      \item $\varphi_X$ is a continous function.
+      \item $\varphi_{(-X)}(\ves{\xi}) = \overline{\varphi_X(\ves{\xi})}$ for all $\ves{\xi} \in \Real$.
+      \item $\varphi_{(AX+\ves{b})}(\ves{\xi}) = e^{i(\ve{b}\cdot \ves{\xi})}\varphi_X(A^T\ves{\xi})$ for all $\ves{\xi}, \ves{b} \in \Real^d$ and $A \in \Real^{d\times d}$. 
+    \end{enumerate}
+  \end{proposition}
+
+  \item \begin{theorem}
+    Let $X$ be a real-valued random variable. If $E[|X|^m] < \infty$, for some integer $m geq 1$. Then, the characteristic function $\varphi_X$ has continuous partial derivative up to order $m$, and
+    \begin{align*}
+      \varphi_X^{(m)}(\xi) = i^m E[X^m e^{i\xi X}].
+    \end{align*}
+    As a result,
+    \begin{align*}
+      E[X^m] = \frac{\varphi_X^{(m)}(0)}{i^m}.
+    \end{align*}
+  \end{theorem}
+
+  \item \begin{theorem}[uniqueness theorem]
+    If two real-valued random variables have the same characteristic functions, then they are equal.
+  \end{theorem}
+
+  \item \begin{corollary}
+    Let $X = (X_1, X_2, \dotsc, X_d)$ be a $\Real^d$-valued random variable. Then, the components of $X$ are independent if and only if
+    \begin{align*}
+      \varphi_X(\ves{\xi}) = \prod_{i=1}^n \varphi_{X_i}(\xi_i)
+    \end{align*}
+    for all $\ves{\xi} = (\xi_1, \xi_2, \dotsc, \xi_d) \in \Real^d$.
+  \end{corollary}
+  
+  \item \begin{theorem}
+    Two real-valued random variables $X$ and $Y$ are independent if and only if $$\varphi_{X+Y}(\xi) = \varphi_X(\xi) \varphi_Y(\xi)$$ for all $\xi \in \Real$.
+  \end{theorem}
+
+  \item \begin{theorem}[L\'{e}vy's inversion formula]
+    Let $X$ be a real-valued random variable. Then, for $a < b$,
+    \begin{align*}
+      \lim_{T \rightarrow \infty} \frac{1}{2\pi} \int_{-T}^T \frac{e^{-i\xi a} - e^{-i\xi b}}{i\xi} \phi_X(\xi)\, \dee\xi 
+      &= \frac{1}{2} P_X(\{ a \}) + P_X((a,b)) + P_X(\{ b \}) \\
+      &= \frac{1}{2}\Big( F_X(b) + F_X(b^-) - F_X(a) - F_X(a-) \Big).  
+    \end{align*}
+  \end{theorem}
+
+  \item \begin{theorem}[L\'{e}vy's continuity theorem \#1]
+    Let $\{ \mu_n \}_{n \in \Nat}$ be a sequence of measure on $\mcal{B}(\Real^d)$. Let $\hat{\mu}_n$ denote $\mu_n$'s Fourier transform.
+    \begin{enumerate}
+      \item If $\mu_n$ converges weakly to a probability measure $\mu$, then $\hat{\mu}_n(\ves{\xi})\ra \hat{\mu}(\ves{\xi})$ for all $\ves{\xi} \in \Real^d$ where $\hat{\mu}$ is the Fourier transform of $\mu$.
+      
+      \item Suppose $\hat{\mu}_n(\ves{\xi})$ converges to a function $f(\ves{\xi})$ for all $\ves{\xi} \in \Real^d$, and suppose that $f$ is continuous at $\ve{0}$. Then, there exists a measure $\mu$ on $\mcal{B}(\Real^d)$ such that $f(\ves{\xi}) = \hat{\mu}(\ves{\xi})$ for all $\ves{\xi} \in \Real^d$. Moreover, $\{ \mu_n \}_{n \in \Nat}$ converges weakly to $\mu$.
+    \end{enumerate}    
+  \end{theorem}
+  
+  \item The following is L\'{e}vy's continuity theorem written in the language of ``random variables'' and ``convergence in distribution.''
+  
+  \begin{theorem}[L\'{e}vy's continuity theorem \#2]
+    Let $\{ X_n \}_{n \in \Nat}$ be a sequence of $\Real^d$-valued random variables.
+    \begin{enumerate}
+      \item If there exists a random variable $X$ such that $X_n \xrightarrow[]{\mcal{D}} X$, then $\varphi_{X_n}(\ves{\xi}) \ra \varphi_X(\ves{\xi})$ for all $\ves{\xi} \in \Real^d$.
+      
+      \item Suppose $\varphi_{X_n}$ converges to a function $f(\ves{\xi})$ for all $\ves{\xi} \in \Real^d$, and suppose that $f$ is continuous at $\ve{0}$. Then, there exists a probability measure $Q$ on $\mcal{B}(\Real^d)$ such that $f(\ves{\xi}) = \hat{Q}(\ves{\ves{\xi}})$ for all $\ves{\xi} \in \Real^d$. Morever, $\{ P_{X_n} \}_{n \in \Nat}$ converges weakly to $Q$.
+    \end{enumerate}
+  \end{theorem}
+
+  \item One of the most well-known consequence of L\'{e}vy's continuity theorem is the Central Limit Theorem.
+
+  \begin{theorem}[Central Limit Theorem]
+    Let $\{ X_n : n \in \Nat \}$ be a sequence of i.i.d\@. real-valued random variable such that $E[X_i] = \mu$ and $\Var(X_i) = \sigma^2$ for all $i$ with $0 < \sigma^2 < \infty$. Let 
+    \begin{align*}
+      S_n &= \sum_{i=1}^n X_i, \\
+      Y_n &= \frac{S_n - n\mu}{\sigma \sqrt{n}}.
+    \end{align*}
+    Then, $Y_n$ converges in distribution to the standard Gaussian random variable. In other words, $Y_n \xrightarrow[]{\mcal{D}} Y$ where
+    \begin{align*}
+      f_Y(y) = \mcal{N}(y; 0, 1) = \frac{e^{-y^2/2}}{\sqrt{2\pi}}.
+    \end{align*}
+    Consequently,
+    \begin{align*}
+      \lim_{n \rightarrow \infty} P(Y_n \leq y) = \frac{1}{\sqrt{2\pi}} \int_{-\infty}^y e^{-u^2/2}\, \dee u
+    \end{align*}
+    for any $y \in \Real$.
+  \end{theorem}
 \end{itemize}
 
 \bibliographystyle{apalike}
