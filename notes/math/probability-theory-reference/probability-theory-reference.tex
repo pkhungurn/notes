@@ -1366,7 +1366,7 @@ Materials are from \cite{Bartle:1995}, \cite{Jacod:2004}, \cite{Williams:1991}, 
   It follows that $f^+, f^- \in M^+(S,\mcal{S})$, $f = f^+ - f^-$, and $|f| = f^+ + f^-$.
 
   \item \begin{definition}[integrable function]
-    Let $f \in M(S,\mcal{S})$. We say that $f$ is {\bf (Lebesgue) integrable with respect to $\mu$} if $$\int |f|\, \dee\mu = \int f^+\, \dee\mu + \int f^+\, \dee\mu < \infty.$$ Let $\mcal{L}^1(S, \mcal{S}, \mu)$ denote the set of all integrable functions in $M(S,\mcal{S})$ with respect to $\mu$.
+    Let $f \in M(S,\mcal{S})$. We say that $f$ is {\bf (Lebesgue) integrable with respect to $\mu$} if $$\int |f|\, \dee\mu = \int f^+\, \dee\mu + \int f^-\, \dee\mu < \infty.$$ Let $\mcal{L}^1(S, \mcal{S}, \mu)$ denote the set of all integrable functions in $M(S,\mcal{S})$ with respect to $\mu$.
   \end{definition}
 
   \item \begin{definition}[Lebesgue integral]
@@ -1617,7 +1617,7 @@ Materials are from \cite{Bartle:1995}, \cite{Jacod:2004}, \cite{Williams:1991}, 
   \item \begin{definition}
     Let $(S, \mcal{S}, \mu)$ be a measure space. For $1 \leq p < \infty$, define $\mcal{L}^p(S,\mcal{S}, \mu)$ to be the set of functions $f \in M(S,\mcal{S})$ such that $|f|^p$ is integrable. In other words,
     \begin{align*}
-      \int |f|^p\, \dee\mu = \int (f^+)^p\, \dee\mu + \int (f^-)^p\, \dee\mu < \infty.
+      \int |f|^p\, \dee\mu = \int (f^+)^p\, \dee\mu + \int |f^-|^p\, \dee\mu < \infty.
     \end{align*}
   \end{definition}
   When the measure space $(S, \mcal{S}, \mu)$ is clear from the context, we will simply write $\mcal{L}^p$ instead of $\mcal{L}^p(S,\mcal{S}, \mu)$.

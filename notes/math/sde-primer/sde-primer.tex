@@ -9,6 +9,7 @@
 \usepackage{tikz}
 \usepackage{verbatim}
 \usepackage{hyperref}
+\usepackage{bbm}
 
 \newtheorem{lemma}{Lemma}
 \newtheorem{theorem}[lemma]{Theorem}
@@ -50,6 +51,7 @@
 \newcommand{\Real}{\mathbb{R}}
 \newcommand{\sseq}{\subseteq}
 \newcommand{\ov}[1]{\overline{#1}}
+\newcommand{\one}{\mathbbm{1}}
 \DeclareMathOperator*{\argmax}{arg\,max}
 \DeclareMathOperator*{\argmin}{arg\,min}
 
@@ -59,7 +61,7 @@
 \begin{document}
 \maketitle
 
-This note gives basic information on stochastic differential equations. The materials come primarity two books: \cite{Evans:2013}, \cite{Morters:2012}, and \cite{Sarkka:2012}.
+This note gives basic information on stochastic differential equations. The materials come primarity two books: \cite{Evans:2013}, \cite{Morters:2012}, \cite{Sarkka:2012}, and \cite{Mikosch:1998}.
 
 What got me interested in the subject was an attempt to understand recent works on deep generativ models, score-based models, in particular. I read a blog post by Yang Song \cite{Song:2021}, and I found that this body of work involves the Langevin equation:
 \begin{align*}
@@ -70,12 +72,12 @@ And I have to admit that I have no idea what this equation is about. This note i
 \section{Introduction}
 
 \begin{itemize}
-  \item We study ordinary differential equations to be able to solve the initial value problem: find a function $\ve{x}: [0,\infty) \rightarrow \Real^n$ that satisfies the quations
+  \item We study ordinary differential equations to be able to solve the initial value problem: find a function $\ve{x}: [0,\infty) \rightarrow \Real^d$ that satisfies the quations
   \begin{align*}
     \frac{ \dee \ve{x}(t) }{\dee t} &= \ve{b}(\ve{x}(t), t), \\
     \ve{x}(0) &= \ve{x}_0,
   \end{align*}
-  where $\ve{b}: \Real^n \times \Real \rightarrow \Real^n$ is a smooth, time-varying vector field, and $\ve{x}_0 \in \Real^n$ is a point in $\Real^n$.
+  where $\ve{b}: \Real^d \times \Real \rightarrow \Real^d$ is a smooth, time-varying vector field, and $\ve{x}_0 \in \Real^d$ is a point in $\Real^d$.
 
   \item Because the vector field $\ve{b}$ is smooth, the trajectory of $\ve{x}$ would be smooth.
   
@@ -83,11 +85,11 @@ And I have to admit that I have no idea what this equation is about. This note i
   \begin{align*}
     \frac{\dee\ve{x}(t)}{\dee t} = \ve{b}(\ve{x}(t), t) + B(\ve{x}(t), t)\ves{\xi}(t)
   \end{align*}
-  where $B: \Real^n \times \Real \rightarrow \Real^{n \times m}$ is a matrix-valued function, and $\ves{\xi}(t): [0,\infty) \rightarrow \Real^m$ is an $m$-dimensional ``white noise'' function.
+  where $B: \Real^d \times \Real \rightarrow \Real^{n \times m}$ is a matrix-valued function, and $\ves{\xi}(t): [0,\infty) \rightarrow \Real^m$ is an $m$-dimensional ``white noise'' function.
 
   \item We will go into details about what a white noise is later, but it suffices to say that it corresponds to noise that is i.i.d. in time.
   
-  \item It would turn out that our white noise is the time derivative of the {\bf standard Brownion motion}:
+  \item It would turn out that our white noise is the time derivative of the {\bf standard Brownian motion}:
   \begin{align*}
     \frac{\dee\ve{W}(t)}{\dee t} = \ves{\xi}(t).
   \end{align*}
@@ -109,7 +111,7 @@ And I have to admit that I have no idea what this equation is about. This note i
   \begin{align*}
     \dee\ve{x} = \frac{1}{2} \nabla \log \pi(\ve{x})\, \dee t + \dee\ve{W}.
   \end{align*}
-  Here, in the context of probabilistic modeling, $\pi: \Real^n \rightarrow [0,1]$ is a probability density function of the $\ve{x}$'s.
+  Here, in the context of probabilistic modeling, $\pi: \Real^d \rightarrow [0,1]$ is a probability density function of the $\ve{x}$'s.
 
   \item Another example is from financial modeling. A stock price is often modeled as a {\bf geometric Brownian motion}, which is governed by the following equation:
   \begin{align*}
@@ -127,40 +129,89 @@ And I have to admit that I have no idea what this equation is about. This note i
   \item Lastly, we will also study how we solve SDEs numerically and will at least cover the Euler--Maruyama method.
 \end{itemize}
 
-\section{Brownian Motion and White Noise}
-
-\subsection{Definition and Basic Properties}
+\section{Stochastic Processes}
 
 \begin{itemize}
-  \item In the rest of this note, we will be working with a probability space $(\Omega, \Sigma, P)$ where $\Omega$ is the sample space, $\Sigma$ is a $\sigma$-algebra on $\Omega$, and $P$ is the probability measure on $(\Omega,\Sigma)$.
+  \item In the rest of this note, we will be working with a probability space $(\Omega, \mcal{F}, P)$ where $\Omega$ is the sample space, $\mcal{F}$ is a $\sigma$-algebra on $\Omega$, and $P$ is the probability measure on $(\Omega,\mcal{F})$.
 
   \item \begin{definition}
-    A {\bf stochastic process} is a collection $\{\ve{X}(t) \in \Real^n : t \geq 0\}$ of random variables. For each point $\omega \in \Omega$, the mapping $t \mapsto \ve{X}(t,\omega)$ is called the {\bf sample path}.
+    A {\bf stochastic process} is a collection $\{\ve{X}(t) \in \Real^d : t \geq 0\}$ of random variables. For each point $\omega \in \Omega$, the mapping $t \mapsto \ve{X}(t,\omega)$ is called the {\bf sample path}.
   \end{definition}  
 
-  \item From the above definition, we see that there are two ways to view a stochastic process.
+  \item From the above definition, we see that there are three ways to view a stochastic process.
   \begin{itemize}
     \item When viewed as collection of random variables, we see it as a collection of (potentially correlated) random values on the real line.
     \item When viewed from the lens of the sample path, it becomes a random function.
+    \item We can also view $\ve{X}$ as a function that maps an ordered pair $(t, \omega) \in [0, \infty) \times \Omega$ to a point in $\Real^d$.
   \end{itemize}
 
-  \item \begin{definition}
-    A stochastic process $\{ \ve{X}(t) \in \Real^n: t \geq 0 \}$ is called a {\bf Gaussian process} if, for any $0 \leq t_1 < t_2 < \dotsc < t_k$, the vector $(\ve{X}(t_1), \ve{X}(t_2), \dotsc, \ve{X}(t_k))$ has a (multi-variate) Gaussian distribution. Equivalently, it is a Gaussian process if every linear combination $\sum_{i=1}^k a_i \ve{X}(t_i)$ is either identically zero or has a (multi-variate) Gausssian distribution.
+  \item A stochastic process can be characterized by many of its aspects. One of these aspects is called its {\it finite-dimensional distribution}.
+  
+  \begin{definition}
+    The {\bf finite-dimensional distributions (fidis)} of the stochastic process\\ $\{ \ve{X}(t) \in \Real^d: t \geq 0 \}$ are the distributions of the finite dimensional vectors $(\ve{X}(t_1), \ve{X}(t_2), \dotsc, \ve{X}(t_n))$ for all $t_1, t_2, \dotsc, t_n \geq 0$ and every $n \geq 1$.
   \end{definition}
 
   \item \begin{definition}
+    A stochastic process $\{ \ve{X}(t) \in \Real^d: t \geq 0 \}$ is called a {\bf Gaussian process} if, for any $0 \leq t_1 < t_2 < \dotsc < t_k$, the vector $(\ve{X}(t_1), \ve{X}(t_2), \dotsc, \ve{X}(t_k))$ has a (multi-variate) Gaussian distribution. Equivalently, it is a Gaussian process if every linear combination $\sum_{i=1}^k a_i \ve{X}(t_i)$ is either identically zero or has a (multi-variate) Gausssian distribution.
+  \end{definition}
+
+  \item Another way of characterizing a stochastic process is through its {\it dependence structure}, which is mainly concerns with how $\ve{X}(t)$ is dependent (or independent) of $\ve{X}(s)$ for $s \neq t$.
+  
+  \item \begin{definition}
+    A stochastic process $\{ \ve{X}(t) \in \Real^d: t \geq 0 \}$ is {\bf strictly stationary} if the fidis are invariant under shifts of the time $t$:
+    \begin{align*}
+      \big(\ve{X}(t_1), \ve{X}(t_2), \dotsc, \ve{X}(t_n)\big) \mbox{ has the same distribution as }
+      \big(\ve{X}(t_1 + h), \ve{X}(t_2 + h), \dotsc, \ve{X}(t_n + h)\big)
+    \end{align*}
+    for all possible choices of times $t_1, t_2, \dotsc, t_n \geq 0$, $n \geq 1$, and $h$ such that $t_1+h, t_2+h, \dotsc, t_n+h \geq 0$.
+  \end{definition}
+
+  \item \begin{definition}
+    Let $X(t)$ be a real-valued stochastic process with $E[X^2(t)] < \infty$ for all $t \geq 0$. The {\bf autocorrelation function of $X$} is the function
+    \begin{align*}
+      r(t,s) = E[X(t)X(s)]
+    \end{align*}
+    defined for $t, s \geq 0$.
+  \end{definition}
+
+  \item \begin{definition}
+    We call a stochastic process $\{ X(t) : t \geq 0 \}$ {\bf stationary in the wide sence} the following two properties are satisfied the following properties.
+    \begin{enumerate}
+      \item Its autocorrelation function depends only on the difference between the times. In other words, $r(t,s) = c(t-s)$ for some function $c: \Real \rightarrow \Real$ and for all $t, s \geq 0$.
+      \item Its expectation is constant. That is, $E[X(t)] = E[X(s)]$ for all $t, s \geq 0$
+    \end{enumerate}    
+  \end{definition}
+
+  \item We can also impose stationary properties on the increments of a process.
+
+  \begin{definition}
+    We say that $\{ \ve{X}(t) : t \geq 0\}$ have {\bf stationary increments} if $$\ve{X}(t) - \ve{X}(s) \mbox{ has the same distribution as } \ve{X}(t+h) - \ve{X}(s+h)$$ for all $t,s \geq 0$ and $h$ such that $t+h,s+h \geq 0$.
+  \end{definition}
+
+  \begin{definition}
+    We say that $\{ \ve{X}(t) : t \geq 0\}$ have {\bf independent increments} if
+    \begin{align*}
+      \ve{X}(t_2) - \ve{X}(t_1), \ve{X}(t_3) - \ve{X}(t_2), \dotsc, \ve{X}(t_n) - \ve{X}(t_{n-1})
+    \end{align*}
+    are independent random variables for all choices of $0 \leq t_1 < t_2 < \dotsb < t_n$ and $n \geq 1$.
+  \end{definition}
+\end{itemize}
+
+\section{Brownian Motion}
+
+\subsection{Definition and Basic Properties}
+\begin{itemize}
+  \item \begin{definition} \label{def:brownian-motion}
     A stochastic process $\{W(t) \in \Real : t \geq 0\}$ is called a {\bf Brownian motion} starting at $x_0 \in \Real$ if the following properties hold.
     \begin{itemize}
-      \item $W(0) = x_0$.
-      \item The process has independent increments. That is, for all times $0 \leq t_1 < t_2 < \dotsb < t_n$, the increments $W(t_2) - W(t_1)$, $W(t_3) - W(t_2)$, $\dotsc$, $W(t_n) - W(t_{n-1})$ are independent random variables.
-      \item For all $t \geq 0$ and $h > 0$, the increment $W(t+h) - W(t)$ is normally distributed with expectation $0$ and variance $h$. In other words, $W(t+h) - W(h) \sim \mcal{N}(0, h)$.
-      \item The sample path $t \mapsto W(t,\omega)$ is continuous almost surely (i.e. with probability $1$).
+      \item[(1)] $W(0) = x_0$.
+      \item[(2)] The process has independent increments.
+      \item[(3)] For all $t > s \geq 0$, the increment $W(t) - W(s)$ is normally distributed with expectation $0$ and variance $t-s$. In other words, $W(t) - W(s) \sim \mcal{N}(0, t-s)$.
+      \item[(4)] The sample path $t \mapsto W(t,\omega)$ is continuous almost surely (i.e. with probability $1$).
     \end{itemize}
     When $x_0 = 0$, we call it a {\bf standard Brownian motion}.    
   \end{definition}
 
-  \item Note that because, for any $t > 0$, we have that $W(t) = x_0 + W(t) - W(0)$. Hence, $W(t)$ is distributed according to $\mcal{N}(x_0,t)$ for any $t > 0$. (For $t = 0$, we may say that $W(0)$ is a Gaussian distribution with mean $x_0$ and variance $0$.) As a result, a Brownian motion is always a Gaussian process.
-  
   \item \begin{theorem}[Weiner 1923]
     The standard Brownian motion exists.
   \end{theorem}
@@ -199,6 +250,15 @@ And I have to admit that I have no idea what this equation is about. This note i
     and it can be shown that this function has all the properties of the Brownian motion.
   \end{proof}
 
+  \item The existence of the standard Brownian motion implies the existence of all other Brownian motions. Now that we know that they exist, let's examine some of their properties.
+
+  \item For any $t > 0$, we have that $W(t) = x_0 + W(t) - W(0)$. Hence, $W(t)$ is distributed according to $\mcal{N}(x_0,t)$ for any $t > 0$. (For $t = 0$, we may say that $W(0)$ is a Gaussian distribution with mean $x_0$ and variance $0$.) As a result, a Brownian motion is a Gaussian process.
+  
+  \item Because $W(t) \sim \mcal{N}(x_0,t)$, we have that $E[X(t)] = x_0$ for all $t \geq 0$. So, a Brownian motion has constant mean, and the mean of the standard Brownian motion is always $0$.
+  
+  \item Property (3) in Definition~\ref{def:brownian-motion} implies that a Brownian motion has stationary increments.
+
+
   \item \begin{lemma}
     If $W(t)$ is the standard Brownian motion, we have that $E[W(t)] =0$, $E[W^2(t)] = t$, and $$E[W(t)W(s)] = t \wedge s = \min(t,s)$$ for all $t, s \geq 0$.
   \end{lemma}
@@ -218,64 +278,13 @@ And I have to admit that I have no idea what this equation is about. This note i
     as required.    
   \end{proof}
 
+  \item So, while a Brownian motion has constant mean, it is not stationary in the wide sense because the autocorrelation function $r(t,s) = E[W(t)W(s)]$ is not a function of $t_s$.
+
   \item It can be shown that, if $X(t)$ is a Gaussian process such that $E[X(t)X(s)] = t \wedge s$ and $\mrm{Var}(X(0)) = 0$, then it is a Brownian motion.
-  
-  \item We said earlier that it turned out that the derivative of the Brownian motion is the ``white noise.'' In one dimension, this means that $$\dee W(t) / \dee t = \xi(t)$$ where $\xi(t)$ is the one-dimensional white noise.
-  
-  \item However, it also turns out that the sample path $t \mapsto W(t,\omega)$ is not differentiable at any $t \geq 0$. So, the derivative does not really exist.
 
-  \item Neverless, we can show that, in a sense, $$E[\xi(t)\xi(s)] = \delta(t-s)$$ where $\delta$ is the Dirac delta function. 
-  
-  The ``proof'' is as follows. Fix $h > 0$ and $t > 0$. Define
-  \begin{align*}
-    \phi_h(s) 
-    &= E\bigg[ \bigg( \frac{W(t+h) - W(t)}{h} \bigg) \bigg( \frac{W(s+h) - W(s)}{h} \bigg) \bigg] \\
-    &= \frac{1}{h^2}\Big( E[W(t+h)W(s+h)] - E[W(t+h)W(s)] - E[W(t)W(s+h)] + E[W(t)W(s)] \Big) \\
-    &= \frac{1}{h^2}\Big( (t+h) \wedge (s+h) - (t+h) \wedge s - t \wedge (s+h) + t \wedge s \Big).    
-  \end{align*}
-  There are 4 cases.
-  \begin{enumerate}
-    \item If $t+h < s$, then $\phi_s(s) = (t+h - t+h - t + t)/h^2 = 0$.
-    \item If $t \leq s < t+h$, then $\phi_s(s) = (t+h - s - t + t)/h^2 = (h+t-s)/h^2$.
-    \item If $t-h \leq s < t$, then $\phi_s(s) = (s+h - s - t + s)/h^2 = (h-t+s)/h^2$.
-    \item If $s < t-h$, then $\phi_s(s) = (s+h - s - s+h + s)/h^2 = 0$.
-  \end{enumerate}
-  As a result, $\phi_h(s)$ is a tent function of height $1/h$ over the interval $[t-h,t+h]$. It follows that $\int \phi_h(s)\ \dee s = 1$, and $\lim_{h \rightarrow 0} \phi_h(s) = 0$ when $s \neq t$. As a result, $\lim_{h \rightarrow 0} \phi_h(s) = \delta(t-s)$ where $\delta$ is the Direct delta function.
-
-  \item \begin{definition}
-    Let $X(t)$ be a real-valued stochastic process with $E[X^2(t)] < \infty$ for all $t \geq 0$. The {\bf autocorrelation function of $X$} is the function
-    \begin{align*}
-      r(t,s) = E[X(t)X(s)]
-    \end{align*}
-    defined for $t, s \geq 0$.
-  \end{definition}
-
-  \item \begin{definition}
-    We call a stochastic process $X(t)$ {\bf stationary in the wide sence} if
-    \begin{itemize}
-      \item $r(t-s) = c(t-s)$ for some function $c: \Real \rightarrow \Real$, and
-      \item $E[X(t)] = E[X(s)]$
-    \end{itemize}
-    for all $t, s \geq 0$.
-  \end{definition}
-
-  \item \begin{definition}
-    Let $X(t)$ be a stochastic process that is stationary in the wide sense with autocorrelation function $c(\cdot)$. The process's {\bf spectral density} is the Fourier transform of the autocorrelation function:
-    \begin{align*}
-      f(\lambda) = \frac{1}{2\pi} \int_{-\infty}^\infty e^{-i\lambda t} c(t)\ \dee t
-    \end{align*}
-    for any $\lambda \in \Real$.
-  \end{definition}  
-
-  \item Note that the white noise $\xi(t)$ is, in a sense, stationary in the wide sense (i.e., its mean should be zero), and its autocorrelation is given by $c(t-s) = \delta(t-s)$. Its spectral density is given by
-  \begin{align*}
-    f(\lambda) = \frac{1}{2\pi} \int_{-\infty}^\infty e^{-i\lambda t} \delta(t) \ \dee t = \frac{1}{2\pi}
-  \end{align*}
-  for all $\lambda$. This is why it is called ``white'' noise.  
-
-  \item We can extend the standard Brownian motion in $\Real$ to one in $\Real^n$.
+  \item We can extend the standard Brownian motion in $\Real$ to one in $\Real^d$.
   \begin{definition}
-    A stochastic process $\{ \ve{W}(t) \in \Real^n : t \geq 0 \}$ where $\ve{W}(t) = (W_1(t), W_2(t), \dotsc, W_n(t))$ is an {\bf $n$-dimensional Brownian motion} if it satisfies the following conditions.
+    A stochastic process $\{ \ve{W}(t) \in \Real^d : t \geq 0 \}$ where $\ve{W}(t) = (W_1(t), W_2(t), \dotsc, W_n(t))$ is an {\bf $n$-dimensional Brownian motion} if it satisfies the following conditions.
     \begin{itemize}
       \item For each $k = 1, 2, \dotsc, n$, we have that $W_k(t)$ is a one-dimensional Brownian motion.
       \item The $\sigma$-algebras
@@ -299,8 +308,35 @@ And I have to admit that I have no idea what this equation is about. This note i
   is the Kronecker delta function.    
 \end{itemize}
 
-\subsection{Properties of Sample Paths}
+\subsection{Self Similarity and Non-Differentiability}
 
+\begin{itemize}
+  \item \begin{definition}
+    We say a stochastic process $\{ \ve{X}(t) : t \geq 0 \}$ is $H$-self-similar for some $H > 0$ if its fidis satisfy the condition
+    \begin{align*}
+      (c^H \ve{X}(t_1), c^H \ve{X}(t_2), \dotsc, c^H \ve{X}(t_n)) \mbox{ has the same distribution as } (\ve{X}(ct_1), \ve{X}(ct_2), \dotsc, \ve{X}(ct_n))
+    \end{align*}
+    for every $c > 0$ and any choice of $t_1, t_2, \dotsc, t_n \geq 0$ and $n \geq 1$.
+  \end{definition}
+
+  \item Self-similarity means that the properly scaled patterns of a sample path in any small or large time interval have a simlar shape.
+
+  \item \begin{theorem}
+    A Brownian motion is $0.5$-self-similar.
+  \end{theorem}
+  
+  \item \begin{theorem}
+    Let $\{ X(t) : t \geq 0 \}$ be a stochastic process. If $X(t)$ is $H$-self-similar for some $H \in (0,1)$ and has stationary increments, then, for any fixed $t_0$,
+    \begin{align*}
+      \limsup_{t \rightarrow t_0^+} \frac{|X(t) - X(t_0)|}{t-t_0} = \infty
+    \end{align*}
+    almost surely. In other words, sample paths of $H$-self-similar stochastic processes are nowhere differentiable almost surely.
+  \end{theorem}
+  
+  \item This means that a path of a Brownian motion is not differentiable everywhere almost surely.
+\end{itemize}
+
+\begin{comment}
 \begin{itemize}
   \item \begin{definition}
     A function $f: [0, \infty) \rightarrow \Real$ is said to be {\bf locally $\alpha$-H\"{o}lder continuous at} $x \geq 0$ if there exists $\varepsilon > 0$ and $c > 0$ such that
@@ -335,7 +371,60 @@ And I have to admit that I have no idea what this equation is about. This note i
   \item \begin{theorem}[Paley, Wiener, and Zygmund 1933]
     The sample path $t \mapsto W(t,\omega)$ is nowhere differentiable almost surely, Furthermore, for all $t \geq 0$, either $D^*\, W(t) = \infty$ or $D_*\,W(t) = -\infty$, or both almost surely.   
   \end{theorem}
+\end{itemize}
+\end{comment}
 
+\subsection{White Noise}
+
+\begin{itemize}  
+  \item We said earlier that it turned out that the derivative of the Brownian motion is the ``white noise.'' In one dimension, this means that $$\dee W(t) / \dee t = \xi(t)$$ where $\xi(t)$ is the one-dimensional white noise.
+  
+  \item However, we learned that the sample path $t \mapsto W(t,\omega)$ is not differentiable at any $t \geq 0$ with probability $1$. So, the derivative does not really exist. Let us suspend our disbelief and derive some of $\xi(t)$'s properties though.
+  
+  \item The first is that $E[\xi(t)] = 0$ for all $t$. This is because
+  \begin{align*}
+    \xi(t) = \lim_{h \rightarrow 0} \frac{W(t+h) - W(t)}{h}.
+  \end{align*}
+  We know that $W(t+h) - W(t) \sim \mcal{N}(0,h)$, and so $E\Big[ \frac{W(t+h) - W(h)}{h} \Big] = 0$ for all $h$. As a result, $E[\xi(t)]$ should be $0$ as well. 
+
+  \item We can also show that $$E[\xi(t)\xi(s)] = \delta(t-s)$$ where $\delta$ is the Dirac delta function.
+    
+  The ``proof'' is as follows. Fix $h > 0$ and $t > 0$. Define
+  \begin{align*}
+    \phi_h(s) 
+    &= E\bigg[ \bigg( \frac{W(t+h) - W(t)}{h} \bigg) \bigg( \frac{W(s+h) - W(s)}{h} \bigg) \bigg] \\
+    &= \frac{1}{h^2}\Big( E[W(t+h)W(s+h)] - E[W(t+h)W(s)] - E[W(t)W(s+h)] + E[W(t)W(s)] \Big) \\
+    &= \frac{1}{h^2}\Big( (t+h) \wedge (s+h) - (t+h) \wedge s - t \wedge (s+h) + t \wedge s \Big).    
+  \end{align*}
+  There are 4 cases.
+  \begin{enumerate}
+    \item If $t+h < s$, then $\phi_s(s) = (t+h - t+h - t + t)/h^2 = 0$.
+    \item If $t \leq s < t+h$, then $\phi_s(s) = (t+h - s - t + t)/h^2 = (h+t-s)/h^2$.
+    \item If $t-h \leq s < t$, then $\phi_s(s) = (s+h - s - t + s)/h^2 = (h-t+s)/h^2$.
+    \item If $s < t-h$, then $\phi_s(s) = (s+h - s - s+h + s)/h^2 = 0$.
+  \end{enumerate}
+  As a result, $\phi_h(s)$ is a tent function of height $1/h$ over the interval $[t-h,t+h]$. It follows that $\int \phi_h(s)\ \dee s = 1$, and $\lim_{h \rightarrow 0} \phi_h(s) = 0$ when $s \neq t$. As a result, $\lim_{h \rightarrow 0} \phi_h(s) = \delta(t-s)$ where $\delta$ is the Direct delta function.  
+
+  \item Because $\xi(t)$ has constant mean and its autocorrelation function depends only on $t-s$, we have that $\xi(t)$ is stationary in the wide sense.
+
+  \item \begin{definition}
+    Let $X(t)$ be a stochastic process that is stationary in the wide sense with autocorrelation function $c(\cdot)$. The process's {\bf spectral density} is the Fourier transform of the autocorrelation function:
+    \begin{align*}
+      f(\lambda) = \frac{1}{2\pi} \int_{-\infty}^\infty e^{-i\lambda t} c(t)\ \dee t
+    \end{align*}
+    for any $\lambda \in \Real$.
+  \end{definition}  
+
+  \item $\xi(t)$'s spectral density is given by
+  \begin{align*}
+    f(\lambda) = \frac{1}{2\pi} \int_{-\infty}^\infty e^{-i\lambda t} \delta(t) \ \dee t = \frac{1}{2\pi}
+  \end{align*}
+  for all $\lambda$. This is why it is called ``white'' noise.  
+\end{itemize}
+
+\subsection{Unbounded Variation}
+
+\begin{itemize} 
   \item \begin{definition}
     A {\bf partition} $\mcal{P}$ of the interval $[a,b]$ is a set of real numbers where $$\{ a = t_0 < t_1 < t_2 < \dotsb < t_k = b \}.$$ The {\bf mesh size} of $\mcal{P}$ is given by
     $$|\mcal{P}| = \max_{0 < j \leq k} |t_k - t_{k-1}|.$$    
@@ -346,7 +435,7 @@ And I have to admit that I have no idea what this equation is about. This note i
   \end{definition}
 
   \item \begin{definition}
-    A function $f: \Real \rightarrow \Real$ is the {\bf variation} of $f$ on the $[a,b]$ is given by
+    Let $f: \Real \rightarrow \Real$ be a real-valued function. The {\bf variation} of $f$ on the $[a,b]$ is given by
     \begin{align*}
       V^{(1)}_{[a,b]}(f) = \lim_{\substack{n \rightarrow \infty\\|\mcal{P}^{(n)}| \rightarrow 0}} \sum_{j=1}^{k(n)} |f(t_j^{(n)}) - f(t_{j-1}^{(n)})|.
     \end{align*}
@@ -365,7 +454,10 @@ And I have to admit that I have no idea what this equation is about. This note i
     for any $0 \leq a < b$. In other words, a Brownian motion has finite quadratic variation but infinite variation.
   \end{theorem}
 
-  \item Note that the fact that $V^{(1)}_{[a,b]}(W)$ follows from the fact that $V^{(2)}_{[a,b]}(W)$ is finite. To see this, note that $W(t)$ is locally $\alpha$-H\"{o}lder. So, for $n$ large enough, we would have that, for any $0 < \alpha < 1/2$.
+  \item The fact that the paths of a Brownian motion are not differentiable and have infinite variation makes it difficult to apply Riemann integration to them. As a result, we need another way to define integrals that involve a Brownian motion.
+
+\begin{comment}
+  \item Note that the fact that $V^{(1)}_{[a,b]}(W)$ is infinite follows from the fact that $V^{(2)}_{[a,b]}(W)$ is finite. To see this, note that $W(t)$ is locally $\alpha$-H\"{o}lder. So, for $n$ large enough, we would have that, for any $0 < \alpha < 1/2$.
   \begin{align*}
     |W(t^{(n)}_j) - W(t^{(n)}_{j-1})| &\leq c| t^{(n)}_j - t^{(n)}_{j-1} |^\alpha \leq c| \mcal{P}^{(n)} |^\alpha \\
     \frac{1}{|W(t^{(n)}_j) - W(t^{(n)}_{j-1})|}  & \geq \frac{1}{c|\mcal{P}^{(n)}|^\alpha} \\
@@ -378,6 +470,8 @@ And I have to admit that I have no idea what this equation is about. This note i
     V^{(1)}_{[a,b]}(W) \geq V^{(2)}_{[a,b]}(W) \bigg( \lim_{|\mcal{P}^{(n)}| \rightarrow 0} \frac{1}{c|\mcal{P}^{(n)}|^\alpha} \bigg).
   \end{align*}
   So, if $V^{(2)}_{[a,b]}(W)$ is a positive, then $V^{(1)}_{[a,b]}(W)$ would have to be infinite.
+\end{comment}
+
 \end{itemize}
 
 \subsection{Markov Properties}
@@ -387,46 +481,97 @@ And I have to admit that I have no idea what this equation is about. This note i
   
   \item A process is called a {\bf (time-homogeneous) Markov process} if starts afresh at any fixed time $s$. In other words, the time-shifted process $\{ \ve{X}(s+t) : t \geq 0 \}$ has the same distribution as the processed starting at $\ve{X}(s)$ at time $0$.
   
-  \item \begin{theorem}[Markov property]
-    A Brownian motion is a Markov process. More precisely, let $\{\ve{W}(t) : t \geq 0\}$ be a Brownian motion starting at $\ve{x}_0 \in \Real^n$, and let $s > 0$. Then, the process $\{ \ve{W}(t+s) - \ve{W}(s) : t \geq 0\}$ is again a Brownian motion starting at the origin, and it is independent of the process $\{ \ve{W}(t) : 0 \leq t \leq s \} $.
+  \item \begin{theorem}[Markov property] \label{thm:markov-property}
+    A Brownian motion is a Markov process. More precisely, let $\{\ve{W}(t) : t \geq 0\}$ be a Brownian motion starting at $\ve{x}_0 \in \Real^d$, and let $s > 0$. Then, the process $\{ \ve{W}(t+s) - \ve{W}(s) : t \geq 0\}$ is again a Brownian motion starting at the origin, and it is independent of the process $\{ \ve{W}(t) : 0 \leq t \leq s \} $.
   \end{theorem}
 
   \item \begin{definition}
-    A {\bf filtration} on a probability space $(\Omega, \Sigma, P)$ is a family $\{ \Sigma(t): t \geq 0 \}$ of $\sigma$-algebras such that $\Sigma(s) \subseteq \Sigma(t)$ for all $s < t$. 
-    
+    A {\bf filtration} on a probability space $(\Omega, \mcal{F}, P)$ is a family $\{ \mcal{F}(t): t \geq 0 \}$ of $\sigma$-algebras such that $\mcal{F}(s) \subseteq \mcal{F}(t)$ for all $s < t$. In other words, it is a stream of increasingly more information.
     
     A probabilty space together with a filtration is called a {\bf the filtered probability space}. 
     
-    A stochastic process ${X(t): t \geq 0}$ defined on a filtered probability space with filtration $\{ \Sigma(t): t \geq 0 \}$ is said to be {\bf adapted to the filtration} if $X(t)$ is $\Sigma(t)$-measurable for any $t \geq 0$. 
+    A stochastic process $\{X(t): t \geq 0\}$ defined on a filtered probability space with filtration $\{ \mcal{F}(t): t \geq 0 \}$ is said to be {\bf adapted to the filtration} if $X(t)$ is $\mcal{F}(t)$-measurable for any $t \geq 0$. 
   \end{definition}
 
-  \item Let $\ve{W}(t)$ be a Brownian motion defined on a probabilty space $(\Omega,\Sigma,P)$. We can define a filtration
+\begin{comment}
+  \item Let $\ve{W}(t)$ be a Brownian motion defined on a probabilty space $(\Omega,\mcal{F},P)$. We can define a filtration
   \begin{align*}
-    \Sigma^0(t) = \sigma(W(s) : 0 \leq s \leq t) = \sigma\bigg( \bigcup_{0\leq s \leq t} \sigma(\ve{W}(s)) \bigg)
+    \mcal{F}^0(t) = \sigma(W(s) : 0 \leq s \leq t) = \sigma\bigg( \bigcup_{0\leq s \leq t} \sigma(\ve{W}(s)) \bigg)
   \end{align*}
-  to be the $\sigma$-algebra generated by the random variables $\ve{W}(s)$ for $0 \leq s \leq t$. We have that the Brownian motion is adapted to the filtration. The Markov property says that $\{ \ve{W}(t+s) - \ve{W}(s) : t \geq 0 \}$ is independent of $\Sigma^0(s)$.
+  to be the $\sigma$-algebra generated by the random variables $\ve{W}(s)$ for $0 \leq s \leq t$. We have that the Brownian motion is adapted to the filtration. The Markov property says that $\{ \ve{W}(t+s) - \ve{W}(s) : t \geq 0 \}$ is independent of $\mcal{F}^0(s)$.
 
   \item The Markov property can be slightly improved. Define
   \begin{align*}
-    \Sigma^+(s) = \bigcap_{t > s} \Sigma^0(t).
+    \mcal{F}^+(s) = \bigcap_{t > s} \mcal{F}^0(t).
   \end{align*}
-  Intuitively, it contains all information common to the future of the Brownian motion from time $s$. We have that the family $\{ \Sigma^+(t): t \geq 0 \}$ is a filtration. Moreover, $\Sigma^0(s) \subseteq \Sigma^+(s)$ because $\Sigma^+(s)$ has an infinitesimally more information about the future.
+  Intuitively, it contains all information common to the future of the Brownian motion from time $s$. We have that the family $\{ \mcal{F}^+(t): t \geq 0 \}$ is a filtration. Moreover, $\mcal{F}^0(s) \subseteq \mcal{F}^+(s)$ because $\mcal{F}^+(s)$ has an infinitesimally more information about the future.
 
   \item \begin{theorem}[Slightly stronger Markov property]
-    The process $\{ \ve{W}(t+s) - \ve{W}(s) : t \geq 0 \}$ is independent of the $\sigma$-algebra $\Sigma^+(s)$.
+    The process $\{ \ve{W}(t+s) - \ve{W}(s) : t \geq 0 \}$ is independent of the $\sigma$-algebra $\mcal{F}^+(s)$.
   \end{theorem}
+\end{comment}
 
   \item The Markov property means that a Brownian motion is started anew at each deterministic time instance. However, this is also true for a class of random times called ``stopping time.''
   
-  \item Intuitively, a stopping time $T$ is a random variable such that we can deduce whether $T \leq t$ by only observing the path of the stochastic process up to time $t$. In other words, the set $\{ T \leq t\}$ (which is an abbreviation for $\{ \omega \in \Omega : T(\omega) \leq t \} $) is an event in $\Sigma(t)$.
+  \item Intuitively, a stopping time $T$ is a random variable such that we can deduce whether $T \leq t$ by only observing the path of the stochastic process up to time $t$. In other words, the set $\{ T \leq t\}$ (which is an abbreviation for $\{ \omega \in \Omega : T(\omega) \leq t \} $) is an event in $\mcal{F}(t)$.
   
   \begin{definition}
-    A random variable $T$ with values in $[0,\infty)$ defined on a probability space with filtration $\{ \Sigma(t): t \geq 0 \}$ is called a {\bf stopping time} with respect to the filtration if $\{ T \leq t \} \in \Sigma(t)$ for all $t \geq 0$.
+    A random variable $T$ with values in $[0,\infty)$ defined on a probability space with filtration $\{ \mcal{F}(t): t \geq 0 \}$ is called a {\bf stopping time} with respect to the filtration if $\{ T \leq t \} \in \mcal{F}(t)$ for all $t \geq 0$.
   \end{definition}
 
   \item \begin{theorem}[Strong Markov property]
-    For every almost surely finite stopping time $T$, the process $\{ \ve{W}(T+t) - \ve{W}(T) : t \geq 0 \}$ is a Brownian motion starting at $\ve{0}$ independent of $\Sigma^+(T)$.
+    For every almost surely finite stopping time $T$, the process $\{ \ve{W}(T+t) - \ve{W}(T) : t \geq 0 \}$ is a Brownian motion starting at $\ve{0}$ independent of $\mcal{F}^+(T)$.
   \end{theorem}
+\end{itemize}
+
+\subsection{Martingale Properites}
+
+\begin{itemize}
+  \item A stochastic process $\ve{X}$ is always adapted to the {\bf natural filtration generated by $\ve{X}$}
+  \begin{align*}
+    \mcal{F}(t) = \sigma\bigg( \bigcup_{0 \leq s \leq t} \sigma(\ve{X}(s))\bigg).
+  \end{align*}
+
+  \item \begin{definition}
+    A stochastic process $\{ \ve{X}(t) : t \geq 0 \}$ is called a {\bf (continuous-time) martingale with respect to the filtration} $\{ \mcal{F}(t) : t \geq 0\}$ if the following conditions are satisfied.
+    \begin{itemize}
+      \item[(1)] $E\big[\|\ve{X}(t)\|_1\big] < \infty$ for all $t \geq 0$. (Here, $\| \cdot \|_1$ denote the $1$-norm.)
+      \item[(2)] $\ve{X}$ is adapted to $\{ \mcal{F}(t) : t \geq 0 \}.$
+      \item[(3)] $E[\ve{X}(t)|\mcal{F}(s)] = \ve{X}(s)$ for all $0 \leq s < t$.
+    \end{itemize}
+  \end{definition}
+
+  \item \begin{theorem}
+    A martingale's expectation is constant.
+  \end{theorem}
+
+  \begin{proof}
+    Let $t > 0$.
+    \begin{align*}
+      E[\ve{X}(0)] = E[E[\ve{X}(t)|\mcal{F}(0)]] = E[\ve{X}(t)].
+    \end{align*}
+    We are done.
+  \end{proof}
+
+  \item \begin{theorem}
+    A Brownian motion is a martingale with respect to its natural filtration.
+  \end{theorem}
+  \begin{proof}
+    Let $0 \leq s < t$. We have that
+    \begin{align*}
+      E[\ve{W}(t)|\mcal{F}(s)]
+      &= E[\ve{W}(t) - \ve{W}(s) + \ve{W}(s)|\mcal{F}(s)] \\
+      &= E[\ve{W}(t) - \ve{W}(s)|\mcal{F}(s)] + E[\ve{W}(s)|\mcal{F}(s)].      
+    \end{align*}
+    According to the Markov property (Theorem~\ref{thm:markov-property}), $\ve{W}(t) - \ve{W}(s)$ is independent of $\mcal{F}(s)$, we have that
+    \begin{align*}
+      E[\ve{W}(t) - \ve{W}(s)|\mcal{F}(s)]
+      = E[\ve{W}(t) - \ve{W}(s)]
+      = E[\ve{W}(t)] - E[\ve{W}(s)]
+      = 0.
+    \end{align*}
+    Now, $E[\ve{W}(s)|\mcal{F}(s)] = E[\ve{W}(s)]$. As a result, $E[\ve{W}(t)|\mcal{F}(s)] = \ve{W}(s)$.
+  \end{proof}
 \end{itemize}
 
 \section{Stochastic Integrals}
@@ -437,7 +582,7 @@ And I have to admit that I have no idea what this equation is about. This note i
     \dee\ve{X}(t) &= \ve{b}(\ve{X}(t), t)\, \dee t + B(\ve{X}(t), t)\, \dee\ve{W}(t) \\
     \ve{X}(0) &= \ve{x}_0
   \end{align*}
-  where $\ve{X}(t)$ is a stochastic process, and $\ve{W}(t)$ is the standard Brownian motion in $\Real^n$.
+  where $\ve{X}(t)$ is a stochastic process, and $\ve{W}(t)$ is the standard Brownian motion in $\Real^d$.
 
   \item We said in the introduction that the solution would be
   \begin{align*}
@@ -473,17 +618,38 @@ And I have to admit that I have no idea what this equation is about. This note i
   \end{align*}
   Hence, the integral $\int \ve{G}(t)\, \dee\ve{W}(t)$ that we want to compute would correspond to $\int \ve{G}(t)\ves{\xi}(t) \, \dee t$, and the form $\ve{G}(t)\ves{\xi}(t)$ is the one we started our modeling with.
 
-  \item It is tempting to use the Riemann--Stieltjes integral to define the stochastic integral. However, the existence of the Riemann--Stieltjes integrals rests on the premise that $\mcal{S}(f, \alpha, \mcal{P}^{(n)})$ does not change based on the choise of $\tau^{(n)}_j$ as we take the limit. This is true for deterministic functions, but is not true for the Brownian motion.
+  \item It is tempting to use the Riemann--Stieltjes integral to define the stochastic integral. However, the existence of the Riemann--Stieltjes integrals rests on the premise that $\mcal{S}(f, \alpha, \mcal{P}^{(n)})$ does not change based on the choice of $\tau^{(n)}_j$ as we take the limit. This is true for deterministic functions, but is not true for the Brownian motion.
+
+  \item Before we go ahead to demonstrate that the value of $\mcal{S}(f, \alpha, \mcal{P}^{(n)})$ depends on the particular choise of $\tau^{(n)}_j$ we make, let us remind ourselves of the notion of convergence or random variables that we will use.
   
-  \item In fact, one can show that, for any $0 \leq \lambda \leq 1$, one can show that, if we pick
+  \begin{definition}
+    Let $(\Omega, \mcal{F}, P)$ be a probability space. Let $X: \Omega \rightarrow \Real$ be a real-value random variable. The {\bf $\mcal{L}^p$-norm of $X$} is given by
+    \begin{align*}
+      \| X \|_p = \Big( E[ |X|^p ] \Big)^{1/p} = \bigg( \int_\Omega |X|^p\, \dee P \bigg)^{1/p}.
+    \end{align*}    
+  \end{definition}
+
+  \begin{definition}
+    Let $\mcal{L}^p(\Omega, \mcal{F}, P)$ denote the set of random variables $X$ such that $\| X \|_p < \infty$.    
+  \end{definition}
+
+  \begin{definition}
+    Let $\{ X_n \}_{n=1}^\infty$ be a sequence of random variables in $\mcal{L}^p(\Omega, \mcal{F}, P)$. Let $X$ be another random variable in $\mcal{L}^p(\Omega, \mcal{F}, P)$. We say that $\{ X_n \}_{n=1}^\infty$ {\bf converges to $X$ in $\mcal{L}^p$} if
+    \begin{align*}
+      \lim_{n \rightarrow \infty} \| X_n - X \|_p = 0.
+    \end{align*}
+    We write $X_n \xrightarrow[]{\mcal{L}^p} X$ to denote this fact.
+  \end{definition}
+  
+  \item With the notion of convergence defined, one can show that, for any $0 \leq \lambda \leq 1$, if we pick
   \begin{align*}
     \tau_{j}^{(n)} = (1-\lambda) t_{j-1}^{(n)} + \lambda t_{j}^{(n)},
   \end{align*}
   then
   \begin{align*}
-    \lim_{\substack{ n \rightarrow \infty \\ |\mcal{P}^{(n)}| \rightarrow 0 }} \mcal{S}(W, W, \mcal{P}^{(n)}) = \frac{(W(T))^2}{2} + \bigg( \lambda - \frac{1}{2} \bigg) T
+    \mcal{S}(W, W, \mcal{P}^{(n)}) \xrightarrow[]{\mcal{L}^2} \frac{(W(T))^2}{2} + \bigg( \lambda - \frac{1}{2} \bigg) T
   \end{align*}
-  when $\{ \mcal{P}^{(n)} \}_{n=1}^\infty$ partitions $[0,T]$.
+  where $\{ \mcal{P}^{(n)} \}_{n=1}^\infty$ is a sequence of nested partition of $[0,T]$ such that $|\mcal{P}^{(n)}| \rightarrow 0$, and $W$ is the standard Brownian motion. See the proof in the appendix (Proposition~\ref{thm:w-dw-integral}).
 
   \item It\^{o}'s definition of stochastic integral uses $\lambda = 0$. So, 
   \begin{align*}
@@ -499,69 +665,144 @@ And I have to admit that I have no idea what this equation is about. This note i
   \begin{itemize}
     \item[(a)] Integration with respect to a function as done in the Riemann--Stieltjes integral.
     \item[(b)] Approximation by simple functions as used in the Lebesgue integral.
-    \item[(c)] Fixing $\tau_{j}^{(n)} = t_{j}^{(n)}$ (i.e., $\lambda = 0$) as discussed above.
+    \item[(c)] Fixing $\tau_{j}^{(n)} = t_{j}^{(n)}$ (i.e., $\lambda = 0$) as discussed above when defining the integral of simple functions.
   \end{itemize}
   Using (a) and (b) together gets you the ``Lebesgue--Stieltjes integral,'' adding (c) yields the It\^{o} integral.
 
   \item First, however, we need to discuss the class of stochastic processes $G$ upon which the integral $\int G\, \dee W$ can be defined.
-  
+
   \item \begin{definition}
-    A stochastic process $\{ X(t, \omega): t \geq 0, \omega \in \Omega \}$ defined on a probability space $(\Omega, \Sigma, P)$ that is adapted to a filtration $\{ \Sigma(t) : t \geq 0 \}$ is called {\bf progressively measurable} if, for each $t \geq 0$, the mapping $X: [0,t] \times \Omega \rightarrow \Real$ is measurable with respect to the $\sigma$-algebra $\mcal{B}([0,,1]) \times \Sigma(t)$.
+    A stochastic process $\ve{X}: [0, \infty) \times \Omega \rightarrow \Real^d$ defined on a probability space $(\Omega, \mcal{F}, P)$ is called {\bf progressively measurable} with respect to the filtration $\{ \mcal{F}(t) : t \geq 0 \}$ if, for each $t \geq 0$, the mapping $\ve{X}: [0,t] \times \Omega \rightarrow \Real^d$ is measurable with respect to the $\sigma$-algebra $\mcal{B}([0,t]) \times \mcal{F}(t)$.
   \end{definition}
+
+  \item Note that being progressively measurable implies being adapted.
 
   \item \begin{lemma}
     Any process which is adapted and is either right or left continuous is progressively measurable.
   \end{lemma}
 
-  \item We then proceeed with the definition of simple functions in the context of stochastic processes.
+  \item We then proceed with the definition of simple functions in the context of stochastic processes.
   
   \begin{definition}
-    A {\bf step process on $[0,T]$} is a real-valued stochastic process $\{ H(t,\omega) : t \geq 0, \omega \in \Omega \}$ of the form
+    A {\bf step process on $[0,T]$ adapted to filteration $\{ \mcal{F}_t : t \geq 0\}$ } is a real-valued stochastic process $H: [0,T] \times \Omega \rightarrow \Real$ of the form
     \begin{align*}
-      H(t,\omega) = \sum_{i=1}^k A_i(\omega) \chi_{[t_{i}, t_{i+1})}(t)
+      H(t,\omega) = \sum_{i=1}^k A_i(\omega) \one_{[t_{i}, t_{i+1})}(t)
     \end{align*}
-    where $0 = t_1 \leq t_2 \leq \dotsb \leq t_{k+1} = T$, $A_i$ is a $\Sigma(t)$-measurable random variable (which only depends on $\omega$), and $\chi_{[t_{i-1}, t_{i+1})}(t)$ is the charactistic function of the interval $[t_{i}, t_{i+1})$. That is,
-    \begin{align*}
-      \chi_{[t_{i}, t_{i+1})}(t) = \begin{cases}
-        1, & t_{i} \leq t < t_{i+1} \\
-        0, & \mbox{otherwise}
-      \end{cases}.
-    \end{align*}        
+    where 
+    \begin{itemize}
+      \item $0 = t_1 \leq t_2 \leq \dotsb \leq t_{k+1} = T$,
+      \item $A_i$ is a random variable that is $\mcal{F}(t_i)$-measurable, and 
+      \item $\one_{[t_{i-1}, t_{i+1})}(t)$ is the indicator function of the interval $[t_{i}, t_{i+1})$. That is,
+      \begin{align*}
+        \one_{[t_{i}, t_{i+1})}(t) = \begin{cases}
+          1, & t_{i} \leq t < t_{i+1} \\
+          0, & \mbox{otherwise}
+        \end{cases}.
+      \end{align*}  
+    \end{itemize}      
   \end{definition}
 
-  Note that a step process only takes finitely many values.
+  Note that the path of a step process takes only finitely many values.
+
+  \item Because a step process is adapted to $\{ \mcal{F}(t) : t \geq 0 \}$ and is left continous, it is progressively measurable.
 
   \item \begin{definition}
-    Let $\{H(t,\omega): t \geq 0, \omega \in \Omega\}$ be a real-valued progressively measurable step process on $[0,T]$ defined on a probability space $(\Omega,\Sigma,P)$ with filtration $\{ \Sigma(t): t \geq 0 \}$ to which the standard Brownian motion $\{W(t) : t \geq 0\}$ is adapted. Define the {\bf It\^{o} integral of $H$ with respect to $W$} to be
+    Let $H$ be a real-valued step process on $[0,T]$ adapted to the natural filtration $\{ \mcal{F}(t): t \geq 0 \}$ of the standard Brownian motion $W$. Define the {\bf It\^{o} integral of $H$ with respect to $W$} to be
     \begin{align*}
       \int_0^T H(t)\, \dee W(t) = \sum_{i=1}^k A_i ( W(t_{i+1}) - W(t_{i})).
     \end{align*}    
   \end{definition}
 
-  \item The definition of the Lebegue integral relies on the fact that every measurable function has a sequence of simple functions that converges to it. The construcion involes a series of increasing and non-negative step functions, which converges as a result of the monotone convergence theorem. The construction of the It\^{o} integral, however, typically uses a different notion of convergence: convergence in the $L^2$ norm.
-  
+  \item For a step process $H$ on $[0,T]$, its It\^{o} integral $\int_0^T H\, \dee W$ is a random variable that maps a member $\omega \in \Omega$ to a real number.
+
   \item \begin{definition}
-    Let $\{H(t) : t \geq 0\}$ be a real-valued stochastic process. The {\bf $L^p$ norm of $H$ on $[0,T]$} is given by
+    Let $\{H(t) : t \geq 0\}$ be a real-valued stochastic process. The {\bf $\mcal{L}^p$ norm of $H$ on $[0,T]$} is given by
     \begin{align*}
       \| H \|_p = \bigg( E \bigg[ \int_0^T |H(t)|^p\, \dee t \bigg] \bigg)^{1/p}
     \end{align*}
-    where the integration on the RHS is the Lebesgue integral on the real line performed on a sample path of $H$. We denote by $\mcal{L}^p(0,T)$ the space of all real-valued, progressively measurable stochastic process $H$ such that $\| H \|_p < \infty$.    
+    where the integration on the RHS is the Lebesgue integral on the real line performed on a sample path of $H$ with respect to the Borel measure on $\Real$.
   \end{definition}
 
+  \item \begin{definition}
+    We denote by $\mathbb{L}^p(0,T)$ the set of all real-valued, progressively measurable stochastic process $H$ such that $\| H \|_p < \infty$.    
+  \end{definition}
+
+  \item \begin{definition}
+    For all constants, $a, b \in \Real$ and for all step processes $G, H \in \mathbb{L}^2(0,T)$, the following identities hold.
+    \begin{align*}
+      \int_0^T aG + bH\, \dee W &= a \int_0^T G\, \dee W + b \int_0^T H\, \dee W. \\
+      E\bigg[ \int_0^T G\, \dee W \bigg] &= 0. \\
+      E\bigg[ \bigg( \int_0^T G\, \dee W \bigg)^2 \bigg] &= 
+      E\bigg[ \int_0^T G^2\, \dee t \bigg]
+    \end{align*}    
+  \end{definition}
+
+  \item The third identity above is very important. It gives a sense that $(\dee W)^2 = \dee t$, which agrees with the fact that $E[W^2(t)] = t$. This will show up again when we discuss the It\^{o}'s chain rule. 
+  
+  \item More over, it implies two more facts.
+  
+  \begin{proposition}
+    If $H$ be a step process in $\mathbb{L}^2(0,T)$, then $\int_0^T H\, \dee W \in \mcal{L}^2(\Omega, \mcal{F}, P)$.
+  \end{proposition}
+
+  \begin{proof}
+    We have that
+    \begin{align*}
+      E\bigg[ \bigg( \int_0^T H \dee W \bigg)^2 \bigg] = E \bigg[ \int H^2\, \dee t \bigg] = \| H \|_2^2 < \infty.
+    \end{align*}
+    This implies that
+    \begin{align*}
+      \bigg\| \int_0^T H \dee W \bigg\|_2
+      = \bigg( E\bigg[ \bigg( \int_0^T H \dee W \bigg)^2 \bigg] \bigg)^{1/2}
+      < \infty
+    \end{align*}
+    as required.
+  \end{proof}
+
+  \begin{proposition}
+    If $G$ and $H$ are step processes in $\mathbb{L}^2(0,T)$, then 
+    \begin{align*}
+      \bigg\| \int G\, \dee W - \int H\, \dee H  \bigg\|_2
+      = \| G - H \|_2.
+    \end{align*}
+  \end{proposition}
+
+  \begin{proof}
+    We have that
+    \begin{align*}
+      \bigg\| \int G\, \dee W - \int H\, \dee H  \bigg\|_2
+      &= E\bigg[ \bigg( \int_0^T G\, \dee W - \int_0^T H \, \dee W \bigg)^2 \bigg] \\
+      &= E\bigg[ \bigg( \int_0^T (G - H) \, \dee W \bigg)^2 \bigg] \\
+      &= E\bigg[ \int_0^T (G - H)^2\, \dee t \bigg]\\
+      &= \| G - H \|_2^2
+    \end{align*}
+    as required.
+  \end{proof}
+
+  \item The definition of the Lebegue integral relies on the fact that every measurable function has a sequence of simple functions that converges to it. The construcion involes a series of increasing and non-negative step functions, which converges as a result of the monotone convergence theorem. The construction of the It\^{o} integral, however, typically uses a different notion of convergence: convergence in the $\mcal{L}^2$ norm.
+
   \item \begin{lemma}
-    If $G \in \mcal{L}^2(0,T)$, there exists a sequence of bounded step processes $\{H^{(n)} \}_{n=1}^\infty$ in $\mcal{L}^2(0,T)$ such that
+    If $G \in \mathbb{L}^2(0,T)$, there exists a sequence of bounded step processes $\{H^{(n)} \}_{n=1}^\infty$ in $\mathbb{L}^2(0,T)$ such that
     $\lim_{n \rightarrow 0} \| G - H^{(n)} \|_2 = 0$.    
   \end{lemma}
 
   \item \begin{definition}
-    Let $G \in \mcal{L}^2(0,T)$. The {\bf It\^{o} integral of $G$ on $[0,T]$} is defined to be
+    Let $G \in \mathbb{L}^2(0,T)$. Let $\{H^{(n)} \}_{n=1}^\infty$ be a sequence of bounded step processes in $\mathbb{L}^2(0,T)$ such that $\lim_{n \rightarrow 0} \| G - H^{(n)} \|_2 = 0$. We have that the It\^{o} integrals $\int_0^T H^{(n)}\, \dee W$, as random variables, would converge in $\mcal{L}^2$ to a random variable. The {\bf It\^{o} integral of $G$ on $[0,T]$} is defined to that limit. In other words,
     \begin{align*}
-      \int_0^T G\, \dee W = \lim_{n \rightarrow 0} \int_0^T H^{(n)}\, \dee W
-    \end{align*}
-    where $\{H^{(n)} \}_{n=1}^\infty$ is a sequence of step processes in $\mcal{L}^2(0,T)$ such that $\lim_{n \rightarrow 0} \| G - H^{(n)} \|_2 = 0$. The integral defined in this way does not depend on the particular sequence of step processes used to approximate $G$.
+      \int_0^T G\, \dee W = \lim_{n \rightarrow 0} \int_0^T H^{(n)}\, \dee W.
+    \end{align*}    
   \end{definition}
   
-  \item We have defined the It\^{o} integrals for functions in $\mcal{L}^2(0,T)$ whose every member $G$ satisfies
+  \item Note that the sequence $\Big\{ \int_0^T H^{(n)}\, \dee W \Big\}_{n=1}^\infty$ is Cauchy sequence of random variables in $L^2(\Omega, \mcal{F}, P)$. Because $L^2(\Omega, \mcal{F}, P)$ is complete, $\int_0^T H^{(n)}\, \dee W$  would converge to a random variable in $\mcal{L}^2(\Omega, \mcal{F}, P)$, and we define this random variable to be $\int_0^T G\, \dee W$. To repeat, the convergence here is the convergence in $\mcal{L}^2$ of random variables. In other words, we have that $\int_0^T G\, \dee W$ and $\int_0^T H^{(n)}\, \dee W$ are random variables, and
+  \begin{align*}
+    \int_0^T H^{(n)}\, \dee W \xrightarrow[]{\mcal{L}^2} \int_0^T G\, \dee W
+  \end{align*}
+  or
+  \begin{align*}
+    \lim_{n \rightarrow \infty} E\bigg[ \bigg( \int H^{(n)}\, \dee W - \int G\, \dee W \bigg)^2 \bigg] = 0.
+  \end{align*}  
+  
+  \item We have defined the It\^{o} integrals for functions in $\mathbb{L}^2(0,T)$ whose every member $G$ satisfies
   \begin{align*}
     E \bigg[\int_0^T G^2\, \dee t\bigg] < \infty.
   \end{align*}
@@ -569,10 +810,10 @@ And I have to admit that I have no idea what this equation is about. This note i
   \begin{align*}
     \int_0^T G^2\, \dee t < \infty \mbox{ almost surely.}
   \end{align*}
-  Notice that $\mcal{L}^2(0,T) \subseteq \mcal{M}^2(0,T)$ because, if the expectation is finite, then the probabily that $\int G^2\, \dee t = \infty$ must be $0$.
+  Notice that $\mathbb{L}^2(0,T) \subseteq \mcal{M}^2(0,T)$ because the probabily that $\int G^2\, \dee t = \infty$ must be $0$ if the expectation is finite.
 
   \item \begin{theorem} \label{theorem:ito-integral-properties}
-    For all constants $a, b \in \Real$ and for all $G, H \in \mcal{L}^2(0,T)$, we have that
+    For all constants $a, b \in \Real$ and for all $G, H \in \mathbb{L}^2(0,T)$, we have that
     \begin{align*}
       \int_0^T (aG + bH)\, \dee W &= a \int_0^T G\, \dee W + b \int_0^T H\, \dee W, \\
       E\bigg[ \int_0^T G\, \dee W \bigg] &= 0, \\
@@ -590,7 +831,7 @@ And I have to admit that I have no idea what this equation is about. This note i
     \begin{align*}
       X(r) = X(s) + \int_s^r F\, \dee t + \int_s^r G\, \dee W
     \end{align*}
-    for some $F \in \mcal{L}^1(0,T)$, $G \in \mcal{L}^2(0,T)$, and all times $0 \leq s \leq t \leq T$. We say that $X(t)$ has a {\bf stochastic differential}
+    for some $F \in \mathbb{L}^1(0,T)$, $G \in \mathbb{L}^2(0,T)$, and all times $0 \leq s \leq t \leq T$. We say that $X(t)$ has a {\bf stochastic differential}
     \begin{align*}
       \dee X = F\, \dee t + G\, \dee W
     \end{align*}
@@ -600,11 +841,35 @@ And I have to admit that I have no idea what this equation is about. This note i
   \item \begin{theorem}[It\^{o}'s chain rule]
     Suppose that $X(t)$ has a stochastic differential $\dee X = F\, \dee t + G\, \dee W$. Let $u: \Real \times [0,T] \rightarrow \Real$ be a constinuous function that $u(x,t)$ has continuous partial derivatives $$u_t = \frac{\partial u}{\partial t},\mbox{ }u_x = \frac{\partial u}{\partial x},\mbox{ and }\mu_{xx} = \frac{\partial^2 u}{\partial x^2}.$$ Then, $Y(t) = u(X(t),t)$ has a stochastic differential 
     \begin{align*}
-      \dee Y = \dee U(X,t) 
+      \dee Y = \dee u(X,t) 
       &= u_t\,\dee t + u_x\, \dee X + \frac{1}{2} u_{xx} G^2\, \dee t \\
       &= \bigg(u_t + u_x F + \frac{1}{2}u_{xx} G^2\bigg)\, \dee t + u_x G\, \dee W.
     \end{align*}
   \end{theorem}
+
+  \item Note that, for the conventional chain rule, we would have that
+  \begin{align*}
+    \dee Y = u_x\, \dee X + u_t\, \dee t 
+    = u_x (F\, \dee t + G\, \dee W) + u_t\, \dee t
+    = (u_x F + u_t)\, \dee t + G\, \dee W.
+  \end{align*}
+  The It\^{o}'s chain rule add the term $0.5 u_{xx} G^2\, \dee t$. To see why this is should be the case, let's expand $\dee Y$ with Taylor expansion.
+  \begin{align*}
+    \dee Y = u_x\, \dee X + u_t\, \dee t + \frac{1}{2!} \big(u_{xx}\, (\dee X)^2 + u_{xt}\, \dee X \dee t + u_{tt}\, (\dee t)^2 \big) + \frac{1}{3!} O\big((\dee X + \dee t)^3\big) + \dotsb
+  \end{align*}
+  When working with differentials, we consider $(\dee t)^2 = 0$ and $\dee W \dee t = 0$. However, as we learned earlier that $(\dee W)^2$ should be equal to $\dee t$ in a sense. So,
+  \begin{align*}
+    &u_{xx}\, (\dee X)^2 + u_{xt}\, \dee X \dee t + u_{tt}\, (\dee t)^2 \\
+    &= u_{xx} (F\,\dee t + G\,\dee W)^2 + u_{xt}(F\,\dee t + G\, \dee W)\dee t + u_{tt}\, (\dee t)^2 \\
+    &= u_{xx} (F^2\, (\dee t)^2 + FG\, \dee W \dee t + G^2\, (\dee W)^2) + u_{xt}(F\,(\dee t)^2 + G\, \dee W\dee t) + u_{tt}\,(\dee t)^2 \\
+    &= u_{xx}G^2\, (\dee W)^2 = u_xxG^2\, \dee t.
+  \end{align*}
+  For higher order terms, we will always have $\dee W \dee t$ or $(\dee t)^2$, so all those terms will be $0$. As a result,
+  \begin{align*}
+    \dee Y 
+    = u_x\, \dee X + u_t\, \dee t + \frac{1}{2} u_xx\, \dee t
+    = \bigg(u_t + u_x F + \frac{1}{2}u_{xx} G^2\bigg)\, \dee t + u_x G\, \dee W.
+  \end{align*}
 
   \item \begin{example}
     Let $X = W$, and $u(x) = x^m$. We have that $u_t(W) = 0$, $u_x(W) = mW^{m-1}$, and $u_{xx}(W) = m(m-1)W^{m-2}$. Moreover, $F = 0$ and $G = 1$, so the It\^{o}'s chain rule yields
@@ -622,14 +887,15 @@ And I have to admit that I have no idea what this equation is about. This note i
       dX_1 &= F_1\, \dee t + G_1\, \dee W \\
       dX_2 &= F_2\, \dee t + G_2\, \dee W
     \end{align*}
-    for $0 \leq t \leq dT$, $F_i \in \mcal{L}^1(0=,T)$, and $G_i \in \mcal{L}^2(0,T)$. Then,
+    for $0 \leq t \leq dT$, $F_i \in \mathbb{L}^1(0,T)$, and $G_i \in \mathbb{L}^2(0,T)$. Then,
     \begin{align*}
       \dee(X_1 X_2) = X_2\, \dee X_1 + X_1\, \dee X_2 + G_1G_2\, \dee t.
     \end{align*}
     The expression $G_1 G_2\, \dee t$ is called the {\bf It\^{o} correction term}.
   \end{theorem}
+  Again, we may ``derive'' the product rule through Taylor expansion and requiring that $(\dee W)^2 = \dee t$.
 
-  \item The integrated versino of the above expression gives the {\bf It\^{o} integration-by-parts formula.}
+  \item The integrated version of the above expression gives the {\bf It\^{o} integration-by-parts formula.}
   \begin{align*}
     \int_s^r X_2\, \dee X_1 = X_1(r)X_2(r) - X_1(s)X_2(s) - \int_r^s X_1\, \dee X_2 - \int_r^s G_1 G_2\, \dee t.
   \end{align*}
@@ -641,7 +907,7 @@ And I have to admit that I have no idea what this equation is about. This note i
     \begin{align*}
       \dee X_i = F_i\, \dee t + G_i\, \dee W
     \end{align*}
-    with $F_i \in \mcal{L}^1(0,T)$, $G_i \in \mcal{L}^2(0,T)$ for $i = 1, \dotsc, n$. If $u(x_1, x_2, \dotsc, x_n, t): \Real^n \times [0,T] \rightarrow \Real$ is a continuous function with continuous partial derivatives $u_t$, $u_{x_i}$, and $u_{x_i x_j}$ for $i,j = 1, 2, \dotsc, n$, then
+    with $F_i \in \mathbb{L}^1(0,T)$, $G_i \in \mathbb{L}^2(0,T)$ for $i = 1, \dotsc, n$. If $u(x_1, x_2, \dotsc, x_n, t): \Real^d \times [0,T] \rightarrow \Real$ is a continuous function with continuous partial derivatives $u_t$, $u_{x_i}$, and $u_{x_i x_j}$ for $i,j = 1, 2, \dotsc, n$, then
     \begin{align*}
       \dee u = u_t\, \dee t + \sum_{i=1}^n u_{x_i}\, \dee X_i + \frac{1}{2}\sum_{i,j} u_{x_i x_j} G_i G_j\, \dee t.
     \end{align*}
@@ -669,7 +935,7 @@ And I have to admit that I have no idea what this equation is about. This note i
     \end{align*}
   \end{lemma}
 
-  \item We let $\mcal{L}^2_{n}(0,T)$ to denote the set of vector-valued functions $\ve{F} = (F_1, F_2, \dotsc, F_n)$ where each $F_i$ is a member of $\mcal{L}^2(0,T)$. Also, let $\mcal{L}^2_{n \times m}(0,T)$ denote the set of matrix value function
+  \item We let $\mathbb{L}^2_{n}(0,T)$ to denote the set of vector-valued functions $\ve{F} = (F_1, F_2, \dotsc, F_n)$ where each $F_i$ is a member of $\mathbb{L}^2(0,T)$. Also, let $\mathbb{L}^2_{n \times m}(0,T)$ denote the set of matrix value function
   \begin{align*}
     G = [G_{ij}] = \begin{bmatrix}
       G_{11} & G_{12} & \cdots & G_{1m} \\
@@ -678,19 +944,19 @@ And I have to admit that I have no idea what this equation is about. This note i
       G_{n1} & G_{n2} & \cdots & G_{nm} 
     \end{bmatrix}    
   \end{align*}
-  where each $G_{ij}$ is a member of $\mcal{L}^2(0,T)$.
+  where each $G_{ij}$ is a member of $\mathbb{L}^2(0,T)$.
 
-  \item In this way, if $G \in \mcal{L}^2_{n\times m}(0,T)$ and $\mcal{W}$ is the $m$-dimensional Brownian motion, then
+  \item In this way, if $G \in \mathbb{L}^2_{n\times m}(0,T)$ and $\mcal{W}$ is the $m$-dimensional Brownian motion, then
   \begin{align*}
     \int_0^T G\, \dee\ve{W}
   \end{align*}
-  is an $\Real^n$-value random variable whose $i$-th component is
+  is an $\Real^d$-value random variable whose $i$-th component is
   \begin{align*} 
     \sum_{j=1}^m \int_0^T G_{ij}\, \dee W_j.
   \end{align*}
 
   \item \begin{lemma}
-    If $G \in \mcal{L}_{n\times m}^2(0,T)$, then
+    If $G \in \mathbb{L}_{n\times m}^2(0,T)$, then
     \begin{align*}
       E\bigg[ \int_0^T G\, \dee\ve{W} \bigg] = \ve{0},
     \end{align*}
@@ -724,7 +990,7 @@ And I have to admit that I have no idea what this equation is about. This note i
   for all $i = 1, 2, \dotsc, n$.
 
   \item \begin{lemma}[It\^{o}'s chain rule in $n$-dimension]
-    Suppose that $$\dee \ve{X} = \ve{F}\, \dee t + \ve{G}\, \dee\ve{W}.$$ Let $u : \Real^n \times [0,T]$ be a continuous function with continuous partial derivatives $u_t$, $u_{x_i}$, and $u_{x_i x_j}$ for $i,j = 1, 2, \dotsc, n$. Then,
+    Suppose that $$\dee \ve{X} = \ve{F}\, \dee t + \ve{G}\, \dee\ve{W}.$$ Let $u : \Real^d \times [0,T]$ be a continuous function with continuous partial derivatives $u_t$, $u_{x_i}$, and $u_{x_i x_j}$ for $i,j = 1, 2, \dotsc, n$. Then,
     \begin{align*}
       \dee(u(\ve{X}(t), t)) = u_t\ \dee t + \sum_{i=1}^n u_{x_i}\dee X_i + \frac{1}{2} \bigg( \sum_{i=1}^n \sum_{j=1}^n u_{x_i x_j} \sum_{l=1}^m G_{il}G_{jl} \bigg)\, \dee t.
     \end{align*}
@@ -746,16 +1012,16 @@ And I have to admit that I have no idea what this equation is about. This note i
 
 \begin{itemize}
   \item \begin{definition}
-    Let $\ve{W}$ be the $m$-dimensinal Brownian motion and $\ve{X}_0$ be a random variable that is independent of $\ve{W}$. We say that an $\Real^n$-valued stochastic process $\{ \ve{X} : 0 \leq t \leq T \}$ is a solution of the differential equation
+    Let $\ve{W}$ be the $m$-dimensinal Brownian motion and $\ve{X}_0$ be a random variable that is independent of $\ve{W}$. We say that an $\Real^d$-valued stochastic process $\{ \ve{X} : 0 \leq t \leq T \}$ is a solution of the differential equation
     \begin{align*}
       \dee\ve{X} &= \ve{b}(\ve{X},t)\, \dee t + B(\ve{X},t)\, \dee\ve{W} \\
       \ve{X}(0) &= \ve{X}_0
     \end{align*}        
     for $0 \leq t \leq T$ if the following conditions are satisfied.
     \begin{enumerate}      
-      \item $\ve{X}(t)$ is progressively measurable with respect the filtration $\{ \Sigma(t) : 0 \leq t \leq T \}$ where $\Sigma(t)$ denotes $\sigma(\ve{X}_0, \ve{W}(s) : 0 \leq s \leq t)$, which is the $\sigma$-algebra generated by $\ve{X}_0$ and $\ve{W}(\cdot)$ up to time $t$.
-      \item $\ve{b}(\ve{X}(t), t) \in \mcal{L}^1_n(0,T)$.
-      \item $B(\ve{X}(t), t) \in \mcal{L}^2_{n \times m}(0,T)$.
+      \item $\ve{X}(t)$ is progressively measurable with respect the filtration $\{ \mcal{F}(t) : 0 \leq t \leq T \}$ where $\mcal{F}(t)$ denotes $\sigma(\ve{X}_0, \ve{W}(s) : 0 \leq s \leq t)$, which is the $\sigma$-algebra generated by $\ve{X}_0$ and $\ve{W}(\cdot)$ up to time $t$.
+      \item $\ve{b}(\ve{X}(t), t) \in \mathbb{L}^1_n(0,T)$.
+      \item $B(\ve{X}(t), t) \in \mathbb{L}^2_{n \times m}(0,T)$.
       \item For all time $0 \leq t \leq T$, we have that
       \begin{align*}
         \ve{X}(t) = \ve{X}_0 + \int_0^t\ve{b}(\ve{X}(s), s)\, \dee s + \int_0^t B(\ve{X}(s), s)\, \dee\ve{W}(s)
@@ -870,15 +1136,21 @@ And I have to admit that I have no idea what this equation is about. This note i
 \subsection{Properties of Solution}
 
 \begin{itemize}
+  \item The first thing we have to worry about stochastic different equations is whether a solution exist or not. We know that $\ve{X}$ must satisfy
+  \begin{align*}
+    \ve{X}(t) = \ve{X}_0 + \int_0^t\ve{b}(\ve{X}(s), s)\, \dee s + \int_0^t B(\ve{X}(s), s)\, \dee\ve{W}(s).
+  \end{align*}
+  One of the problem with the above expression is that we don't know what $\ve{X}$ is, so we don't know whether $\int_0^t\ve{b}(\ve{X}(s), s)\, \dee s$ and $\int_0^t B(\ve{X}(s), s)\, \dee\ve{W}(s)$ are even well defined. The following theorem gives us a sufficient condition for the solution to exist.
+
   \item \begin{theorem} \label{theorem:existence-and-uniqueness-of-solution}
-    Let $\ve{b}: \Real^n \times [0,T] \rightarrow \Real^n$ and $B: \Real^n \times [0,T] \rightarrow \Real^{m \times n}$ be uniformly Lipschitz continuous, meaning that there exists a constant $L$ such that
+    Let $\ve{b}: \Real^d \times [0,T] \rightarrow \Real^d$ and $B: \Real^d \times [0,T] \rightarrow \Real^{m \times n}$ be uniformly Lipschitz continuous, meaning that there exists a constant $L$ such that
     \begin{align*}
       \| \ve{b}(\ve{x},t) - \ve{b}(\ve{y},t) \| &\leq L\| \ve{x} - \ve{y} \| \\
       \| B(\ve{x},t) - B(\ve{y},t) \| &\leq L\| \ve{x} - \ve{y} \| \\
       \| \ve{b}(\ve{x},t) \| &\leq L(1 + \| \ve{x} \|) \\
       \| B(\ve{x},t) \| &\leq L(1 + \| \ve{x} \|)
     \end{align*}
-    for all $0 \leq t \leq T$, $\ve{x}, \ve{y} \in \Real^n$. Let $\ve{X}_0$ be a random variable such that $E[\| \ve{X}_0\|^2] < \infty$ that is independent of the $m$-dimensional Brownian motion $\ve{W}(\cdot)$. Then, there exists a unique solution $\ve{X} \in \mcal{L}^2(0,T)$ of the stochastic differential equation
+    for all $0 \leq t \leq T$, $\ve{x}, \ve{y} \in \Real^d$. Let $\ve{X}_0$ be a random variable such that $E[\| \ve{X}_0\|^2] < \infty$ that is independent of the $m$-dimensional Brownian motion $\ve{W}(\cdot)$. Then, there exists a unique solution $\ve{X} \in \mathbb{L}^2(0,T)$ of the stochastic differential equation
     \begin{align*}
       \dee \ve{X} &= \ve{b}(\ve{X},t)\, \dee t + B(\ve{X}, t)\, \dee\ve{W} \\
       \ve{X}(0) &= \ve{X}_0
@@ -894,7 +1166,7 @@ And I have to admit that I have no idea what this equation is about. This note i
       \ve{X}^{(n+1)} \gets \ve{X}_0 + \int_{0}^t \ve{b}(\ve{X}^{(n)}(s), s)\, \dee s + \int_0^t B(\ve{X}^{(n)}(s), s)\, \dee\ve{W}.
     \end{align*}
   \end{enumerate}
-  The proof of the above theorem involves showing that the sequence $\{ \ve{X}^{(n)} \}_{n=0}^\infty$ coverges in the $L^2$ norm to a function in $\mcal{L}^2(0,T)$, which clearly solves the SDE.
+  The proof of the above theorem involves showing that the sequence $\{ \ve{X}^{(n)} \}_{n=0}^\infty$ coverges in the $L^2$ norm to a function in $\mathbb{L}^2(0,T)$, which clearly solves the SDE.
 
   \item \begin{theorem}
     The probability density $p(\ve{X},t)$ of the solution of the SDE in Theorem~\ref{theorem:existence-and-uniqueness-of-solution} solves the partial differential equation
@@ -953,6 +1225,96 @@ And I have to admit that I have no idea what this equation is about. This note i
   
   \item More sophisticated methods include the Milstein method and the stochastic Runge--Kutta method, but we are not discussing them here in this note.
 \end{itemize}
+
+\appendix
+
+\section{Proofs}
+
+\begin{itemize}
+  \item \begin{proposition} \label{thm:w-dw-integral}
+    Let $W$ be the standard Brownian motion. Let $\{ \mcal{P}^{(n)} \}_{n=1}^\infty$ be a sequence of nested partition of $[0,T]$ such that $\mcal{P}^{(n)} \rightarrow 0$. Let $\lambda \in (0,1)$. Pick 
+    \begin{align*}
+      \tau_{j}^{(n)} = (1-\lambda) t_{j-1}^{(n)} + \lambda t_{j}^{(n)}.
+    \end{align*}
+    Then,
+    \begin{align*}      
+      \mcal{S}(W, W, \mcal{P}^{(n)}) \xrightarrow[]{\mcal{L}^2} \frac{(W(T))^2}{2} + \bigg( \lambda - \frac{1}{2} \bigg) T.
+    \end{align*}    
+  \end{proposition}
+  \begin{proof}
+    We have that
+    \begin{align*}
+      \mcal{S}(W,W,\mcal{P}^{(n)})
+      &= \sum_{j=1}^n W(\tau_j^{(n)}) \Big( W(t_{j}^{(n)}) - W(t_{j-1}^{(n)})\Big) \\
+      &= \sum_{j=1}^n W(\tau_j^{(n)}) \Big( W(t_{j}^{(n)}) - W(\tau_j^{(n)}) + W(\tau_j^{(n)}) - W(t_{j-1}^{(n)})\Big) \\
+      &= \sum_{j=1}^n \bigg( W(\tau_j^{(n)}) \Big( W(t_{j}^{(n)}) - W(\tau_j^{(n)}) \Big) + W(\tau_j^{(n)}) \Big( W(\tau_j^{(n)}) - W(t_{j-1}^{(n)})\Big) \bigg).
+    \end{align*}
+    Consider the $W(\tau_j^{(n)}) \Big( W(t_{j}^{(n)}) - W(\tau_j^{(n)}) \Big)$ term. We have that
+    \begin{align*}
+      & W(\tau_j^{(n)}) \Big( W(t_{j}^{(n)}) - W(\tau_j^{(n)}) \Big) \\
+      &= W(\tau_j^{(n)})W(t_{j}^{(n)}) - W(\tau_j^{(n)})^2 \\
+      &= \frac{1}{2} W(t^{(n)}_j)^2 - \frac{1}{2} W(t^{(n)}_j)^2 + W(\tau_j^{(n)})W(t_{j}^{(n)}) - \frac{1}{2} W(\tau_j^{(n)})^2 - \frac{1}{2} W(\tau_j^{(n)})^2 \\
+      &= \frac{1}{2} W(t^{(n)}_j)^2 - \frac{1}{2}\Big( W(t^{(n)}_j) - W(\tau^{(n)}_j )\Big)^2 - \frac{1}{2} W(\tau^{(n)}_j)^2.
+    \end{align*}
+    For the $W(\tau_j^{(n)}) \Big( W(\tau_j^{(n)}) - W(t_{j-1}^{(n)})\Big)$ term, we have that
+    \begin{align*}
+      &W(\tau_j^{(n)}) \Big( W(\tau_j^{(n)}) - W(t_{j-1}^{(n)})\Big) \\
+      &= W(\tau_j^{(n)})^2 - W(\tau_j^{(n)})W(t_{j-1}^{(n)}) \\
+      &= \frac{1}{2} W(\tau_j^{(n)})^2 + \frac{1}{2} W(\tau_j^{(n)})^2 - W(\tau_j^{(n)})W(t_{j-1}^{(n)}) + \frac{1}{2} W(t_{j-1}^{(n)})^2 - \frac{1}{2} W(t_{j-1}^{(n)})^2 \\
+      &= \frac{1}{2} W(\tau_j^{(n)})^2 
+      + \frac{1}{2}\Big( W(\tau^{(n)}_j) - W(t^{(n)}_{j-1} )\Big)^2 
+      - \frac{1}{2} W(t_{j-1}^{(n)})^2.
+    \end{align*}
+    As a result,
+    \begin{align*}
+      &\mcal{S}(W,W,\mcal{P}^{(n)}) \\
+      &= \sum_{j=1}^n \bigg( \frac{1}{2}W(t^{(n)}_j)^2 - \frac{1}{2}\Big( W(t^{(n)}_j) - W(\tau^{(n)}_j )\Big)^2 + \frac{1}{2}\Big( W(\tau^{(n)}_j) - W(t^{(n)}_{j-1} )\Big)^2 - \frac{1}{2}W(t^{(n)}_{j-1})^2 \bigg)\\
+      &= \frac{1}{2}W(t_n^{(n)})^2 - \frac{1}{2}W(t_0^{(n)})^2 - \frac{1}{2} \sum_{j=1}^n \bigg( \Big( W(t^{(n)}_j) - W(\tau^{(n)}_j )\Big)^2 - \Big( W(\tau^{(n)}_j) - W(t^{(n)}_{j-1} )\Big)^2  \bigg) \\
+      &= \frac{1}{2} W(t)^2 - \frac{1}{2} \sum_{j=1}^n \bigg( \Big( W(t^{(n)}_j) - W(\tau^{(n)}_j )\Big)^2 - \Big( W(\tau^{(n)}_j) - W(t^{(n)}_{j-1} )\Big)^2  \bigg).
+    \end{align*}
+    Let
+    \begin{align*}
+      Q^{(n)}(\lambda) := \sum_{j=1}^n \bigg( \Big( W(t^{(n)}_j) - W(\tau^{(n)}_j )\Big)^2 - \Big( W(\tau^{(n)}_j) - W(t^{(n)}_{j-1} )\Big)^2  \bigg).
+    \end{align*}
+    We have that
+    \begin{align*}
+      E[Q^{(n)}(\lambda)]
+      &= \sum_{j=1}^n \bigg( E\Big[ \Big( W(t^{(n)}_j) - W(\tau^{(n)}_j )\Big)^2 \Big] - E\Big[ \Big( W(\tau^{(n)}_j) - W(t^{(n)}_{j-1} )\Big)^2 \Big]  \bigg) \\
+      &= \sum_{j=1}^n \bigg( (t_j^{(n)} - \tau_j^{(n)}) - (\tau_j^{(n)} - t^{(n)}_{j-1}) \bigg) 
+      = \sum_{j=1}^n \Big( t_j^{(n)} + t_{j-1}^{(n)} - 2\tau_j^{(n)} \Big) \\
+      &= \sum_{j=1}^n \Big( t_j^{(n)} + t_{j-1}^{(n)} - 2\big( (1-\lambda)t_{j-1}^{(n)} + \lambda t_{j}^{(n)} \big) \Big)
+      = \sum_{j=1}^n (1 - 2\lambda)(t_j^{(n)} - t_{j-1}^{(n)}) \\
+      &= (1-2\lambda) (t_n^{(n)} - t_0^{(n)}) = (1 - 2\lambda) T.
+    \end{align*}
+    Also,
+    \begin{align*}
+      \Var(Q^{(n)}(\lambda))
+      &= \sum_{j=1}^n \Var\bigg( \Big( W(t^{(n)}_j) - W(\tau^{(n)}_j )\Big)^2 \bigg)
+      + \sum_{j=1}^n \Var\bigg( \Big( W(\tau^{(n)}_j) - W(t^{(n)}_{j-1} )\Big)^2 \bigg) \\
+      &= \sum_{j=1}^n E\bigg[ \Big( W(t^{(n)}_j) - W(\tau^{(n)}_j )\Big)^4 \bigg] - \sum_{j=1}^n E\bigg[ \Big( W(t^{(n)}_j) - W(\tau^{(n)}_j )\Big)^2 \bigg]^2 \\
+      &\quad + \sum_{j=1}^n E\bigg[ \Big( W(\tau^{(n)}_j) - W(t^{(n)}_{j-1} )\Big)^4 \bigg] 
+      - \sum_{j=1}^n E\bigg[ \Big( W(\tau^{(n)}_j) - W(t^{(n)}_{j-1} )\Big)^2 \bigg]^2 \\
+      &= \sum_{j=1}^n 3(t_j^{(n)} - \tau_j^{(n)})^2 - \sum_{j=1}^n (t_j^{(n)} - \tau_j^{(n)})^2 + \sum_{j=1}^n 3(\tau_j^{(n)} - t_{j-1}^{(n)})^2 - \sum_{j=1}^n (\tau_j^{(n)} - t_{j-1}^{(n)})^2\\ 
+      &= 2 \sum_{j=1}^n (t_j^{(n)} - \tau_j^{(n)})^2  + 2 \sum_{j=1}^n (\tau_j^{(n)} - t_{j-1}^{(n)})^2 \\
+      &\leq 2 |\mcal{P}^{(n)}| \sum_{j=1}^n (t_j^{(n)} - \tau_j^{(n)})
+      + 2 |\mcal{P}^{(n)}| \sum_{j=1}^n (\tau_j^{(n)} - t_{j-1}^{(n)}) \\
+      &= 2 |\mcal{P}^{(n)}| T.
+    \end{align*}
+    So, as $n \rightarrow \infty$ and $|\mcal{P}^{(n)}| \rightarrow 0$, we have that $\Var(Q^{(n)}(\lambda)) \rightarrow 0$. This means that 
+    \begin{align*}
+      \lim_{n \rightarrow \infty} E\bigg[ \bigg( Q^{(n)}(\lambda) - \bigg( \lambda - \frac{1}{2} \bigg)T \bigg)^2 \bigg] &= 0 \\
+      \lim_{n \rightarrow \infty} E\bigg[ \bigg( \frac{W(T)^2}{2} + Q^{(n)}(\lambda) - \frac{W(T)^2}{2} - \bigg( \lambda - \frac{1}{2} \bigg)T \bigg)^2 \bigg] &= 0 \\
+      \lim_{n \rightarrow \infty} E\bigg[ \bigg( \mcal{S}(W,W,\mcal{P}^{(n)}) - \frac{W(T)^2}{2} - \bigg( \lambda - \frac{1}{2} \bigg)T \bigg)^2 \bigg] &= 0      
+    \end{align*}
+    In other words,
+    \begin{align*}
+      \mcal{S}(W,W,\mcal{P}^{(n)}) \xrightarrow[]{\mcal{L}^2} 
+      \frac{W(T)^2}{2} + \bigg( \lambda - \frac{1}{2} \bigg)T
+    \end{align*}
+    as required.
+  \end{proof}
+\end{itemize}
+
 \bibliographystyle{apalike}
 \bibliography{sde-primer}  
 \end{document}
