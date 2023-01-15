@@ -87,10 +87,12 @@ This note is written as I read ``Elucidating the Design Space of Diffusion-Based
 
 \section{A Common Framework for Diffusion Models}
 
+\subsection{Preliminary}
+
 \begin{itemize}
   \item Let each data item be a vector in $\Real^d$. We typically denote one with the letter $\ve{x}$.
   
-  \item Let $p_{\data}(\ve{x})$ denote the data distribution.
+  \item Let $p_{\data}(\ve{x})$ denote the data distribution. Let $\sigma_{\data}$ denotes the standard deviation of the ata.
   
   \item All diffusion model works with the distribution $p(\ve{x};\sigma)$ obtained by adding i.i.d. Gaussian noise of standard deviation $\sigma$ to the data sampled from $p_{\data}$.
   \begin{itemize}
@@ -105,12 +107,221 @@ This note is written as I read ``Elucidating the Design Space of Diffusion-Based
     \item Given a point $\ve{x}_t$ that comes from $p(\ve{x}; \sigma_t)$, we revert the noising process inherent in $p(\ve{x}; \sigma_t)$ to produce a point $\ve{x}_{t-1}$ that should come from $p(\ve{x};\sigma_{t-1})$.
     \item Starting from $\ve{x}_T$, we repeat Step 3 until we reach $\ve{x}_0$, which is returned as the output of the sampling process.
   \end{enumerate}
+\end{itemize}
 
+\subsection{A General SDE and Its Probability Flow ODE}
+
+\begin{itemize}
   \item In \cite{Song:2021}, Song \etal\ suggests that the noising process (i.e., $p(\ve{x}, \sigma)$) can be modeled by stochastic differential equations.
+
+  \item The sequence $\sigma_1$, $\sigma_2$, $\dotsc$, $\sigma_T$ becomes a continuous function $\sigma(t)$ of time where $t \in [0,T]$.
+  \item Here, $\sigma(0) = 0$, and $\sigma(T) = \sigma_{\max}$.
+  \item For each tiem $t$, we view $\ve{x}(t)$ which should be distributed according to $p(\ve{x}; \sigma(t))$ as a random variable. This means that $\{ \ve{x}(t) : t \in [0,T] \}$ is a stochastic process.
+  \item The evaluation of the above stochastic process is governed by the stochastic differential equation:
+  \begin{align*}
+    \dee \ve{x} = \ve{f}(\ve{x}(t), t)\, \dee t + g(t)\, \dee \ve{W}
+  \end{align*} 
+  where $\ve{f}: \Real^d \times \Real \rightarrow \Real^d$ is called the {\bf drift coefficient}, $g(t): \Real \rightarrow \Real$ is called the {\bf diffusion coefficient}, and $\ve{W}(t)$ is the standard $d$-dimensional Brownian motion (aka the Wiener process).
+  \item The initial condition is $\ve{x}(0) \sim p_{\data}$.
   \begin{itemize}
-    \item The sequence $\sigma_1$, $\sigma_2$, $\dotsc$, $\sigma_T$ becomes a continuous function $\sigma(t)$ of time where $t \in [0,T]$.
-    \item 
+    \item To make it simpler, we say that $\ve{x}(0)$ is fixed and has no variance when deriving a solution to SDEs.
   \end{itemize}
+  \item The Song \etal\ paper gives two SDEs. One is called the {\it variance-exploding (VE)} SDE, and another the {\it variance-preserving (VP)} SDE. Both SDEs are of the form
+  \begin{align*}
+    \dee \ve{x} = f(t)\ve{x}\, \dee t + g(t)\, \dee \ve{W}
+  \end{align*}
+  where $f(\ve{x},t)$ becomes $f(t)\ve{x}$, and $f$ is reduced to a function of signature $\Real \rightarrow \Real$.
+  \item The above SDE has an explicit, unique solution. We appeal from the following theorem (Equation 6.2) from \cite{Sarkka:2019}.
+  \begin{theorem}
+    Consider a {\bf linear SDE} of the form
+    \begin{align*}
+      \dee \ve{x} = \big(F(t)\ve{x} + \ve{u}(t) \big)\, \dee t + L(t)\, \dee \ve{W} 
+    \end{align*}
+    where $F: \Real \rightarrow \Real^{d \times d}$, $\ve{u}: \Real \rightarrow \Real^d$, and $L: \Real \rightarrow \Real^{d \times d}$. We have that the solution of this equation is a Gaussian process whose mean and covariance matrix,
+    \begin{align*}
+      \ves{\mu}(t) &= E[\ve{x}(t)], \\ 
+      \Sigma(t) &= E[(\ve{x}(t) - \ves{\mu}(t)) (\ve{x}(t) - \ves{\mu}(t))^T],
+    \end{align*}
+    satisfy the ODEs
+    \begin{align*}
+      \frac{\dee\ves{\mu}(t)}{\dee t} &= F(t) \ves{\mu}(t), \\
+      \frac{\dee\Sigma(t)}{\dee t} &= F(t) \Sigma(t) + \Sigma(t) F(t)^T + L(t)L(t)^T. 
+    \end{align*}
+  \end{theorem}
+  \item Setting $F(t) = f(t)I$, $\ve{u}(t) = \ve{0}$, and $L(t) = g(t)I$, we have that
+  \begin{align*}
+    \frac{\dee\ves{\mu}(t)}{\dee t} &= f(t) \ves{\mu}(t), \\
+    \frac{\dee\Sigma(t)}{\dee t} &= 2 f(t) \Sigma(t) + g(t)^2 I. 
+  \end{align*}
+  Assuming that the sample $\ve{x}(0)$ has already been sampled and fixed. The initial condition is $\ves{\mu}(0) = \ve{x}(0)$, and $\Sigma(0) = 0$. Solving the first ODE, we have that
+  \begin{align*}
+    \ves{\mu}(0) = \ve{x}(0) \exp\bigg( \int_0^t f(u)\, \dee u \bigg).
+  \end{align*}
+  The paper defines $$s(t) := \exp\bigg( \int_0^t f(u)\, \dee u\bigg),$$ and so $$\ves{\mu}(0) = s(t) \ve{x}(0).$$
+  For the second ODE, notice that $\Sigma(t)$ is a diagonal matrix whose entries are all the same. Let the entries have value $v(t)$. We have that
+  \begin{align*}
+    \frac{\dee v(t)}{\dee t} = 2f(t)v(t) + g(t)^2.
+  \end{align*}
+  Solving the equation (see Proposition~\ref{thm:linear-sde-variance}), we have that
+  \begin{align*}
+    v(t) = s(t)^2 \int_0^t \frac{g(u)^2}{s(u)^2}\, \dee u,
+  \end{align*}
+  assumming that $v(0) = 0$ (because we are under the setting where the sample $\ve{x}(0)$ has alrady been fixed). The paper defines $$\sigma(t) := \sqrt{\int_0^t \frac{g(u)^2}{s(u)^2}\, \dee u},$$
+  and so the conditional density of $\ve{x}(t)$ given $\ve{x}(0)$ is given by
+  $$p_{t|0}(\ve{x}|\ve{x}_0) = \mcal{N}(\ve{x} ; s(t)\ve{x}_0, s(t)^2 \sigma(t)^2 I ). $$
+  The marginal density of $\ve{x}(t)$ is given by
+  \begin{align*}
+    p_t(\ve{x}) = \int_{\Real^d} p_{t|0}(\ve{x} | \ve{x}_0) p_{\data}(\ve{x}_0)\, \dee \ve{x}_0.
+  \end{align*}
+
+  \item According to \cite{Song:2021}, the stochastic process $\ve{x}(t)$, when interpreted as a function of signature $\Real \rightarrow \Real^d$, and the marginal probability distribution $p_t(\ve{x})$ also satisfies the ODE
+  \begin{align*}
+    \frac{\dee \ve{x}}{\dee t} = f(t)\ve{x} - \frac{1}{2}g(t)^2 \nabla_{\ve{x}} \log p_t(\ve{x})
+  \end{align*}
+  called the {\bf probability flow ODE}. (Deriving this equation can be done my manipulating the Fokker--Planck equation that $p_t(\ve{x})$ is supposed to satisfy. See my notes on score-based generative models for more information \cite{KhungurnScoreBased}.)
+\end{itemize}
+
+\subsection{Making $s(t)$ and $\sigma(t)$ First Class Citizens}
+
+\begin{itemize}
+  \item Note that the conditional distribution $p_{t|0}$ is given in terms of $s(t)$ and $\sigma(t)$, which are derived from $f(t)$ and $g(t)$. However, we are more interested in $s(t)$ and $\sigma(t)$ because they tells use directly what the means and the standard deviations are. So, the paper rewrites the probability ODE in terms of $s(t)$ and $\sigma(t)$ instead of $f(t)$ and $g(t)$.
+
+  \item Consider the expression for the marginal distribution of $\ve{x}(t)$.
+    \begin{align*}
+      p_t(\ve{x}) 
+      &= \int_{\Real^d} p_{t|0}(\ve{x}|\ve{x}_0) p_{\data}(\ve{x}_0)\, \dee \ve{x}_0 \\
+      &= \int_{\Real^d} \mcal{N}(\ve{x}; s(t)\ve{x}_0, s^2(t)\sigma^2(t) I) p_{\data}(\ve{x}_0)\, \dee \ve{x}_0 \\
+      &= \int_{\Real^d} s(t)^{-d} \mcal{N}(\ve{x} / s(t); \ve{x}_0, \sigma^2(t) I) p_{\data}(\ve{x}_0)\, \dee \ve{x}_0 \\
+      &= s(t)^{-d}  \int_{\Real^d} \mcal{N}(\ve{x} / s(t); \ve{x}_0, \sigma^2(t) I) p_{\data}(\ve{x}_0)\, \dee \ve{x}_0 \\
+      &= s(t)^{-d} \Big[ p_{\data} * \mcal{N}(\ve{0}, \sigma^2(t) I ) \Big] \big( \ve{x} / s(t) \big)
+    \end{align*}
+    where $*$ is the convolution operation.
+
+  \item $p_{\data} * \mcal{N}(\ve{0}, \sigma^2(t) I )$ is the corrupted version of $p_{\data}$ due to the noise added by the diffusion process. The paper defines
+  \begin{align*}
+    p(\ve{x}; \sigma) := p_{\data} * \mcal{N}(\ve{0}, \sigma^2 I).
+  \end{align*} 
+  So,
+  \begin{align*}
+    p_t(\ve{x}) = \frac{p(\ve{x}/s(t); \sigma(t))}{s(t)^d}.
+  \end{align*}
+
+  \item Plugging the expression for $p_t(\ve{x})$ into the probability flow ODE, we have that
+  \begin{align*}
+    \frac{\dee \ve{x}}{\dee t} &= f(t)\ve{x} - \frac{1}{2}g(t)^2 \nabla_{\ve{x}} \log \frac{p(\ve{x}/s(t); \sigma(t))}{s(t)^d} \\
+    \frac{\dee \ve{x}}{\dee t} &= f(t)\ve{x} - \frac{1}{2}g(t)^2 \nabla_{\ve{x}} \log p(\ve{x}/s(t); \sigma(t)).
+  \end{align*}
+  
+  \item We now write $f(t)$ and $g(t)$ in terms of $s(t)$ and $\sigma(t)$.  For $f(t)$, we have that
+  \begin{align*}
+    \dot{s}(t) &= f(t) s(t) \\
+    f(t) &= \frac{\dot{s}(t)}{s(t)}.
+  \end{align*}
+  For $g(t)$, we have that
+  \begin{align*}
+    \{ \sigma^2(t) \}' &= \frac{g(t)^2}{s(t)^2} \\
+    2\sigma(t)^2 \dot{\sigma}(t) &= \frac{g(t)^2}{s(t)^2} \\
+    g(t) &= s(t) \sqrt{2 \sigma(t) \dot{\sigma}(t)}.
+  \end{align*}
+
+  \item Plugging in expressions for $f(t)$ and $g(t)$, we have that
+  \begin{align}
+    \frac{\dee \ve{x}}{\dee t}
+    &= \frac{\dot{s}(t)}{s(t)} \ve{x} - s(t)^2 \sigma(t) \dot{\sigma}(t) \nabla_{\ve{x}} \log p(\ve{x}/s(t); \sigma(t)). \label{eqn:scaled-probability-flow-ode}
+  \end{align}
+\end{itemize}
+
+\subsection{Deterministic Sampling}
+
+\begin{itemize}
+  \item A way to sample from $p_{\data}$ is to (1) sample an element from $p_T(\ve{x})$ and (2) simulate Equation~\eqref{eqn:scaled-probability-flow-ode} numerically backward in time from $t = T$ to $t = 0$. The ability to sample from $p_T(\ve{x})$ rests on the fact that $p_{T|0} \sim \mcal{N}(s(T)\ve{x}(0), s(T)^2 \sigma(T)^2I)$. This can be easy in the following situations.
+  \begin{enumerate}
+    \item $s(T) = 1$, and $\sigma(T) \gg \sigma_{\data}$.\\ In this case, $p_T(\ve{x}) \approx \mcal{N}(\ve{0}, \sigma(T)^2I)$, and we can sample $\ve{x}(T)$ from $\mcal{N}(\ve{0}, \sigma(T)^2I)$.
+    \item $s(T) \approx 0$, and $s(T)^2 \sigma(T)^2 = 1$.\\ In this case, $p_T(\ve{x}) \approx \mcal{N}(\ve{0}, I)$, and we can sample $\ve{x}(T)$ from $\mcal{N}(\ve{0}, I)$.
+  \end{enumerate}
+  In \cite{Song:2021}, the VE formulation corresponds to the first situation, and the VP formulation corresponds to the second situation. 
+  
+  \item Next, in order to simulate the above ODE numerically, we need to be able to compute the {\bf score} $\nabla_{\ve{x}} \log p(\ve{x}/s(t); \sigma^2(t))$. To make the problem more general, we drop the $s(t)^{-1}$ scaling factor and see if there is a way to compute $\nabla_{\ve{x}} \log p(\ve{x}; \sigma)$. A common way to do this is to train a neural network $D_{\ves{\theta}}(\widetilde{\ve{x}}, \sigma)$ such that it outputs $\ve{x}$ given a sample $\widetilde{\ve{x}} \sim p(\ve{x}; \sigma)$. This can be done by minimizing the loss
+  \begin{align*}
+    \mcal{L}(\ves{\theta}, \sigma) := E_{\ve{x}_0 \sim p_{\data}} E_{\ves{\xi} \sim \mcal{N}(0,I)} \Big[ \big\| D_{\ves{\theta}}(\ve{x}_0 + \sigma \ves{\xi}, \sigma) - \ve{x}_0 \big\|^2 \Big]
+  \end{align*}
+  Then, for the optimal $\ves{\theta}^*$, we would have that
+  \begin{align*}
+    \nabla_{\ve{x}} \log p(\ve{x}, \sigma) \approx \frac{D_{\ves{\theta}^*}(\ve{x}, \sigma) - \ve{x}}{\sigma^2}.
+  \end{align*}
+  The implementation of $D_{\ves{\theta}}(\ve{x}, \sigma)$ might include scaling $\ve{x}$ by the appropriate factor to make the inference easier. It is also common to use a single neural network for all $\sigma$ values, and so we need to think of a way to sample $\sigma$ and a way to assign weight to each $\mcal{L}(\ves{\theta}, \sigma)$. 
+  
+  \item We will come back to how to train $D(\ve{x},\sigma)$ later, but let us formulate the sampling algorithm right away that involves the probability flow ODE right away.
+  
+  \item We distinguished between samples from the distribution $p(\ve{x};\sigma(t)) = \mcal{N}(\ve{x}; \ve{x}(0), \sigma(t)^2 I)$, which is not scaled by $s(t)$, and the distribution $p_t(\ve{x}) = \mcal{N}(\ve{x}; s(t)\ve{x}(0), s(t)^2 \sigma(t)^2 I)$, which is scaled by $s(t)$.
+    
+  \item In particular, we let $\ve{x}$ denote a sample from $p_t(\ve{x})$, and $\hat{\ve{x}}$ denote a sample from $p(\hat{\ve{x}}, \sigma(t))$. It follows that
+  \begin{align*}
+    \ve{x} = s(t) \hat{\ve{x}}.
+  \end{align*}
+  The above equation is supposed to be read in the following way: one can sample $\ve{x} \sim p_T$ by sampling $\hat{\ve{x}} \sim \mcal{N}(\ve{x}(0), \sigma^2(t)I)$ and them computing $\ve{x} := s(t)\hat{\ve{x}}$.
+
+  \item We have that
+  \begin{align*}
+    \nabla_{\ve{x}} \log p(\ve{x}/s(t); \sigma(t))
+    &= \nabla_{s(t)\hat{\ve{x}}} \log p(\hat{\ve{x}}; \sigma(t))
+    = \frac{1}{s(t)} \nabla_{\hat{\ve{x}}} \log p(\hat{\ve{x}}; \sigma(t)) \\
+    &\approx \frac{D_{\ves{\theta}}(\hat{\ve{x}}, \sigma(t)) - \hat{\ve{x}}}{s(t)\sigma^2(t)} \\
+    &= \frac{D_{\ves{\theta}}(\ve{x}/s(t), \sigma(t)) - \ve{x}/s(t)}{s(t)\sigma^2(t)}.
+  \end{align*}
+
+  \item Subtituting the above expression for the score into Equation~\ref{eqn:scaled-probability-flow-ode}, we have that
+  \begin{align*}
+    \frac{\dee \ve{x}}{\dee t}
+    &= \frac{\dot{s}(t)}{s(t)} \ve{x} - s(t)^2 \sigma(t) \dot{\sigma}(t) \frac{D_{\ves{\theta}}(\ve{x}/s(t), \sigma(t)) - \ve{x}/s(t)}{s(t)\sigma^2(t)} \\
+    \frac{\dee \ve{x}}{\dee t}
+    &= \frac{\dot{s}(t)}{s(t)} \ve{x} - s(t) \frac{\dot{\sigma}(t)}{\sigma(t)} \bigg( D_{\ves{\theta}}\bigg(\frac{\ve{x}}{s(t)}, \sigma(t)\bigg) - \frac{\ve{x}}{s(t)} \bigg) \\
+    \frac{\dee \ve{x}}{\dee t}
+    &= \bigg( \frac{\dot{s}(t)}{s(t)} + \frac{\dot{\sigma}(t)}{\sigma(t)} \bigg) \ve{x} - s(t) \frac{\dot{\sigma}(t)}{\sigma(t)} D_{\ves{\theta}}\bigg(\frac{\ve{x}}{s(t)}, \sigma(t)\bigg).
+  \end{align*}
+\end{itemize}
+
+\appendix
+
+\section{Derivations}
+
+\begin{itemize}
+  \item \begin{proposition} \label{thm:linear-sde-variance}
+    The solution to the initial value problem
+    \begin{align*}
+      \frac{\dee v(t)}{\dee t} &= 2f(t)v(t) + g(t)^2 \\
+      v(0) &= 0      
+    \end{align*}
+    is
+    \begin{align*}
+      v(t) = s(t)^2 \int_0^t \frac{g(u)^2}{s(u)^2}\, \dee u
+    \end{align*}
+    where $s(t) = \exp(\int_0^t f(u)\, \dee u)$.
+  \end{proposition}
+  \begin{proof}
+    \begin{align*}
+    \frac{\dee v(t)}{\dee t} &= 2f(t)v(t) + g(t)^2 \\
+    \frac{\dee v(t)}{\dee t} - 2f(t)v(t) &= g(t)^2.
+    \end{align*}
+  \end{proof}
+  Let $s(t) = \int_0^t f(u)\, \dee u$.
+  Multiplying both sides by $s(t)^{-2} = \exp(-2\int_0^t f(u)\, \dee t)$, we have that
+  \begin{align*}
+    \exp\bigg( -2 \int_0^t f(u)\, \dee t \bigg) \frac{\dee v(t)}{\dee t}
+    - 2f(t) \exp\bigg( -2 \int_0^t f(u)\, \dee t \bigg) v(t)
+    &= \exp\bigg( -2 \int_0^t f(u)\, \dee t \bigg) g(t)^2 \\
+    \bigg\{ \exp\bigg( -2 \int_0^t f(u)\, \dee t \bigg) v(t) \bigg\}'
+    &= \exp\bigg( -2 \int_0^t f(u)\, \dee t \bigg) g(t)^2 \\
+    \bigg\{ \frac{v(t)}{s(t)^2} \bigg\}'
+    &= \frac{g(t)^2}{s(t)^2} \\
+    \frac{v(t)}{s(t)^2} - \frac{v(0)}{s(0)^2} &= \int_0^t \frac{g(u)^2}{s(u)^2}\, \dee u.
+  \end{align*}
+  Because $v(0) = 0$ and $s(0) = 1$, we have that
+  \begin{align*}
+    \frac{v(t)}{s(t)^2} &= \int_0^t \frac{g(u)^2}{s(u)^2}\, \dee u \\
+    v(t) &= s(t)^2 \int_0^t \frac{g(u)^2}{s(u)^2}\, \dee u
+  \end{align*}
+  as required.
 \end{itemize}
 
 \bibliographystyle{alpha}
