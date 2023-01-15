@@ -1226,6 +1226,93 @@ And I have to admit that I have no idea what this equation is about. This note i
   \item More sophisticated methods include the Milstein method and the stochastic Runge--Kutta method, but we are not discussing them here in this note.
 \end{itemize}
 
+\section{Girsanov's Theorem}
+
+\begin{itemize}
+  \item We have been working with a fixed probability measure $P$. This is used to define our standard Brownian motion and everything that follows from it. Naturally, if we change $P$ to another probability measure $Q$, the standard Brownian motion would no longer be a Brownian motion because, say, $W(t)$ might not be distributed according to $\mcal{N}(0,t)$ any more.
+  
+  \item Girsanov's theorem identifies a class of probability measures $Q$ that are ``equivalent'' to $P$, and the standard Brownian motions with respect to those probability measures.
+  
+  \item \begin{definition}
+    Let $(\Omega, \mcal{F})$ be measurable spaces. Let $P$ and $Q$ be two probability measures on $\mcal{F}$. We say that $Q$ is {\bf absolutely continuous with respect to} $P$ if $P(E) = 0 \implies Q(E) = 0$ for all event $E \in \mcal{F}$. We write $Q \ll P$ to denote this fact.
+  \end{definition}
+
+  \item \begin{theorem}[Radon--Nikodym]
+    Let $P$ and $Q$ be probability measures such that $Q \ll P$. Then, there exists a positive $\mcal{F}$-measurable function $f$ such that
+    \begin{align*}
+      Q(E) = \int_E f\, \dee P
+    \end{align*}
+    for all event $E \in \mcal{F}$. The function $f$ is uniquely determined $P$-almost everywhere. It is called the {\bf Radon--Nikodym derivative of $Q$ with respect to $P$} and denoted by $\dee Q / \dee P$.
+  \end{theorem}
+
+  \item \begin{definition}
+    Let $P$ and $Q$ be two probability measures defined on measurable space $(\Omega, \mcal{F})$. We say that $P$ and $Q$ are {\bf equivalent} if $P \ll Q$ and $Q \ll P$. (In other words, $P$ and $Q$ are equivalent if $P(E) = 0 \iff Q(E) = 0$ for all $E \in \mcal{F}$)
+  \end{definition}
+
+  \item \begin{theorem}[Girsanov's]
+    Let $(\Omega, \mcal{F}, P)$ be a probability space. Let $W$ be the standard Brownian motion defined on $(\Omega, \mcal{F}, P)$, and let $\{ \mcal{F}(t) : t \geq 0 \}$ be its natural filtration. Let $q \neq 0$ be a real constant. Then, the stochastic process
+    $$M(t) = \exp\bigg( -q W(t) - \frac{1}{2} q^2 t \bigg)$$ is a martingale with respect to $\{ \mcal{F}(t) : t \geq 0 \}$. For any $T > 0$, the function
+    \begin{align*}
+      Q(E) = \int_E M(T, \omega)\, \dee P(\omega)
+    \end{align*}
+    defines a probability measure $Q$ on $\mcal{F}$ which is equivalent to $P$. Under $Q$, the stochastic process $\{\widetilde{W}(t) : 0 \leq t \leq T\}$, where $$\widetilde{W}(t) = W(t) + qt,$$ is the standard Brownian motion with respect to $Q$. It is adapted to $\{ \mcal{F}(t) : t \geq 0 \}$.
+  \end{theorem}
+
+  \item \begin{example}
+    Solve the SDE
+    \begin{align*}
+      \dee X = c X\, \dee t + \sigma X\, \dee W.
+    \end{align*}
+    where $c, \sigma \in \Real$, and $\sigma > 0$. 
+  \end{example}
+  \begin{proof}
+    Let
+    \begin{align*}
+      \widetilde{W}(t) = W(t) + \frac{c}{\sigma} t.
+    \end{align*}
+    By Girsanov's theorem, $\widetilde{W}$ is the standard Brownian motion under the probability measure
+    \begin{align*}
+      Q(E) = \int_E \exp\bigg( -\frac{c}{\sigma} W(T) - \frac{c^2}{2\sigma^2} t \bigg)\, \dee P
+    \end{align*}
+    for any $T > 0$. Now,
+    \begin{align*}
+      \dee \widetilde{W} &= \dee W + \frac{c}{\sigma} \dee t \\
+      \dee W &= \dee \widetilde{W} - \frac{c}{\sigma} \dee t.
+    \end{align*}
+    Thus,
+    \begin{align*}
+      \dee X = cX\, \dee t + \sigma X\, \bigg( \dee \widetilde{W} - \frac{c}{\sigma} \dee t \bigg) = \sigma X\, \dee \widetilde{W}.
+    \end{align*}
+    Assume that $X = u(t, \widetilde{W})$. We have that
+    \begin{align*}
+      \dee X &= \sigma u(t, \widetilde{W})\, \dee \widetilde{W},
+    \end{align*}
+    and, by It\^{o}'s chain rule,
+    \begin{align*}
+      \dee X = \bigg( u_1(t, \widetilde{W}) + \frac{1}{2} u_{22}(t, \widetilde{W}) \bigg)\, \dee t + u_2(t, \widetilde{W})\, \dee \widetilde{W}.
+    \end{align*}
+    As a result,
+    \begin{align*}
+      u_1(t, \widetilde{W}) + \frac{1}{2} u_{22}(t, \widetilde{W}) &= 0,\\
+      u_2(t, \widetilde{W}) &= \sigma u(t, \widetilde{W}).
+    \end{align*}
+    By the second equation, we have that $u(t, w) = C \exp(f(t) + \sigma w)$ for some function $f$. The first equation then becomes
+    \begin{align*}
+      f'(t) u(t, \widetilde{W}) + \frac{1}{2}\sigma^2 u(t, \widetilde{W}) &= 0 \\
+      f'(t) &= -\frac{1}{2}\sigma^2 \\
+      f(t) &= -\frac{1}{2} \sigma^2 t.
+    \end{align*}
+    Hence,
+    \begin{align*}
+      X 
+      = C \exp(-0.5\sigma^2 t + \sigma \widetilde{W})
+      = C \exp(-0.5\sigma^2 t + \sigma (W + ct/\sigma) )
+      = C \exp((c - 0.5\sigma^2 )t + \sigma W).
+    \end{align*}
+    The constant $C$ is simply $X(0)$, the initial condition.
+  \end{proof}
+\end{itemize}
+
 \appendix
 
 \section{Proofs}
