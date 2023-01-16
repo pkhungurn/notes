@@ -231,6 +231,11 @@ This note is written as I read ``Elucidating the Design Space of Diffusion-Based
     \frac{\dee \ve{x}}{\dee t}
     &= \frac{\dot{s}(t)}{s(t)} \ve{x} - s(t)^2 \sigma(t) \dot{\sigma}(t) \nabla_{\ve{x}} \log p(\ve{x}/s(t); \sigma(t)). \label{eqn:scaled-probability-flow-ode}
   \end{align}
+  When $s(t) = 1$ for all $t$ (which is the case for all the variations the paper deals with except the VP SDE formulation), the equation becomes,
+  \begin{align*}
+    \dee \ve{x}
+    &=  - \sigma(t) \dot{\sigma}(t) \nabla_{\ve{x}} \log p(\ve{x}; \sigma(t))\, \dee t.
+  \end{align*}
 \end{itemize}
 
 \subsection{Deterministic Sampling}
@@ -374,9 +379,25 @@ This note is written as I read ``Elucidating the Design Space of Diffusion-Based
     \dee\ve{x}
     &= \bigg( \frac{\dot{s}(t)}{s(t)}\ve{x} - \big(1 + \beta(t)\big)s(t)^2 \sigma(t)\dot{\sigma}(t) \frac{D_{\ves{\theta}}(\ve{x}/s(t), \sigma(t)) - \ve{x}/s(t)}{s(t)\sigma^2(t)} \bigg) \dee t \\
     &\phantom{=} \quad + s(t) \sqrt{2 \beta(t)\sigma(t)\dot{\sigma}(t)} \dee \overline{\ve{W}} \\
-    &= \bigg[ \bigg( \frac{\dot{s}(t)}{s(t)} + \big(1 + \beta(t)\big)\frac{\dot{\sigma}(t)}{\sigma(t)} \bigg)\ve{x} + \big( 1 + \beta(t) \big)s(t) \frac{\dot{\sigma}(t)}{\sigma(t)} D_{\ves{\theta}}\bigg( \frac{\ve{x}}{s(t)}, \sigma(t) \bigg)  \bigg]\dee t 
+    &= \bigg[ \bigg( \frac{\dot{s}(t)}{s(t)} + \big(1 + \beta(t)\big)\frac{\dot{\sigma}(t)}{\sigma(t)} \bigg)\ve{x} - \big( 1 + \beta(t) \big)s(t) \frac{\dot{\sigma}(t)}{\sigma(t)} D_{\ves{\theta}}\bigg( \frac{\ve{x}}{s(t)}, \sigma(t) \bigg)  \bigg]\dee t 
     + s(t) \sqrt{2 \beta(t)\sigma(t)\dot{\sigma}(t)} \dee \overline{\ve{W}}.
   \end{align*}
+
+  \item The paper does not derive the above equation. It opts for a simple equation where $s(t) = 1$, which we have that
+  \begin{align*}
+    \dee\ve{x}
+    &= \bigg( \frac{\dot{s}(t)}{s(t)}\ve{x} - \big(1 + \beta(t)\big)s(t)^2 \sigma(t)\dot{\sigma}(t) \nabla_{\ve{x}} \log p(\ve{x}/s(t);\sigma(t)) \bigg) \dee t \\
+    &\phantom{=} \quad + s(t) \sqrt{2 \beta(t)\sigma(t)\dot{\sigma}(t)} \dee \overline{\ve{W}} \\
+    \dee\ve{x} &=  - \big(1 + \beta(t)\big) \sigma(t)\dot{\sigma}(t) \nabla_{\ve{x}} \log p(\ve{x};\sigma(t))\, \dee t 
+    + \sqrt{2 \beta(t)\sigma(t)\dot{\sigma}(t)} \dee \overline{\ve{W}}.
+  \end{align*}
+  Take $\beta(t) := \gamma(t)\frac{\sigma(t)}{\dot{\sigma}(t)}$. The equation becomes
+  \begin{align*}
+    \dee\ve{x}
+    =
+    -\sigma(t)\dot{\sigma}(t) \nabla_{\ve{x}} \log p(\ve{x};\sigma(t))\, \dee t - \gamma(t)\sigma^2(t) \nabla_{\ve{x}} \log p(\ve{x};\sigma(t))\, \dee t + \sqrt{2\gamma(t)}\sigma(t) \dee \overline{\ve{W}}.
+  \end{align*}  
+  This matches Equation (6) in the paper if we change the name of $\gamma$ to $\beta$.
 \end{itemize}
 
 \appendix
