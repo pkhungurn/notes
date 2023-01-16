@@ -9,6 +9,8 @@
 \usepackage{tikz}
 \usepackage{verbatim}
 \usepackage{hyperref}
+\usepackage{algorithm}
+\usepackage{clrscode3e}
 
 \newtheorem{lemma}{Lemma}
 \newtheorem{theorem}[lemma]{Theorem}
@@ -240,8 +242,10 @@ This note is written as I read ``Elucidating the Design Space of Diffusion-Based
     \item $s(T) \approx 0$, and $s(T)^2 \sigma(T)^2 = 1$.\\ In this case, $p_T(\ve{x}) \approx \mcal{N}(\ve{0}, I)$, and we can sample $\ve{x}(T)$ from $\mcal{N}(\ve{0}, I)$.
   \end{enumerate}
   In \cite{Song:2021}, the VE formulation corresponds to the first situation, and the VP formulation corresponds to the second situation. 
+
+  \item Note that the sampling algorithm above is not ``deterministic'' per se. There is randomness in the sampling of $\ve{x}(T)$. However, this is the only randomness that is present in the algorithm. We will discuss ``stochastic'' sampling algorithms later. These algorithms use random numbers in each of its iterations.
   
-  \item Next, in order to simulate the above ODE numerically, we need to be able to compute the {\bf score} $\nabla_{\ve{x}} \log p(\ve{x}/s(t); \sigma^2(t))$. To make the problem more general, we drop the $s(t)^{-1}$ scaling factor and see if there is a way to compute $\nabla_{\ve{x}} \log p(\ve{x}; \sigma)$. A common way to do this is to train a neural network $D_{\ves{\theta}}(\widetilde{\ve{x}}, \sigma)$ such that it outputs $\ve{x}$ given a sample $\widetilde{\ve{x}} \sim p(\ve{x}; \sigma)$. This can be done by minimizing the loss
+  \item In order to simulate the ODE of Equation~\eqref{eqn:scaled-probability-flow-ode} numerically, we need to be able to compute the {\bf score} $\nabla_{\ve{x}} \log p(\ve{x}/s(t); \sigma^2(t))$. To make the problem more general, we drop the $s(t)^{-1}$ scaling factor and see if there is a way to compute $\nabla_{\ve{x}} \log p(\ve{x}; \sigma)$. A common way to do this is to train a neural network $D_{\ves{\theta}}(\widetilde{\ve{x}}, \sigma)$ such that it outputs $\ve{x}$ given a sample $\widetilde{\ve{x}} \sim p(\ve{x}; \sigma)$. This can be done by minimizing the loss
   \begin{align*}
     \mcal{L}(\ves{\theta}, \sigma) := E_{\ve{x}_0 \sim p_{\data}} E_{\ves{\xi} \sim \mcal{N}(0,I)} \Big[ \big\| D_{\ves{\theta}}(\ve{x}_0 + \sigma \ves{\xi}, \sigma) - \ve{x}_0 \big\|^2 \Big]
   \end{align*}
@@ -271,14 +275,75 @@ This note is written as I read ``Elucidating the Design Space of Diffusion-Based
   \end{align*}
 
   \item Subtituting the above expression for the score into Equation~\ref{eqn:scaled-probability-flow-ode}, we have that
+  \begin{align}
+    \frac{\dee \ve{x}}{\dee t}
+    &= \frac{\dot{s}(t)}{s(t)} \ve{x} - s(t)^2 \sigma(t) \dot{\sigma}(t) \frac{D_{\ves{\theta}}(\ve{x}/s(t), \sigma(t)) - \ve{x}/s(t)}{s(t)\sigma^2(t)} \notag \\
+    \frac{\dee \ve{x}}{\dee t} 
+    &= \frac{\dot{s}(t)}{s(t)} \ve{x} - s(t) \frac{\dot{\sigma}(t)}{\sigma(t)} \bigg( D_{\ves{\theta}}\bigg(\frac{\ve{x}}{s(t)}, \sigma(t)\bigg) - \frac{\ve{x}}{s(t)} \bigg) \notag \\
+    \frac{\dee \ve{x}}{\dee t}
+    &= \bigg( \frac{\dot{s}(t)}{s(t)} + \frac{\dot{\sigma}(t)}{\sigma(t)} \bigg) \ve{x} - s(t) \frac{\dot{\sigma}(t)}{\sigma(t)} D_{\ves{\theta}}\bigg(\frac{\ve{x}}{s(t)}, \sigma(t)\bigg). \label{eqn:probability-flow-ode-in-practice}
+  \end{align}
+
+  \item There are many algorithms for numerically solving an ODE such as Euler method and Runge--Kutta methods. The pseudocode for the Euler method that solves Equation~\eqref{eqn:probability-flow-ode-in-practice} backward in time is given in Algorithm~\ref{alg:euler-deterministic-sampler}. The paper advocates the use of Heun's method, which is a second order integrator. Its pseudocode is given in Algorithm~\ref{alg:heun-deterministic-sampler}.  
+  
+  \begin{algorithm}[t]
+  \begin{codebox}
+    \Procname{$\proc{Euler-Sampler}(D_{\ves{\theta}}, \sigma, s, \{ t_0, t_1, \dotsc, t_N \} )$}
+    \li Sample $\ve{x}_0 \sim \mcal{N}(\ve{0}, s(t_0)^2 \sigma(t_0)^2 I)$.
+    \li \For $i \leftarrow 0, 1, \dotsc, N-1$
+    \li \Do
+          $\ve{d}_i \leftarrow \Big( 
+            \frac{\dot{\sigma}(t_i)}{\sigma(t_i)} + \frac{\dot{s}(t_i)}{s(t_i)}
+          \Big) \ve{x}_i
+          - s(t_i) \frac{\dot{\sigma}(t_i)}{\sigma(t_i)} D_{\ves{\theta}} \Big( \frac{\ve{x}_i}{s(t_i)}, \sigma(t_i)  \Big)$
+    \li   $\ve{x}_{i+1} \leftarrow \ve{x}_i + (t_{i+1} - t_i) \ve{d}_i$
+        \End
+    \li \Return $\ve{x}_N$.
+  \end{codebox}
+  \caption{Euler method for sampling from $p_{\data}$ by simulating the probability flow  ODE \eqref{eqn:probability-flow-ode-in-practice}.}  
+  \label{alg:euler-deterministic-sampler}
+  \end{algorithm}
+
+  \begin{algorithm}[t]
+  \begin{codebox}
+    \Procname{$\proc{Heun-Sampler}(D_{\ves{\theta}}, \sigma, s, \{ t_0, t_1, \dotsc, t_N \} )$}
+    \li Sample $\ve{x}_0 \sim \mcal{N}(\ve{0}, s(t_0)^2 \sigma(t_0)^2 I)$.
+    \li \For $i \leftarrow 0, 1, \dotsc, N-1$
+    \li \Do
+          $\ve{d}_i \leftarrow \Big( 
+            \frac{\dot{\sigma}(t_i)}{\sigma(t_i)} + \frac{\dot{s}(t_i)}{s(t_i)}
+          \Big) \ve{x}_i
+          - s(t_i) \frac{\dot{\sigma}(t_i)}{\sigma(t_i)} D_{\ves{\theta}} \Big( \frac{\ve{x}_i}{s(t_i)}, \sigma(t_i)  \Big)$
+    \li   $\ve{x}_{i+1} \leftarrow \ve{x}_i + (t_{i+1} - t_i) \ve{d}_i$
+    \li   \If $\sigma(t_{i+1}) \neq 0$ 
+    \li    \Then
+            $\ve{d}'_{i} \leftarrow \Big( 
+              \frac{\dot{\sigma}(t_{i+1})}{\sigma(t_{i+1})} + \frac{\dot{s}(t_{i+1})}{s(t_{i+1})}
+            \Big) \ve{x}_{i+1}
+            - s(t_{i+1}) \frac{\dot{\sigma}(t_{i+1})}{\sigma(t_{i+1})} D_{\ves{\theta}} \Big( \frac{\ve{x}_{i+1}}{s(t_{i+1})}, \sigma(t_{i+1})  \Big)$
+    \li     $\ve{x}_{i+1} \leftarrow \ve{x}_i + \frac{1}{2}(t_{i+1} - t_i)(\ve{d}_i + \ve{d}_i')$
+          \End
+        \End
+    \li \Return $\ve{x}_N$.
+  \end{codebox}
+  \caption{Heun's method for sampling from $p_{\data}$ by simulating the probability flow  ODE \eqref{eqn:probability-flow-ode-in-practice}.}  
+  \label{alg:heun-deterministic-sampler}
+  \end{algorithm}
+
+  \item Note that, to use the above algoriths, we must provide a sequence of times $\{ t_0, t_1, \dotsc, t_N \}$ where
   \begin{align*}
-    \frac{\dee \ve{x}}{\dee t}
-    &= \frac{\dot{s}(t)}{s(t)} \ve{x} - s(t)^2 \sigma(t) \dot{\sigma}(t) \frac{D_{\ves{\theta}}(\ve{x}/s(t), \sigma(t)) - \ve{x}/s(t)}{s(t)\sigma^2(t)} \\
-    \frac{\dee \ve{x}}{\dee t}
-    &= \frac{\dot{s}(t)}{s(t)} \ve{x} - s(t) \frac{\dot{\sigma}(t)}{\sigma(t)} \bigg( D_{\ves{\theta}}\bigg(\frac{\ve{x}}{s(t)}, \sigma(t)\bigg) - \frac{\ve{x}}{s(t)} \bigg) \\
-    \frac{\dee \ve{x}}{\dee t}
-    &= \bigg( \frac{\dot{s}(t)}{s(t)} + \frac{\dot{\sigma}(t)}{\sigma(t)} \bigg) \ve{x} - s(t) \frac{\dot{\sigma}(t)}{\sigma(t)} D_{\ves{\theta}}\bigg(\frac{\ve{x}}{s(t)}, \sigma(t)\bigg).
+    T = t_0 > t_1 > t_2 > \dotsb > t_{N-1} > t_N = 0.
   \end{align*}
+\end{itemize}
+
+\subsection{Stochastic Sampling}
+
+\begin{itemize}
+  \item The paper goes to a very long derivation (Appendix B.5) that uses heat equation to derive the reverse-time SDE \cite{Anderson:1982} so that it can derive the stochastic sampling algorithm. Moreover, the derived equation only works for the non-scaled version (i.e., $s(t) = 1$ and $f(t) = 0$) of the forward SDE. The stochastic sampling algorithm is also only for the non-scaled case. The paper claims that the derivation for the scaled case is similar and omits the derivation.
+  
+  \item I found the above treatment annoyhing as it is not complete. I also struggled with the derivation because it uses the heat equation and knowledge about partial differential equations, which I have not studied.
+  
+  \item 
 \end{itemize}
 
 \appendix
