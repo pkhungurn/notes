@@ -284,7 +284,7 @@ This note is written as I read ``Elucidating the Design Space of Diffusion-Based
     &= \bigg( \frac{\dot{s}(t)}{s(t)} + \frac{\dot{\sigma}(t)}{\sigma(t)} \bigg) \ve{x} - s(t) \frac{\dot{\sigma}(t)}{\sigma(t)} D_{\ves{\theta}}\bigg(\frac{\ve{x}}{s(t)}, \sigma(t)\bigg). \label{eqn:probability-flow-ode-in-practice}
   \end{align}
 
-  \item There are many algorithms for numerically solving an ODE such as Euler method and Runge--Kutta methods. The pseudocode for the Euler method that solves Equation~\eqref{eqn:probability-flow-ode-in-practice} backward in time is given in Algorithm~\ref{alg:euler-deterministic-sampler}. The paper advocates the use of Heun's method, which is a second order integrator. Its pseudocode is given in Algorithm~\ref{alg:heun-deterministic-sampler}.  
+  \item There are many algorithms for numerically solving an ODE such as Euler method and Runge--Kutta methods. The pseudocode for the Euler method that solves Equation~\eqref{eqn:probability-flow-ode-in-practice} backward in time is given in Algorithm~\ref{alg:euler-deterministic-sampler}. The paper advocates the use of Heun's method, which is a second order integrator. Its pseudocode is given in Algorithm~\ref{alg:heun-deterministic-sampler}.
   
   \begin{algorithm}[t]
   \begin{codebox}
@@ -341,18 +341,51 @@ This note is written as I read ``Elucidating the Design Space of Diffusion-Based
 \begin{itemize}
   \item The paper goes to a very long derivation (Appendix B.5) that uses heat equation to derive the reverse-time SDE \cite{Anderson:1982} so that it can derive the stochastic sampling algorithm. Moreover, the derived equation only works for the non-scaled version (i.e., $s(t) = 1$ and $f(t) = 0$) of the forward SDE. The stochastic sampling algorithm is also only for the non-scaled case. The paper claims that the derivation for the scaled case is similar and omits the derivation.
   
-  \item I found the above treatment annoyhing as it is not complete. I also struggled with the derivation because it uses the heat equation and knowledge about partial differential equations, which I have not studied.
+  \item I found the above treatment annoyhing as it is not complete. I also struggled with the derivation because it uses the heat equation and knowledge about partial differential equations, which I have not studied. So, in this note, I will summarize the results and provide an alternative, simpler derivation in the Appendix.  
+
+  \item The paper states that, for any $\beta(t): \Real \rightarrow [0,\infty)$, the SDE
+  \begin{align}
+    \dee\ve{x} = \underbrace{\bigg( \ve{f}(\ve{x},t) - \frac{1}{2}g(t)^2 \nabla_{\ve{x}} \log p_t(\ve{x}) \bigg)\, \dee t}_{\mathrm{probability\ flow\ ODE}} +  \bigg( \underbrace{\frac{1}{2} \beta(t) g(t)^2 \nabla_{\ve{x}} \log p_t(\ve{x})\, \dee t + \sqrt{\beta(t)} g(t)\, \dee \ve{W}}_{\mathrm{Langevin\ diffusion\ SDE}} \bigg). \label{eqn:generalized-diffusion-sde}
+  \end{align}
+  yields the same marginal probability distribution $p_t(\ve{x})$ as Equation~\ref{eqn:diffusion-sde}. This is true, and you can find the proof in the Appendix (Theorem~\ref{thm:generalized-diffusion-sde}). The equation gives us multiple ways to simulate Equation \eqref{eqn:diffusion-sde} forward in time.
   
-  \item So, I will take a shortcut and use the result by Anderson that the  
+  \item The paper also states that, for any $\beta(t): \Real \rightarrow [0,\infty)$, the SDE
+  \begin{align}
+    \dee\ve{x} = \underbrace{\bigg( \ve{f}(\ve{x},t) - \frac{1}{2}g(t)^2 \nabla_{\ve{x}} \log p_t(\ve{x}) \bigg)\, \dee t}_{\mathrm{probability\ flow\ ODE}} +  \bigg( \underbrace{-\frac{1}{2} \beta(t) g(t)^2 \nabla_{\ve{x}} \log p_t(\ve{x})\, \dee t + \sqrt{\beta(t)} g(t)\, \dee \overline{\ve{W}}}_{\mathrm{Langevin\ diffusion\ SDE}} \bigg) \label{eqn:generalized-reverse-time-diffusion-sde}
+  \end{align}
+  where $\overline{\ve{W}}$ is the standard $d$-dimensional Brownian motion that goes backward in time, yields the same marginal $p_{t}(\ve{x})$ as the distribution yielded by Equation~\eqref{eqn:diffusion-sde}. This time, however, the evolution of $p_{t}(\ve{x})$ is backward in time.
+
+  \item Specializing to our particular SDE, we have that $\ve{f}(\ve{x},t) = f(t)\ve{x}$. So,
+  \begin{align*}
+    \dee\ve{x} 
+    = \underbrace{\Big( f(t)\ve{x} - \frac{1}{2}g(t)^2 \nabla_{\ve{x}} \log p_t(\ve{x}) \Big) \, \dee t}_{\mathrm{probability\ flow\ ODE}} 
+    - \underbrace{ \frac{1}{2} \beta(t) g(t)^2 \nabla_{\ve{x}} \log p_t(\ve{x})\, \dee t}_{\mathrm{deterministic\ noise\ decay}} 
+    + \underbrace{\sqrt{\beta(t)} g(t)\, \dee \overline{\ve{W}}}_{\mathrm{noise\ injection}}
+  \end{align*}
+  Substituting $f(t) = \dot{s}(t)/s(t)$ and $g(t) = s(t)\sqrt{2\sigma(t)\dot{\sigma}(t)}$ and $p_t(\ve{x}) = p(\ve{x}/s(t); \sigma(t)) s(t)^{-d}$, we have that
+  \begin{align*}
+    \dee\ve{x} 
+    &= \Big( f(t)\ve{x} - \frac{1}{2}g(t)^2 \nabla_{\ve{x}} \log p_t(\ve{x}) \Big) \, \dee t
+    - \frac{1}{2} \beta(t) g(t)^2 \nabla_{\ve{x}} \log p_t(\ve{x})\, \dee t
+    + \sqrt{\beta(t)} g(t)\, \dee \overline{\ve{W}} \\
+    \dee\ve{x}
+    &= \bigg( \frac{\dot{s}(t)}{s(t)}\ve{x} - \big(1 + \beta(t)\big)s(t)^2 \sigma(t)\dot{\sigma}(t) \nabla_{\ve{x}} \log p(\ve{x}/s(t);\sigma(t)) \bigg) \dee t \\
+    &\phantom{=} \quad + s(t) \sqrt{2 \beta(t)\sigma(t)\dot{\sigma}(t)} \dee \overline{\ve{W}} \\
+    \dee\ve{x}
+    &= \bigg( \frac{\dot{s}(t)}{s(t)}\ve{x} - \big(1 + \beta(t)\big)s(t)^2 \sigma(t)\dot{\sigma}(t) \frac{D_{\ves{\theta}}(\ve{x}/s(t), \sigma(t)) - \ve{x}/s(t)}{s(t)\sigma^2(t)} \bigg) \dee t \\
+    &\phantom{=} \quad + s(t) \sqrt{2 \beta(t)\sigma(t)\dot{\sigma}(t)} \dee \overline{\ve{W}} \\
+    &= \bigg[ \bigg( \frac{\dot{s}(t)}{s(t)} + \big(1 + \beta(t)\big)\frac{\dot{\sigma}(t)}{\sigma(t)} \bigg)\ve{x} + \big( 1 + \beta(t) \big)s(t) \frac{\dot{\sigma}(t)}{\sigma(t)} D_{\ves{\theta}}\bigg( \frac{\ve{x}}{s(t)}, \sigma(t) \bigg)  \bigg]\dee t 
+    + s(t) \sqrt{2 \beta(t)\sigma(t)\dot{\sigma}(t)} \dee \overline{\ve{W}}.
+  \end{align*}
 \end{itemize}
 
 \appendix
 
-\section{Derivations}
+\section{Mathematical Facts and Some Derivations}
 
 \begin{itemize}
   \item \begin{proposition} \label{thm:linear-sde-variance}
-    The solution to the initial value problem
+    The solution to the initial value problem 
     \begin{align*}
       \frac{\dee v(t)}{\dee t} &= 2f(t)v(t) + g(t)^2 \\
       v(0) &= 0      
@@ -387,6 +420,195 @@ This note is written as I read ``Elucidating the Design Space of Diffusion-Based
     v(t) &= s(t)^2 \int_0^t \frac{g(u)^2}{s(u)^2}\, \dee u
   \end{align*}
   as required.
+
+  \item We now switch gear to show that Equation~\eqref{eqn:generalized-diffusion-sde} yields the same probability distribution as Equation~\eqref{eqn:diffusion-sde}. One way to check whether the equations derived by the paper is correct or not is to see if it satisfied the Fokker--Planck equation.
+  
+  \begin{theorem}
+    Let $\{ \ve{x}(t) : t \geq 0 \}$ be a stochastic process that solves the SDE
+    \begin{align}
+      \dee\ve{x} = \ve{f}(\ve{x}, t)\, \dee t + g(t)\, \dee\ve{W}. \label{eqn:diffusion-sde}
+    \end{align}
+    Then, the probability density function $p_t(\ve{x})$ of $\ve{x}(t)$ satisfies the {\bf Fokker--Planck equation}:
+    \begin{align} \label{eqn:fokker-planck}
+      \frac{\partial p_t(\ve{x})}{\partial t}
+      = - \sum_{i=1}^d \frac{\partial}{\partial x_i}[f_i(\ve{x},t) p_t(\ve{x})] + \frac{1}{2} \sum_{i=1}^d \frac{\partial^2}{\partial x_i^2} [g(t)^2 p_t(\ve{x})].
+    \end{align}
+  \end{theorem}
+
+  \item \begin{theorem} \label{thm:generalized-diffusion-sde}
+    Let $\beta(t): \Real \rightarrow [0,\infty)$ be a non-negative function. Consider the SDE
+    \begin{align}
+      \dee\ve{x} = \underbrace{\bigg( \ve{f}(\ve{x},t) - \frac{1}{2}g(t)^2 \nabla_{\ve{x}} \log p_t(\ve{x}) \bigg)\, \dee t}_{\mathrm{probability\ flow\ ODE}} +  \bigg( \underbrace{\frac{1}{2} \beta(t) g(t)^2 \nabla_{\ve{x}} \log p_t(\ve{x})\, \dee t + \sqrt{\beta(t)} g(t)\, \dee \ve{W}}_{\mathrm{Langevin\ diffusion\ SDE}} \bigg).
+    \end{align}
+    The probability density function $p_t(\ve{x})$ of its solution $\{ \ve{x}(t): t \geq 0 \}$ satisfies the Fokker--Planck equation~\eqref{eqn:fokker-planck}.
+  \end{theorem}
+  \begin{proof}
+    Rewriting the equation above, we have that
+    \begin{align*}
+      \dee \ve{x} = \bigg( \ve{f}(\ve{x},t) - \frac{1}{2}g(t)^2 \nabla_{\ve{x}} \log p_t(\ve{x}) + \frac{1}{2} \beta(t) g(t)^2 \nabla_{\ve{x}} \log p_t(\ve{x}) \bigg)\, \dee t + \sqrt{\beta(t)} g(t)\, \dee \ve{W}.
+    \end{align*}
+    Let
+    \begin{align*}
+      \hat{\ve{f}}(\ve{x,t}) := \ve{f}(\ve{x},t) - \frac{1}{2}g(t)^2 \nabla_{\ve{x}} \log p_t(\ve{x})  + \frac{1}{2} \beta(t) g(t)^2 \nabla_{\ve{x}} \log p_t(\ve{x}).
+    \end{align*}
+    We have that
+    \begin{align*}
+      \dee \ve{x} = \hat{\ve{f}}(\ve{x},t)\, \dee t + \sqrt{\beta(t)}g(t)\, \dee \ve{W}.
+    \end{align*}
+    The probability density function $p_t(\ve{x})$ would satisfy the Fokker--Planck equation
+    \begin{align*}
+      \frac{\partial p_t(\ve{x})}{\partial t} 
+      &= - \sum_{i=1}^d \frac{\partial}{\partial x_i}[\hat{f}_i(\ve{x},t) p_t(\ve{x})] + \frac{1}{2} \sum_{i=1}^d \frac{\partial^2}{\partial x_i^2} [\beta(t) g(t)^2 p_t(\ve{x})].      
+    \end{align*}
+    Now, we have that
+    \begin{align*}
+      \hat{f}_i(\ve{x},t) = f_i(\ve{x},t) - \frac{1}{2}g(t)^2 \frac{\partial \log p_t(\ve{x})}{\partial x_i} + \frac{1}{2}\beta(t) g(t)^2 \frac{\partial \log p_t(\ve{x})}{\partial x_i}.
+    \end{align*}
+    So,
+    \begin{align*}
+      &-\sum_{i=1}^d \frac{\partial}{\partial x_i}[\hat{f}_i(\ve{x},t) p_t(\ve{x})] \\
+      &= -\sum_{i=1}^d \frac{\partial}{\partial x_i}\bigg[ \bigg( f_i(\ve{x},t) - \frac{1}{2}g(t)^2 \frac{\partial \log p_t(\ve{x})}{\partial x_i} + \frac{1}{2}\beta(t) g(t)^2 \frac{\partial \log p_t(\ve{x})}{\partial x_i} \bigg) p_t(\ve{x}) \bigg] \\
+      &= -\sum_{i=1}^d \frac{\partial}{\partial x_i}\bigg[ \bigg( f_i(\ve{x},t) - \frac{1}{2}g(t)^2 \frac{\partial \log p_t(\ve{x})}{\partial x_i}\bigg) p_t(\ve{x}) \bigg] - \frac{1}{2} \sum_{i=1}^d \frac{\partial}{\partial x_i}\bigg[ \bigg( \beta(t) g(t)^2 \frac{\partial \log p_t(\ve{x})}{\partial x_i} \bigg) p_t(\ve{x}) \bigg].
+    \end{align*}
+    Next,
+    \begin{align*}
+      \frac{1}{2} \sum_{i=1}^d \frac{\partial^2}{\partial x_i^2} [\beta(t) g(t)^2 p_t(\ve{x})]
+      &= \frac{1}{2} \sum_{i=1}^d \frac{\partial}{\partial x_i} \bigg[\beta(t) g(t)^2 \frac{\partial p_t(\ve{x})}{\partial x_i}\bigg]
+      = \frac{1}{2} \sum_{i=1}^d \frac{\partial}{\partial x_i} \bigg[ \bigg( \beta(t) g(t)^2 \frac{\partial \log p_t(\ve{x})}{\partial x_i}\bigg) p_t(\ve{x}) \bigg]
+    \end{align*}
+    Adding the two equations together, we have that
+    \begin{align*}
+      &-\sum_{i=1}^d \frac{\partial}{\partial x_i}[\hat{f}_i(\ve{x},t) p_t(\ve{x})] + \frac{1}{2} \sum_{i=1}^d \frac{\partial^2}{\partial x_i^2} [\beta(t) g(t)^2 p_t(\ve{x})] \\
+      &= -\sum_{i=1}^d \frac{\partial}{\partial x_i}\bigg[ \bigg( f_i(\ve{x},t) - \frac{1}{2}g(t)^2 \frac{\partial \log p_t(\ve{x})}{\partial x_i}\bigg) p_t(\ve{x}) \bigg] \\
+      &= -\sum_{i=1}^d \frac{\partial}{\partial x_i}\bigg[ \bigg( f_i(\ve{x},t) - \frac{1}{2}\frac{g(t)^2}{p_t(\ve{x})} \frac{\partial p_t(\ve{x})}{\partial x_i}\bigg) p_t(\ve{x}) \bigg] \\
+      &= -\sum_{i=1}^d \frac{\partial}{\partial x_i}[ f_i(\ve{x},t) p_t(\ve{x}) ] + \frac{1}{2} \sum_{i=1}^d \frac{\partial}{\partial x_i}\bigg[ g(t)^2 \frac{\partial p_t(\ve{x})}{\partial x_i} \bigg] \\
+      &= -\sum_{i=1}^d \frac{\partial}{\partial x_i}[ f_i(\ve{x},t) p_t(\ve{x}) ] + \frac{1}{2} \sum_{i=1}^d \frac{\partial^2}{\partial x_i^2}[ g(t)^2 p_t(\ve{x})].
+    \end{align*}
+    In other words,
+    \begin{align*}
+      \frac{\partial p_t(\ve{x})}{\partial t} = -\sum_{i=1}^d \frac{\partial}{\partial x_i}[ f_i(\ve{x},t) p_t(\ve{x}) ] + \frac{1}{2} \sum_{i=1}^d \frac{\partial^2}{\partial x_i^2}[ g(t)^2 p_t(\ve{x})].
+    \end{align*}
+    as required.
+  \end{proof}
+
+  \item A lot more machinery is required to show that the conditional density $p_{t|T}$ corresponding to Equation~\eqref{eqn:generalized-reverse-time-diffusion-sde} is equivalent to that corresponding to the standard equation~\eqref{eqn:diffusion-sde}. First, we need the backward Kolmogorov equation.
+  \begin{theorem}
+    Let $\{ \ve{x}(t) : t \geq 0 \}$ be a stochastic process that satisfies the SDE
+    \begin{align*}
+      \dee \ve{x} = \ve{f}(\ve{x},t)\, \dee t + g(t)\, \dee\ve{W}.
+    \end{align*}
+    Let $T > 0$. Then, for any $0 \leq t < T$, we have that the conditonal probability $p_{T|t}(\ve{x}'|\ve{x})$ satisfies the following {\bf backward Kolmogorov equation}:
+    \begin{align*}
+      -\frac{\partial p_{T|t}(\ve{x}'|\ve{x})}{\partial t}
+      = \sum_{i=1}^d f_i(\ve{x},t) \frac{\partial p_{T|t}(\ve{x}'|\ve{x})}{\partial x_i} + \frac{1}{2} g(t)^2 \sum_{i=1}^d \frac{\partial^2 p_{T|t}(\ve{x}'|\ve{x})}{\dee x_i^2}.
+    \end{align*}
+  \end{theorem}
+
+  \item \begin{theorem}
+    Let $\{ \ve{x}(t) : t \geq 0 \}$ be a stochastic solution that is the solution of the SDE
+    \begin{align*}
+      \dee \ve{x} = \ve{f}(\ve{x},t)\, \dee t + g(t)\, \dee\ve{W}.
+    \end{align*}
+    Let $T > 0$. Then, for any $0 \leq t < T$, the conditional distribution $p_{t|T}$ satisfies the {\bf reverse-time Kolmogorov equation}:
+    \begin{align*}
+      -\frac{\partial p_{t|T}(\ve{x}|\ve{x}')}{\partial t}
+      &= -\sum_{i=1}^d \frac{\partial}{\partial x_i} \bigg[ \bigg( -f_i(\ve{x},t) + g(t)^2 \frac{\partial \log p_t(\ve{x})}{\partial x_i} \bigg) p_{t|T}(\ve{x}|\ve{x}') \bigg] + \frac{1}{2} \sum_{i=1}^d \frac{\partial^2}{\partial x_i^2} \big[g(t)^2 p_{t|T}(\ve{x}|\ve{x}')\big].
+    \end{align*}    
+  \end{theorem}    
+  \begin{proof}
+    Let $0 \leq t < T$. Let
+    \begin{align*}
+      p_{t,T}(\ve{x},\ve{x}') = p(\ve{x}(t) = \ve{x} \wedge \ve{x}(T) = \ve{x}').
+    \end{align*}
+    By the definition of conditional probability, we have that
+    \begin{align*}
+      p_{t,T}(\ve{x},\ve{x}') = p_t(\ve{x}) p_{T|t}(\ve{x}'|\ve{x}).
+    \end{align*}
+    So,
+    \begin{align*}
+      &\frac{\partial p_{t,T}(\ve{x},\ve{x}')}{\partial t} \\
+      &= \frac{\partial}{\partial t}\big( p_{T|t}(\ve{x}'|\ve{x}) p_t(\ve{x}) \big) \\
+      &= \frac{\partial p_t(\ve{x})}{\partial t} p_{T|t}(\ve{x}'|\ve{x}) + p_t(\ve{x}) \frac{\partial p_{T|t}(\ve{x}'|\ve{x})}{\partial t} \\
+      &= \bigg( - \sum_{i=1}^d \frac{\partial}{\partial x_i}[f_i(\ve{x},t) p_t(\ve{x})] + \frac{1}{2} \sum_{i=1}^d \frac{\partial^2}{\partial x_i^2} [g(t)^2 p_t(\ve{x})] \bigg) p_{T|t}(\ve{x}'|\ve{x}) \\
+      &\phantom{=} \qquad p_t(\ve{x}) \bigg( -\sum_{i=1}^d f_i(\ve{x},t) \frac{\partial p_{T|t}(\ve{x}'|\ve{x})}{\partial x_i} - \frac{1}{2} g(t)^2 \sum_{i=1}^d \frac{\partial^2 p_{T|t}(\ve{x}'|\ve{x})}{\dee x_i^2} \bigg) \\
+      &= - \sum_{i=1}^d p_{T|t}(\ve{x}'|\ve{x}) \frac{\partial}{\partial x_i}[f_i(\ve{x},t) p_t(\ve{x})] + \frac{1}{2} \sum_{i=1}^d p_{T|t}(\ve{x}'|\ve{x}) \frac{\partial^2}{\partial x_i^2} [g(t)^2 p_t(\ve{x})] \\
+      &\phantom{=} \qquad -\sum_{i=1}^d [f_i(\ve{x},t) p_t(\ve{x})] \frac{\partial p_{T|t}(\ve{x}'|\ve{x})}{\partial x_i} - \frac{1}{2} g(t)^2 p_t(\ve{x}) \sum_{i=1}^d \frac{\partial^2 p_{T|t}(\ve{x}'|\ve{x})}{\dee x_i^2} \\
+      &= -\sum_{i=1}^d \frac{\partial}{\partial x_i} \big[ f_i(\ve{x},t) p_t(\ve{x}) p_{T|t}(\ve{x}'|\ve{x}) \big] \\
+      &\phantom{=} \qquad + \frac{1}{2} \sum_{i=1}^d \bigg( g(t)^2 p_{T|t}(\ve{x}'|\ve{x}) \frac{\partial^2 p_t(\ve{x})}{\partial x_i^2} \bigg) - \frac{1}{2} \sum_{i=1}^d \bigg( g(t)^2 p_t(\ve{x}) \frac{\partial^2 p_{T|t}(\ve{x}'|\ve{x})}{\partial x_i^2}  \bigg) \\
+      &= -\sum_{i=1}^d \frac{\partial}{\partial x_i} \big[ f_i(\ve{x},t) p_{t,T}(\ve{x},\ve{x}') \big] \\
+      &\phantom{=} \qquad + \frac{1}{2} \sum_{i=1}^d \bigg( g(t)^2 p_{T|t}(\ve{x}'|\ve{x}) \frac{\partial^2 p_t(\ve{x})}{\partial x_i^2} \bigg) - \frac{1}{2} \sum_{i=1}^d \bigg( g(t)^2 p_t(\ve{x}) \frac{\partial^2 p_{T|t}(\ve{x}'|\ve{x})}{\partial x_i^2}  \bigg).
+    \end{align*}
+    Now, note that
+    \begin{align*}
+      &-\frac{1}{2} \frac{\partial^2}{\partial x_i^2} \big[g(t)^2 p_{t,T}(\ve{x},\ve{x}')\big] \\
+      &= -\frac{1}{2} \frac{\partial^2}{\partial x_i^2} \big[ g(t)^2 p_t(\ve{x}) p_{T,t}(\ve{x}'|\ve{x}) \big] \\
+      &= -\frac{1}{2} g(t)^2 p_{T|t}(\ve{x}',\ve{x}) \frac{\partial^2 p_t(\ve{x})}{\partial x_i^2} 
+      - g(t)^2 \frac{\partial p_{T|t}(\ve{x}',\ve{x})}{\partial x_i} \frac{\partial p_t(\ve{x})}{\partial x_i} 
+      - \frac{1}{2} g(t)^2 p_t(\ve{x}) \frac{\partial^2 p_{T|t}(\ve{x}'|\ve{x})}{\partial x_i^2}.
+    \end{align*}
+    So,
+    \begin{align*}
+      & \frac{1}{2} g(t)^2 p_{T|t}(\ve{x}',\ve{x}) \frac{\partial^2 p_t(\ve{x})}{\partial x_i^2} - \frac{1}{2} g(t)^2 p_t(\ve{x}) \frac{\partial^2 p_{T|t}(\ve{x}'|\ve{x})}{\partial x_i^2} \\
+      &= -\frac{1}{2} \frac{\partial^2}{\partial x_i^2} \big[g(t)^2 p_{t,T}(\ve{x},\ve{x}')\big] 
+      + g(t)^2 \frac{\partial p_{T|t}(\ve{x}',\ve{x})}{\partial x_i} \frac{\partial p_t(\ve{x})}{\partial x_i} 
+      + g(t)^2 p_{T|t}(\ve{x}',\ve{x}) \frac{\partial^2 p_t(\ve{x})}{\partial x_i^2} \\ 
+      &= -\frac{1}{2} \frac{\partial^2}{\partial x_i^2} \big[g(t)^2 p_{t,T}(\ve{x},\ve{x}')\big] + \frac{\partial}{\partial x_i} \bigg[ g(t)^2 p_{T|t}(\ve{x}'|\ve{x}) \frac{\partial p_t(\ve{x})}{\partial x_i} \bigg].
+    \end{align*}
+    As a result,
+    \begin{align*}
+      \frac{\partial p_{t,T}(\ve{x},\ve{x}')}{\partial t}
+      &= -\sum_{i=1}^d \frac{\partial}{\partial x_i} \big[ f_i(\ve{x},t) p_{t,T}(\ve{x},\ve{x}') \big] 
+      - \frac{1}{2} \sum_{i=1}^d \frac{\partial^2}{\partial x_i^2} \big[g(t)^2 p_{t,T}(\ve{x},\ve{x}')\big] 
+      + \sum_{i=1}^d \frac{\partial}{\partial x_i} \bigg[ g(t)^2 p_{T|t}(\ve{x}'|\ve{x}) \frac{\partial p_{T}(\ve{x})}{\partial x_i} \bigg] \\      
+      &= -\sum_{i=1}^d \frac{\partial}{\partial x_i} \big[ f_i(\ve{x},t) p_{t,T}(\ve{x},\ve{x}') \big] 
+      - \frac{1}{2} \sum_{i=1}^d \frac{\partial^2}{\partial x_i^2} \big[g(t)^2 p_{t,T}(\ve{x},\ve{x}')\big] 
+      + \sum_{i=1}^d \frac{\partial}{\partial x_i} \bigg[ g(t)^2 p_{t,T}(\ve{x},\ve{x}') \frac{\partial \log p_{T}(\ve{x})}{\partial x_i} \bigg] \\
+      &= -\sum_{i=1}^d \frac{\partial}{\partial x_i} \bigg[ \bigg( f_i(\ve{x},t) - g(t)^2 \frac{\partial \log p_t(\ve{x})}{\partial x_i} \bigg) p_{t,T}(\ve{x},\ve{x}') \bigg] - \frac{1}{2} \sum_{i=1}^d \frac{\partial^2}{\partial x_i^2} \big[g(t)^2 p_{t,T}(\ve{x},\ve{x}')\big].
+    \end{align*}
+    Deviding both sizes by $p_{T}(\ve{x}')$, we have that
+    \begin{align*}
+      \frac{\partial p_{t|T}(\ve{x}|\ve{x}')}{\partial t}
+      &= -\sum_{i=1}^d \frac{\partial}{\partial x_i} \bigg[ \bigg( f_i(\ve{x},t) - g(t)^2 \frac{\partial \log p_t(\ve{x})}{\partial x_i} \bigg) p_{t|T}(\ve{x}|\ve{x}') \bigg] - \frac{1}{2} \sum_{i=1}^d \frac{\partial^2}{\partial x_i^2} \big[g(t)^2 p_{t|T}(\ve{x}|\ve{x}')\big] \\
+      -\frac{\partial p_{t|T}(\ve{x}|\ve{x}')}{\partial t}
+      &= \sum_{i=1}^d \frac{\partial}{\partial x_i} \bigg[ \bigg( f_i(\ve{x},t) - g(t)^2 \frac{\partial \log p_t(\ve{x})}{\partial x_i} \bigg) p_{t|T}(\ve{x}|\ve{x}') \bigg] + \frac{1}{2} \sum_{i=1}^d \frac{\partial^2}{\partial x_i^2} \big[g(t)^2 p_{t|T}(\ve{x}|\ve{x}')\big] \\
+      -\frac{\partial p_{t|T}(\ve{x}|\ve{x}')}{\partial t}
+      &= -\sum_{i=1}^d \frac{\partial}{\partial x_i} \bigg[ \bigg( - f_i(\ve{x},t) + g(t)^2 \frac{\partial \log p_t(\ve{x})}{\partial x_i} \bigg) p_{t|T}(\ve{x}|\ve{x}') \bigg] + \frac{1}{2} \sum_{i=1}^d \frac{\partial^2}{\partial x_i^2} \big[g(t)^2 p_{t|T}(\ve{x}|\ve{x}')\big].
+    \end{align*}    
+    We are done.
+  \end{proof}
+
+  \item \begin{theorem}
+    Let $\{ \ve{x}(t) : t \geq 0 \}$ be the solution to the SDE
+    \begin{align*}
+      \dee\ve{x} = \big( \ve{f}(\ve{x},t) - g(t)^2 \nabla_{\ve{x}} \log p_t(\ve{x}) \big)\, \dee t + g(t)\, \dee \overline{\ve{W}}
+    \end{align*}
+    where $\overline{\ve{W}}$ is the Brownian motion that runs backward in time. Then, the probability density $p_t(\ve{x})$ of $\ve{x}(t)$ agrees with the probability distribution of the solution of
+    \begin{align*}
+      \dee\ve{x} = \ve{f}(\ve{x}, t)\, \dee t + g(t)\, \dee\ve{W}.
+    \end{align*}
+  \end{theorem}
+  
+  \begin{proof} (Not at all rigourous...)
+    Marginalizing over $\ve{x}(T)$, the reverse-time Kolmogorov equation becomes
+    \begin{align*}
+      -\frac{\partial p_{t}(\ve{x})}{\partial t}
+      &= - \sum_{i=1}^d \frac{\partial}{\partial x_i} \bigg[ \bigg( -f_i(\ve{x},t) + g(t)^2 \frac{\partial \log p_t(\ve{x})}{\partial x_i} \bigg) p_{t}(\ve{x}) \bigg] + \frac{1}{2} \sum_{i=1}^d \frac{\partial^2}{\partial x_i^2} \big[g(t)^2 p_{t}(\ve{x})\big].
+    \end{align*}
+    We now make a substitution $t \rightarrow \tau$ with $\tau = T-t$. We have that
+    \begin{align*}
+      \frac{\partial p_{\tau}(\ve{x})}{\partial \tau}
+      &= - \sum_{i=1}^d \frac{\partial}{\partial x_i} \bigg[ \bigg( -f_i(\ve{x},\tau) + g(\tau)^2 \frac{\partial \log p_\tau(\ve{x})}{\partial x_i} \bigg) p_{\tau}(\ve{x}) \bigg] + \frac{1}{2} \sum_{i=1}^d \frac{\partial^2}{\partial x_i^2} \big[g(\tau)^2 p_{\tau}(\ve{x})\big].
+    \end{align*}
+    The above equation is the Fokker--Planck equation of the SDE
+    \begin{align*}
+      \dee \ve{x} = \Big( -\ve{f}(\ve{x},\tau) + g(\tau)^2 \nabla_{\ve{x}} \log p_\tau(\ve{x}) \Big)\, \dee\tau + g(\tau)\, \dee \overline{\ve{W}}.
+    \end{align*}
+    Making a substution $\tau \rightarrow t$ again, we have that
+    \begin{align*}
+      \dee \ve{x} = \Big( \ve{f}(\ve{x},t) - g(t)^2 \nabla_{\ve{x}} \log p_t(\ve{x}) \Big)\, \dee t + g(t)\, \dee \overline{\ve{W}}.
+    \end{align*}
+    Since $p_t(\ve{x})$ satisfies the reverse-time Kolmogorov equation, it also satisfies the Fokker--Planck equation, which means that it agrees with the probability density of the solution of $\dee\ve{x} = \ve{f}(\ve{x},t)\, \dee t + g(t)\, \dee\ve{W}$.
+  \end{proof}
 \end{itemize}
 
 \bibliographystyle{alpha}
