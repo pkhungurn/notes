@@ -53,6 +53,8 @@
 \newcommand{\data}{\mathrm{data}}
 \newcommand{\SNR}{\mathrm{SNR}}
 
+\DeclareMathOperator*{\argmin}{arg\,min}
+
 \title{Karras \etal's DDPM Improvements}
 \author{Pramook Khungurn}
 
@@ -344,6 +346,8 @@ This note is written as I read ``Elucidating the Design Space of Diffusion-Based
 \subsection{Stochastic Sampling}
 
 \begin{itemize}
+  \item Most previous works on diffusion models insert noise in each step of the sampling process. Let us refer to this type of sampling as ``stochastic sampling'' as opposed to ``deterministic sampling'' above.
+
   \item The paper goes to a very long derivation (Appendix B.5) that uses heat equation to derive the reverse-time SDE \cite{Anderson:1982} so that it can derive the stochastic sampling algorithm. Moreover, the derived equation only works for the non-scaled version (i.e., $s(t) = 1$ and $f(t) = 0$) of the forward SDE. The stochastic sampling algorithm is also only for the non-scaled case. The paper claims that the derivation for the scaled case is similar and omits the derivation.
   
   \item I found the above treatment annoyhing as it is not complete. I also struggled with the derivation because it uses the heat equation and knowledge about partial differential equations, which I have not studied. So, in this note, I will summarize the results and provide an alternative, simpler derivation in the Appendix.  
@@ -368,36 +372,304 @@ This note is written as I read ``Elucidating the Design Space of Diffusion-Based
     + \underbrace{\sqrt{\beta(t)} g(t)\, \dee \overline{\ve{W}}}_{\mathrm{noise\ injection}}
   \end{align*}
   Substituting $f(t) = \dot{s}(t)/s(t)$ and $g(t) = s(t)\sqrt{2\sigma(t)\dot{\sigma}(t)}$ and $p_t(\ve{x}) = p(\ve{x}/s(t); \sigma(t)) s(t)^{-d}$, we have that
-  \begin{align*}
+  \begin{align}
     \dee\ve{x} 
     &= \Big( f(t)\ve{x} - \frac{1}{2}g(t)^2 \nabla_{\ve{x}} \log p_t(\ve{x}) \Big) \, \dee t
     - \frac{1}{2} \beta(t) g(t)^2 \nabla_{\ve{x}} \log p_t(\ve{x})\, \dee t
-    + \sqrt{\beta(t)} g(t)\, \dee \overline{\ve{W}} \\
+    + \sqrt{\beta(t)} g(t)\, \dee \overline{\ve{W}} \notag \\
     \dee\ve{x}
-    &= \bigg( \frac{\dot{s}(t)}{s(t)}\ve{x} - \big(1 + \beta(t)\big)s(t)^2 \sigma(t)\dot{\sigma}(t) \nabla_{\ve{x}} \log p(\ve{x}/s(t);\sigma(t)) \bigg) \dee t \\
-    &\phantom{=} \quad + s(t) \sqrt{2 \beta(t)\sigma(t)\dot{\sigma}(t)} \dee \overline{\ve{W}} \\
+    &= \bigg( \frac{\dot{s}(t)}{s(t)}\ve{x} - \big(1 + \beta(t)\big)s(t)^2 \sigma(t)\dot{\sigma}(t) \nabla_{\ve{x}} \log p(\ve{x}/s(t);\sigma(t)) \bigg) \dee t \notag \\
+    &\phantom{=} \quad + s(t) \sqrt{2 \beta(t)\sigma(t)\dot{\sigma}(t)} \dee \overline{\ve{W}} \notag \\
     \dee\ve{x}
-    &= \bigg( \frac{\dot{s}(t)}{s(t)}\ve{x} - \big(1 + \beta(t)\big)s(t)^2 \sigma(t)\dot{\sigma}(t) \frac{D_{\ves{\theta}}(\ve{x}/s(t), \sigma(t)) - \ve{x}/s(t)}{s(t)\sigma^2(t)} \bigg) \dee t \\
-    &\phantom{=} \quad + s(t) \sqrt{2 \beta(t)\sigma(t)\dot{\sigma}(t)} \dee \overline{\ve{W}} \\
+    &= \bigg( \frac{\dot{s}(t)}{s(t)}\ve{x} - \big(1 + \beta(t)\big)s(t)^2 \sigma(t)\dot{\sigma}(t) \frac{D_{\ves{\theta}}(\ve{x}/s(t), \sigma(t)) - \ve{x}/s(t)}{s(t)\sigma^2(t)} \bigg) \dee t \notag \\
+    &\phantom{=} \quad + s(t) \sqrt{2 \beta(t)\sigma(t)\dot{\sigma}(t)} \dee \overline{\ve{W}} \notag \\
     &= \bigg[ \bigg( \frac{\dot{s}(t)}{s(t)} + \big(1 + \beta(t)\big)\frac{\dot{\sigma}(t)}{\sigma(t)} \bigg)\ve{x} - \big( 1 + \beta(t) \big)s(t) \frac{\dot{\sigma}(t)}{\sigma(t)} D_{\ves{\theta}}\bigg( \frac{\ve{x}}{s(t)}, \sigma(t) \bigg)  \bigg]\dee t 
-    + s(t) \sqrt{2 \beta(t)\sigma(t)\dot{\sigma}(t)} \dee \overline{\ve{W}}.
-  \end{align*}
+    + s(t) \sqrt{2 \beta(t)\sigma(t)\dot{\sigma}(t)} \dee \overline{\ve{W}}.  \label{eqn:generalized-noise-added-sde}
+  \end{align}
 
-  \item The paper does not derive the above equation. It opts for a simple equation where $s(t) = 1$, which we have that
+  \item The paper does not derive Equation~\eqref{eqn:generalized-noise-added-sde}. It opts for a simple equation where $s(t) = 1$, which we have that
   \begin{align*}
     \dee\ve{x}
-    &= \bigg( \frac{\dot{s}(t)}{s(t)}\ve{x} - \big(1 + \beta(t)\big)s(t)^2 \sigma(t)\dot{\sigma}(t) \nabla_{\ve{x}} \log p(\ve{x}/s(t);\sigma(t)) \bigg) \dee t \\
-    &\phantom{=} \quad + s(t) \sqrt{2 \beta(t)\sigma(t)\dot{\sigma}(t)} \dee \overline{\ve{W}} \\
+    &= \bigg( \frac{\dot{s}(t)}{s(t)}\ve{x} - \big(1 + \beta(t)\big)s(t)^2 \sigma(t)\dot{\sigma}(t) \nabla_{\ve{x}} \log p(\ve{x}/s(t);\sigma(t)) \bigg) \dee t \notag \\
+    &\phantom{=} \quad + s(t) \sqrt{2 \beta(t)\sigma(t)\dot{\sigma}(t)} \dee \overline{\ve{W}} \notag \\
     \dee\ve{x} &=  - \big(1 + \beta(t)\big) \sigma(t)\dot{\sigma}(t) \nabla_{\ve{x}} \log p(\ve{x};\sigma(t))\, \dee t 
     + \sqrt{2 \beta(t)\sigma(t)\dot{\sigma}(t)} \dee \overline{\ve{W}}.
   \end{align*}
   Take $\beta(t) := \gamma(t)\frac{\sigma(t)}{\dot{\sigma}(t)}$. The equation becomes
-  \begin{align*}
+  \begin{align} \label{eqn:no-scaling-diffusion-sde}
     \dee\ve{x}
     =
     -\sigma(t)\dot{\sigma}(t) \nabla_{\ve{x}} \log p(\ve{x};\sigma(t))\, \dee t - \gamma(t)\sigma^2(t) \nabla_{\ve{x}} \log p(\ve{x};\sigma(t))\, \dee t + \sqrt{2\gamma(t)}\sigma(t) \dee \overline{\ve{W}}.
-  \end{align*}  
+  \end{align}  
   This matches Equation (6) in the paper if we change the name of $\gamma$ to $\beta$.
+
+  \item Equation~\eqref{eqn:generalized-noise-added-sde} leads to an sampling algorithm based on the Euler--Maruyama method (Algorithm~\ref{alg:euler-stochastic-sampler}).
+  
+  \item The paper also proposes a stochastic sampler based on Heun's method. The implmenetation is little different from that to the Euler--Maruayama method above. The paper adds the noise to the current data item first before performing the steps of Heun's method. See Algorithm~\ref{alg:heun-stochastic-sampler}.
+  
+  \begin{algorithm}[t]
+  \begin{codebox}
+    \Procname{$\proc{Euler-Maruyama-Sampler}(D_{\ves{\theta}}, \sigma, s, \{ t_0, t_1, \dotsc, t_N \} )$}
+    \li Sample $\ve{x}_0 \sim \mcal{N}(\ve{0}, s(t_0)^2 \sigma(t_0)^2 I)$.
+    \li \For $i \leftarrow 0, 1, \dotsc, N-1$
+    \li \Do
+          $\ve{s}_i \leftarrow (1 + \beta(t_i)) s(t_i)\frac{\dot{\sigma}(t_i)}{\sigma(t_i)} D_{\ves{\theta}} \Big( \frac{\ve{x}_i}{s(t_i)}, \sigma(t_i)  \Big)$
+    \li   $\ve{d}_i \leftarrow \Big( 
+            \frac{\dot{\sigma}(t_i)}{\sigma(t_i)} + (1 + \beta(t_i))\frac{\dot{s}(t_i)}{s(t_i)}
+          \Big) \ve{x}_i
+          - \ve{s}_i$
+    \li   $\ves{\xi}_i \sim \mcal{N}(\ve{0}, 2\beta(t)\sigma(t)\dot{\sigma}(t)I)$.
+    \li   $\ve{x}_{i+1} \leftarrow \ve{x}_i + (t_{i+1} - t_i)\ve{d}_i + \sqrt{|t_{i+1} - t_i|} \ves{\xi}_i$
+        \End
+    \li \Return $\ve{x}_N$.
+  \end{codebox}
+  \caption{Euler--Maruyama method for sampling from $p_{\data}$ by simulating the SDE \eqref{eqn:generalized-noise-added-sde}.}  
+  \label{alg:euler-stochastic-sampler}
+  \end{algorithm}
+
+  \begin{algorithm}[t]
+    \begin{codebox}
+      \Procname{$\proc{Heun-Stochastic-Sampler}(D_{\ves{\theta}}, \sigma, s, \{ t_0, t_1, \dotsc, t_N \} )$}
+      \li Sample $\ve{x}_0 \sim \mcal{N}(\ve{0}, s(t_0)^2 \sigma(t_0)^2 I)$.
+      \li \For $i \leftarrow 0, 1, \dotsc, N-1$
+      \li \Do
+            $\ves{\xi}_i \sim \mcal{N}(\ve{0}, 2\beta(t)\sigma(t)\dot{\sigma}(t)I)$.
+      \li   $\widetilde{\ve{x}}_i \leftarrow \ve{x}_i + \sqrt{|t_{i+1} - t_i|} \ves{\xi}_i$
+      \li   $\ve{s}_i \leftarrow (1 + \beta(t_i)) s(t_i)\frac{\dot{\sigma}(t_i)}{\sigma(t_i)} D_{\ves{\theta}} \Big( \frac{\widetilde{\ve{x}}_i}{s(t_i)}, \sigma(t_i)  \Big)$
+      \li   $\ve{d}_i \leftarrow \Big( 
+              \frac{\dot{\sigma}(t_i)}{\sigma(t_i)} + (1 + \beta(t_i))\frac{\dot{s}(t_i)}{s(t_i)}
+            \Big) \widetilde{\ve{x}}_i
+            - \ve{s}_i$
+      \li   $\ve{x}_{i+1} \leftarrow \widetilde{\ve{x}}_i + (t_{i+1} - t_i)\ve{d}_i$
+      \li   \If $\sigma(t_{i+1}) \neq 0$ 
+      \li    \Then
+              $\ve{d}'_{i} \leftarrow \Big( 
+                \frac{\dot{\sigma}(t_{i+1})}{\sigma(t_{i+1})} + \frac{\dot{s}(t_{i+1})}{s(t_{i+1})}
+              \Big) \ve{x}_{i+1}
+              - s(t_{i+1}) \frac{\dot{\sigma}(t_{i+1})}{\sigma(t_{i+1})} D_{\ves{\theta}} \Big( \frac{\ve{x}_{i+1}}{s(t_{i+1})}, \sigma(t_{i+1})  \Big)$
+      \li     $\ve{x}_{i+1} \leftarrow \widetilde{\ve{x}}_i + \frac{1}{2}(t_{i+1} - t_i)(\ve{d}_i + \ve{d}_i')$
+            \End            
+          \End
+      \li \Return $\ve{x}_N$.
+    \end{codebox}
+    \caption{Huen's method for stochastically sampling from $p_{\data}$ by simulating the SDE \eqref{eqn:generalized-noise-added-sde}.}  
+    \label{alg:heun-stochastic-sampler}
+    \end{algorithm}
+\end{itemize}
+
+\section{Improvements on Deterministic Sampling}
+
+\begin{itemize}
+  \item The paper argues that the noise/scaling/time schedule ($\sigma(t)$, $s(t)$, and $\{ t_i\}$) should be doupled from the specification of the denoising model $D_{\ves{\theta}}$. 
+  
+  \item It does so by performing experiments on pre-trained models from previous works, only changing the noise/scaling/time schedule. It was able to achieve imprvements.
+  
+  \item The used models include:
+  \begin{itemize}
+    \item DDPM++ cont. trained on CIFAR-10 at $32 \times 32$ \cite{Song:2021}.\\
+    It is associated with the VP SDE formulation.
+    \item NCSN++ cont. trained on CIFAR-10 at $32 \times 32$ \cite{Song:2021}.\\
+    It is associated with the VE SDE formulation.
+    \item ADM (dropout) trained on class-conditional ImageNet at $64 \times 64$ \cite{Dhariwal:2021}.\\
+    It is associated with the ``improved DDPM paper'' \cite{Dhariwal:2021} and the DDIM paper \cite{Song:DDIM:2020}.
+  \end{itemize}
+
+  \item The paper advocates for the use of Heun's 2nd order method (Algorithm~\ref{alg:heun-deterministic-sampler}).
+  \begin{itemize}
+    \item The authors argue that it provides the right balance betweeen sample quality and the number of neural function evaluations (NFE).
+    \item From experiments (Figure 2 in the paper), using Heun's methods led to improvment in all casts. FID score dropped faster as a function of the number of NFEs.
+  \end{itemize}
+
+  \item Comments/improvements on the time steps $\{t_i\}$.
+  \begin{itemize}
+    \item The step size $|t_{i+1} - t_i|$ should decrease monotonically with decreasing $\sigma$. (In other words, the steps should become shorter as we more nearer to a finished product.)
+    
+    \item When defining the time steps, the paper first decide on the noise schedule $\sigma_0, \sigma_1, \dotsc, \sigma_N$ first. Then, it computes $t_i = \sigma^{-1}(\sigma_i)$ for each $i$ where $\sigma$ is the noise schedule specific to each model (Table 1 in the paper) For the noise schedule, the paper uses
+    \begin{align*}
+      \sigma_i = \begin{cases}
+        \big( \sigma_{\max}^{1/\rho} + \frac{i}{N-1}(\sigma_{\min}^{1/\rho} - \sigma_{\max}^{1/\rho}) \big)^{\rho} & 0 \leq i < N, \\
+        0 & i = N
+      \end{cases}      
+    \end{align*}
+    where $\rho$ is a positive constant.
+    
+    \item $\rho$ controls how much the steps near $\sigma_{\min}$ are shortened at the expense of the longer steps near $\sigma_{\max}$.
+    \begin{itemize}
+      \item $\rho = 3$ nearly equalizes the truncation error at each step.
+      \item $\rho \in [5,10]$ performs much better in terms of image quality.
+      \item The paper uses $\rho = 7$.
+    \end{itemize}
+  \end{itemize}
+
+  \item Comments on $\sigma(t)$ and $s(t)$.
+  \begin{itemize}
+    \item The authors argue that the best choice for these functions is $\sigma(t) = t$ and $s(t) = 1$.
+    
+    \item $\sigma$ and $t$ becomes interchangeable.
+    
+    \item The probability flow ODE \eqref{eqn:probability-flow-ode-in-practice} becomes
+    \begin{align*}
+      \frac{\dee \ve{x}}{\dee t} = \frac{\ve{x} - D_{\ves{\theta}}(\ve{x}, t)}{t}.
+    \end{align*}
+    
+    \item A single Euler step to $t=0$ yields the denoised image $D_{\ves{\theta}}(\ve{x},t)$.
+    
+    \item The tangent of the solution trajectory always points toward the denoiser output, so the tangent (i.e., the score) would change slowly with the noise level. The solution trajectory would be largely linear.
+    
+    \item The paper says that the DDIM already employs this schedule \cite{Song:DDIM:2020}. Moreover, when switching the VP and VE models to this noise/scaling schedule, the authors got improved results.
+  \end{itemize}
+\end{itemize}
+
+\section{Stochastic Sampling}
+
+\begin{itemize}
+  \item The authors observe that deterministic sampling tends to lead to poor sample quality than stochastic sampling.
+  
+  \item Setting $s(t) = 1$, the SDE we have to simulate is Equation~\eqref{eqn:no-scaling-diffusion-sde}:
+  \begin{align*}
+    \dee\ve{x}
+    =
+    \underbrace{-\sigma(t)\dot{\sigma}(t) \nabla_{\ve{x}} \log p(\ve{x};\sigma(t))\, \dee t}_{\mathrm{probability\ flow\ ODE}}
+    -
+    \underbrace{
+      \underbrace{\beta(t)\sigma^2(t) \nabla_{\ve{x}} \log p(\ve{x};\sigma(t))\, \dee t}_{\mathrm{detemrinistic\ noise\ decay}} 
+      + \underbrace{\sqrt{2\beta(t)}\sigma(t) \dee \overline{\ve{W}}}_{\mathrm{noise\ injection}}
+    }_{\mathrm{Langevin\ diffusion\ SDE}}
+    .
+  \end{align*}
+  where $\beta: \Real \rightarrow [0,\infty)$ is a non-negative function. The paper says that $\beta(t)$ is effectively the rate at which existing noise is replaced with new noise.
+
+  \item The paper says that the Langevin diffusion SDE drives the sample towards the desired distribution, correcting for errors made in earlier sampling steps. This is probabilty the reason why stochastic sampling is useful.
+  
+  \item However, $\beta(t)$ should not be set too large because the Langevin steps would reduce introduce as well. So, the optimal $\beta(t)$ should be determined empirically.
+  
+  \item The paper then introduces a stochastic sampler (Algorithm 2 in the paper) that I had a tough time recovering the SDE it tries to simulate. I guess the closest one would be
+  \begin{align*}
+    \dee\ve{x} = (1 + \beta(t))\frac{\ve{x} - D_{\ves{\theta}(\ve{x},t)}}{t} + \sqrt{\beta(t) t} \dee \overline{W}\, 
+  \end{align*}
+  which is Equation~\eqref{eqn:generalized-noise-added-sde} with $s(t) = 1$ and $\sigma(t) = t$. The reason why it is not correctly simulating the above equation is because:
+  \begin{itemize}
+    \item The noise has to be scaled with something porportional to $\sqrt{t}$. However, the scale of the noise is proportional to $\sqrt{\hat{t}_i^2 - t_i} = \sqrt{(1 + \gamma_i)t_i^2 - t_i^2} = \sqrt{\gamma} t_i$
+    \item The score, multiplied by noise factor $\beta(t) = \gamma_i$, must be {\bf added}, not subtracted from the update. In the paper, the added noise seems to shorten the distance travelled by the deterministic step. It should be the other way around.
+  \end{itemize}
+
+  \item The paper comments on adding noise in general.
+  \begin{itemize}
+    \item Excessive noise addition causes loss of details in the generated images.
+    \item Excessive noise addition also causes a drift towards oversaturated colors at very low and high noise levels. This is not observed in deterministic sampling.
+    \begin{itemize}
+      \item The paper solves this by only performing noise addition when $t_i \in [S_{\min}, S_{\max}].$
+      \item They also limit the total noise by the $S_{\mathrm{churn}}$ parameter.
+      \item They clamp $\gamma_i$ variable so that the noise addition never introduces more noise than there is in the image.
+      \item They set the noise level $S_{\mathrm{noise}}$ to be slightly above $1$ to avoid loss of details.
+    \end{itemize}
+  \end{itemize}
+
+  \item The paper's stochastic sampler outperformed other works, getting good FID score while keeping the NFEs low. 
+  
+  \item However, the algorithm also has a number of parameters $S_{\min}$, $S_{\max}$, $S_{\mathrm{churn}}$, and $S_{\mathrm{noise}}$. The authors had to fine-tune these parameters to get close to SOTA FID on ImageNet-64.
+\end{itemize}
+
+\section{Precondition and Training}
+
+\begin{itemize}
+  \item Especially with the variance exploding setting, the input to $D_{\ves{\theta}}$ has very large dynamic range. Nevertheless, it is advisable to keep the input and output signal magnitudes fixed to avoid large variation in gradient magnitudes.
+
+  \item In order to do so, the paper does not represent $D_{\ves{\theta}}$ as a neural network directly. It is instead a wrapper around another network $F_{\ves{\theta}}$. In particular, it uses
+  \begin{align*}
+    D_{\ves{\theta}}(\ve{x}, \sigma) = c_{\mrm{skip}}(\sigma) \ve{x} + c_{\mrm{out}}(\sigma) F_{\ves{\theta}}(c_{\mrm{in}}(\sigma) \ve{x}, c_{\mrm{noise}}(\sigma)).
+  \end{align*}
+  The formulation incorporates four scaling operations that can be used to make sure that magnitudes remain constant between noise levels.
+
+  \item When training, a noise level is sampled according to the probability $p_{\mrm{train}}(\sigma)$. The loss for the noise level $\sigma$ is multipled by the weight $\lambda(\sigma)$. All in all, the loss becomes
+  \begin{align*}
+    E_{
+      \substack{
+        \sigma \sim p_{\mrm{train}}, \\
+        \ve{y} \sim p_{\data}, \\
+        \ves{\xi} \sim \mcal{N}(\ve{0}, \sigma^2 I)
+      }
+    }
+    \bigg[
+      \lambda(\sigma) c_{\mrm{out}}(\sigma)^2
+      \bigg\|
+        F_{\ves{\theta}}(c_{\mrm{in}}(\sigma)(\ve{y} + \ves{\xi}), c_{\mrm{noise}(\sigma)})
+        - \frac{\ve{y} - c_{\mrm{skip}}(\sigma)(\ve{y} + \ves{\xi})}{c_{\mrm{out}(\sigma)}}
+      \bigg\|^2
+    \bigg].
+  \end{align*}
+
+  \item To facilitate further discussion, define
+  \begin{align*}
+    w(\sigma) &:= \lambda(\sigma) c_{\mrm{out}}(\sigma)^2, \\
+    F_{\mrm{target}}(\ve{y}, \ves{\xi}; \sigma) &:= \frac{\ve{y} - c_{\mrm{skip}}(\ve{y} + \ves{\xi})}{c_{\mrm{out}}(\sigma)}
+  \end{align*}
+  So, the loss function becomes
+  \begin{align*}
+    E_{
+      \substack{
+        \sigma \sim p_{\mrm{train}}, \\
+        \ve{y} \sim p_{\data}, \\
+        \ves{\xi} \sim \mcal{N}(\ve{0}, \sigma^2 I)
+      }
+    }
+    \Big[
+      w(\sigma)
+      \Big\|
+        F_{\ves{\theta}}(c_{\mrm{in}}(\sigma)(\ve{y} + \ves{\xi}), c_{\mrm{noise}(\sigma)})
+        - F_{\mrm{target}}(\ve{y}, \ves{\xi}; \sigma)
+      \Big\|^2
+    \Big].
+  \end{align*}
+
+  \item The paper picks $c_{\mrm{in}}$, $c_{\mrm{out}}$, $c_{\mrm{skip}}$, and $\lambda$ as follows.
+  \begin{itemize}
+    \item The training inputs to $F_{\ves{\theta}}$ should have unit variance. So,
+    \begin{align*}
+      c_{\mrm{in}}(\sigma) = 1/\sqrt{\sigma^2 + \sigma_{data}^2}.
+    \end{align*}
+    \item The training target $F_{\mrm{target}}$ should also have unit variance. So,
+    \begin{align*}
+      c_{\mrm{out}}(\sigma)^2 = (1 - c_{\mrm{skip}}(\sigma))^2 \sigma_{\data}^2 + c_{\mrm{skip}}(\sigma)^2 \sigma^2.
+    \end{align*}
+
+    \item $c_{\mrm{skip}}$ is selected to minimize $c_{\mrm{out}}$ so that the errors of $F_{\ves{\theta}}$ are amplified as little as possible. This gives
+    \begin{align*}
+      c_{\mrm{skip}}(\sigma) &= \argmin_{c_{\mrm{skip}}(\sigma)} \Big\{ c_{\mrm{out}}(\sigma)^2 \Big\} = \frac{\sigma_{\data}^2}{\sigma^2 + \sigma_{\data}^2}, \\
+      c_{\mrm{out}}(\sigma) &= \frac{\sigma \cdot \sigma_{\data}}{\sqrt{\sigma^2 + \sigma_{\data}^2}}.
+    \end{align*}
+
+    \item The effective weight $\lambda(\sigma)$ is required to be uniform $(=1)$ across noise levels. So,
+    \begin{align*}
+      \lambda(\sigma) = \frac{\sigma^2 + \sigma_{\data}^2}{(\sigma \cdot \sigma_{data})^2}
+    \end{align*}
+  \end{itemize}  
+
+  \item The formula for $c_{\mrm{noise}}$ was chosen empirically. The paper uses
+  \begin{align*}
+    c_{\mrm{noise}}(\sigma) = \frac{1}{4} \ln \sigma
+  \end{align*}
+  for its best algorithm.
+
+  \item Lastly, we have to specify the probability distribution for sampling $\sigma$.
+  \begin{itemize}
+    \item After training, the authors observed the training loss as a function of $\sigma$. They observe a U-shaped curve.
+    \begin{itemize}
+      \item At low noise level, the corrupted image is already very closed to the source image. So, it is very difficult (and meaningless) to reduce noise here.
+      \item At high noise level, the training targets is very different from the noisy images.
+    \end{itemize}
+    \item As a result, it makes sense to concentrate efforts on the middle noise levels, where more improvements are more possible.
+    \item The paper picks a simple log-normal distribution for $p_{\mrm{train}}(\sigma)$. (In the paper, this looks like a bell curve.)
+  \end{itemize}
+
+  \item After the improvement in training, the benefit of stochastic sampling diminishes.
+  \begin{itemize}
+    \item For models trained on CIFAR-10, deterministic sampling performed better than stochastic sampling. 
+    \item However, for class-conditional ImageNet-64, stochastic sampling still beats deterministic sampling. However, only a low amount of noise injection was needed, and the authors said the level was lower then they had expected.
+    \item So, more diverse datasets might benefit more from stochastic sampling.
+  \end{itemize}
+
+  \item With all the improvements on sampling algorithm, noise schedule, conditioning, and training, the paper's ImageNet-64 model achieved SOTA FID score.
 \end{itemize}
 
 \appendix
@@ -629,7 +901,7 @@ This note is written as I read ``Elucidating the Design Space of Diffusion-Based
       \dee \ve{x} = \Big( \ve{f}(\ve{x},t) - g(t)^2 \nabla_{\ve{x}} \log p_t(\ve{x}) \Big)\, \dee t + g(t)\, \dee \overline{\ve{W}}.
     \end{align*}
     Since $p_t(\ve{x})$ satisfies the reverse-time Kolmogorov equation, it also satisfies the Fokker--Planck equation, which means that it agrees with the probability density of the solution of $\dee\ve{x} = \ve{f}(\ve{x},t)\, \dee t + g(t)\, \dee\ve{W}$.
-  \end{proof}
+  \end{proof}  
 \end{itemize}
 
 \bibliographystyle{alpha}
