@@ -334,7 +334,7 @@ This note is written as I read ``Progressive Distillation for Fast Sampling of D
 \begin{itemize}
   \item The authors started with a teacher model trained on continous time. They then started distilling from $N = 8192$ (or $N = 1024$ for bigger models) down to $1$.
   
-  \item In each distillation iteration, they optimize the model for $50\,000$ parameter updates. The exceptions are when distilling to $2$ or $1$ step(s), which they took $100\,000$ updates.
+  \item In each distillation iteration, they optimize the model for $50\,000$ parameter updates. The exceptions are when distilling to $2$ or $1$ step(s), which they took $100\,000$ updates. They claimed that the total time used to distill does not exceed that used to train the original model.
   
   \item FID scores of distilled models increases very slowly until $N = 4$, after which they rises very rapidly. So, $N = 4$ seems to be a sweet spot between speed and quality.
   
