@@ -1,0 +1,346 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+\usepackage{verbatim}
+\usepackage{hyperref}
+\usepackage{algorithm}
+\usepackage{clrscode3e}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\Dee}{\mathrm{D}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\Var}{\mathrm{Var}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\ves}[1]{\boldsymbol{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+\newcommand{\ov}[1]{\overline{#1}}
+\newcommand{\N}{\mathcal{N}}
+\newcommand{\data}{\mathrm{data}}
+\newcommand{\SNR}{\mathrm{SNR}}
+
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+\title{Progressive Distillation of Diffusion Models}
+\author{Pramook Khungurn}
+
+\begin{document}
+\maketitle
+
+This note is written as I read ``Progressive Distillation for Fast Sampling of Diffusion Models'' by Salimans and Ho~\cite{Salimans:2022}.
+
+\section{Introduction}
+
+\begin{itemize}
+  \item DDPMs can generate high quality samples. However, they are slow at sampling. Vanilla DDPMs (circa 2021) takes hundreds and thousands of models evaluations to sample one data item.
+  \begin{itemize}
+    \item Note, however, that improvements by Karras \etal~\cite{Karras:2022}, for example, reduces the number of sampling steps to tens (20 to 50) in practice.
+  \end{itemize}
+
+  \item The paper mentions that sampling a DDPM can be fast in ``strongly conditioned settings.''
+  \begin{itemize}
+    \item Text-to-speech.
+    \item Image super-resolution.
+    \item Classifier-guided sampling \cite{Dhariwal:2021}.
+  \end{itemize}
+  
+  \item It is the slowest when less conditioning information is available.
+  \begin{itemize}
+    \item Unconditional sampling.
+    \item Class conditional sampling.
+  \end{itemize}
+
+  \item The paper claims to make three contributions.
+  \begin{itemize}
+    \item A new parametermizations of DDPMs that make them more stable when sampling with a few steps.
+    \item A method to distill a deterministic sampler that use many steps to one that uses a few steps.
+    \item Showing that the distillation process does not take more time than the process to train the original model.
+  \end{itemize}
+
+  \item The core algorithm's specification.
+  \begin{itemize}
+    \item {\bf Input.} A pre-trained DDPM that takes $N$ steps to sample.
+    \item {\bf Output.} A new DDPM that takes $N/2$ steps to sample.
+  \end{itemize}
+
+  \item Progressive distillation $=$ keep applying the core algorithm until it takes a few, say $4$, steps to sample.
+  
+  \item Summary of results.
+  \begin{itemize}
+    \item Start out with SOTA DDPM that takes 8192 steps to sample.
+    \item Distill it down to 4 steps.
+    \item Perceptual quality does not suffer much: FID of 3.0 on CIFAR-10 in 4 steps.
+  \end{itemize}
+\end{itemize}
+
+\section{Background}
+
+\begin{itemize}
+  \item The paper uses the notations in introduced in Kingma \etal's ``Variational Diffusion Models'' paper \cite{Kingma:2021}.
+  
+  \item A data item is denoted by $\ve{x}$. The data distribution is denoted by $p_{\data}$.
+  
+  \item Diffusion models work on {\bf latent variables} $\{ \ve{z}_t : t \in [0,1] \}$. The latent variables form a Gaussian process that evolves over time according to the {\bf forward process} $q(\ve{z}_t|\ve{x})$ where
+  \begin{align*}
+    q(\ve{z}_t | \ve{x}) &= \mcal{N}(\ve{z}_t; \alpha_t \ve{x}, \sigma^2_t I)    
+  \end{align*}
+  where $\alpha_t$ and $\sigma_t$ are differentiable functions of $t$, collectively known as the {\bf noise schedule}.
+
+  \item Let $\lambda_t = \log (\alpha_t^2 / \sigma_t^2)$. We call it the {\bf signal-to-noise ratio (SNR)}. We require that the SNR decreases monotonically with $t$ and that  
+  \begin{align*}
+    q(\ve{z}_t | \ve{z}_s) = \mcal{N}\bigg(\ve{z}_t ; \frac{\alpha_t}{\alpha_s}\ve{z}_s; \sigma_{t|s}^2 I\bigg)
+  \end{align*}
+  where $0 \leq s < t \leq 1$ and $$\sigma_{t|s}^2 = (1 - e^{\lambda_t - \lambda_s})\sigma_t^2.$$
+
+  \item We train a neural network $\hat{\ve{x}}_{\ves{\theta}}$ so that $\hat{\ve{x}}_{\ves{\theta}}(\ve{z}_t, \lambda_t) \approx \ve{x}$. In other words, $\hat{\ve{x}}(\ve{z}_t, \lambda_t)$ denoise $\ve{z}_t$ back to $\ve{x}$. The network is trained with the following loss:
+  \begin{align*}
+    E_{\ve{x} \sim p_{\data}, t \sim \mcal{U}([0,1]), \ve{z}_t \sim \mcal{N}(\alpha_t \ve{x}, \sigma^2_t I)}[w(\lambda_t)\| \hat{\ve{x}}_{\ves{\theta}}(\ve{z}_t, \lambda_t) - \ve{x} \|^2].
+  \end{align*}
+  Here, $\mcal{U}([0,1])$ is the uniform distribution over the interval $[0,1]$. The weighting function $w(\lambda_t)$ will be discussed later.
+
+  \item We can deduce that, for any $0 \leq s < t \leq 1$,
+  \begin{align*}
+    q(\ve{z}_s | \ve{z}_t, \ve{x}) = \mcal{N}(\ve{z}_s; \tilde{\ves{\mu}}_{s|t}(\ve{z}_t, \ve{x}), \tilde{\sigma}_{s|t}^2 I)
+  \end{align*}
+  where
+  \begin{align*}
+    \tilde{\ves{\mu}}_{s|t}(\ve{z}_t, \ve{x}) &= e^{\lambda_t - \lambda_s} \frac{\alpha_s}{\alpha_t} \ve{z}_t + (1 - e^{\lambda_t - \lambda_s})\alpha_s \ve{x}, \\
+    \tilde{\sigma}_{s|t}^2 &= (1 - e^{\lambda_t - \lambda_s}) \sigma_s^2.
+  \end{align*}
+
+  \item We can use the above equation as a basis for the {\bf ancestral sampling algortihm}.
+  \begin{enumerate}
+    \item We have a sequence of times $0 = t_0 < t_1 < t_2 < \dotsc < t_K = 1$.    
+    \item We start with $\ve{z}_1 \sim \mcal{N}(0,I)$.
+    \item Given that we have a sample at time $t$ and we want sample at another time $s < t$, then,
+    \begin{align*}
+      \ve{z}_s = \tilde{\ves{\mu}}_{s|t}(\ve{z}_t, \hat{\ve{x}}_{\ves{\theta}}(\ve{z}_t, \lambda_t)) + \sqrt{(\tilde{\sigma}_{s|t}^2)^{1-\gamma}(\sigma_{t|s}^2)^\gamma} \, \ves{\xi}
+    \end{align*}
+    where $\xi \sim \mcal{N}(\ve{0},I)$, and $\gamma$ is a hyperparameter that controls how much noise is added during sampling \cite{Nichol:2021}.
+  \end{enumerate}
+
+  \item Alternatively, $\ve{z}_t$ satisfies the following {\bf probability flow ODE}:
+  \begin{align*}
+    \dee\ve{z}_t = \bigg( f(\ve{z}_t, t) - \frac{1}{2}g(t)^2 \nabla_{\ve{z}}\log \hat{p}_{\ves{\theta}}(\ve{z}_t) \bigg)\, \dee t
+  \end{align*}
+  where
+  \begin{align*}
+    \nabla_{\ve{z}}\log \hat{p}_{\ves{\theta}}(\ve{z}_t) &= \frac{\alpha_t \hat{\ve{x}}_{\ves{\theta}}(\ve{z}_t, \lambda_t) - \ve{z}_t}{\sigma_t^2}, \\
+    f(\ve{z}_t, t) &= \frac{\dee \log \alpha_t}{\dee t} \ve{z}_t, \\
+    g(t)^2 &= \frac{\dee \sigma_t^2}{\dee t} - 2 \frac{\dee \log \alpha_t}{\dee t} \sigma_t^2.
+  \end{align*}
+  Sampling can then be done by simulating the ODE backward in time from $t = 1$ to $t = 0$.
+
+  \item The DDIM sampler proposed by Song \etal~\cite{Song:DDIM:2020} is given by
+  \begin{align*}
+    \ve{z}_s 
+    &= \alpha_s \hat{\ve{x}}_{\ves{\theta}}(\ve{z}_t) + \sigma_s \frac{\ve{z}_t - \alpha_t \hat{\ve{x}}_{\ves{\theta}}(\ve{z}_t)}{\sigma_t} \\
+    &= e^{(\lambda_t - \lambda_s)/2}(\alpha_s / \alpha_t) \ve{z}_t + (1 - e^{(\lambda_t - \lambda_s)/2}) \alpha_s \hat{\ve{x}}_{\ves{\theta}}(\ve{z}_t).
+  \end{align*}
+  The paper claims that this can be understood in terms of integrating the probability flow ODE.
+\end{itemize}
+
+\section{Progressive Distillation}
+
+\begin{itemize}
+  \item The core algorithm receives as input a {\bf teacher model} that is trained in the standard way.
+  
+  \begin{codebox}
+    \Procname{$\proc{Standard-Diffusion-Training}$}
+    \li \While not converged
+    \li \Do
+          $\ve{x} \sim p_{\data}$
+    \li   $t \sim \mcal{U}([0,1])$
+    \li   $\ves{\xi} \sim \mcal{N}(\ve{0}, I)$
+    \li   $\ve{z}_t \leftarrow \alpha_t \ve{x} + \sigma_t \ves{\theta} $
+    \li   $\lambda_t \leftarrow \log (\alpha_t^2 / \sigma_t^2)$
+    \li   $L_{\ves{\theta}} \leftarrow w(\lambda_t) \| \ve{x} - \hat{\ve{x}}_{\ves{\theta}}(\ve{z}_t, \lambda_t) \|_2^2 $
+    \li   Update $\ves{\theta}$ according to $\nabla_{\ves{\theta}} L_{\ves{\theta}}$.
+        \End
+  \end{codebox}
+
+  \item The result of the distillation process is a {\bf student model}, which has the same architecture as the teacher model.
+  
+  \item The distillation process proceeds in iterations.
+  \begin{itemize}
+    \item Each iteration halves the number of sampling steps required.
+    \item At the start of each iteration, the student model is initialized with the paremeters of the teacher model. 
+    \item At the end of each iteration, the student model becomes the teacher model of the next round.
+    \item The training process in each iteration is similar to the standard training. However, the main difference is the target that $\hat{\ve{x}}_{\ves{\theta}}$ is asked to approximate from $\ve{z}_t$.
+    \begin{itemize}
+      \item For the standard training, the target is $\ve{x}$.
+      \item For the distillation process, the target is the denoised data that would have been predicted by the teacher in two distillation steps.
+    \end{itemize}
+    \item Another difference is that the distillation process always work in discrete time instead of continuous time like the standard training.
+  \end{itemize}
+
+  \item Here's the distillation algorithm.
+  
+  \begin{codebox}
+    \Procname{$\proc{Progressive-Distillation}(\ves{\eta}, N)$}
+    \zi \Comment $\ves{\eta}$ denotes the parameters of the trained teacher model.
+    \zi \Comment $N$ is the number of iterations that the teacher model takes to sample.
+    \li \For $K$ iterations
+    \li \Do    
+          $N \leftarrow N/2$
+    \li   $\ves{\theta} \leftarrow \ves{\eta}$
+    \li   \While not converged
+    \li   \Do
+            $\ve{x} \sim p_{\data}$
+    \li     $i \sim \mcal{U}(\{ 1, 2, \dotsc, N \})$
+    \li     $t \leftarrow i / N$
+    \li     $\ves{\xi} \sim \mcal{N}(\ve{0},I)$
+    \zi     \Comment 2 steps of DDIM sampling with teacher model
+    \li     $t' \leftarrow t - 0.5/N;\quad t'' \leftarrow t - 1/N $
+    \li     $\lambda_{t} \leftarrow \log(\alpha_{t}^2/\sigma_{t}^2);\quad \lambda_{t'} \leftarrow \log(\alpha_{t'}^2 / \sigma_{t'}^2)$
+    \li     $\ve{z}_{t'} \leftarrow \alpha_{t'} \hat{\ve{x}}_{\ves{\eta}}(\ve{z}_t, \lambda_t) + \frac{\sigma_{t'}}{\sigma_t}\big(\ve{z}_t - \alpha_t \hat{\ve{x}}_{\ves{\eta}}(\ve{z}_t, \lambda_t)\big)$
+    \li     $\ve{z}_{t''} \leftarrow \alpha_{t''} \hat{\ve{x}}_{\ves{\eta}}(\ve{z}_{t'}, \lambda_{t'}) + \frac{\sigma_{t''}}{\sigma_{t'}}\big(\ve{z}_{t'} - \alpha_{t'} \hat{\ve{x}}_{\ves{\eta}}(\ve{z}_{t'}, \lambda_{t'})\big)$
+    \li     $\tilde{\ve{x}} \leftarrow \frac{\ve{z}_{t''} - (\sigma_{t''}/\sigma_t)\ve{z}_t}{\alpha_{t''} - (\sigma_{t''}/\sigma_t)\alpha_t}$
+    \li     $L_{\ves{\theta}} \leftarrow w(\lambda_t) \| \tilde{\ve{x}} - \hat{\ve{x}}_{\ves{\theta}}(\ve{z}_t, \lambda_t) \|^2$
+    \li     Update $\ves{\theta}$ according to $\nabla_{\ves{\theta}} L_{\ves{\theta}}$
+          \End
+    \zi   \Comment Make the converged student the teacher of the next round.
+    \li   $\ves{\eta} \leftarrow \ves{\theta}$
+        \End  
+  \end{codebox}
+
+  \item The paper notes that using the value predicted by the teacher in two steps as a target makes the prediction task for the student model much easier.
+  \begin{itemize}
+    \item If using $\ve{x}$ as the target, the model must predict the average of possible $\ve{x}$ value, which produces blurry predictions.
+    \item However, the value predicted by the teacher model is completely determined by the teacher model and $\ve{z}_t$. So, the prediction is sharp.
+  \end{itemize}
+  As a result, the student model can make progress much faster than the vanilla teacher model can during sampling.
+\end{itemize}
+
+\section{Parameterization and Training Loss}
+
+\begin{itemize}
+  \item This section is about the details of the models: $\alpha_t$, $\sigma_t$, $w(\lambda_t)$, and what $\hat{\ve{x}}_{\ves{\theta}}$ is.
+  
+  \item The paper assumes a variance preserving model: $\sigma_t^2 = 1 - \alpha_t^2$.
+  
+  \item Cosine schedule is used: $\alpha_t = \cos(0.5 \pi t)$.  
+\end{itemize}
+
+\subsection{Model Parameterization}
+
+\begin{itemize}
+  \item Many works on DDPM parameterize $\hat{\ve{x}}_{\ves{\theta}}$ by requiring it to predict the noise $\ves{\xi}$ that is used to make $\ve{z}_t$ from $\ve{x}$. In other words, our network is $\hat{\ves{\xi}}_{\ves{\theta}}$, and we take
+  \begin{align*}
+    \hat{\ve{x}}_{\ves{\theta}}(\ve{z}_t, \lambda_t) = \frac{1}{\alpha_t}\big(\ve{z}_t - \sigma_t \hat{\ves{\xi}}_{\ves{\theta}}(\ve{z}_t, \lambda_t)\big).
+  \end{align*}
+  
+  \item While the above parametermization might work well for training the original model, the paper argues that this does not work well with distillation.
+  \begin{itemize}
+    \item As distillation progresses, we increasingly evaluate at lower and lower signal-to-noise ratios.
+    
+    \item As $\alpha_t \rightarrow 0$, the changes made by $\hat{\ves{\xi}}_{\ves{\theta}}$ gets amplified drastically. This is because
+    \begin{align*}
+      \hat{\ve{x}}_{\ves{\theta}}(\ve{z}_t, \lambda_t) = \frac{1}{\alpha_t}\big(\ve{z}_t - \sigma_t \hat{\ves{\xi}}_{\ves{\theta}}(\ve{z}_t, \lambda_t)\big).
+    \end{align*}
+    So, changes are multipled by $1 / \alpha_t$.
+
+    \item If we distill down to a single sampling step, the input to the model is pure noise $\ves{\xi}$, and the distilled $\hat{\ves{\xi}}_{\ves{\theta}}$ would have to predict $\ves{\xi}$. The link between $\ves{\xi}$-prediction and $\ve{x}$-prediction breaks down completely.
+  \end{itemize}
+
+  \item So, for distillation to work, we need to parametermize the model so that the prediction $\hat{\ve{x}}_{\ves{\theta}}$ remains stable as the SNR varies. The paper tried a number of combinations and found all of them to work well.
+  \begin{itemize}
+    \item Predicting $\ve{x}$ directly.
+    \item Predicting both $\ve{x}$ and $\ves{\xi}$, resulting in $\tilde{\ve{x}}$ and $\tilde{\ves{\xi}}$, and then merging via
+    \begin{align*}
+      \hat{\ve{x}} = \sigma_t^2 \tilde{\ve{x}} + \alpha_t(\ve{z}_t - \sigma_t \tilde{\ves{\xi}}).
+    \end{align*}
+    Note that $\sigma_t^2 \tilde{\ve{x}} \approx \sigma_t^2 \ve{x}$, and
+    \begin{align*}
+      \alpha_t (\ve{z}_t - \sigma_t \tilde{\ves{\xi}}) 
+      = \alpha_t (\alpha_t \ve{x} + \sigma_t \ves{\theta} - \sigma_t \tilde{\ves{\xi}}) \approx \alpha_t^2 \ve{x}.
+    \end{align*}
+    Because $\alpha_t^2 + \sigma_t^2 = 1$, we have that $\sigma_t^2 \tilde{\ve{x}} + \alpha_t(\ve{z}_t - \sigma_t \tilde{\ves{\xi}}) \approx \sigma_t^2 \ve{x} + \alpha_t^2\ve{x}$ is an interpolation between the $\ve{x}$-prediction and the implied $\ve{x}$ from $\ves{\xi}$-prediction.
+    \item Predicting $\ve{v} := \alpha_t \ves{\xi} - \sigma_t\ve{x}$ and setting $\hat{\ve{x}} := \alpha_t \ve{z}_t - \sigma_t \hat{\ve{v}}_{\ves{\theta}}(\ve{z}_t, \lambda_t)$.
+  \end{itemize}
+
+  \item The paper also tried all the above combinations when training the original models, and it found that they worked well too.
+\end{itemize}
+
+\subsection{Weighting Function}
+
+\begin{itemize}
+  \item In the 2020 work by Ho \etal~\cite{Ho:2020}, they sample the time uniformly and compute the squared L2-distance between $\ves{\xi}$ and $\hat{\ves{\xi}}_{\ves{\theta}}(\ve{z}_t, \lambda_t)$. One can deduce that
+  \begin{align*}
+    L_{\ves{\theta}} = \| \ves{\xi} - \ves{\xi}_{\ves{\theta}}(\ve{z}_t,\lambda_t) \|^2 = \frac{\alpha_t^2}{\sigma_t^2} \| \ve{x} - \hat{\ve{x}}_{\ves{\theta}}(\ve{z}_t, \lambda_t) \|^2.
+  \end{align*}
+  This is called the {\bf SNR} weighting scheme. This means that the loss gives zero weight to data with zero SNR. This is not a suitable loss for distillation.
+
+  \item The paper tried the following choices of weighting scheme.
+  \begin{itemize}
+    \item {\bf Truncated SNR}: $L_{\ves{\theta}} = \max(\|\ve{x} - \hat{\ve{x}} \|^2, \| \ves{\xi} - \hat{\ves{\xi}} \|^2 ) = \max(\frac{\alpha_t^2}{\sigma_t^2}, 1) \| \ve{x} - \hat{\ve{x}} \|^2$.
+    \item {\bf SNR+1}: $L_{\ves{\theta}} = \| \ve{v} - \hat{\ve{v}} \| = (1 + \frac{\alpha_t^2}{\sigma_t^2} ) \| \ve{x} - \hat{\ve{x}} \|^2. $
+  \end{itemize}
+  It found that both worked well.
+
+  \item The authors did not put much attention on how the time is sampled. They just sampled it uniformly randomly from $[0,1]$.
+\end{itemize}
+
+\section{Experiments}
+
+\subsection{Model Parameterization and Training Loss}
+
+\begin{itemize}
+  \item The paper tried the 4 combinations of model parameterization and 3 combination of weighting schemes.
+  \begin{itemize}
+    \item One case lead to training divergence: predicting $\ves{\xi}$ and using the truncated SNR weighting scheme.
+    \item In all other cases, the numbers are similar.
+  \end{itemize}
+
+  \item The paper observed that predicting $\ve{v}$ is the most stable method because it makes the DDIM step-sizes independent of the SNR. However, predicting $\ve{x}$ gives the best empirical results.
+\end{itemize}
+
+\subsection{Progressive Distillation}
+
+\begin{itemize}
+  \item The authors started with a teacher model trained on continous time. They then started distilling from $N = 8192$ (or $N = 1024$ for bigger models) down to $1$.
+  
+  \item In each distillation iteration, they optimize the model for $50\,000$ parameter updates. The exceptions are when distilling to $2$ or $1$ step(s), which they took $100\,000$ updates.
+  
+  \item FID scores of distilled models increases very slowly until $N = 4$, after which they rises very rapidly. So, $N = 4$ seems to be a sweet spot between speed and quality.
+  
+  \item Undistilled models' performance degrades very fast after $N = 128$.
+\end{itemize}
+
+\bibliographystyle{alpha}
+\bibliography{ddpm-progressive-distillation}  
+\end{document}
