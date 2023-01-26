@@ -341,6 +341,133 @@ This note is written as I read ``Progressive Distillation for Fast Sampling of D
   \item Undistilled models' performance degrades very fast after $N = 128$.
 \end{itemize}
 
+\appendix
+
+\section{Relationship between DDIM sampling procedure and the probability flow ODE}
+
+\begin{itemize}
+  \item The probability flow ODE \cite{Song:2021} reads
+  \begin{align*}
+    \dee\ve{z}_t = \bigg( f(\ve{z}_t,t) - \frac{1}{2}g(t)^2 \nabla_{\ve{z}} \log p_t(\ve{z}) \bigg)\, \dee t.
+  \end{align*}
+  So, computing $\ve{z}_s$ from $\ve{z}_t$ according to it would look like
+  \begin{align*}
+    \ve{z}_s = \bigg( f(\ve{z},t) - \frac{1}{2}g(t)^2 \nabla_{\ve{z}} \log p_t(\ve{z}) \bigg) (s - t)
+  \end{align*}
+
+  \item However, DDIM's update rule is
+  \begin{align*}
+    \ve{z}_s = \alpha_s \hat{\ve{x}}_{\ves{\theta}}(\ve{z}_t, \lambda_t) + \sigma_s \frac{\ve{z}_t - \alpha_t \hat{\ve{x}}_{\ves{\theta}}(\ve{z}_t, \lambda_t)}{\sigma_t},
+  \end{align*}
+  which, from the look of it, is very different from the update one would derive naturally from the probability flow ODE.
+
+  \item However, the two updates are related. We just have not written the probability flow ODE in the right form. To do so, we first need to write the probability flow ODE in terms of the log SNR $\lambda_t = \log (\alpha_t^2 / \sigma_t^2)$.
+  
+  \item The first task is to write $f(\ve{z}_t, t)$ and $g(t)$ in terms of $\alpha_t$ and $\sigma_t$. We first observe that $f(\ve{z}_t, t)$ is actually $f(t)\ve{z}_t$ in the settings of DDIM. So, the SDE corresponding to the probability flow ODE becomes
+  \begin{align*}
+    \dee\ve{z}_t = f(t)\ve{z}_t\, \dee t + g(t)\, \dee\ve{W}.
+  \end{align*}
+  
+  \item Solving the SDE using the derivation in Karras \etal's paper \cite{Karras:2022}, we have that
+  \begin{align*}
+    \alpha_t = \exp\bigg( \int_0^t f(u)\, \dee u\bigg).
+  \end{align*}
+  So,
+  \begin{align*}
+    f(t) = \frac{\dee \log \alpha_t}{\dee t}.
+  \end{align*}
+  
+  \item Moreover, we have that
+  \begin{align*}
+    \sigma_t^2 = \alpha_t^2 \int_0^t \frac{g(u)^2}{\alpha_u^2}\, \dee u
+  \end{align*}
+  So,
+  \begin{align*}
+    \frac{\dee \sigma_t^2}{\dee t}  &= \frac{\dee \alpha_t^2}{\dee t} \bigg( \int_0^t \frac{g(u)^2}{\alpha_u^2}\, \dee u\bigg) + \alpha_t^2 \frac{g(t)^2}{\alpha_t^2} \\
+    \frac{\dee \sigma_t^2}{\dee t}  &= 2 \alpha_t \frac{\dee \alpha_t}{\dee t} \cdot \frac{\sigma_t^2}{\alpha_t^2} + g(t)^2 \\    
+    \frac{\dee \sigma_t^2}{\dee t}  &= 2 \sigma_t^2 \bigg( \frac{1}{\alpha_t} \frac{\dee \alpha_t}{\dee t} \bigg) + g(t)^2 \\    
+    \frac{\dee \sigma_t^2}{\dee t}  &= 2 \sigma_t^2 \frac{\dee \log \alpha_t}{\dee t} + g(t)^2 \\    
+    g(t)^2 &= \frac{\dee \sigma_t^2}{\dee t} - 2 \sigma_t^2 \frac{\dee \log \alpha_t}{\dee t}.
+  \end{align*}
+
+  \item Assuming a variance preserving process, we have that $\alpha_t^2 + \sigma_t^2 = 1$. So,
+  \begin{align*}
+    \mrm{sigmoid}(\lambda_t) = \frac{1}{1 + \exp(-\log(\alpha_t^2/\sigma_t^2))} = \frac{1}{1 + \sigma_t^2/\alpha_t^2} = \frac{\alpha_t^2}{\alpha_t^2 + \sigma_t^2} = \alpha_t^2.
+  \end{align*}
+  Similarly,
+  \begin{align*}
+    \mrm{sigmoid}(-\lambda_t) = \sigma_t^2.
+  \end{align*}
+  As a result,
+  \begin{align*}
+    \frac{\dee \log \alpha_t}{\dee t} 
+    &= \frac{1}{2} \frac{\dee \log \alpha_t^2}{\dee t}
+    = \frac{1}{2} \frac{\dee \log (\mrm{sigmoid}(\lambda_t))}{\dee t}
+    = \frac{1}{2} \frac{\dee \log (\mrm{sigmoid}(\lambda_t))}{\dee \lambda_t} \frac{\dee\lambda_t}{\dee t} 
+    = \frac{1}{2} \mrm{sigmoid}(-\lambda_t) \frac{\dee\lambda_t}{\dee t} \\
+    &= \frac{1}{2} \sigma_t^2 \frac{\dee\lambda_t}{\dee t}.
+  \end{align*}
+  Moreover,
+  \begin{align*}
+    g(t)^2 
+    &= \frac{\dee \sigma_t^2}{\dee t} - 2 \sigma_t^2 \frac{\dee \log \alpha_t}{\dee t}
+    = \frac{\dee \sigma_t^2}{\dee \lambda_t} \frac{\dee \lambda_t}{\dee t} - \sigma_t^4 \frac{\dee \lambda_t}{\dee t}
+    = \frac{\dee\, \mrm{sigmoid}(-\lambda_t)}{\dee \lambda_t} \frac{\dee \lambda_t}{\dee t} - \sigma_t^4 \frac{\dee \lambda_t}{\dee t} \\
+    &= -\mrm{sigmoid}(-\lambda_t)(1 - \mrm{sigmoid}(-\lambda_t)) \frac{\dee \lambda_t}{\dee t} - \sigma_t^4 \frac{\dee \lambda_t}{\dee t} 
+    = (\sigma_t^4 - \sigma_t^2)\frac{\dee \lambda_t}{\dee t} - \sigma_t^4 \frac{\dee \lambda_t}{\dee t} \\
+    &= -\sigma_t^2 \frac{\dee \lambda_t}{\dee t}.
+  \end{align*}
+
+  \item Because
+  \begin{align*}
+    \nabla_{\ve{z}} \log p_t(\ve{z}) \approx \frac{\alpha_t \hat{\ve{x}}_{\ves{\theta}}(\ve{z}_t, \lambda_t) - \ve{z}_t}{\sigma_t^2},
+  \end{align*}
+  we have that the probability flow ODE can be written as
+  \begin{align*}
+    \dee\ve{z}_t 
+    &= \bigg( \frac{1}{2} \sigma_t^2 \frac{\dee \lambda_t}{\dee t} \ve{z}_t + \frac{1}{2} \sigma_t^2 \frac{\dee\lambda_t}{\dee t} \frac{\alpha_t \hat{\ve{x}}_{\ves{\theta}}(\ve{z}_t, \lambda_t) - \ve{z}_t}{\sigma_t^2} \bigg)\, \dee t \\
+    &= \frac{1}{2} \Big( \sigma_t^2 \ve{z}_t + \alpha_t \hat{\ve{x}}_{\ves{\theta}}(\ve{z}_t, \lambda_t) - \ve{z}_t \Big)\, \dee\lambda_t \\
+    &= \frac{1}{2} \Big( \alpha_t \hat{\ve{x}}_{\ves{\theta}}(\ve{z}_t, \lambda_t) + (\sigma_t^2 - 1)\ve{z}_t \Big)\, \dee\lambda_t \\
+    &= \frac{1}{2} \Big( \alpha_t \hat{\ve{x}}_{\ves{\theta}}(\ve{z}_t, \lambda_t) - \alpha_t^2 \ve{z}_t \Big)\, \dee\lambda_t.
+  \end{align*}
+  In other words,
+  \begin{align*}
+    \frac{\dee \ve{z}_t}{\dee \lambda_t} = \frac{1}{2} \Big( \alpha_t \hat{\ve{x}}_{\ves{\theta}}(\ve{z}_t, \lambda_t) - \alpha_t^2 \ve{z}_t \Big).
+  \end{align*}
+  
+  \item Let's take a brief detour. We know that
+  \begin{align*}
+    \frac{\dee \alpha_t^2}{\dee \lambda_t} &= 2 \alpha_t \frac{\dee \alpha_t}{\dee \lambda_t} \\
+    \frac{\dee\, \mrm{sigmoid}(\lambda_t)}{\dee \lambda_t} &=  2 \alpha_t \frac{\dee \alpha_t}{\dee \lambda_t} \\
+    \mrm{sigmoid}(\lambda_t)(1 - \mrm{sigmoid}(\lambda_t)) &=  2 \alpha_t \frac{\dee \alpha_t}{\dee \lambda_t} \\
+    \alpha_t^2 \sigma_t^2 &= 2 \alpha_t \frac{\dee \alpha_t}{\lambda_t} \\
+    \frac{\dee \alpha_t}{\dee \lambda_t} &= \frac{1}{2} \alpha_t \sigma_t^2.
+  \end{align*}
+  Similarly, one can show that
+  \begin{align*}
+    \frac{\dee \sigma_t}{\dee \lambda_t} &= -\frac{1}{2} \sigma_t \alpha_t^2.
+  \end{align*}
+    
+
+  \item Now, let us get back to the DDIM update rule.
+  \begin{align*}
+    \ve{z}_s &= \sigma_s\frac{\ve{z}_t - \alpha_t \hat{\ve{x}}_{\ves{\theta}}(\ve{z}_t, \lambda_t)}{\sigma_t} + \alpha_s \hat{\ve{x}}_{\ves{\theta}}(\ve{z}_t, \lambda_t).
+  \end{align*}
+  Differentiating both sides with respect to $\lambda_s$, we have that
+  \begin{align*}
+    \frac{\dee \ve{z}_s}{\dee \lambda_s} &= \frac{\dee \sigma_s}{\dee \lambda_s} \frac{\ve{z}_t - \alpha_t \hat{\ve{x}}_{\ves{\theta}}(\ve{z}_t, \lambda_t)}{\sigma_t} + \frac{\dee \alpha_s}{\dee \lambda_s} \hat{\ve{x}}_{\ves{\theta}}(\ve{z}_t, \lambda_t) \\
+    &= -\frac{1}{2} \sigma_s \alpha_s^2 \frac{\ve{z}_t - \alpha_t \hat{\ve{x}}_{\ves{\theta}}(\ve{z}_t, \lambda_t)}{\sigma_t} + \frac{1}{2} \alpha_s \sigma_s^2 \hat{\ve{x}}_{\ves{\theta}}(\ve{z}_t, \lambda_t).
+  \end{align*}
+  Evaluating the derivative at $s = t$, we have
+  \begin{align*}
+    \frac{\dee \ve{z}_s}{\dee \lambda_s} \bigg|_{s=t}
+    &= -\frac{1}{2} \sigma_t \alpha_t^2 \frac{\ve{z}_t - \alpha_t \hat{\ve{x}}_{\ves{\theta}}(\ve{z}_t, \lambda_t)}{\sigma_t} + \frac{1}{2} \alpha_t \sigma_t^2 \hat{\ve{x}}_{\ves{\theta}}(\ve{z}_t, \lambda_t) \\
+    &= \frac{1}{2} \big( \alpha_t(\alpha_t^2 + \sigma_t^2) \hat{\ve{x}}_{\ves{\theta}}(\ve{z}_t, \lambda_t) -\alpha_t \ve{z}_t^2 \big) \\
+    &= \frac{1}{2} \big( \alpha_t \hat{\ve{x}}_{\ves{\theta}}(\ve{z}_t, \lambda_t) -\alpha_t \ve{z}_t^2 \big).
+  \end{align*}
+  The above result agrees with the formula for $\dee \ve{z}_t / \dee t$ derived from the probability flow ODE. So, one can say that the DDIM an an integration rule for the probabilty flow ODE.
+\end{itemize}
+
 \bibliographystyle{alpha}
 \bibliography{ddpm-progressive-distillation}  
 \end{document}
