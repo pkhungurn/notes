@@ -1,0 +1,382 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+\usepackage{verbatim}
+\usepackage{hyperref}
+\usepackage{algorithm}
+\usepackage{clrscode3e}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\Dee}{\mathrm{D}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\Var}{\mathrm{Var}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\ves}[1]{\boldsymbol{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+\newcommand{\ov}[1]{\overline{#1}}
+\newcommand{\N}{\mathcal{N}}
+\newcommand{\data}{\mathrm{data}}
+\newcommand{\SNR}{\mathrm{SNR}}
+
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+\title{On Distillation of Guided Diffusion Models}
+\author{Pramook Khungurn}
+
+\begin{document}
+\maketitle
+
+This note is written as I read ``On Distillation of Guided Diffusion Models'' by Meng \etal~\cite{Meng:2022}.
+
+\section{Introduction}
+
+\begin{itemize}
+  \item Popular image generation models are built on DDPMs \cite{Ho:2020} and classifier-free guidance \cite{Ho:2022}.
+  
+  \item As of Janunary 2023, sampling from these models are somewhat slow. Several tens of steps (20 to 50) are typically used. Anything lower would generate low-quality samples.
+  
+  \item Salimans and Ho proposed a technique to distill unconditional (and also class-conditional) DDPMs so that one can generate a sample in as few as 4 steps \cite{Salimans:2022}. However, distilling models trained with classifier-free guidance has not been researched on before the present paper.
+  
+  \item The paper requires a pre-trained conditional DDPM that can evaluate conditional and unconditional scores $\nabla_{\ve{z}} \log p_t(\ve{z})$.
+  \begin{itemize}
+    \item Oddly enough, the paper says that they require two models: one unconditional and the other unconditional.
+    \item I think what it really means is that every sampling steps requires two evaluations: one with conditioning information and the other without the conditioning information.
+  \end{itemize}
+
+  \item The paper proposes a two-stage distillation process.
+  \begin{itemize}
+    \item In the first stage, a single conditional model (different formulation from vanilla conditional DDPM) is trained on so that it can predict the output that would result from classifier-free guidance in one network evaluation.
+    
+    \item In the second stage, the resulting model from the first stage is distilled with the progressive distillation algorithm of Salimans and Ho \cite{Salimans:2022}.
+  \end{itemize}
+
+  \item Summary of results.
+  \begin{itemize}
+    \item The model works on DDPMs trained on (1) the pixel space directly and (2) the latent space of an autoencoder (i.e., latent diffusion models \cite{Rombach:2021}).
+    
+    \item Pixel space results.
+    \begin{itemize}
+      \item Experiments on ImageNet 64x64 and CIFAR-10.
+      \item Comparable visually to teacher model in 4 sampling steps.
+      \item Comparable FID/IS scores to teacher model in 4 to 16 sampling steps.      
+    \end{itemize}
+    
+    \item Latent spacce results.
+    \begin{itemize}
+      \item Experiments on ImageNet 256x256 and LAION 512x512.
+      \item Comparable visually in 1 to 4 sampling steps.
+      \item Matching FID scores in 2 to 4 sampling steps.
+    \end{itemize}
+  \end{itemize}
+\end{itemize}
+
+\section{Background}
+
+\subsection{Diffusion Model}
+
+\begin{itemize}
+  \item A data item is represented by $\ve{x}$, and it comes from the distribution $p_{\data}(\ve{x})$. With conditioning information $c$, the distribution becomes $p_{\data}(\ve{x}|c)$.
+  
+  \item To make the exposition easier, we say that the unconditional distribution $p_{\data}(\cdot)$ is a special case of the conditonional distribute $p_{\data}(\cdot|c)$ with $c = \emptyset$. So, from now on, the data distribution is always conditional.
+  
+  \item A diffusion model works on latent variables $\{ \ve{z}_t : t \in [0,1] \}$, which is a stochastic process derived from the data item $\ve{x}$.
+  \begin{itemize}
+    \item The forward process has two parameters, $\alpha_t$ and $\sigma_t$, collectively known as the {\bf noise schedule}. They are functions of signature $[0,1] \rightarrow [0,\infty]$.
+    
+    \item The logarithm of the signal-to-noise ratio (SNR), $$\lambda_t = \log(\alpha^2/\sigma^2),$$ should be monotonically decreasing as $t$ increase. It should be a very high value (goes up to $+\infty$) at $t=0$ and a very low value (goes down to $-\infty$) at $t=1$.
+    
+    \item We require that, for any $0 \leq s < t \leq 1$,
+    \begin{align*}
+      p(\ve{z}_t|\ve{x}) &= \mcal{N}(\ve{z}_t; \alpha_t \ve{x}, \sigma_t^2 I), \\
+      p(\ve{z}_t|\ve{z}_s) &= \mcal{N}(\ve{z}_t ; \alpha_{t|s} \ve{z}_s ; \sigma_{t|s}^2 I)
+    \end{align*}
+    where
+    \begin{align*}
+      \alpha_{t|s} &= \frac{\alpha_t}{\alpha_s} \\
+      \sigma_{t|s}^2 &= \sigma_t^2 - \alpha_{t|s}^2 \sigma_s^2.
+    \end{align*}
+  \end{itemize}
+  
+  \item It can be shown that, for any $0 \leq s < t \leq 1$, we have that
+  \begin{align*}
+    p(\ve{z}_s | \ve{z}_t, \ve{x}) = \mcal{N}\bigg( \ve{z}_s ;\quad \frac{\alpha_{t|s}\sigma_s^2}{\sigma_t^2} \ve{z}_t + \frac{\alpha_s \sigma_{t|s}^2}{\sigma_t^2} \ve{x},\quad \frac{\sigma^2_{t|s}\sigma_s^2}{\sigma_t^2}  I \bigg).
+  \end{align*}
+
+  \item Integrating over $\ve{x}$, we have that the ``marginal'' distribution of $\ve{z}_t$ is
+  \begin{align*}
+    p_t(\ve{z}_t|c) = \int_{\Real^d} p(\ve{z}_t|\ve{x}) p_{\data}(\ve{x}|c)\, \dee\ve{x}.
+  \end{align*}
+
+  \item A diffusion model is a network $\hat{\ve{x}}_{\ves{\theta}}$ with parameters $\ves{\theta}$ trained to predict $\ve{x}$ from $\ve{z}_t$. In other words, if we sample $\ve{x} \sim p_{\data}(\ve{x}|c)$ and $\ve{z}_t \sim p(\ve{z}_t|\ve{x})$, then we want to have
+  \begin{align*}
+    \hat{\ve{x}}_{\ves{\theta}}(\ve{z}_t, c) \approx \ve{x}.
+  \end{align*}
+  (In practical implementations, the network would also have to take some form of information about the time, but we drop the $t$ parameter to avoid clutter.)
+
+  \item We can use the following functions to train such a network:
+  \begin{align*}
+    E_{t \sim \mcal{U}([0,1]), \ve{x} \sim p_{\data}(\ve{x}|c), \ve{z}_t \sim \mcal{N}(\alpha_t \ve{x}, \sigma_t^2 I)} [w(\lambda_t) \| \hat{\ve{x}}_{\ves{\theta}}(\ve{z}_t, c) - \ve{x} \|^2 ]    
+  \end{align*}
+  where $\mcal{U}([0,1])$ is the uniform distribution over $[0,1]$, and $w(\lambda_t)$ is a pre-specified weight function. Once the model is trained, we have that
+  \begin{align*}
+    \nabla_{\ve{z}} \log p_t(\ve{z}|c) \approx \frac{\alpha_t \hat{\ve{x}}(\ve{z}_t,c) - \ve{z}_t}{\sigma_t^2}.
+  \end{align*}
+  
+  \item We pix $\alpha_t$ and $\sigma_t$ so that $\alpha_t^2 + \sigma_t^2 = 1$. (In other words, we use the variance-preserving formulation of DDPM.) We also set $\alpha_t = 0$ so that $p_1(\ve{z}) = \mcal{N}(\ve{z};\ve{0}, I)$. 
+  
+  \item With the noise schedule above, one can approximate $\ve{z}_s$ given $\ve{z}_t$ as follows:
+  \begin{align*}
+    \ve{z}_s = \alpha_s \hat{\ve{x}}_{\ves{\theta}}(\ve{z}_t, c) + \sigma_s \frac{\ve{z}_t - \alpha_t \hat{\ve{x}}_{\ves{\theta}}(\ve{z}_t, c) }{\sigma_t}.
+  \end{align*}
+  This is the so called DDIM update rule \cite{Song:2021}.
+
+  \item From the DDIM update rule, a sampler can be create from it as follows.
+  \begin{itemize}
+    \item Discretize the time in $[0,1]$. We will only work with $t = i/N$ where $N$ is the number of steps in the sampling process, and $i \in \{ 1, 2, \dotsc, N \}$.
+    \item Start with $t = 1$ and sample $\ve{z}_1 \sim \mcal{N}(\ve{0},I)$.
+    \item For $i = N-1, N-2, \dotsc, 0$, set $s = i/N$ and $t = (i+1)/N$. We can compute $\ve{z}_s$ from $\ve{z}_t$ using the DDIM update rule.
+    \item Output $\ve{z}_0$ as the generated sample.
+  \end{itemize}
+\end{itemize}
+
+\subsection{Classifier-Free Guidance}
+
+\begin{itemize}
+  \item Classifier-free guidance allows one to improve the sample quality of a conditional DDPM by trading diversity for quality.
+  
+  \item The process needs a guidance weight parameter $\gamma \geq -1$.
+  
+  \item With the guidance weight, the denoise data item is given by
+  \begin{align*}
+    \hat{\ve{x}}_{\ves{\theta}}^\gamma(\ve{z}_t, c) = (1 + \gamma) \hat{\ve{x}}_{\ves{\theta}}(\ve{z}_t, c) - \gamma \hat{\ve{x}}_{\ves{\theta}}(\ve{z}_t, \emptyset).
+  \end{align*}
+  We then use this value in the DDIM update rule during sampling.
+  
+  \item We can see that:
+  \begin{itemize}
+    \item When $\gamma = 0$, we get the normal conditional DDIM sampling routine.
+    \item When $\gamma = -1$, we get the normal unconditional DDIM sampling routine.
+  \end{itemize}
+
+  \item We can also see that, at each sampling step, one has to evaluate the DDPM two times.
+\end{itemize}
+
+\section{Proposed Algorithm}
+
+\begin{itemize}
+  \item The input to the algorithm is a conditional DDPM $\hat{\ve{x}}_{\ves{\theta}}$, which is called the {\bf teacher model}.
+  
+  \item It is assumed that the teacher model is a continous time model.
+\end{itemize}
+
+\subsection{Stage 1 Distillation}
+
+\begin{itemize}
+  \item The output of this stage is a student model $\hat{\ve{x}}_{\ves{\eta}_1}$ such that
+  \begin{align*}
+    \hat{\ve{x}}_{\ves{\eta}_1}(\ve{z}_t, c, \gamma) \approx \hat{\ve{x}}_{\ves{\theta}}^\gamma(\ve{z}_t, c)
+  \end{align*}
+  for all guidance weight $\gamma \in [\gamma_{\max}, \gamma_{\min}]$. Note that the student model needs to take $\gamma$ as an extra conditioning information.
+
+  \item To get such a model, we optimize the model with respect to the following loss function
+  \begin{align*}
+    E_{\gamma \sim \mcal{U}([\gamma_{\min},\gamma_{\max}]), t \sim \mcal{U}[0,1], (\ve{x},c) \sim p_{\data}, \ve{z}_t \sim \mcal{N}(\alpha_t\ve{x}, \sigma_t^2 I) }
+    [ w(\lambda_t) \| \hat{\ve{x}}_{\ves{\eta}_1}(\ve{z}_t, w, c) - \hat{\ve{x}}^\gamma_{\ves{\theta}}(\ve{z}_t, c)  \|^2 ]
+  \end{align*}
+
+  \item Model details.
+  \begin{itemize}
+    \item The paper uses the basic architecture as the teacher model, but it adds a branch of conditional information intake that allows guidance strength $\gamma$ to be given to the model.
+    
+    \item The architecture is a U-Net like many other previous works.
+    
+    \item The student model is initialized with the parameters of the teacher model, except for the part that deals with the guidance strength.
+    
+    \item Fourier embedding \cite{Tancik:2020} is applied to $\gamma$ before being passed to the model. In other words, it is treated pretty much like the time step information.    
+  \end{itemize}
+
+  \item The training algorithm is as follows.
+  \begin{codebox}
+    \Procname{$\proc{Phase-One-Distillation}$}
+    \li \While not converged
+    \li \Do
+          $(\ve{x},c) \sim p_{\data}$
+    \li   $\gamma \sim \mcal{U}([\gamma_{\min}, \gamma_{\max}])$
+    \li   $t \sim \mcal{U}([0,1])$    
+    \li   $\ves{\xi} \sim \mcal{N}(\ve{0}, I)$
+    \li   $\ve{z}_t \leftarrow \alpha_t \ve{x} + \sigma_t \ves{\xi}$
+    \li   $\tilde{\ve{x}} \leftarrow (1+\gamma)\hat{\ve{x}}_{\ves{\theta}}(\ve{z}_t, c) - \gamma\hat{\ve{x}}_{\ves{\theta}}(\ve{z}_t, \emptyset)$
+    \li   $\lambda_t \leftarrow \log (\alpha_t^2 / \sigma_t^2)$
+    \li   $L_{\ves{\eta}_1} \leftarrow w(\lambda_t) \| \tilde{\ve{x}} - \hat{\ve{x}}_{\ves{\eta}_1}(\ve{z}_t, c, \gamma) \|_2^2 $
+    \li   Update $\ves{\eta}_1$ according to $\nabla_{\ves{\eta}_1} L_{\ves{\eta}_1}$.
+        \End
+  \end{codebox}
+\end{itemize}
+
+\subsection{Stage 2 Distillation}
+
+\begin{itemize}
+  \item Stage 2 takes the model $\hat{\ve{x}}_{\ves{\eta}_1}$ from Stage 1 and progressively distill it with the algorithm proposed by Salimans and Ho~\cite{Salimans:2022}.
+  
+  \item The distillation algorithm is as follows.
+  \begin{codebox}
+    \Procname{$\proc{Stage-Two-Distillation}(\ves{\eta}_1, N)$}
+    \zi \Comment $\ves{\eta}_1$ denotes the parameters of the resulting model from Stage 1.
+    \zi \Comment $N$ is the number of iterations that the teacher model takes to sample.
+    \li \For $K$ iterations
+    \li \Do    
+          $N \leftarrow N/2$
+    \li   $\ves{\eta}_2 \leftarrow \ves{\eta}_1$
+    \li   \While not converged
+    \li   \Do
+            $(\ve{x},c) \sim p_{\data}$
+    \li     $\gamma \sim \mcal{U}([\gamma_{\min}, \gamma_{\max}])$
+    \li     $i \sim \mcal{U}(\{ 1, 2, \dotsc, N \})$
+    \li     $t \leftarrow i / N$
+    \li     $\ves{\xi} \sim \mcal{N}(\ve{0},I)$
+    \zi     \Comment 2 steps of DDIM sampling with teacher model
+    \li     $t' \leftarrow t - 0.5/N;\quad t'' \leftarrow t - 1/N $
+    \li     $\ve{z}_{t'} \leftarrow \alpha_{t'} \hat{\ve{x}}_{\ves{\eta}_1}(\ve{z}_t, c, \gamma) + \frac{\sigma_{t'}}{\sigma_t}\big(\ve{z}_t - \alpha_t \hat{\ve{x}}_{\ves{\eta}_1}(\ve{z}_t, c, \gamma)\big)$
+    \li     $\ve{z}_{t''} \leftarrow \alpha_{t''} \hat{\ve{x}}_{\ves{\eta}_1}(\ve{z}_{t'}, c, \gamma) + \frac{\sigma_{t''}}{\sigma_{t'}}\big(\ve{z}_{t'} - \alpha_{t'} \hat{\ve{x}}_{\ves{\eta}_1}(\ve{z}_{t'}, c, \gamma)\big)$
+    \li     $\tilde{\ve{x}} \leftarrow \frac{\ve{z}_{t''} - (\sigma_{t''}/\sigma_t)\ve{z}_t}{\alpha_{t''} - (\sigma_{t''}/\sigma_t)\alpha_t}$
+    \li     $\lambda_{t} \leftarrow \log(\alpha_{t}^2/\sigma_{t}^2)$
+    \li     $L_{\ves{\eta}_2} \leftarrow w(\lambda_t) \| \tilde{\ve{x}} - \hat{\ve{x}}_{\ves{\eta}_2}(\ve{z}_t, c, \gamma) \|^2$
+    \li     Update $\ves{\eta}_2$ according to $\nabla_{\ves{\eta}_2} L_{\ves{\eta}_2}$
+          \End
+    \zi   \Comment Make the converged student the teacher of the next round.
+    \li   $\ves{\eta}_1 \leftarrow \ves{\eta}_2$
+        \End  
+  \end{codebox}
+
+  \item The paper observes that, once $\hat{\ve{x}}_{\ves{\eta}_2}$ is trained, one can perform stochastic sampling with it using an algorithm similar to that proposed by Karras \etal~\cite{Karras:2022}.
+  
+  \item In each iteration of the stochastic sampling algorith:
+  \begin{enumerate}
+    \item We apply one deterministic reverse-time step with two-times the original step length (i.e., same as a $N/2$-step deterministic sampler).
+    \item We then perform one stochastic step forward (i.e., perturb with noise) using the original step length.
+  \end{enumerate}
+  More concretely, if we want to go from $t = i/N$ with $i > 1$ to $s = (i-1)/N$. Then, letting $u = (i-2)/N$, we compute
+  \begin{align*}
+    \ve{z}_u = \alpha_u \hat{\ve{x}}_{\ves{\eta}_2}(\ve{z}_t, c, \gamma) + \sigma_u \frac{\ve{z}_t - \alpha_t \hat{\ve{x}}_{\ves{\eta}_2}(\ve{z}_t, c, \gamma)}{\sigma_t}.
+  \end{align*}
+  Then, we compute
+  \begin{align*}
+    \ve{z}_s = \frac{\alpha_s}{\alpha_u} \ve{\z} + \sigma_{s|u} \ves{\xi}
+  \end{align*}
+  where $\ves{\xi} \sim \mcal{N}(\ve{0},I)$.
+
+  \item Note that the procedure above does not work for $t = 1/N$. When it is the case, we must do the usual reverse-time step.
+  
+  \item In order for the above model to work, we need to train the student model so that, for $t > i/N$, it do the reverse-time step of length $2/N$. Moreover, for $t = 1/N$, it must perform a step of length $1/N$. This procedure needs a new training algorithm, which is given in the paper.
+  \begin{itemize}
+    \item I feel that this is an uninteresting technical details. I will skip the exposition in this note.
+  \end{itemize}
+\end{itemize}
+
+\section{Experiments}
+
+\subsection{Pixel-Space Guided Models}
+
+\begin{itemize}
+  \item The paper uses two datasets: ImageNet 64x64 and CIFAR-10.
+  
+  \item The guidance weight range is $[\gamma_{\min}, \gamma_{\max}] = [0,4]$.
+  
+  \item The teacher model is a 1024 step conditional DDIM model. (So, 2048 evaluations to sample one data item.)
+  
+  \item The teacher model is a U-Net trained to predict $\ve{v} := \alpha_t \ves{\xi} - \sigma_t \ve{x}$.
+
+  \item It's quite unclear what is the conditioning information in this case. I presume it's the class label of each image.
+  
+  \item The paper observes that their distilled models is able to achieve FID scores close to those of the teacher model when $N=4$. See Table 1 and Figure 5 in the paper.
+  
+  \item One interesting thing to note is that, in many cases, stochastic sampling with the distilled model performed the best.
+\end{itemize}
+
+\subsection{Latent-Space Guided Models}
+
+\begin{itemize}
+  \item The paper uses the open-source latent diffusion model \cite{Rombach:2021}. They fine-tuned it to do $\ve{v}$-prediction rather than $\ves{\xi}$-prediction.
+  
+  \item They then examined performance of distilled models on three tasks.
+  \begin{itemize}
+    \item Class-conditional generation.
+    \item Text-guided image generation.
+    \item Text-guided image-to-image translation.
+    \item Image inpaiting.
+  \end{itemize}
+
+  \item For the last two tasks, only qualitative comparisons are available in the paper, so I will not do an exposition here.
+\end{itemize}
+
+\subsubsection{Class-Conditional Generation}
+
+\begin{itemize}
+  \item The experiment is done on ImageNet 256x256.
+  
+  \item The teacher model is a DDIM with 512 sampling steps.
+  
+  \item The guidance weight range is $[\gamma_{\min}, \gamma_{\max}] = [0,14]$.
+  
+  \item The distilled model matched the FID scores of the teacher model with 2 to 4 sampling steps. It also performed much better than DDIM sampling when the number of steps is 1 to 4.
+  
+  \item Samples obtained using only 1 sampling step were still satisfying.
+\end{itemize}
+
+\subsubsection{Text-Guided Image Generation}
+
+\begin{itemize}
+  \item The dataset used is LAION-5B at the $512 \times 512$ resolution.
+  
+  \item The guidance weight range is $[\gamma_{\min}, \gamma_{\max}] = [2,14]$.
+  
+  \item Distillation process.
+  \begin{itemize}
+    \item Batch size = 512.
+    \item Stage 1 takes 3,000 gradient updates.
+    \item Stage 2 takes 2,000 gradient updates per iteration. However, then $i = 1, 2, 4$, the paper used 20,000 gradient updates.
+  \end{itemize}
+
+  \item In terms of FID/IS scores, the distilled model performed much better than the DDIM sampler when $N \leq 4$.
+  
+  \item When $N \geq 8$, the paper did not observed significant differences in the scores. However, visual inspection showed that images generated by the distilled model were sharper and more coherent.
+\end{itemize}
+
+\bibliographystyle{alpha}
+\bibliography{ddpm-distillation-guided}  
+\end{document}
