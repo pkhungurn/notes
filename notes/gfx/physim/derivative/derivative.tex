@@ -1,0 +1,419 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{epstopdf}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\likelihood}{\mathcal{L}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\new}{\mathrm{new}}
+\newcommand{\Arg}{\mathrm{Arg\,}}
+\newcommand{\Log}{\mathrm{Log\,}}
+\newcommand{\RE}{\mathrm{Re\,}}
+\newcommand{\IM}{\mathrm{Im\,}}
+\newcommand{\Res}{\mathrm{Res}}
+\newcommand{\pv}{\mathrm{p.v.}}
+\newcommand*{\horzbar}{\rule[.5ex]{2.5ex}{0.5pt}}
+\newcommand{\Real}{\mathbb{R}}
+
+\title{Derivatives of Potential Functions for Physical Simulation}
+\author{Pramook Khungurn}
+
+\begin{document}
+	\maketitle
+
+  \section{Notation for Partial Derivatives and Differentials}
+  \begin{itemize}
+    \item Let $f : \Real^n \ra \Real$ and let $\ve{x} = (x_1, x_2, \dotsc, x_n)^T$ so that
+    \begin{align*}
+      f(\ve{x}) = f(x_1, x_2, \dotsc, x_n).
+    \end{align*}
+
+    \item When talking about the partial derivative of $f$ with respect to the $i$th parameter, we use the symbol
+    \begin{align*}
+      \frac{\partial f}{\partial x_i}
+    \end{align*}
+    and tread this object as a function $\Real^n$ to $\Real$. However, when talking about this function evaluated at a point, say $\ve{x}_0$, we use the symbol:
+    \begin{align*}
+      \frac{\partial f}{\partial x_i}(\ve{x}_0).
+    \end{align*}
+    \item Let $F : \Real^n \ra \Real^m$. Let $\ve{x} = (x_1, x_2, \dotsc, x_n)^T$ and
+    \begin{align*}
+      F(\ve{x}) 
+      = \begin{bmatrix}
+        f_1(\ve{x})\\
+        f_2(\ve{x})\\
+        \vdots\\
+        f_m(\ve{x})
+      \end{bmatrix}
+      = \begin{bmatrix}
+        f_1(x_1, x_2, \dotsc, x_n)\\
+        f_2(x_1, x_2, \dotsc, x_n)\\
+        \vdots\\
+        f_m(x_1, x_2, \dotsc, x_n)
+      \end{bmatrix}.
+    \end{align*}
+    \item The differential of $\ve{F}$ is a function from $\Real^n$ to $\Real^{m\times n}$. We denote it by:
+    \begin{align*}
+      \dee \ve{F} \qquad \mbox{or} \qquad \frac{\partial \ve{F}}{\partial \ve{x}} \qquad \mbox{or} \qquad \frac{\partial (f_1, f_2, \dots, f_m)}{\partial(x_1, x_2, \dotsc, x_n)}.
+    \end{align*}
+    Its value is equal to:
+    \begin{align*}
+      \renewcommand{\arraystretch}{1.5}
+      \dee \ve{F} = \frac{\partial \ve{F}}{\partial \ve{x}} = \frac{\partial (f_1, f_2, \dots, f_m)}{\partial(x_1, x_2, \dotsc, x_n)} = 
+      \begin{bmatrix}
+        \frac{\partial f_1}{\partial x_1} & \frac{\partial f_1}{\partial x_2} & \cdots  & \frac{\partial f_1}{\partial x_n}\\
+        \frac{\partial f_2}{\partial x_1} & \frac{\partial f_2}{\partial x_2} & \cdots  & \frac{\partial f_2}{\partial x_n}\\
+        \vdots & \vdots & \ddots & \vdots \\
+        \frac{\partial f_m}{\partial x_1} & \frac{\partial f_m}{\partial x_2} & \cdots  & \frac{\partial f_m}{\partial x_n}
+      \end{bmatrix}.
+    \end{align*}
+    However, when we talk about a particular matrix that is the result of evaluting the result at point $\ve{x}_0$, we use the following notation:
+    \begin{align*}
+      \renewcommand{\arraystretch}{1.5}
+      \dee \ve{F}(\ve{x}_0) = \frac{\partial \ve{F}}{\partial \ve{x}}(\ve{x}_0) = \frac{\partial (f_1, f_2, \dots, f_m)}{\partial(x_1, x_2, \dotsc, x_n)}(\ve{x}_0) = 
+      \begin{bmatrix}
+        \frac{\partial f_1}{\partial x_1}(\ve{x}_0) & \frac{\partial f_1}{\partial x_2}(\ve{x}_0) & \cdots  & \frac{\partial f_1}{\partial x_n}(\ve{x}_0)\\
+        \frac{\partial f_2}{\partial x_1}(\ve{x}_0) & \frac{\partial f_2}{\partial x_2}(\ve{x}_0) & \cdots  & \frac{\partial f_2}{\partial x_n}(\ve{x}_0)\\
+        \vdots & \vdots & \ddots & \vdots \\
+        \frac{\partial f_m}{\partial x_1}(\ve{x}_0) & \frac{\partial f_m}{\partial x_2}(\ve{x}_0) & \cdots  & \frac{\partial f_m}{\partial x_n}(\ve{x}_0)
+      \end{bmatrix}.
+    \end{align*}
+
+    \item The gradient of a scale field $f : \Real^n \ra \Real$ is just the tranpose of its differential:
+    \begin{align*}
+      \renewcommand{\arraystretch}{1.5}
+      \nabla f = \bigg( \frac{\partial f }{\partial \ve{x}} \bigg)^T = \bigg( \frac{\partial (f) }{\partial (x_1, x_2, \dotsc, x_n)} \bigg)^T 
+      = \begin{bmatrix}
+        \frac{\partial f}{\partial x_1} \\
+        \frac{\partial f}{\partial x_2} \\
+        \vdots \\
+        \frac{\partial f}{\partial x_n}.
+      \end{bmatrix}
+    \end{align*}
+  \end{itemize}
+
+  \section{Potential Function and Force}
+
+  \begin{itemize}
+    \item Let $U: \Real^3 \ra \Real$ be a potential function.
+
+    \item Let us denote a position in $\Real^3$ and let us denote the three components of $\ve{p}$ be $p_x$, $p_y$, and $p_z$.    
+    
+    \item A {\bf conservative force} is the gradient of some potential function:
+    \begin{align*}
+      \ve{f} = -\nabla U = - \bigg( \frac{\partial U}{\partial \ve{p}} \bigg)^T.
+    \end{align*}
+    However, in this note, we will note use the gradient, but instead will be working with the differentials because this will lead to less confusion.
+
+    \item Let there be $n$ particles in the system.\\
+    Let their positions be $\ve{p}_1$, $\ve{p}_2$, $\dotsc$, $\ve{p}_n$.\\
+    Let the three coordinates of $\ve{p}_i$ be denoted by $p_{ix}$, $p_{iy}$, and $p_{iz}$.
+
+    \item When simulating the particle system, the positions of all the points are assembled into one big vector $\ve{p}$ where
+    \begin{align*}
+      \ve{p}
+      = \begin{bmatrix}
+        \ve{p}_1 \\
+        \ve{p}_2 \\
+        \vdots \\
+        \ve{p}_n
+      \end{bmatrix}
+      = \begin{bmatrix}
+        p_{1x} \\
+        p_{1y} \\
+        p_{1z} \\
+        p_{2x} \\
+        p_{2y} \\
+        p_{2z} \\
+        \vdots \\
+        p_{nx} \\
+        p_{ny} \\
+        p_{nz}
+      \end{bmatrix}.
+    \end{align*}
+    Because of this, the differential of the potential function becomes:
+    \begin{align*}    
+      \frac{\partial U}{\partial \ve{p}}
+      &= \begin{bmatrix}
+        \frac{\partial U}{\partial \ve{p}_1} &
+        \frac{\partial U}{\partial \ve{p}_1} &
+        \cdots &
+        \frac{\partial U}{\partial \ve{p}_1}
+      \end{bmatrix}\\
+      &= \begin{bmatrix}
+        \frac{\partial U}{\partial p_{1x}} &
+        \frac{\partial U}{\partial p_{1y}} &
+        \frac{\partial U}{\partial p_{1z}} &
+        \frac{\partial U}{\partial p_{2x}} &
+        \frac{\partial U}{\partial p_{2y}} &
+        \frac{\partial U}{\partial p_{2z}} &
+        \dotsb &
+        \frac{\partial U}{\partial p_{nx}} &
+        \frac{\partial U}{\partial p_{ny}} &
+        \frac{\partial U}{\partial p_{nz}}
+      \end{bmatrix}.
+    \end{align*}
+  \end{itemize}
+
+  \section{Some Useful Identities}
+  \begin{itemize}
+    \item Before going to derive the differential of potential functions, we state a number of convenient facts.
+
+    \item The differential of the position of one particle with respect to other is the identity matrix if the particles are the same and the zero matrix if they are not:
+    \begin{align*}
+      \renewcommand{\arraystretch}{1.5}
+      \frac{\partial \ve{p}_k}{\partial \ve{p}_i}
+      = \begin{bmatrix}
+        \frac{\partial p_{kx}}{\partial p_{ix}} &
+        \frac{\partial p_{kx}}{\partial p_{iy}} &
+        \frac{\partial p_{kx}}{\partial p_{iz}} \\
+        \frac{\partial p_{ky}}{\partial p_{ix}} &
+        \frac{\partial p_{ky}}{\partial p_{iy}} &
+        \frac{\partial p_{ky}}{\partial p_{iz}} \\
+        \frac{\partial p_{kz}}{\partial p_{ix}} &
+        \frac{\partial p_{kz}}{\partial p_{iy}} &
+        \frac{\partial p_{kz}}{\partial p_{iz}} \\        
+      \end{bmatrix}
+      = \begin{bmatrix}
+        \delta_{ki} & 0 & 0\\
+        0 & \delta_{ki} & 0\\
+        0 & 0 & \delta_{ki}
+      \end{bmatrix}
+      = \delta_{ki} I_3
+    \end{align*}
+    where
+    \begin{align*}
+      \delta_{ki} = \begin{cases}
+        1, & k = i, \\
+        0, & k \neq i
+      \end{cases}
+    \end{align*} 
+    is the Kroneker delta function.
+
+    \item Here, we give the differential of a dot product. Let $\ve{a}, \ve{b} : \Real^3 \ra \Real^3$ where we write 
+    \begin{align*}
+      \ve{a}(\ve{p}) &= (a_x(\ve{p}), a_y(\ve{p}), a_z(\ve{p}))^T\\
+      \ve{b}(\ve{p}) &= (b_x(\ve{p}), b_y(\ve{p}), b_z(\ve{p}))^T.
+    \end{align*}
+    We have that      
+    \begin{align*}
+      \renewcommand{\arraystretch}{1.5}
+      \frac{\partial (\ve{a} \cdot \ve{b})}{\partial \ve{p}}
+      &= \frac{\partial (a_x b_x + a_y b_y + a_z b_z)}{\partial \ve{p}}\\
+      &= \frac{\partial (a_x b_x)}{\partial \ve{p}} + \frac{\partial (a_y b_y)}{\partial \ve{p}} + \frac{\partial (a_z b_z)}{\partial \ve{p}}\\
+      &= \bigg( \frac{\partial a_x}{\partial \ve{p}} b_x + \frac{\partial b_x}{\partial \ve{p}} a_x \bigg) 
+      + \bigg( \frac{\partial a_y}{\partial \ve{p}} b_y + \frac{\partial b_y}{\partial \ve{p}} a_y \bigg)
+      + \bigg( \frac{\partial a_z}{\partial \ve{p}} b_z + \frac{\partial b_z}{\partial \ve{p}} a_z \bigg)\\
+      &= \bigg( \frac{\partial a_x}{\partial \ve{p}} b_x + \frac{\partial a_y}{\partial \ve{p}} b_y + \frac{\partial a_z}{\partial \ve{p}} b_z \bigg) +
+      \bigg( \frac{\partial b_x}{\partial \ve{p}} a_x + \frac{\partial b_y}{\partial \ve{p}} a_y + \frac{\partial b_z}{\partial \ve{p}} a_z \bigg)\\
+      &= \begin{bmatrix} b_x & b_y & b_z\end{bmatrix} \begin{bmatrix} \frac{\partial a_x}{\partial \ve{p}} \\ \frac{\partial a_y}{\partial \ve{p}} \\ \frac{\partial a_z}{\partial \ve{p}} \end{bmatrix} 
+      + \begin{bmatrix} a_x & a_y & a_z\end{bmatrix} \begin{bmatrix} \frac{\partial b_x}{\partial \ve{p}} \\ \frac{\partial b_y}{\partial \ve{p}} \\ \frac{\partial b_z}{\partial \ve{p}} \end{bmatrix}\\
+      &= \ve{b}^T \frac{\partial \ve{a}}{\partial \ve{p}} + \ve{a}^T \frac{\partial \ve{b}}{\partial \ve{p}}
+      = \ve{a}^T \frac{\partial \ve{b}}{\partial \ve{p}} + \ve{b}^T \frac{\partial \ve{a}}{\partial \ve{p}}.
+    \end{align*}    
+    
+    \item As a result, we have that
+    \begin{align*}
+      \frac{\partial (\ve{p}_k \cdot \ve{p}_\ell)}{\partial \ve{p}_i}
+      &= \ve{p}_k^T \frac{\partial \ve{p}_\ell}{\partial \ve{p}_i} + \ve{p}_\ell^T \frac{\partial \ve{p}_k}{\partial \ve{p}_i}
+      = \ve{p}_k^T \delta_{\ell i} I_3 + \ve{p}_\ell^T \delta_{ki} I_3
+      = \delta_{\ell i} \ve{p}_k^T + \delta_{ki} \ve{p}_\ell^T.
+    \end{align*}
+
+    \item We also have that
+    \begin{align*}
+      \frac{\partial \| \ve{a} \|^2}{\partial \ve{p}} = \frac{\partial(\ve{a} \cdot \ve{a})}{\partial \ve{p}} = 2 \ve{a}^T \frac{\partial \ve{a}}{\partial \ve{p}}.
+    \end{align*}
+  \end{itemize}
+
+  \section{Some Common Potential Functions} % (fold)
+  \label{sec:some_commont_potential_functions}
+
+  \begin{itemize}
+    \item {\bf Distance squared:} $U(\ve{p}) = \| \ve{p}_k - \ve{p}_\ell \|^2$.
+    \begin{align*}
+      \frac{\partial U}{\partial \ve{p}_i} 
+      &= \frac{\partial \| \ve{p}_k - \ve{p}_\ell \|^2}{\partial \ve{p}_i}
+      = 2 (\ve{p}_k - \ve{p}_\ell)^T \frac{\partial (\ve{p}_k - \ve{p}_\ell)}{\partial \ve{p}_i}
+      = 2 (\ve{p}_k - \ve{p}_\ell)^T (\delta_{ki}I_3 - \delta_{\ell i} I_3)\\
+      &= 2 (\delta_{ki} - \delta_{\ell i})  (\ve{p}_k - \ve{p}_\ell)^T.
+    \end{align*}
+
+    \item {\bf Distance:} $U(\ve{p}) = \| \ve{p}_k - \ve{p}_\ell \|$.
+    \begin{align*}
+      \frac{\partial U}{\partial \ve{p}_i} 
+      &= \frac{\partial \| \ve{p}_k - \ve{p}_\ell \|}{\partial \ve{p}_i}
+      = \frac{\partial \sqrt{\| \ve{p}_k - \ve{p}_\ell \|^2}}{\partial \ve{p}_i}
+      = \frac{\partial \sqrt{\| \ve{p}_k - \ve{p}_\ell \|^2}}{\partial \| \ve{p}_k - \ve{p}_\ell \|^2} \frac{\partial \| \ve{p}_k - \ve{p}_\ell \|^2}{\partial \ve{p}_i}\\
+      &= \frac{1}{2 \sqrt{\| \ve{p}_k - \ve{p}_\ell \|^2} } \cdot 2 (\delta_{ki} - \delta_{\ell i})  (\ve{p}_k - \ve{p}_\ell)^T\\
+      &= (\delta_{ki} - \delta_{\ell i}) \frac{(\ve{p}_k - \ve{p}_\ell)^T}{\| \ve{p}_k - \ve{p}_\ell \| }\\
+      &= (\delta_{ki} - \delta_{\ell i}) (\widehat{\ve{p}_k - \ve{p}_\ell})^T.
+    \end{align*}
+
+    \item {\bf Power law:} $U(\ve{p}) = \| \ve{p}_k - \ve{p}_\ell \|^\alpha$.
+    \begin{align*}
+      \frac{\partial U}{\partial \ve{p}_i} 
+      &= \frac{\partial \| \ve{p}_k - \ve{p}_\ell \|^\alpha}{\partial \ve{p}_i}
+      = \alpha \frac{\partial \| \ve{p}_k - \ve{p}_\ell \|^\alpha}{\partial \| \ve{p}_k - \ve{p}_\ell \|} \frac{\partial \| \ve{p}_k - \ve{p}_\ell \|}{\partial \ve{p}_i}\\
+      &= \alpha \| \ve{p}_k - \ve{p}_\ell \|^{\alpha-1} (\delta_{ki} - \delta_{\ell i}) (\widehat{\ve{p}_k - \ve{p}_\ell})^T.
+    \end{align*}
+
+    \item Now, we derive the derivative of the unit vector between $\ve{p}_k$ and $\ve{p}_\ell$.
+    \begin{align*}
+      \frac{\partial (\widehat{\ve{p}_k-\ve{p}_\ell})}{\partial \ve{p}_i} 
+      &= \frac{\partial (\| \ve{p}_k - \ve{p}_\ell \|^{-1}(\ve{p}_k-\ve{p}_\ell))}{\partial \ve{p}_i}\\
+      &= (\ve{p}_k-\ve{p}_\ell) \frac{\partial (\| \ve{p}_k - \ve{p}_\ell \|^{-1})}{\partial \ve{p}_i}       
+      +  \| \ve{p}_k - \ve{p}_\ell \|^{-1} \frac{\partial (\ve{p}_k-\ve{p}_\ell)}{\partial \ve{p}_i}\\
+      &= -(\ve{p}_k-\ve{p}_\ell) \frac{\delta_{ki} - \delta_{\ell i}}{\| \ve{p}_k-\ve{p}_\ell \|^2} (\widehat{\ve{p}_k - \ve{p}_\ell})^T +
+      \frac{\delta_{ki} - \delta_{\ell i}}{\| \ve{p}_k-\ve{p}_\ell \|} I_3 \\
+      &= \frac{\delta_{ki} - \delta_{\ell i}}{\| \ve{p}_k-\ve{p}_\ell \|}(I_3 - (\widehat{\ve{p}_k - \ve{p}_\ell}) (\widehat{\ve{p}_k - \ve{p}_\ell})^T).
+    \end{align*}
+
+  \end{itemize}  
+  % section some_commont_potential_functions (end)
+
+  \section{Constraint Force} % (fold)
+  
+  \begin{itemize}
+    \item In many cases, we want the particle system to maintain some constraints. For example, we may want two particles to remain at a constant distance from each other.
+
+    \item We can define a potential function so that the potential function is low when the constraint is satisfied and high when not. The force resulting from this potential function will try to restore the state of the particle system to satisfy the constraint.
+
+    \item Witkin introduces a way to do this. First, we need to specify a constraint function $\ve{C}: \Real^{3n} \ra \Real^{m}$, which generally tells us how much the constraint is violated. Then, we define our potential as:
+    \begin{align*}
+      U = \frac{k_s}{2} \ve{C}^T\ve{C} = \frac{k_s}{2}\| \ve{C} \|^2
+    \end{align*}
+    where $k_s$ is a constant denoting how ``stiff'' the system is. A stiffer system generates larger forces to maintain constraints.
+
+    \item The framework is quite general. For example, to simulate a spring, we may define:
+    \begin{align*}
+      \ve{C} = \ve{p}_k - \ve{p}_\ell.
+    \end{align*}
+    Then, the potential energy becomes:
+    \begin{align*}
+      U(\ve{p}) = \frac{k_s}{2} (\ve{p}_k - \ve{p}_\ell)^T (\ve{p}_k - \ve{p}_\ell) = \frac{k_s}{2} \| \ve{p}_k - \ve{p}_\ell \|^2,
+    \end{align*}
+    which is the familiar Hooke's law.    
+
+    \item with this definition of potential, the force due to the potential is given by:
+    \begin{align*}
+      \ve{f}^{\mathrm{potential}}
+      &= -\bigg( \frac{\partial U}{\partial \ve{p}} \bigg)^T 
+      = -\bigg( k_s (\ve{C}(\ve{p}_0))^T \frac{\partial \ve{C}}{\partial \ve{p}} \bigg)^T\\
+      &= -k_s \bigg( \frac{\partial \ve{C}}{\partial \ve{p}} \bigg)^T \ve{C}
+    \end{align*}
+
+    \item A stiff system is bad for numerical stability. One way to alleviate this problem is to introduce a damping term to the system.
+    With the constraint vector, the damping force is defined as:
+    \begin{align*}
+      \ve{f}^{\mathrm{damp}} = - k_d \bigg( \frac{\partial \ve{C}}{\partial \ve{p}} \bigg)^T \frac{\dee \ve{C}}{\dee t}.
+    \end{align*}
+    
+    \item As a result, the total force is given by:
+    \begin{align*}
+      \ve{f}
+      = \ve{f}^{\mathrm{potential}} + \ve{f}^{\mathrm{damp}}
+      = -\bigg( \frac{\partial \ve{C}}{\partial \ve{p}} \bigg)^T\bigg( k_s\ve{C} + k_d \frac{\dee \ve{C}}{\dee t} \bigg).
+    \end{align*}
+
+    \item Going back to the spring force, we have that:
+    \begin{align*}
+      \ve{C} &= \ve{p}_k - \ve{p}_\ell \\
+      \frac{\dee \ve{C}}{\dee t} &= \ve{v}_k - \ve{v}_\ell.
+    \end{align*}
+    So, the force at the $i$th particle is given by:
+    \begin{align*}
+      \ve{f}_i 
+      &= -\bigg( \frac{\partial \ve{C}}{\partial \ve{p}_i} \bigg)^T\bigg( k_s\ve{C} + k_d \frac{\dee \ve{C}}{\dee t} \bigg)
+      = - (\delta_{ki} - \delta_{\ell i}) (k_s(\ve{p}_k - \ve{p}_\ell) + k_d (\ve{v}_k - \ve{v}_\ell)).
+    \end{align*}
+
+    \item {\bf Spring with non-zero rest length:} Let us say that we put a spring between Particle $k$ and Particle $\ell$ and the spring has rest length $L$. Then, we may set:
+    \begin{align*}
+      C = \| \ve{p}_k - \ve{p}_\ell \| - L.      
+    \end{align*}
+    We have that
+    \begin{align*}
+      \frac{\dee C}{\dee t} 
+      &= \frac{\dee \| \ve{p}_k - \ve{p}_\ell \|}{\dee t}\\
+      &= \frac{\partial \| \ve{p}_k - \ve{p}_\ell \|}{\partial \ve{p}_k} \frac{\dee \ve{p}_k}{\dee t} + \frac{\partial \| \ve{p}_k - \ve{p}_\ell \|}{\partial \ve{p}_\ell} \frac{\dee \ve{p}_\ell}{\dee t}\\
+      &= (\widehat{\ve{p}_k - \ve{p}_\ell})^T\ve{v}_k - (\widehat{\ve{p}_k - \ve{p}_\ell})^T\ve{v}_\ell\\
+      &= (\widehat{\ve{p}_k - \ve{p}_\ell})^T (\ve{v}_k - \ve{v}_\ell).
+    \end{align*}
+    Hence,
+    \begin{align*}
+      \ve{f}_i
+      &= - (\delta_{ki} - \delta_{\ell i}) (\widehat{\ve{p}_k - \ve{p}_\ell}) (k_s (\| \ve{p}_k - \ve{p}_\ell \| - L) + k_d (\widehat{\ve{p}_k - \ve{p}_\ell})^T (\ve{v}_k - \ve{v}_\ell)).
+    \end{align*}        
+  \end{itemize}
+    
+  \section{Hair Bend Spring}
+  \begin{itemize}
+    \item We have three points, $\ve{p}_0$, $\ve{p}_1$, and $\ve{p}_2$.\\
+     Let $\ve{a} = \ve{p}_1 - \ve{p}_0$ and let $\ve{b} = \ve{p}_2 - \ve{p}_1$.
+
+     \item We want the angle $\theta$ between $\ve{a}$ and $\ve{b}$ to be $0$ so that the two vectors form a straight line. 
+
+     \item This means that we want $1 - \cos \theta$ to be 0. So, we can set
+     \begin{align*}
+       U 
+       = \frac{k}{2} (1 - \cos\theta) 
+       = \frac{k}{2}\bigg( 1 - \frac{\ve{a} \cdot \ve{b}}{\| \ve{a} \| \| \ve{b} \| } \bigg)
+       = \frac{k}{2}( 1 - \widehat{\ve{a}} \cdot \widehat{\ve{b}}).
+     \end{align*}
+
+     \item As the force only depends on the gradient, we can redefine the potential as $U = -k \widehat{\ve{a}} \cdot \widehat{\ve{b}}/2$ and still get the same force.
+
+     \item We have that
+     \begin{align*}
+       \frac{\partial U}{\partial \ve{p}_i} 
+       &= -\frac{k}{2}\bigg( \widehat{\ve{a}}^T \frac{\partial \widehat{\ve{b}}}{\partial \ve{p}_i} + \widehat{\ve{b}}^T \frac{\partial \widehat{\ve{a}}}{\partial \ve{p}_i} \bigg)\\
+       &= -\frac{k}{2} \bigg( \widehat{\ve{a}}^T \frac{\delta_{2i} - \delta_{1i}}{\| \ve{b} \| } (I_3 - \widehat{\ve{b}}\widehat{\ve{b}}^T) 
+       + \widehat{\ve{b}}^T \frac{\delta_{1i} - \delta_{0i}}{\| \ve{a} \| } (I_3 - \widehat{\ve{a}}\widehat{\ve{a}}^T) \bigg)\\
+       &= -\frac{k}{2} \bigg( \frac{\delta_{2i} - \delta_{1i}}{\| \ve{b} \| } (\widehat{\ve{a}}^T - (\widehat{\ve{a}} \cdot \widehat{\ve{b}}) \widehat{\ve{b}}^T) 
+       + \frac{\delta_{1i} - \delta_{0i}}{\| \ve{a} \| } (\widehat{\ve{b}}^T - (\widehat{\ve{a}} \cdot \widehat{\ve{b}}) \widehat{\ve{a}}^T) \bigg).
+     \end{align*}
+     So,
+     \begin{align*}
+       \ve{f}_0 &= - \bigg( \frac{\partial U}{\partial \ve{p}_0} \bigg)^T = -\frac{k}{2 \| \ve{a} \|} (\widehat{\ve{b}}^T - (\widehat{\ve{a}} \cdot \widehat{\ve{b}}) \widehat{\ve{a}}^T) \\
+       \ve{f}_2 &= - \bigg( \frac{\partial U}{\partial \ve{p}_2} \bigg)^T = \frac{k}{2 \| \ve{b} \|} (\widehat{\ve{a}}^T - (\widehat{\ve{a}} \cdot \widehat{\ve{b}}) \widehat{\ve{b}}^T)\\
+       \ve{f}_1 &= -\ve{f}_0 - \ve{f}_2.
+     \end{align*}
+  \end{itemize}
+
+\end{document}

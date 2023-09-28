@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>Score-Based Generative Models</title>
+
+    <!-- Bootstrap -->
+    <link href="../../../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../../../css/theme.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      loader: {load: ['[tex]/boldsymbol']},
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+      TeX: { equationNumbers: {autoNumber: "AMS"} } 
+    });
+    </script>
+    <script type="text/javascript"
+            src="../../../MathJax/MathJax.js?config=TeX-AMS_HTML-full">
+    </script>
+
+    <script type="text/javascript" src="../../../js/jquery-3.4.1.min.js"></script>    
+    <script type="text/javascript" src="../../../js/bigfoot.min.js"></script>    
+
+    <link rel="stylesheet" type="text/css" href="../../../css/bigfoot-default.css">    
+
+</head>
+<body>
+<div class="container">
+    <span style="visibility: hidden;">
+        \(
+        \def\sc#1{\dosc#1\csod}
+        \def\dosc#1#2\csod{{\rm #1{\small #2}}}
+
+        \newcommand{\dee}{\mathrm{d}}
+        \newcommand{\Dee}{\mathrm{D}}
+        \newcommand{\In}{\mathrm{in}}
+        \newcommand{\Out}{\mathrm{out}}
+        \newcommand{\pdf}{\mathrm{pdf}}
+        \newcommand{\Cov}{\mathrm{Cov}}
+        \newcommand{\Var}{\mathrm{Var}}
+
+        \newcommand{\ve}[1]{\mathbf{#1}}
+        \newcommand{\mrm}[1]{\mathrm{#1}}
+        \newcommand{\ves}[1]{\boldsymbol{#1}}
+        \newcommand{\etal}{{et~al.}}
+        \newcommand{\sphere}{\mathbb{S}^2}
+        \newcommand{\modeint}{\mathcal{M}}
+        \newcommand{\azimint}{\mathcal{N}}
+        \newcommand{\ra}{\rightarrow}
+        \newcommand{\mcal}[1]{\mathcal{#1}}
+        \newcommand{\X}{\mathcal{X}}
+        \newcommand{\Y}{\mathcal{Y}}
+        \newcommand{\Z}{\mathcal{Z}}
+        \newcommand{\x}{\mathbf{x}}
+        \newcommand{\y}{\mathbf{y}}
+        \newcommand{\z}{\mathbf{z}}
+        \newcommand{\tr}{\mathrm{tr}}
+        \newcommand{\sgn}{\mathrm{sgn}}
+        \newcommand{\diag}{\mathrm{diag}}
+        \newcommand{\Real}{\mathbb{R}}
+        \newcommand{\sseq}{\subseteq}
+        \newcommand{\ov}[1]{\overline{#1}}
+        \DeclareMathOperator*{\argmax}{arg\,max}
+        \DeclareMathOperator*{\argmin}{arg\,min}
+        \)
+    </span>
+
+    <br>
+    <h1>Score-Based Generative Models</h1>
+
+    <p>About a year ago, I read a paper on <a href="../generative-diffusion-models/index.html">denoising diffusion models</a>, which proposes a new type of generative models. Now, it turns out that there are parallel works by <a href="https://yang-song.github.io/">Yang Song</a> and <a href="https://cs.stanford.edu/~ermon/">Stefano Ermon</a> on the so-called "score-based models," which is later discovered to be deeply connected (in other words, pretty much equivalent) to the former approach. (FYI, my time in grad school overlapped with that of Stefano's, but we never interacted.) The approaches share the advantanges of being very stable to train and being capable of generating high quality samples, and they also share the disadvantage of being slow when sampling. Researchers have claimed that these models beat GANs in image generation <a href="https://arxiv.org/abs/2105.05233">[Dhariwal and Nichol 2021]</a>, and so my interested is piqued.</p>
+
+    <p>I read <a href="https://yang-song.github.io/blog/2021/score/">the introductory blog post</a> by Yang Song, but it seems that I lack the background to understand this body of work. This note aims to fill this understanding gap by summarizing relavant research papers.</p>
+
+    <hr>
+    <h2>1 &nbsp; Preliminary</h2>
+
+    <ul>
+        <li>We are given $n$ data items $\ve{x}_1$, $\ve{x}_2$, $\dotsc$, $\ve{x}_N$ that are sampled i.i.d. from a probability distribution $p_{\mrm{data}}(\ve{x})$, which is unknown to us.</li>
+
+        <li>We are interested in modeling $p_{\mrm{data}}(\ve{x})$ by finding a model $p_{\boldsymbol{\theta}}(\ve{x})$ with parameters $\boldsymbol{\theta}$ that best approximates it.
+        <ul>
+            <li>To reduce levels of subscription, we will sometimes write $p_{\boldsymbol{\theta}}(\ve{x})$ as $p(\ve{x};\boldsymbol{\theta})$.</li>
+        </ul>
+        </li>
+
+        <li>For the models in this note, we cannot compute the probability $p_{\boldsymbol{\theta}}(\ve{x})$ directly.</li>
+
+        <li>However, we would still be able to sample from it, which is something that is of practical use.</li>
+
+        <li>Hence, the focus would be on (1) how to estimate the parameters $\boldsymbol{\theta}$, and (2) how to sample from the model given the parameters.</li>
+    </ul>
+
+    <hr>
+    <h2>2 &nbsp; Score Matching</h2>
+
+    <ul>
+        <li>First, however, we need to take a detour from generative modeling and study a related problem: parameter estimation of unnormalized models.</li>
+
+        <li>For some probabilistic models, the form of the probability distribution is known up to the normalization constant:
+        \begin{align*}
+            p(\ve{x}) \propto q(\ve{x})
+        \end{align*}
+        So, we have that
+        \begin{align*}
+            p(\ve{x}) = \frac{q(\ve{x})}{Z}.
+        \end{align*}
+        where $$Z = \int p(\ve{x})\, \dee\ve{x}$$ is the normalization constant.
+        </li>
+
+        <li>A common class of such model is the <b>energy-based model</b>, where $$p(\ve{x}) \propto e^{-E(\ve{x})}.$$ Here, $E(\ve{x})$ is called the <b>energy function</b>, and the normalization constant
+        \begin{align*}
+        Z = \int e^{-E(\ve{x})}\, \dee\ve{x}
+        \end{align*}
+        is called the <b>partition function</b>. Energy-based models show up a lot in statistical physics, in which case $E(\ve{x})$, is the <a href="https://en.wikipedia.org/wiki/Hamiltonian_mechanics">Hamiltonian</a> of the system.
+        </li>
+
+        <li>Another class of such models is the <b>graphical model</b> where $$p(\ve{x}) \propto \prod_{\ve{a} \in \mathcal{F}} p_\ve{a}(\ve{x}).$$ Here, we assume that $\ve{x} = (x_1, x_2, \dotsc, x_n)$, $\ve{F}$ is a set of subsets of $\{1,2,\dotsc,n)$, and $p_\ve{a}(\ve{x})$ is a function of components of $\ve{x}$ whose set of indices are exactly $\ve{a}$. You can read more about such models in <a href="../conditional-random-fields-intro/index.html">another note of mine</a>.</li>
+
+        <li>We are interested in such probability distributions with paremeters. In other words,
+        \begin{align*}
+            p(\ve{x};\boldsymbol{\theta}) = \frac{q(\ve{x};\boldsymbol{\theta})}{Z(\boldsymbol{\theta})}
+        \end{align*}
+        where
+        \begin{align*}
+            Z(\boldsymbol{\theta}) = \int q(\ve{x};\boldsymbol{\theta})\, \dee\ve{x}.
+        \end{align*}
+        </li>
+
+        <li>We are particularly interested in estimating $\boldsymbol{\theta}$ from sampled data $\ve{x}_1$, $\ve{x}_2$, $\dotsc$, $\ve{x}_N$.</li>
+
+        <li>The standard approch would be to perform maximum likelihood estimation (MLE):
+        \begin{align*}
+            \argmax_{\boldsymbol{\theta}} \sum_{i=1}^N \log p(\ve{x}_i;\boldsymbol{\theta}) = \argmax_{\boldsymbol{\theta}} \bigg\{ \sum_{i=1}^N \log q(\ve{x}_i;\boldsymbol{\theta}) -N \log Z(\boldsymbol{\theta}) \bigg\}
+        \end{align*}
+        </li>
+
+        <li>The general problem is that computing $Z(\boldsymbol{\theta})$ is often infeasible.</li>
+
+        <li>The common way to deal with this is to estimate $Z(\boldsymbol{\theta})$ with Monte Carlo integration.
+        <ul>
+            <li>Markov chain Monte Carlo (MCMC) methods are often employed to generate samples that yield low variances.</li>
+
+            <li>Nevertheless, MCMC methods are slow because they need to generate many samples before convergence.</li>
+        </ul>
+        </li>
+
+        <li>In 2005, Aapo Hyvärinen proposed <b>score matching</b> as a way to estimate $\boldsymbol{\theta}$ without explicitly dealing with $Z(\boldsymbol{\theta})$ <a href="https://jmlr.org/papers/volume6/hyvarinen05a/old.pdf">[2005]</a>.</li>
+
+        <li>The idea is to "match" the "score function" instead of doing the optimization on the probabilities directly.</li>
+
+        <li>The (Stein) <b>score function</b> of a probability distribution $p(\ve{x};\boldsymbol{\theta})$ is the gradient with respect to $\ve{x}$ of its logarithm:
+        \begin{align*}
+            \boldsymbol{\Psi}(\ve{x};\boldsymbol{\theta})
+            = \begin{bmatrix}
+                \Psi_1(\ve{x};\boldsymbol{\theta}) \\
+                \Psi_2(\ve{x};\boldsymbol{\theta}) \\
+                \vdots \\
+                \Psi_n(\ve{x};\boldsymbol{\theta})
+            \end{bmatrix}
+            = \begin{bmatrix}
+                \partial(\log p(\ve{x};\boldsymbol{\theta})) / \partial x_1 \\
+                \partial(\log p(\ve{x};\boldsymbol{\theta})) / \partial x_2 \\
+                \vdots \\
+                \partial(\log p(\ve{x};\boldsymbol{\theta})) / \partial x_n
+            \end{bmatrix}
+            = \nabla_{\ve{x}} \log p(\ve{x};\boldsymbol{\theta}).
+        \end{align*}
+        Viewing the distribution $p$ as a function with signature $\Real^n \rightarrow \Real$, we have that $\boldsymbol{\Psi}$ has signature $\Real^n \rightarrow \Real^n$.
+        </li>
+
+        <li>Note that the good thing about the score function is that it allows us to bypass the partition function:
+        \begin{align*}
+            \nabla_{\ve{x}} \log p(\ve{x};\boldsymbol{\theta})
+            &= \nabla_{\ve{x}} \log \frac{q(\ve{x};\boldsymbol{\theta})}{Z(\boldsymbol{\theta})}
+            = \nabla_{\ve{x}} \big( \log q(\ve{x};\boldsymbol{\theta}) - \log Z(\boldsymbol{\theta}) \big)
+            = \nabla_{\ve{x}} \log q(\ve{x};\boldsymbol{\theta}) - \nabla_{\ve{x}} \log Z(\boldsymbol{\theta}) \\
+            &= \nabla_{\ve{x}} \log q(\ve{x};\boldsymbol{\theta}).
+        \end{align*}
+        This is because $Z(\boldsymbol{\theta})$ is a constant with respect to $\ve{x}$.
+        </li>
+
+        <li>Recall that we are given $\ve{x}_1$, $\ve{x}_2$, $\dotsc$, $\ve{x}_N$ sampled from an unknown distribution $p_{\mrm{data}}$. We can define the score function of the data distribution:
+        \begin{align*}
+            \boldsymbol{\Psi}_{\mrm{data}}(\ve{x}) = \nabla_{\ve{x}} \log p_{\mrm{data}}(\ve{x}).
+        \end{align*}
+        </li>
+
+        <li>The "matching" in score matching is trying to find $\boldsymbol{\theta}$ that makes $\boldsymbol{\Psi}(\ve{x},\boldsymbol{\theta})$ as close as possible to $\boldsymbol{\Psi}_{\mrm{data}}(\ve{x})$. Operationally, Hyvärinen proposes minimizing the expected squared Euclidean distance between the scores:
+        \begin{align*}
+            J(\theta) 
+            = \frac{1}{2} E_{\ve{x} \sim p_{\mrm{data}}} \Big[ \big\| \boldsymbol{\Psi}(\ve{x};\boldsymbol{\theta}) - \boldsymbol{\Psi}_{\mrm{data}}(\ve{x}) \big\|_2^2 \Big]
+            = \frac{1}{2} \int p_{\mrm{data}}(\ve{x}) \big\| \boldsymbol{\Psi}(\ve{x};\boldsymbol{\theta}) - \boldsymbol{\Psi}_{\mrm{data}}(\ve{x}) \big\|_2^2\, \dee\ve{x}.
+        \end{align*}
+        The estimator is thus given by by:
+        \begin{align*}
+            \hat{\boldsymbol{\theta}} = \argmin_{\boldsymbol{\theta}}\ J(\boldsymbol{\theta}). 
+        \end{align*}
+        </li>
+
+        <li>The function $J(\boldsymbol{\theta})$ is commonly known as the <b>Fisher divergence</b> between two distributions. Given two distributions $p_0$ and $p_1$, the Fisher divergence is defined as:
+        \begin{align*}
+            F(p_0\|p_1) = E_{\ve{x} \sim p_0} \Big[ \big\| \nabla_{\ve{x}} \log p_0(\ve{x}) - \nabla_{\ve{x}} \log p_1(\ve{x}) \big\|_2^2 \Big] = \int p_0(\ve{x}) \big\| \nabla_{\ve{x}} \log p_0(\ve{x}) - \nabla_{\ve{x}} \log p_1(\ve{x}) \big\|_2^2\, \dee\ve{x}.
+        \end{align*}
+        In other words, we are minimizing $F(p_{\mrm{data}}(\ve{x}) \| p(\ve{x};\boldsymbol{\theta}))$.
+        </li>
+
+        <li>Recall again that we are only given $\ve{x}_1$, $\ve{x}_2$, $\dotsc$, $\ve{x}_N$. We don't know what $p_{\mrm{data}}$ is. So, how do we do the optimization then? The good news is that we can rewrite the Fisher divergence in a form that does not involve $p_{\mrm{data}}$ instance the expectation operator.</li>
+
+        <li><b>Theorem 2.1</b> &nbsp; We have that
+        \begin{align}
+            J(\ves{\theta}) 
+            &= \int p_{\mrm{data}}(\ve{x}) \sum_{i=1}^n \bigg[ \frac{\partial \Psi_i(\ve{x};\boldsymbol{\theta})}{\partial x_i} - \frac{1}{2} \big( \Psi_i(\ve{x};\boldsymbol{\theta}) \big)^2 \bigg]\, \dee\ve{x} + C \notag\\
+            &= \int p_{\mrm{data}}(\ve{x}) \sum_{i=1}^n \bigg[ 
+            \frac{\partial^2 (\log p(\ve{x};\boldsymbol{\theta}))}{\partial x_i^2}
+            - \frac{1}{2} \bigg( \frac{\partial(\log p(\ve{x};\boldsymbol{\theta}))}{\partial x_i} \bigg)^2
+            \bigg]\, \dee\ve{x} + C \label{fisher-divergence-rewrite}
+        \end{align}
+        where $C$ is a constant that does not depend on $\boldsymbol{\theta}$. The theorem holds under the following conditions:
+        <ul>
+            <li>$\boldsymbol{\Psi}$ is differentiable.</li>
+            <li>$p_{\mrm{data}}(\ve{x})$ is differentiable.</li>
+            <li>$E_{\ve{x} \sim p_{\mrm{data}}}[\| \boldsymbol{\Psi}(\ve{x};\boldsymbol{\theta}) \|^2]$ and $E_{\ve{x} \sim p_{\mrm{data}}}[\| \boldsymbol{\Psi}_{\mrm{data}}(\ve{x}) \|^2]$ are finite for every $\boldsymbol{\theta}$.</li>
+            <li>$p_{\mrm{data}}(\ve{x})\boldsymbol{\Psi}(\ve{x};\boldsymbol{\theta})$ has bounded support.</li>
+        </ul>
+        The proof can be found in <a href="https://jmlr.org/papers/volume6/hyvarinen05a/old.pdf">Hyvärinen's paper</a>, and it is based on applying integration by parts.
+        </li>
+
+        <li>Note that the RHS of \eqref{fisher-divergence-rewrite} can be rewritten as:
+        \begin{align*}
+            J(\ves{\theta}) 
+            &= E_{\ve{x} \sim p_{\mrm{data}}} \bigg[ \nabla_{\ve{x}} \cdot \ves{\Psi}(\ve{x};\ves{\theta}) + \frac{1}{2} \| \ves{\Psi}(\ve{x};\ves{\theta}) \|_2^2 \bigg]
+            = E_{\ve{x} \sim p_{\mrm{data}}} \bigg[ \Delta_\ve{x} \log p(\ve{x};\ves{\theta}) + \frac{1}{2} \| \nabla_{\ve{x}} \log p(\ve{x};\ves{\theta}) \|_2^2 \bigg].
+        \end{align*}
+        Here, $\nabla_{\ve{x}} \cdot$ is the <b>divergence operator</b>
+        \begin{align*}
+            \nabla_{\ve{x}} \cdot \ve{f} = \sum_{i=1}^n \frac{\partial f_i}{\partial x_i},
+        \end{align*}
+        and $\Delta_{\ve{x}} = \nabla_{\ve{x}} \cdot \nabla_{\ve{x}}$ is the <b>Laplace operator</b>
+        \begin{align*}
+            \Delta_{\ve{x}} f = \nabla_{\ve{x}} \cdot \nabla_{\ve{x}} f = \sum_{i=1}^n \frac{\partial^2 f}{\partial x_i^2}.
+        \end{align*}
+        </li>
+
+        <li>Theorem 2.1 allows us to approximate $J(\theta)$ by Monte Carlo integrations using the samples we have:
+        \begin{align*}
+            J(\ves{\theta}) \approx \tilde{J}(\ves{\theta}) = \frac{1}{N} \sum_{j=1}^N \bigg[ \nabla_{\ve{x}} \cdot \ves{\Psi}(\ve{x}_j;\ves{\theta}) + \frac{1}{2} \| \ves{\Psi}(\ve{x}_j;\ves{\theta}) \|_2^2 \bigg].
+        \end{align*}
+        This means that we can now optimize for $\ves{\theta}$.
+        </li>
+
+        <li><p>Hyvärinen also shows that optimizing for $J(\ves{\theta})$ would yield the right distribution.</p>
+        
+        <p><b>Theorem 2.2</b> &nbsp; Assume that there is a unique $\ves{\theta}^*$ such that $p_{\mrm{data}}(\ve{x}) = p(\ve{x};\ves{\theta}^*)$ and that $q(\ve{x};\ves{\theta}) > 0$ for all $\ve{x}$ and $\ves{\theta}$. Then, $J(\ves{\theta}) = 0$ if and only if $\ves{\theta} = \ves{\theta}^*$.</p>
+
+        <p><b>Corollary 2.3</b> &nbsp; Under the assumption of Theorem 2.2, the estimator $\tilde{J}(\ves{\theta})$ is consistent. In other words, it converges in probability towards the true value of $J(\ves{\theta})$ when the sample size approaches infinity.</p>
+        </li>
+    </ul>
+
+    <hr>
+    <h2>3 &nbsp; Sampling from a Score-Based Model</h2>
+
+    <ul>
+        <li>Now, supposed that we have determined $\ves{\theta}$</li>
+    </ul>
+
+    <hr>
+    <div class="page-header"></div>
+    <p>Last modified: 2021/12/25</p>    
+</div>
+
+<script type="text/javascript">
+$.bigfoot();
+</script>
+
+</body>
+</html>

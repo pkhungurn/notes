@@ -1,0 +1,525 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{mathrsfs}
+\usepackage{eufrak}
+\usepackage{graphicx}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+\usepackage{verbatim}
+\usepackage{hyperref}
+\usepackage{amsbsy}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\Dee}{\mathrm{D}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\Var}{\mathrm{Var}}
+
+\newcommand{\ve}[1]{\pmb{#1}}
+\newcommand{\mc}[1]{\mathcal{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+\newcommand{\ov}[1]{\overline{#1}}
+
+\mathchardef\mhyphen="2D
+
+\title{GANs and Image Transformation}
+
+\begin{document}
+  \maketitle
+
+  One of the current trends in computer vision and computer graphics is the use of generative adversarial netwoks (GANs) in image transformation tasks. In this document, I discuss a series of papers \cite{Goodfellow:2014, Mizra:2014, Isola:2016, Zhu:2017, Choi:2017, Pumarola:2018} that are useful to my personal research. The ideas of the papers paint a nice intellectual thread that is too good not to mention.
+
+  \section{Introduction}
+
+  \begin{itemize}
+  	\item \textbf{Image transformation} is the task of transforming an input image to a new image according to some requirements.
+
+  	\item The definition is intentionally broad. It includes the tasks such as:
+  	\begin{itemize}
+  		\item image segmentation,
+  		\item super resolution,
+  		\item denosing,
+  		\item generating animation,
+  		\item facial expression manipulation,
+  		\item colorization,
+  		\item style transfer,
+  		\item and many more.
+  	\end{itemize}
+
+  	\item Image transformation tasks are generally under constrained. Moreover, some of them (e.g., style transfer and facial expression manipulation) are hard to specify precisely. 
+
+  	\item Machine learning, especially deep learning, is an effective solution approach to image transformation tasks.
+
+  	\item One can apply standard \emph{supervised learning}. This requires:
+  	\begin{itemize}
+  		\item \emph{Paired} input-output data for training.
+  		\item A suitable loss function for the task.
+  	\end{itemize}
+
+  	\item However, the above two requirements are problematic:
+  	\begin{enumerate}
+  		\item Paired training data are often hard or impossible to acquire.
+  		\begin{itemize}
+  			\item For example, say we want to convert photographs into paintings in the style of Monet. One would have to know how to raise Monet from his grave in order to prepare the training data. 
+  		\end{itemize}
+
+  		\item It is often hard to find the right objective function.
+  		\begin{itemize}
+  			\item $L^1$ and $L^2$ losses yield blurry images \cite{Isola:2016}.
+
+  			\item How does one operationalize ``realistic images'' or ``natural facial expressions?''
+  		\end{itemize}
+  	\end{enumerate}
+
+  	\item Recent research has largely overcome the above two problems. The solution is to adapt \emph{generative adversarial networks} (GANs).
+
+  	\begin{itemize}
+  		\item GANs allow one to learn a suitable loss function instead of specifying one manually.
+  		\item Researchers have proposed tricks to enable training without paired data \cite{Zhu:2017, Choi:2017}.
+  	\end{itemize}
+  \end{itemize}
+
+  \section{GANs}
+  
+  \begin{itemize}
+  	\item \textbf{Generative modeling} is the task of generating data items that ``look like'' they come from a given dataset. 
+
+  	\item In our case, the data items are images. We use $\ve{x}$ to denote an image and say that it comes from a domain $\mathcal{X} \subseteq \Real^{h \times w}$, where $h$ and $w$ are the height and the width of an image, respectively. We assume that the images are distributed according to a probability distribution $p_{\mathcal{X}}$, which we do not know.
+
+  	\item The goal is to find a function $f: \mathcal{Z} \rightarrow \mathcal{X}$ that transforms a random vector $\ve{z}$ from domain $\mathcal{Z} \subseteq \Real^{\ell}$ to an image in $\mathcal{X}$. We call $\ve{z}$ the \textbf{latent vector}.
+
+  	\item Typically, $\ve{z}$ is sampled from a well-know distribution such as a multi-dimentional Gaussian or a uniform distribution over $[0,1]^\ell$. We call this distribution the \textbf{prior distribution} and denote it with $p_{\mathcal{Z}}$. 
+
+  	\item The goal of generative modeling can be stated more precisely as to make the distribution of $f(\ve{z})$ as close to $p_{\mathcal{X}}$ as possible.
+
+  	\item In the GAN approach \cite{Goodfellow:2014}, we do not model the probability distribution $p_{\mathcal{X}}$ explicitly. We instead train two networks:
+  	\begin{itemize}
+  		\item The \textbf{generator} $G$ acts as our function $f$.
+  		\item The \textbf{discriminator} $D$ takes an image and outputs a \emph{reality score}, which tells how much the discriminator thinks the image comes from the real data distribution rather than from the generator. 
+  	\end{itemize}
+
+  	\item Training has two goals:
+  	\begin{itemize}
+  		\item Make the discriminator good at distinguising real images from fake (i.e., generated) images.
+  		\item Make the generator good at fooling the discriminator.
+  	\end{itemize}
+  	In order to achieve the above two goals, we simultaneously train the networks to minimize two loss functions: one for the discriminator and the other for the generator.
+
+  	\item Goodfellow \etal~\cite{Goodfellow:2014} propose the following loss functions, which we will call the \emph{standard GAN losses} (SGAN):
+  	\begin{align*}
+  		\mathcal{L}_{D}^{\mathrm{SGAN}} &:= - E_{\ve{x} \sim p_{\mathcal{X}}}[\log D(\ve{x})] - E_{\ve{z} \sim p_{\mathcal{Z}}}[\log(1 - D(G(\ve{z})))]\\
+  		\mathcal{L}_{G}^{\mathrm{SGAN}} &:= - E_{\ve{z} \sim p_{\mathcal{Z}}}[\log D(G(\ve{z}))]
+  	\end{align*}
+  	\begin{itemize}
+  		\item The above is the ``practical'' version of the loss functions. They provide better gradients than the ones Goodfellow \etal~use to derive theoretical results.
+
+  		\item Notice that the reality score $D(\cdot)$ is intepreted as the probability that the input to the discriminator comes from the input dataset.
+
+  		\item One might notice that we do not know $p_{\mathcal{X}}$, but the loss function for the discriminator asks us to compute an expectation with respect to it. What we do is to approximate $p_{\mc{x}}$ empirically. Let the input data set be denoted by $\{ \ve{x}_1, \ve{x}_2, \dotsc, \ve{x}_n \}$, we have that:
+	  	\begin{align*}
+	  		E_{\ve{x} \sim p_{\mathcal{X}}}[f(\ve{x})]
+	  		&\approx \frac{1}{n} \sum_{i=1}^n f(\ve{x}_i),
+	  	\end{align*}
+	  	for any function $f$. So,
+	  	\begin{align*}
+	  		E_{\ve{x} \sim p_{\mathcal{X}}}[\log D(\ve{x})]
+	  		&\approx \frac{1}{n} \sum_{i=1}^n \log D(\ve{x}_i).
+	  	\end{align*}
+
+	  	\item Other terms in the losses can be approximated by sampling directly from $p_{\mathcal{Z}}$ and doing Monte Carlo integration. 
+  	\end{itemize}
+
+  	\item Over the years, many loss functions for GANs have been proposed. We shall mention two popular ones:
+  	\begin{itemize}
+  		\item The \emph{least square losses} (LSGAN) \cite{Mao:2017}:
+  		\begin{align*}
+  			\mathcal{L}^{\mathrm{LSGAN}}_D 
+  			&:= E_{\ve{x} \sim p_{\mathcal{X}}} [(D(\ve{x}) - 1)^2] + E_{\ve{z} \sim p_{\mathcal{Z}}} [D(G(\ve{z}))^2] \\
+  			\mathcal{L}^{\mathrm{LSGAN}}_G 
+  			&:= -E_{\ve{z} \sim p_{\mathcal{Z}}} [D(G(\ve{z}))^2]
+  		\end{align*}
+
+  		\item The \emph{Wasserstein GAN losses with gradient panelty} (WGAN-GP) \cite{Gulrajani:2017}:
+  		\begin{align*}
+  			\mathcal{L}^{\mathrm{WGAN\mhyphen GP}}_D 
+  			&:= - E_{\ve{x} \sim p_{\mathcal{X}}} [D(\ve{x})] + E_{\ve{z} \sim p_{\mathcal{Z}}} [D(G(\ve{z}))] 
+  			+ \lambda E_{\hat{\ve{x}} \sim p_{\hat{\mathcal{X}}}}\big[ (\| \nabla_{\hat{\ve{x}}} D(\hat{\ve{x}}) \|_2 -1)^2 \big]\\
+  			\mathcal{L}^{\mathrm{WGAN\mhyphen GP}}_G 
+  			&:= -E_{\ve{z} \sim p_{\mathcal{Z}}} [D(G(\ve{x}))]
+  		\end{align*}
+  		Here, $\hat{\ve{x}}$ is a vector sampled uniformly along straight lines between pairs of images sampled from the input distribution $p_{\mathcal{X}}$ and the distribution of generated image $G(\ve{z})$ where $\ve{z} \sim p_{\mathcal{Z}}.$
+  	\end{itemize}
+
+  	\item The training algorithm for GAN is as follows:
+  	\begin{itemize}
+      \item In each step, two minibatches are sampled:
+      \begin{itemize}
+        \item A minibatch of $\ve{x}$'s from the training data.
+        \item A minibatch of $\ve{z}$'s from the distribution $p_{\mathcal{Z}}$.
+      \end{itemize}
+
+      \item We feed $\ve{z}$ values to $G$ to generate a batch of fake $\ve{x}$'s.
+
+      \item Both the real batch and fake batch are used to do an optimization step on $D$ to minimize $\mathcal{L}_D$.
+
+      \item The fake batch and its output from $D$ are then used to perform an optimization step on $G$ to minimize $\mathcal{L}_G$.
+    \end{itemize}
+
+    \item Training often uses Adam as the optimization algorithm.
+
+    \item The following are common modifications to the training process:
+    \begin{itemize}
+     	\item When the discriminator is heavily regularized, such as when using the WGAN-GP loss, one may have several discriminator optimization steps per one generator optimization step \cite{Gulrajani:2017}. 
+
+     	\item An alternative to the above is to use different learning rates for the generator and the discriminator \cite{Heusel:2017}. This is the so called \emph{two time-scale update rule} (TTUR). In general, the discriminator learning rate is higher than the generator learning rate.
+     \end{itemize} 
+  \end{itemize}
+
+  \section{Conditional GANs}
+
+  \begin{itemize}  
+  	\item It is hard to control the output of the vanilla GAN generator because one can only control the latent vector, which is unintuitive.
+
+  	\item It would be nice if, in addition to the latent vector, we can provide additional information to the generator to control the output.
+  	\begin{itemize}
+  		\item The extra info can be a class label. For example, we may want to generate an image of the digit ``2'' that looks like it comes from the MNIST dataset.
+  	\end{itemize}
+
+  	\item Mizra and Osindero extend vanilla GANs so that one can generate images conditioned on user-provided additional info \cite{Mizra:2014}.
+
+    \item Both the generator and the discriminator take an piece of additional info, the conditioning vector $\ve{c}$. There interfaces become:
+    \begin{itemize}
+      \item $G(\ve{z}, \ve{c}) \mapsto \ve{x}$.
+      \item $D(\ve{x}, \ve{c}) \mapsto \mbox{reality score}$.
+    \end{itemize}
+
+    \item The conditioning information $\ve{c}$ can be:
+    \begin{itemize}
+      \item Class of the image. This is typically encoded as a one-hot vector.
+      \item Another image, which is used in the pix2pix paper \cite{Isola:2016}.
+      \item The target expression of a face as in \cite{Pumarola:2018}.
+      \item And much more...    
+    \end{itemize}
+
+    \item It is common to concatenate $\ve{c}$ to $\ve{z}$ (and $\ve{x}$) and give the result to $G$ (and $D$) as input.
+    \begin{itemize}
+      \item When concatenating $\ve{c}$ to $\ve{x}$, we typically concatenate a copy of $\ve{c}$ to each pixel of $\ve{x}$.
+    \end{itemize}
+
+    \item The input dataset now must contain pairs of an image and its associated conditioning vector; namely, $\ve{X} = \{ (\ve{x}_1, \ve{c}_1), (\ve{x}_2, \ve{c}_2), \dotsc, (\ve{x}_n, \ve{c}_n) \}$.
+
+    \item Let $\mathcal{C}$ denote the set of all possible conditioning vectors. Let us also assume that we can randomly sample $\ve{c}$ from $\mc{C}$, and let the sampling probability distribution be denoted by $p_{\mathcal{C}}$.
+
+    \item All GAN loss functions are changed so that take into account the conditioning vectors. For exaxmple, the standard GAN loss function may be rewritten as follows:
+    \begin{align*}
+      \mathcal{L}_{D}^{\mathrm{cSGAN}} &:= - E_{(\ve{x},\ve{c}) \sim p_{\mathcal{X}}}[\log D(\ve{x}, \ve{c})] - E_{\ve{z} \sim p_{\mathcal{Z}}, \ve{c} \sim p_{\mathcal{C}}}[\log(1 - D(G(\ve{z}, \ve{c})))]\\
+      \mathcal{L}_{G}^{\mathrm{cSGAN}} &:= - E_{\ve{z} \sim p_{\mathcal{Z}}, \ve{c} \sim p_{\mathcal{C}}}[\log D(G(\ve{z}, \ve{c}), \ve{c})]
+    \end{align*}
+  \end{itemize}
+
+  \section{Pix2pix}
+
+  \begin{itemize}
+    \item Isola \etal~propose a framework for using GANs in image transformation tasks.
+
+    \item The idea is that the discriminator can learn a loss function specific to the problem at hand. As a result, one does not have to design the loss function by hand.
+
+    \item We revise the notations a little. 
+    \begin{itemize}
+      \item Since we deal with image transformation, we will have two domains of images.
+
+      \item The source (input) domain is denoted by $\mathcal{X}$, and a source image is denoted by $\ve{x}$.
+
+      \item The target (output) domain domain is denoted dby $\mathcal{Y}$, and a target image is dnoated by $\ve{y}$.
+    \end{itemize}
+
+    \item The pix2pix system learns to transform an image in $\mathcal{X}$ to an image in $\mathcal{Y}$. It does so by learning conditinal GANs that \emph{take $\ve{x}$ as the conditioning vector.} In other words, the signatures of the generator and the discriminator are:
+    \begin{align*}
+      G(\ve{z}, \ve{x}) &\mapsto \ve{y} \\
+      D(\ve{y}, \ve{x}) &\mapsto \mbox{reality score}
+    \end{align*}
+    \item The objective function for the discriminator is the same as that of the standard GAN paper:
+    \begin{align*}
+      \mathcal{L}_D 
+      &:= 
+      -E_{(\ve{y},\ve{x})\sim p_{\mathcal{Y}}} [\log D(\ve{y}, \ve{x})]
+      -E_{\ve{z} \sim p_{\mathcal{Z}}, \ve{x} \sim p_{\mathcal{X}}}[\log (1 - D(G(\ve{z},\ve{x}), \ve{x}))]
+    \end{align*}
+    
+    \item Isola \etal~mix the GAN generator loss with the $L^1$ difference between the generated image $G(\ve{z},\ve{x})$ and the correct output $\ve{y}$:
+    \begin{align*}
+      \mathcal{L}_G := -E_{\ve{z} \sim p_{\mathcal{Z}}, \ve{x} \sim p_{\mathcal{X}}}[\log  D(G(\ve{z},\ve{x}), \ve{x}))]
+      + \lambda E_{(\ve{y},\ve{x})\sim p_\mathcal{Y}, \ve{z} \sim p_{\mathcal{Z}}}[ \| \ve{y} - G(\ve{z}, \ve{x}) \|_1 ]
+    \end{align*}
+
+    \item The random vector $\ve{z}$ is not provided as input to $G$. This is because the networks often learn to ignore it. Intead, it is injected through dropout layers in the generator. The layers are used in both training and testing.
+    \begin{itemize}
+      \item Nevertheless, the authors observed only minor stochasticity in the output images.
+    \end{itemize}
+
+    \item The pix2pix paper chooses to tackle image transformation problems where the overall structure of the output image aligns with that of the input image. The main transformation is in the texture.
+
+    \item Network architectures used:
+    \begin{itemize}
+      \item The generator uses U-Net \cite{Ronneberger:2015}, which has connections that skip the bottleneck layers. Skip connections are useful for preserving the overal structure. 
+
+      \item The discriminator is specialized to assess the high frequency details of textures. The low frequency features are left for the $L^1$ loss.
+      \begin{itemize}
+         \item The discriminator only operates on image patches that are smaller than the generated image. So, the authors call it \emph{PatchGAN}.
+
+         \item In the paper, the generated images are $256 \times 256$, but the discriminator accepts $70\times70$ images as input.
+
+         \item The reality score of the whole image is the average of PatchGAN results on the patches of the input image.
+
+         \item The discriminator is fully convolutional, so one can just feed the input image and average the output of the last layer to get the reality score.
+       \end{itemize} 
+    \end{itemize}
+  \end{itemize}  
+
+  \section{CycleGAN}
+
+  \begin{itemize}
+    \item The pix2pix paper solves only one problem with applying supervised learning to image transformation tasks. We do not need to carefully design the loss function any more, but we still need paired training data.
+
+    \item In case where the mapping from $\mathcal{X}$ to $\mathcal{Y}$ is a bijection, the CycleGAN paper proposes a way to avoid preparing paired training data \cite{Zhu:2017}.
+
+    \item The idea is to employ \emph{cycle consistency}. If the mapping is a bijection, then there is an inverse mapping. If we compose the forward mapping with the inverse mapping, then we should get an identity. We can try to enforce this requirement while training.
+
+    \item More specifically, the paper train two sets of GANs.
+    \begin{itemize}
+      \item The forward mapping GAN:
+      \begin{align*}
+        G(\ve{x}) &\mapsto \ve{y} \\
+        D_{\mathcal{Y}}(\ve{y}) &\mapsto \mbox{reality score}
+      \end{align*}
+      \item The backward mapping GAN:
+      \begin{align*}
+        F(\ve{y}) &\mapsto \ve{x} \\
+        D_{\mathcal{X}}(\ve{x}) &\mapsto \mbox{reality score}
+      \end{align*}
+      Notice that the generators do not accept latent vectors any more. This is because we want the mapping to be deterministic.
+    \end{itemize}
+
+    \item The loss functions of the generators incorporate terms that enforce cycle consistency:
+    \begin{align*}
+      \mathcal{L}_{G} 
+      &:= - E_{\ve{x} \in p_{\mathcal{X}}} [\log D_{\mathcal{Y}}(G(\ve{x}))] + \lambda E_{\ve{x} \in p_{\mathcal{X}}} [\| F(G(\ve{x})) - \ve{x} \|_1 ] \\
+      \mathcal{L}_F
+      &:= - E_{\ve{y} \in p_{\mathcal{Y}}} [\log D_{\mathcal{X}}(F(\ve{y}))] + \lambda E_{\ve{y} \in p_{\mathcal{Y}}} [\| G(F(\ve{y})) - \ve{y} \|_1 ]
+    \end{align*}
+
+    \item The loss functions for the discriminators are the same as before:
+    \begin{align*}
+      \mathcal{L}_{D_{\mathcal{Y}}} 
+      &:=
+      -E_{\ve{y} \sim p_{\mathcal{Y}}}[ \log D_{\mc{Y}}(\ve{y})]
+      -E_{\ve{x} \sim p_{\mc{X}}} [\log(1 - D_{\mc{Y}}(G(\ve{x})))]\\
+      \mathcal{L}_{D_{\mathcal{X}}} 
+      &:=
+      -E_{\ve{x} \sim p_{\mathcal{X}}}[ \log D_{\mc{X}}(\ve{x})]
+      -E_{\ve{y} \sim p_{\mc{Y}}} [\log(1 - D_{\mc{X}}(F(\ve{y})))]
+    \end{align*}
+    However, in the paper's implementaion, the least square loss is used instead of the standard GAN loss.
+
+    \item When generating photos from paintings, the paper adds another term to make the output of the generator as close as possible to input when the input comes from the targert domain.
+    \begin{align*}
+      \mathcal{L}_{G} 
+      &:= 
+      - E_{\ve{x} \in p_{\mathcal{X}}} [\log D_{\mathcal{Y}}(G(\ve{x}))] 
+      + \lambda E_{\ve{x} \in p_{\mathcal{X}}} [\| F(G(\ve{x})) - \ve{x} \|_1 ] 
+      + \lambda' E_{\ve{y} \in p_{\mathcal{Y}}} [\| G(\ve{y}) - \ve{y} \|_1]
+      \\
+      \mathcal{L}_F
+      &:= 
+      - E_{\ve{y} \in p_{\mathcal{Y}}} [\log D_{\mathcal{X}}(F(\ve{y}))] 
+      + \lambda E_{\ve{y} \in p_{\mathcal{Y}}} [\| G(F(\ve{y})) - \ve{y} \|_1 ]
+      + \lambda' E_{\ve{x} \in p_{\mathcal{X}}} [\| F(\ve{x}) - \ve{x} \|_1 ].
+    \end{align*}
+    This is done so that the networks do not change tint of the output relative to the input.
+  \end{itemize}
+
+  \section{StarGAN}
+
+  \begin{itemize}
+    \item An \emph{attribute} is a meaningful feature inherent in an image. For example, for a facial picture, the hair color, gender, and age of the person are attributes.
+
+    \item A \emph{domain} is a set of images sharing the same attributes. For example, the set of images of woman is a domain.
+
+    \item Some image datatsets are annotated with multiple attributes. For example, in the CelebA database, each image is annotated with 40 attributes, including ``Eyeglasses,'' ``Wearing Hat,'' and ``Smiling.''
+
+    \item In the \emph{multi-domain image translation} task, we transform the input image according to attributes from multiple domains. For example, when given a facial image, we may want to transform it so that the person smiles and has blonde hair.    
+
+    \item If all attributes are binary and there are $k$ domains, the task above can be accomplished by training $k$ CycleGANs that transform to the domains.
+
+    \item The StarGAN paper proposes an algorithm to train a single GAN pair that can translate to all the $k$ domains \cite{Choi:2017}.
+
+    \item StarGAN requires the dataset to be annotated with domain labels. In this case, each image comes with a $k$-dimensional binary vector $\ve{c}$ that indicates which of the $k$ attributes are present.
+
+    \item The StarGAN generator receives as input the domain label vector $\ve{c}$:
+    \begin{align*}
+      G(\ve{x}, \ve{c}) \mapsto \ve{x}'.      
+    \end{align*}
+    Notice that we use $\ve{x}'$ as the output because it should still look like it comes from the same dataset as the input image.
+
+    \item The StarGAN discriminator consists of two parts.
+    \begin{itemize}
+      \item  A standard discriminator that outputs a reality score. We denote this part by $D_{\mrm{src}}$. The abbreviation ``src'' stands for source; i.e., whether the image comes from the dataset or from the generator.
+      \begin{align*}
+        D_{\mrm{src}}(\ve{x}) \mapsto \mbox{reality score}.
+      \end{align*}
+
+      \item A multi-class classifier $D_{\mrm{cls}}$ that outputs the domain labels. More precisely, it outputs a vector $\ve{c}$ where $c_i$ is the probability that the $i$th attribute is present in the image.
+      \begin{align*}
+        D_{\mrm{cls}}(\ve{x}) \mapsto \ve{c}.
+      \end{align*}
+    \end{itemize}
+    In the paper, the networks share all layers except the last.
+
+    \item The StarGAN discriminator loss employs the standard GAN loss and adds a term that makes the classifier do its job on the input dataset.
+    \begin{align*}
+      \mc{L}_D 
+      &= 
+      -E_{(\ve{x},\ve{c}) \sim p_{\mc{X}}} [\log D_{\mrm{src}}(\ve{x})]    
+      - E_{(\ve{x},\ve{c}) \sim p_{\mc{X}}, \ve{c}' \sim p_{\mc{C}}} [\log (1 - \log D_{\mrm{src}}(G(\ve{x}, \ve{c}')))] \\
+      & \quad
+      + \lambda_{\mrm{cls}} E_{(\ve{x},\ve{c}) \sim p_{\mc{X}}}[\mathrm{CrossEntropy}(\ve{c}, D_{\mrm{cls}}(\ve{x}))].
+    \end{align*}
+    where
+    \begin{align*}
+      \mathrm{CrossEntropy}(\ve{c}, \ve{c}')
+      := -
+      \sum_{i=1}^k \big( c_i \log c_i' + (1-c_i) \log (1-c_i')\big).
+    \end{align*}
+
+    \item The StarGAN generator loss uses the standard GAN loss and two additional terms. One makes the gnerator good at following the classifier. The other, called the \emph{reconstruction loss}, make the generator cycle consistent with respect to the attributes.
+    \begin{align*}
+      \mc{L}_G 
+      &:=
+      - E_{(\ve{x},\ve{c}) \sim p_{\mc{X}}, \ve{c} \sim p_{\mc{C}}} [\log D_{\mrm{src}}(G(\ve{x}, \ve{c}'))]
+      \\
+      & \quad
+      + \lambda_{\mrm{cls}} E_{ (\ve{x},\ve{c}) \sim p_{\mc{X}}, \ve{c}' \sim p_{\mc{C}}} [\mrm{CrossEntropy}(\ve{c}', D_{\mrm{cls}}(G(\ve{x}, \ve{c}')))]
+      \\
+      & \quad
+      + \lambda_{\mrm{rec}} E_{ (\ve{x},\ve{c}) \sim p_{\mc{X}}, \ve{c}' \sim p_{\mc{C}}} [ \| \ve{x} - G(G(\ve{x}, \ve{c}'), \ve{c}) \|_1 ].
+    \end{align*}  
+
+    \item The rationale for the reconstruction loss is that, we would like the generator to preserve as much features of the input image as possible while changing only the parts that are relevant to the attributes at hand.    
+  \end{itemize}
+
+  \section{GANimation}
+
+  \begin{itemize}
+    \item StarGAN can alter input images so that it contains multiplie attributes. However, the attributes binary.
+
+    \item Human facial expression, on the other hand, can be thought of as being controlled by a collection of floating point parameters. The \emph{Factial Action Coding System} (FACS) gives a set of parameters called \emph{Action Units} (AU). Some AUs are related to contraction of facial muscles.
+
+    \item The GANimation paper extends StarGAN so that it works with floating point attributes instead of binary attributes. It also specializes StarGAN to the task of facial expression manipulation \cite{Pumarola:2018}.
+
+    \item In this seciton, $\ve{x}$ denotes a picture of a human face. The conditioning vector $\ve{c}$ is a real vector in $[0,1]^k$. Each component indicates how much the AU associated to it is activated. As such, we call $\ve{c}$ the AU activation vector.
+
+    \item The input data consists of pairs $(\ve{x}_i, \ve{c}_i)$ of face image and its associated AU activation vector.
+
+    \item The generator:
+    \begin{itemize}
+      \item It takes the same form as the StarGAN generator: $G(\ve{x}, \ve{c}') \mapsto \ve{x}'.$
+
+      \item The image formation model for the generator is, however, different. Instead of having the generator creates the output image directly, it forces the generator to generate an alpha mask $\ve{\alpha}$ and the color change $\ve{\delta}$. The final image is given by:
+      \begin{align*}
+        \ve{x}' := (1 - \ve{\alpha}) \ve{\delta} + \alpha \ve{x}.
+      \end{align*}
+      This is done because the facial expression changes only involve a small part of the image. Ideally, most pixels of $\ve{\alpha}$ should close to zero.      
+    \end{itemize}
+
+    \item The discriminator is similar to that of StarGAN. It contains the $D_{\mrm{src}}$ part, which outputs a reality score, and the $D_{\mrm{aua}}$ part, which outputs the the AU activation vector of the input image. The two parts share all layers except their last.
+
+    \item The discriminator loss is almost the same as that of the StarGAN loss. There are two main differences.
+    \begin{itemize}
+      \item The GANimation paper uses the WGAN-GP loss instead of the standard GAN loss.
+      \item It also uses the least square loss to force $D_{\mrm{aua}}$ to regress the real AU activation. 
+    \end{itemize}
+    The expression for the discriminator loss is:    
+    \begin{align*}
+      \mc{L}_D 
+      &:= 
+      -E_{(\ve{x},\ve{c}) \sim p_{\mc{X}}} [ D_{\mrm{src}}(\ve{x})]    
+      + E_{(\ve{x},\ve{c}) \sim p_{\mc{X}}, \ve{c}' \sim p_{\mc{C}}} [ D_{\mrm{src}}(G(\ve{x}, \ve{c}')) ] 
+      + \lambda_{\mrm{gp}} E_{\hat{\ve{x}} \sim p_{\hat{\mc{X}}}}
+      \big[ (\| \nabla_{\hat{\ve{x}}} D_{\mrm{src}}(\hat{\ve{x}}) \|_2 - 1)^2 \big] \\      
+      & \quad
+      + \lambda_{\mrm{aua}} E_{(\ve{x},\ve{c}) \sim p_{\mc{X}}}[ \| \ve{c} - D_{\mrm{aua}}(\ve{x}) \|_2^2 ].
+    \end{align*}
+
+    \item The generator loss contains the following term:
+    \begin{itemize}
+      \item The WGAN-GP loss to make sure the image looks realistic.
+      \begin{align*}
+        \mc{L}_G^{\mrm{gan}}
+        := -E_{(\ve{x}, \ve{c}) \sim p_{\mc{X}}, \ve{c}' \sim p_{\mc{C}}} [ D_{\mrm{src}}(G(\ve{x}, \ve{c})')]
+      \end{align*}
+      
+      \item The \emph{alpha mask loss} to encourage the alpha mask to be (1) smooth and (2) closs to zero.
+      \begin{align*}
+        \mc{L}_G^{\mrm{alpha}}
+        := 
+        \lambda_{\mrm{tv}} E_{(\ve{x},\ve{c}) \sim p_{\mc{X}}} \bigg[ \sum_{i,j} \Big[ (\ve{\alpha}_{i+1,j} - \ve{\alpha}_{i,j})^2 + (\ve{\alpha}_{i,j+1} - \ve{\alpha}_{i,j})^2 \Big] \bigg]
+        + E_{(\ve{x},\ve{c}) \sim p_{\mc{X}}} [\| \alpha\|_2^2 ].
+      \end{align*}
+      Here, the ``tv'' subscript of $\lambda_{\mrm{tv}}$ stands for ``total variation.''
+
+      \item The \emph{expression loss} to make sure that the generator can generate the required expression.
+      \begin{align*}
+        \mc{L}^{\mrm{aua}}_G
+        :=
+        E_{(\ve{x}, \ve{c}) \sim p_{\mc{X}}, \ve{c}' \sim p_{\mc{C}}} [\| \ve{c}' - D_{\mrm{aua}}(G(\ve{x}, \ve{c}')) \|].
+      \end{align*}
+
+      \item The \emph{reconstruciton loss} employ cycle consistency to make sure that the generator preserve as much features of the input image as possible.
+      \begin{align*}
+        \mc{L}^{\mrm{rec}}_G
+        := 
+        E_{(\ve{x}, \ve{c}) \sim p_{\mc{X}}, \ve{c}' \sim p_{\mc{C}}} [\| \ve{x} - (G(\ve{x}, \ve{c}'), \ve{c}) \|_1].
+      \end{align*}      
+    \end{itemize}
+    The full expression of the generator loss is given by:
+    \begin{align*}
+      \mc{L}_G 
+      :=
+      \mc{L}^{\mrm{gan}}_G + \lambda_{\alpha} \mc{L}^{\mrm{alpha}}_G + \lambda_{\mrm{aua}} \mc{L}^{\mrm{aua}}_G + \lambda_{\mrm{rec}} \mc{L}^{\mrm{rec}}_G.
+    \end{align*}
+  \end{itemize}
+
+  \bibliographystyle{acm}
+  \bibliography{gan-image-transformation}  
+\end{document}

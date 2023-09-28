@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>HoloGAN</title>
+
+    <!-- Bootstrap -->
+    <link href="../../../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../../../css/theme.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+      TeX: { equationNumbers: {autoNumber: "AMS"} } 
+    });
+    </script>
+    <script type="text/javascript"
+            src="../../../MathJax/MathJax.js?config=TeX-AMS_HTML-full">
+    </script>
+
+    <script type="text/javascript" src="../../../js/jquery-3.4.1.min.js"></script>    
+    <script type="text/javascript" src="../../../js/bigfoot.min.js"></script>    
+
+    <link rel="stylesheet" type="text/css" href="../../../css/bigfoot-default.css">    
+
+</head>
+<body>
+<div class="container">
+    <span style="visibility: hidden;">
+        \(
+        \def\sc#1{\dosc#1\csod}
+        \def\dosc#1#2\csod{{\rm #1{\small #2}}}
+
+        \newcommand{\dee}{\mathrm{d}}
+        \newcommand{\Dee}{\mathrm{D}}
+        \newcommand{\In}{\mathrm{in}}
+        \newcommand{\Out}{\mathrm{out}}
+        \newcommand{\pdf}{\mathrm{pdf}}
+        \newcommand{\Cov}{\mathrm{Cov}}
+        \newcommand{\Var}{\mathrm{Var}}
+
+        \newcommand{\ve}[1]{\mathbf{#1}}
+        \newcommand{\mrm}[1]{\mathrm{#1}}
+        \newcommand{\etal}{{et~al.}}
+        \newcommand{\sphere}{\mathbb{S}^2}
+        \newcommand{\modeint}{\mathcal{M}}
+        \newcommand{\azimint}{\mathcal{N}}
+        \newcommand{\ra}{\rightarrow}
+        \newcommand{\mcal}[1]{\mathcal{#1}}
+        \newcommand{\X}{\mathcal{X}}
+        \newcommand{\Y}{\mathcal{Y}}
+        \newcommand{\Z}{\mathcal{Z}}
+        \newcommand{\x}{\mathbf{x}}
+        \newcommand{\y}{\mathbf{y}}
+        \newcommand{\z}{\mathbf{z}}
+        \newcommand{\tr}{\mathrm{tr}}
+        \newcommand{\sgn}{\mathrm{sgn}}
+        \newcommand{\diag}{\mathrm{diag}}
+        \newcommand{\Real}{\mathbb{R}}
+        \newcommand{\sseq}{\subseteq}
+        \newcommand{\ov}[1]{\overline{#1}}
+        \DeclareMathOperator*{\argmax}{arg\,max}
+        \DeclareMathOperator*{\argmin}{arg\,min}
+        \)
+    </span>
+
+    <br>
+    <h1>HoloGAN</h1>
+    <hr>
+
+    <p>This document is written as I slowly read <b>HoloGAN: Unsupervised Learning of 3D Representations from Natural Images</b> by Nguyen-Phuoc et al. <a href="https://arxiv.org/pdf/1904.01326.pdf">[LINK]</a> This paper is published at ICCV 2019.</p>
+
+    <h2>Introduction</h2>
+
+    <ul>
+        <li>HoloGAN is a generative adversarial network that takes two inputs:
+        <ul>
+            <li>the latent code $\ve{z}$, and</li>
+            <li>the camera pose $\theta$; i.e., a rotation parameter.</li>
+        </ul>
+        From the inputs, it generates an image of an object, rotated according to the camera pose.
+        </li>
+
+        <li>What is remarkable about HoloGAN is that it learns how to perform the above functionality while being trained on unlabelled images only.
+        <ul>
+            <li>In other words, it learns how to <b>disentangle</b> poses from identities of objects seen in training images.</li>
+        </ul>
+        </li>
+    </ul>
+
+    <h2>Generator Architecture</h2>
+
+    <ul>
+        <li>The paper is basically about a novel architecture for the generator.</li>
+
+        <li>The HoloGAN generator works in four different steps:
+        <ol>
+            <li>Using the latent code $\ve{z}$, it transforms a template of 3D representation, in this case a learned 4D tensor, to a 3D representation of a specific object.</li>
+
+            <li>In then uses the rotation parameter $\theta$ to rotate the 3D representation from Step 1, using the standard rotate-and-then-trilinear-sample method.</li>
+
+            <li>Using a projection unit (details will be given later), it projects the rotated 3D representation to a 2D representation.</li>
+
+            <li>Lastly, it uses the latent code $\ve{z}$ to transform the 2D representation from Step 3 into the output image.</li>
+        </ol>
+        </li>
+
+        <li>While training, the rotation parameter $\theta$ is sampled randomly. This forces the generator to learn a 3D representation that is independent of view transformation.</li>
+
+        <li>The latent code $\ve{z}$ is used to transform feature representations through <b>adaptive instance normalization (AdaIN)</b> <a href="https://arxiv.org/abs/1703.06868">[Huang and Belongie 2017]</a>.
+        <ul>
+            <li>The latent code $\ve{z}$ is mapped, with a multi-layer perceptron (MLP), to two parameters $\gamma(\ve{z})$ and $\sigma(\ve{z})$ that are used to control the AdaIN computation.</li>
+
+            <li>Given some feature $\ve{\Phi}_l$ at layer $l$, AdaIN is defined as:
+            \begin{align*}
+                \mathrm{AdaIN}(\ve{\Phi}_l, \ve{z})
+                = \sigma(\ve{z}) \bigg( \frac{\ve{\Phi}_l - \mu(\ve{\Phi}_l)}{\sigma(\ve{\Phi}_l)} \bigg) + \gamma(\ve{z})
+            \end{align*}
+            where $\mu(\ve{\Phi}_l)$ and $\sigma(\ve{\Phi}_l)$ are the mean and the standard deviation of $\ve{\Phi}_l$, computed independent between channels and instances.
+            </li>
+        </ul>
+        </li>
+
+        <li>HoloGAN starts with a 3D representation, but the final output is a 2D image. It goes from 3D to 2D through a <b>projection unit</b>, which maps a 4D tensor to a 3D tensor. The projection unit consists of 2 layers, applied in order.
+        <ul>
+            <li>The reshaping layer transforms a 4D tensor of shape $C \times D \times H \times W$ to a 3D tensor of size $(C \cdot D) \times H \times W$. It does so by just concatenating the channel dimension with the depth dimension.</li>
+
+            <li>A $1 \times 1$ convolution followed by a non-linear activation, which the paper uses the leakyReLU. This is used to learn occlusion.</li>
+        </ul>
+        </li>
+
+        <li>The overall architecture is depicted in the following picture:
+        <center>
+            <a href="generator.png"><img width="480" src="generator.png"></a>
+        </center>
+        </li>        
+    </ul>
+
+    <h2>Loss Functions</h2>
+
+    <ul>
+        <li><b>Adversarial losses.</b>
+        <ul>
+            <li>The paper uses the non-saturating standard GAN loss from the original GAN paper. (However, it said it uses the loss functions from the DC-GAN paper, which ironically does not specify a loss function.)</li>
+
+            <li>
+            Given the discriminator $D$, the GAN loss functions are:
+            \begin{align*}
+            \mathcal{L}_{\mathrm{GAN}, D} &:= -E_{\ve{x}} [\log D(\ve{x}) ] - E_{\ve{z},\theta} [\log (1 - G(\ve{z},\theta))] \\
+            \mathcal{L}_{\mathrm{GAN}, G} & := -E_{\ve{z},\theta} [\log D(G(\ve{z}, \theta))].
+            \end{align*}
+            Here $\ve{x}$ denotes a real image. The expectation $E_{\ve{x}}$ is evaluated with respected to the distribution where $\ve{x}$ is sampled from the distribution of real images.
+            </li>
+        </ul>
+
+        <li><b>The identity regularizer.</b>
+        <ul>
+            <li>It makes sure that a latent vector constructed from the generated image matches that of the source latent vector $\ve{z}$.</li>
+
+            <li>The paper introduces an encoder network $F$ that shares the majority of the convolution layers of the discriminatro, but uses an additional fully-connected layer to predict the reconstructed latent vector. The identity loss is given by:
+            \begin{align*}
+            \mathcal{L}_{\mathrm{identity}} = E_{\ve{z}} [\| \ve{z} - F(G(\ve{z})) \|^2]
+            \end{align*}
+            </li>
+        </ul>
+        </li>
+
+        <li><b>The style discriminator.</b>
+        <ul>
+            <li>The style discriminator tries to classify the mean $\mu(\ve{\Psi}_l(\ve{x}))$ and standard deviation $\sigma(\ve{\Psi}_l(\ve{x}))$ whether they come from a real image or not. Here $\ve{\Psi}_l(\ve{x})$ is the feature representation after Layer $l$ of the discriminator $D$.</li>
+
+            <li>For each layer $l$ of the discriminator $l$ that we decide to use, we define a network $D_l$ to compute a probability $D_l(\ve{x}) = D_l(\mu(\ve{\Psi}_l(\ve{x})), \sigma(\ve{\Psi}_l(\ve{x})))$ that the mean and the standard deviation comes from a real image.</li>
+
+            <li>The style discriminator can then be used as another type of adversarial loss:
+            \begin{align*}
+            \mathcal{L}_{\mathrm{style},D} 
+            &:=
+            - \sum_l E_{\ve{x}} [\log D_l(\ve{x})]
+            - \sum_l E_{\ve{z},\theta} [\log (1 - D_l(G(\ve{z},\theta)))] \\
+            \mathcal{L}_{\mathrm{style},G} 
+            &:=            
+            - \sum_l E_{\ve{z},\theta} [\log D_l(G(\ve{z},\theta))]\\\
+            \end{align*}
+            </li>
+        </ul>
+        </li>
+
+        <li>The overall losses are given by:
+        \begin{align*}
+        \mathcal{L}_G := \mathcal{L}_{\mathrm{GAN},G} + \lambda_{\mathrm{identity}} \mathcal{L}_{\mathrm{identity}} + \lambda_{\mathrm{style}} \mathcal{L}_{\mathrm{style},G} \\
+        \mathcal{L}_D := \mathcal{L}_{\mathrm{GAN},D} + \lambda_{\mathrm{identity}} \mathcal{L}_{\mathrm{identity}} + \lambda_{\mathrm{style}} \mathcal{L}_{\mathrm{style},D}
+        \end{align*}
+        The paper said they use $\lambda_{\mathrm{style}} = \lambda_{\mathrm{style}} = 1$ for all experiments.
+        </li>
+    </ul>
+
+    <h2>Implementation</h2>
+
+    <ul>
+        <li>See the <a href="http://openaccess.thecvf.com/content_ICCV_2019/supplemental/Nguyen-Phuoc_HoloGAN_Unsupervised_Learning_ICCV_2019_supplemental.pdf">supplementary material</a> for the details of the network architectures.</li>
+
+        <li>The latent vector \ve{z} is sampled form the uniform distribution of $[-1,1]^m$.</li>
+
+        <li>The rotation parameter $\theta$ is sampled uniformly from its range (which depends on the dataset).</li>
+
+        <li>Depending on the dataset, the size of the latent vectors $m$ is either 128 or 200.</li>
+
+        <li>The paper says that it starts with a template of size $4 \times 4 \times 4 \times 512$ when the output is $64 \times 64$. Otherwise, it starts with a template of size $16 \times 16 \times 16 \times 64$.</li>
+
+        <li>The style discriminator is implemented with an MLP with sigmoid activation unit at the last output. The mean and standard deviation of $\ve{\Psi}_l$ are computed scross batch and spatial dimensions.</li>
+    </ul>
+    
+    <hr>
+    <div class="page-header"></div>
+    <p>Last modified: 2020/05/23</p>    
+</div>
+
+<script type="text/javascript">
+$.bigfoot();
+</script>
+
+</body>
+</html>

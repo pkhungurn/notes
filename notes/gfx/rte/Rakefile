@@ -1,0 +1,21 @@
+require 'rubygems'
+require 'rake/clean'
+
+def run(command)
+  puts command
+  system command
+  puts
+end
+
+task :rebuild do
+	run("pdflatex rte")
+	run("bibtex rte")
+	run("pdflatex rte")
+	run("pdflatex rte")
+end
+
+task :build do
+	run("pdflatex rte")
+end
+
+task :default => [:build]

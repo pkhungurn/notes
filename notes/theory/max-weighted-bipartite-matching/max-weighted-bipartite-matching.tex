@@ -1,0 +1,294 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{epstopdf}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+
+\newtheorem{lemma}{Lemma}[section]
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\Dee}{\mathrm{D}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\likelihood}{\mathcal{L}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\new}{\mathrm{new}}
+\newcommand{\Arg}{\mathrm{Arg\,}}
+\newcommand{\Log}{\mathrm{Log\,}}
+\newcommand{\RE}{\mathrm{Re\,}}
+\newcommand{\IM}{\mathrm{Im\,}}
+\newcommand{\Res}{\mathrm{Res}}
+\newcommand{\pv}{\mathrm{p.v.}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+\newcommand{\II}{\mathrm{II}}
+\DeclareMathOperator{\Bd}{Bd}
+
+\newcommand{\IF}{\mathbf{if}}
+\newcommand{\FI}{\mathbf{fi}}
+\newcommand{\THEN}{\mathbf{then}}
+\newcommand{\ELSE}{\mathbf{else}}
+\newcommand{\WHILE}{\mathbf{while}}
+\newcommand{\DO}{\mathbf{do}}
+\newcommand{\OD}{\mathbf{od}}
+\newcommand{\PROC}{\mathbf{proc}}
+\newcommand{\END}{\mathbf{end}}
+\newcommand{\CALL}{\mathbf{call}}
+
+\title{Maximum Weighted Bipartite Matching}
+\author{Pramook Khungurn}
+
+\begin{document}
+	\maketitle
+
+  \section{Maximum Weight Bipartite Matching Problem}
+
+  \begin{itemize}
+    \item We consider the problem of {\bf maximum weight bipartite matching} (MWBM).
+
+    \item As input, we are given a weighted bipartite graph $G = (V,E)$ where
+    \begin{itemize}
+      \item $V = X \cup Y$,
+      \item $X \cap Y = \emptyset$, and
+      \item $E \sseq X \times Y$.
+    \end{itemize}
+    Also, there's a function $w: E \ra \Real^{+} \cup \{0\}$.
+
+    \item A {\bf matching} is a subset $M \sseq E$ such that, for every vertex $v \in V$, at most one edge in $M$ is incident upon $v$.
+
+    \item The {\bf size of matching $M$}, denoted by $|M|$, is the number of edges in $M$.
+
+    \item The {\bf weight of matching $M$}, denoted by $w(M)$, is the sum of the weights of the edges in $M$. That is,
+    \begin{align*}
+      w(M) = \sum_{e\in M} w(e).
+    \end{align*}
+
+    \item The MWBM problem wants to find a matching $M$ whose weight is the maximum among all possible matchings.
+  \end{itemize}
+
+  \section{The Assignment Problem}
+  \begin{itemize}
+    \item In the {\bf assignement problem}, we are given a complete weighted bipartite graph, and we want to find the maximum weight matching.
+
+    \item The MWBM problem can be reduced to the assignment problem.
+
+    This can be done by:
+    \begin{itemize}
+       \item introducing dummy nodes so that $|X| = |Y|$, and
+       \item for every pair of vertices $(x,y)$ such that $(x,y) \not\in E$, creating a new edge $(x,y)$ with weight $0$.
+     \end{itemize} 
+
+     \item A maximum weight matching in a complete bipartite graph can be made {\it perfect}. (That is, every vertex is incident to an edge.)
+
+     \item So, the assignment problem is to find a perfect matching with maximum weight.
+  \end{itemize}
+
+  \section{Feasible Labeling}
+  \begin{itemize}
+    \item A {\bf vertex labeling} is a function $\ell: V \ra \Real$.
+
+    \item A {\bf feasible labeling} is one such that
+    \begin{align*}
+      \ell(x) + \ell(y) \geq w(x,y)
+    \end{align*}
+    for all $x \in X$ and $y \in Y$.
+
+    \item An edge $(x,y)$ is called {\bf tight} if $\ell(x) = \ell(y) = w(x,y)$.
+
+    \item The {\bf equality graph} with respect to a labeling $\ell$ is $G_\ell = (V, E_\ell)$ where $E_\ell$ is the set of tight edges.
+
+    \item \begin{theorem}
+      If $\ell$ is feasible and $M$ is a perfect matching in $G_\ell$, then $M$ is a maximum weight matching.
+    \end{theorem}
+    \begin{proof}
+      Denote edge $e \in E$ by $e = (e_x, e_y)$.
+
+      Let $M'$ be any perfect matching in $G$ (not necessarily in $E_\ell$). Since every vertex $v \in V$ is incident to exactly one edge in $M'$, we have that
+      \begin{align*}
+        w(M') = \sum_{e \in M'} w(e) \leq \sum_{e \in M'} (\ell(e_x) + \ell(e_y)) = \sum_{v\in V} \ell(v).
+      \end{align*}
+      Hence, $\sum_{v\in V} \ell(v)$ is an upper bound on the cost of any perfect matching.
+
+      Now, let $M$ be a perfect matching in $E_\ell$. Then, $w(M) = \sum_{e\in M} w(e) = \sum_{v\in V} \ell(v)$. So, $w(M') \leq w(M)$ and $M$ is optimal.
+    \end{proof}
+
+    \item If you wonder where the heck the above theorem comes from, it comes from writing the matching problem as a linear programming and take the dual.
+  \end{itemize}
+
+  \section{The Hungarian Algorithm}
+
+  \begin{itemize}
+    \item With respect to a graph $G$ (not necessarily complete) a matching $M$ in $G$,
+    \begin{itemize}
+      \item a vertex is {\bf free} is it is incident to no edges in $M$,
+      \item a vertex is {\bf matched} if it is not free,
+      \item a path in $G$ is {\bf alternating} if its edges alternate between $M$ and $E - M$,
+      \item a path is {\bf augmenting} if both end points are free, and
+      \item the {\bf residual graph} of $G$ with respect to $M$ is a directed graph $G' = (V', E')$ where      
+      \begin{itemize}
+        \item $V' = V$, and
+        \item for each edge $(x,y) \in E$,
+        \begin{itemize}
+          \item if $(x,y) \not\in M$, then $(x,y) \in E'$, and
+          \item if $(x,y) \in M$, then $(y,x) \in E'$
+        \end{itemize}
+      \end{itemize}
+    \end{itemize}
+
+    \item The sketch of the algorithm is as follows:
+    \begin{enumerate}
+      \item Start with a feasible labeling $\ell$, and a maximum size matching $M$ in $G_\ell$.
+
+      \item If $M$ is perfect, we are done. 
+
+      \item If not, then then we find another feasible labeling $\ell'$ such that $E_\ell \subset E_{\ell'}$.\\
+      Then, we set $\ell$ to $\ell'$, recompute $M$, and go back to Step 2.      
+    \end{enumerate}
+
+    \item After Step 3, either $M$ or $E_\ell$ increases in size. Hence, the algorithm must terminate.
+
+    \item An initial feasible labeling is given by:
+    \begin{itemize}
+      \item $\ell(y) = 0$ for all $y \in Y$, and
+      \item $\ell(x) = \max{y\in Y} \{ w(x,y) \}$ for all $x \in X$.
+    \end{itemize}
+
+    \item Before we go on to find how to find labeling $\ell'$ such that $E_\ell \subset E_{\ell'}$, we need to define one more set of terminology.
+
+    \item Let $\ell$ be a feasible labeling.
+
+    The {\bf neighbor} of a vertex $u \in V$ is the set $N_\ell(u) = \{v : (u,v) \in E_\ell\}$.
+
+    The {\bf neighbof} of the set $S \sseq V$ is the set $N_\ell(V) = \bigcup_{u \in S} N_\ell(u)$.
+
+    \item The process of finding $\ell'$ where $E_{\ell} \subset E_{\ell'}$ uses the following lemma:
+
+    \begin{lemma}
+      Let $S \sseq X$ and $T = N_\ell(S) \neq Y$. Let
+      \begin{align*}
+        \alpha_\ell = \min_{x\in S, y \neq T} \{ \ell(x) + \ell(y) - w(x,y) \}.
+      \end{align*}
+      Define $\ell'$ as follows:
+      \begin{align*}
+        \ell'(v) = \begin{cases}
+          \ell(v) - \alpha_\ell, & \mbox{if } v \in S,\\
+          \ell(v) + \alpha_\ell, & \mbox{if } v \in T,\\
+          \ell(v), & \mbox{otherwise.}
+        \end{cases}
+      \end{align*}
+      Then, $\ell'$ is a feasible labeling, and
+      \begin{itemize}
+        \item if $(x,y) \in E_\ell$ for $x \in S$ and $y \in T$, then $(x,y) \in E_{\ell'}$,
+        \item if $(x,y) \in E_\ell$ for $x \not\in S$ and $y \not\in T$, then $(x,y) \in E_{\ell'}$, and
+        \item there exists some edge $(x,y) \in E_{\ell'}$ for $x \in S$ and $y \not\in T$.
+      \end{itemize}
+    \end{lemma}
+
+    \begin{proof}
+      We first show that $E_{\ell'}$ is a feasible labeling. Let $x \in X$ and $y \in Y$. There four cases three cases:
+      \begin{enumerate}
+        \item $x \in S$ and $y \in T$. In this case, $\ell'(x) + \ell'(y) = \ell(x) - \alpha_\ell + \ell(y) + \alpha_\ell = \ell(x) + \ell(y) \geq w(x,y).$
+        \item $x \not\in S$ and $y \in T$. In this case, $\ell'(x) + \ell'(y) = \ell(x) + \ell(y) + \alpha_\ell \geq \ell(x) + \ell(y) \geq w(x,y).$ This is simply because $\alpha_\ell \geq 0$.
+        \item $x \in S$ and $y \not\in T$. In this case,
+        \begin{align*}
+          \ell'(x) + \ell'(y) 
+          &= \ell(x) - \alpha_\ell + \ell(y) \\
+          &= w(x,y) + (\ell(x) + \ell(y) - w(x,y)) - \min_{x\in S, y \not\in T} \{ \ell(x) + \ell(y) - w(x,y) \}\\
+          &\geq w(x,y).
+        \end{align*}
+        \item $x \not\in S$ and $y \not\in T$. In this case, $\ell'(x) + \ell'(y) = \ell(x) + \ell(y) \geq w(x,y).$
+      \end{enumerate}
+      So, $\ell'$ is a feasible labeling.
+
+      From the above analysis, in Case 1 and Case 4, we have that $\ell'(x) + \ell'(y) = \ell(x) + \ell(y)$. Thus, an edge $(x,y)$ remains in $E_{\ell'}$ if it is (1) already in $E_\ell$, and (2) either $x \in S$ and $y \in T$ or $x \neq S$ and $y \neq T$.
+
+      Also, there exists an edge $(x,y)$ with $x \in S$ and $y \not\in T$ where $\ell(x) + \ell(y) - w(x,y)$ achieve its minimum. This edge cannot already be in $E_\ell$; otherwise, it would already be included in the neighborhood $N_\ell(S)$. After the update, we see that $\ell(x) + \ell(y) - w(x,y)$ goes to $0$. Hence, this is a new edge in $E_{\ell'}$ which is not in $E_\ell$ before.
+    \end{proof}  
+
+    \item It remains to find a set $S \sseq X$ such that $N_S(X) \neq Y$.
+
+     \begin{lemma}
+      Let $M$ be a maximum size matching in a bipartite graph $G$. Suppose there exists some vertices in $X$ that are free. Let $L$ be the vertices reachable from any free vertex in $X$ in the residual graph of $G$ with respect to $M$. Then, $C = (X - L) \cup (B \cap L)$ is a vertex cover and $|C| = |M|.$
+    \end{lemma}
+
+    \begin{proof}
+      If $C$ is not a vertex cover, then there exists an edge $(x,y) \in E$ such that $x \in X \cap L$ and $y \in Y - L$.
+
+      First, we claim that $(x,y) \not\in E - M$. Otherwise, we have that $x \in X \cap L$, which means it is reachable from a free vertex in the residual graph. Moreover, $(x,y) \in E'$, so this we can follow a path from a free vertex to $x$ and then to $y$.
+
+      Next, we claim that $(x,y) \not\in M$. Otherwise, the fact that $(x,y) \in M$ means that $x$ is matched. Now, if a matched vertex $x$ is reachable from a free vertex, it means that it must be reached to the directed edge $(y,x)$. This implies that $y$ is reachable from a free vertex, but this contradicts the fact that $y \in B - L$.
+
+      So, such an edge $(x,y)$ does not exist, and $C$ is a vertex cover.
+
+      We now show that $|C| \leq |M|$. 
+
+      First, we have that no vertices in $X - L$ are free because free vertices in $X$ are included in $L$ by definition. 
+
+      Also, no vertices in $Y \cap L$ are free. Otherwise, a path from a free node to a free vertex in $Y$ exists and is an augmenting path. This contradicts the fact that $M$ is not a maximum matching.
+
+      Moreover, there cannot be any edge $(x,y) \in M$ where $x \in X-L$ and $y \in Y \cap L$. Othewise, $x$ would be included in $L$. So, every vertex in $X-L$ and $Y \cap L$ is incident to an edge in $M$, but no two vertices in $(X-L) \cup (Y \cap L)$ can share an edge. This means that $|M| \geq |(X - L) \cup (Y \cap L)| = |C|.$
+
+      Now, the size of a maximum matching is a lower bound on the size of a vertex cover. Hence, $|M| \leq |C|$. It follows that $|C| = |M|$.
+    \end{proof}
+
+    \item Now, let $M$ be a maximum matching in $G_\ell$. If $M$ is not perfect, then there exists some vertices that are free. We let $L$ be the set of vertices reachable from these free vertices in the residual graph of $G_\ell$ with respect to $M$. We can then set $S = X \cap L$.
+
+    Observe that $N_\ell(S) = Y \cap L$.
+
+    It follows that $|N_\ell(S)| = |Y \cap L| \leq |(X - L) \cup (Y \cap L)| = |C| = |M| < |Y|$. So, there exists some vertex $y \in Y$ such that $y \not\in N_\ell(S)$.
+    
+    \item The Hungarian algorithm:
+    \begin{enumerate}
+      \item Generate initial labeling $\ell$ and maximum cardinality matching $M$ in $E_\ell$.
+
+      \item If $M$ is perfect, stop.
+      
+      \item Let $v$ be a free vertex with respect to $M$.\\
+      Construct an alternating tree in $G_\ell$ with respect to $M$, eninating from $v$.\\
+      Let $L$ be the set of vertices reachable from any free vertex in $X$, including the free vertices themselves.
+
+      \item Set $S = X \cap L$ and $T = Y \cap L$.\\
+      Compute the new weight $\ell'$ according to the process in Lemma 4.1.
+
+      \item Add the new edge created by this process to $G_\ell$ and recompute $M$.
+
+      \item Go to Step 2.    
+    \end{enumerate}
+
+    \item We will find at most $|V|/2 = O(|V|)$ augmenting paths. Finding an augmenting path requires a breadth first search, which takes $O(|V|^2)$ because we have a complete graph. So, augmenting the paths take $O(|V|^3)$ time.
+
+    Updating the weight takes $O(|V|^2)$ time. However, we only need up update the weight $O(|V|)$ time because, each time we update, there will always be a new augmenting path. So, updating the weights take $O(|V|^3)$ time as well.
+
+    All in all, the algorithm takes $O(|V|^3)$ time.
+  \end{itemize}
+
+\end{document}

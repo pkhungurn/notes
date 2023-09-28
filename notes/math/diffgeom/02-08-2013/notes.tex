@@ -1,0 +1,127 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{epstopdf}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+
+\newtheorem{lemma}{Lemma}[section]
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\likelihood}{\mathcal{L}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\new}{\mathrm{new}}
+\newcommand{\Arg}{\mathrm{Arg\,}}
+\newcommand{\Log}{\mathrm{Log\,}}
+\newcommand{\RE}{\mathrm{Re\,}}
+\newcommand{\IM}{\mathrm{Im\,}}
+\newcommand{\Res}{\mathrm{Res}}
+\newcommand{\pv}{\mathrm{p.v.}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+
+\title{Differential Geometry Notes of 02/08/2013}
+\author{Pramook Khungurn}
+
+\begin{document}
+  \maketitle
+
+  \section{Differentiable Functions on Surfaces} % (fold)
+  \label{sec:differentiable_functions_on_surfaces}
+
+  \begin{itemize}
+    \item We are interested in defining differential functions on a surface.
+
+    \item A natural approach to defining differentiability on a surface is as follows. We say that a function $f: S \ra \Real$ is differentiable at point $p \in S$ if there is a coordinate neighborhood parameterized by $u$ and $v$ such that $f$'s expression in terms of $u$ and $v$ admits partial derivatives of all orders.
+
+    \item However, the problem with this approach is that there can be many coordinate neighborhoods around $p$. Some may satisfy the conditions. Some may not.
+
+    \item For the above definition to make sense, the differentiability should not depend on the chosen coordinate neighborhood. As such, we must show that if $p$ belongs to two coordinate neighborhoods---one with parameters $(u,v)$ and other with $(\xi, \eta)$---it is possible to pass from one to the other by means of a differentiable transformation.
+
+    \item \begin{proposition}[Change of Parameters]
+      Let $p$ be a point of a regular surface $S$.\\
+      Let $\ve{x}:U \sseq \Real^2 \ra S$ and $\ve{y}:V \sseq \Real^2 \ra S$ be two parameterizations of $S$ such that $p \in \ve{x}(U) \cap \ve{x}(V) = W$.\\
+      Then, the ``change of coordinates''
+      \begin{align*}
+        h = \ve{x}^{-1} \circ \ve{y},
+      \end{align*}
+      which maps $\ve{y}^{-1}(W)$ to $\ve{x}^{-1}(W)$, is a diffeomorphism. That is, it is differentiable and has a differentiable inverse $h^{-1}$.
+    \end{proposition}
+
+    \begin{proof}
+      First, we note that $\ve{x}$ and $\ve{y}$ are homeomorphisms. They are both one-to-one and have continuous inverses. Thus, $h = \ve{x}^{-1} \circ \ve{y}$ is a homeomorphism.
+
+      However, we cannot conclude that $h$ is differentiable yet. The problem is that, while $\ve{y}$ is differentiable by definition, we do not know how to differentiate $\ve{x}^{-1}: S \ra U$ because its domain $S$ is not an open set.
+
+      The trick is to extend $\ve{x}$ so that we know that its inverse is differentiable. This is done by applying the inverse function theorem. So, let $\ve{x} = (x(u,v), y(u,v), z(u,v))$. We define $\bar{\ve{x}}: \Real^3 \ra \Real^3$ as follows:
+      \begin{align*}
+        \bar{\ve{x}}(u,v,t) = (x(u,v), y(u,v), z(u,v) + t).
+      \end{align*}
+      Let $r = \ve{y}^{-1}(p)$ and let $q = h(r)$ so that $\ve{x}(q) = p$.
+      Because $\dee \ve{x}_q$ is injective, one of its Jacobian determinant is not zero. WLOG, let us assume that
+      \begin{align*}
+        \renewcommand{\arraystretch}{1.5}
+        \bigg| \frac{\partial(x,v)}{\partial(u,v)} \bigg|
+        = \begin{vmatrix}
+          \frac{\partial x}{\partial u} & \frac{\partial x}{\partial v} \\
+          \frac{\partial y}{\partial u} & \frac{\partial y}{\partial v}
+        \end{vmatrix}
+        \neq 0.
+      \end{align*}
+      Hence, we have that the Jacobian $\dee \bar{\ve{x}}_q$ is given by:
+      \begin{align*}
+        \renewcommand{\arraystretch}{1.5}
+        \begin{vmatrix}
+          \frac{\partial x}{\partial u} & \frac{\partial x}{\partial v} & \frac{\partial x}{\partial t} \\
+          \frac{\partial y}{\partial u} & \frac{\partial y}{\partial v} & \frac{\partial v}{\partial t} \\
+          0 & 0 & 1
+        \end{vmatrix}
+        = \bigg| \frac{\partial(x,v)}{\partial(u,v)} \bigg| \neq 0.
+      \end{align*}
+      As such, there's a neighborhood $M$ around $p$ such that $\bar{\ve{x}}^{-1}$ is defined and is differentiable. 
+
+      Let $N = W \cap M$. Consider the function $F = \bar{\ve{x}}^{-1} \circ \ve{y}$ from $\ve{y}^{-1}(N) \ra \Real^3$. We have that $F$ is differentiable, and $\ve{y}^{-1}(N)$ contains $r$. Now, for all point $n \in N$, we have that $\bar{\ve{x}}^{-1}$ is of the form $(*,*,0)$ where the first two coordinates must agree with $\ve{x}^{-1}(n).$ Hence, in a neighborhood of $q$, we can say that $h = \pi \circ \bar{\ve{x}}^{-1} \circ \ve{y}$ where $\pi$ is the projection that drops the last component. Since $\pi$, $\bar{\ve{x}}$, and $\ve{y}$ are all differentiable, we have that $h$ is differentiable.
+    \end{proof}
+
+    \item \begin{definition}
+      Let $f: V \sseq S \ra \Real$ be a function defined on an open subset $V$ of a regular surface $S$. Then $f$ is said to be differentiable at point $p \in V$ if, for some parameterization $\ve{x}: U \sseq \Real^2 \ra S$ with $p \in \ve{x}(U) \sseq V$, the composition $f \circ \ve{x}: U \sseq \Real^2 \ra \Real$ is differentiable at $\ve{x}^{-1}(p)$.
+
+      We say that $f$ is differentiable in $V$ if it is differentiable at all points of $V$.
+    \end{definition}
+
+    \item From now on, when $f$ is a function from a surface to the reals, we will sometimes write $f(u,v)$ instead of $f(\ve{x}(u,v))$ for some coordinate function $\ve{x}$.  
+  \end{itemize}
+  
+  % section differentiable_functions_on_surfaces (end)  
+  
+\end{document}

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>วิธีติดตั้ง talking-head-anime-demo บน Windows 10</title>
+
+    <!-- Bootstrap -->
+    <link href="../../../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../../../css/theme.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+      TeX: { equationNumbers: {autoNumber: "AMS"} } 
+    });
+    </script>
+    <script type="text/javascript"
+            src="../../../MathJax/MathJax.js?config=TeX-AMS_HTML-full">
+    </script>
+
+    <script type="text/javascript" src="../../../js/jquery-3.4.1.min.js"></script>    
+    <script type="text/javascript" src="../../../js/bigfoot.min.js"></script>    
+
+    <link rel="stylesheet" type="text/css" href="../../../css/bigfoot-default.css">    
+
+</head>
+<body>
+<div class="container">
+    <span style="visibility: hidden;">
+        \(
+        \def\sc#1{\dosc#1\csod}
+        \def\dosc#1#2\csod{{\rm #1{\small #2}}}
+
+        \newcommand{\dee}{\mathrm{d}}
+        \newcommand{\Dee}{\mathrm{D}}
+        \newcommand{\In}{\mathrm{in}}
+        \newcommand{\Out}{\mathrm{out}}
+        \newcommand{\pdf}{\mathrm{pdf}}
+        \newcommand{\Cov}{\mathrm{Cov}}
+        \newcommand{\Var}{\mathrm{Var}}
+
+        \newcommand{\ve}[1]{\mathbf{#1}}
+        \newcommand{\mrm}[1]{\mathrm{#1}}
+        \newcommand{\etal}{{et~al.}}
+        \newcommand{\sphere}{\mathbb{S}^2}
+        \newcommand{\modeint}{\mathcal{M}}
+        \newcommand{\azimint}{\mathcal{N}}
+        \newcommand{\ra}{\rightarrow}
+        \newcommand{\mcal}[1]{\mathcal{#1}}
+        \newcommand{\X}{\mathcal{X}}
+        \newcommand{\Y}{\mathcal{Y}}
+        \newcommand{\Z}{\mathcal{Z}}
+        \newcommand{\x}{\mathbf{x}}
+        \newcommand{\y}{\mathbf{y}}
+        \newcommand{\z}{\mathbf{z}}
+        \newcommand{\tr}{\mathrm{tr}}
+        \newcommand{\sgn}{\mathrm{sgn}}
+        \newcommand{\diag}{\mathrm{diag}}
+        \newcommand{\Real}{\mathbb{R}}
+        \newcommand{\sseq}{\subseteq}
+        \newcommand{\ov}[1]{\overline{#1}}
+        \DeclareMathOperator*{\argmax}{arg\,max}
+        \DeclareMathOperator*{\argmin}{arg\,min}
+        \)
+    </span>
+
+    <br>
+    <h1>วิธีติดตั้ง talking-head-anime-demo บน Windows 10</h1>
+    <hr>
+
+   	<h2><b>ฮาร์ดแวร์ที่ต้องมี</b></h2>
+
+   	<ul>
+   		<li><font size="5">GPU ยี่ห้อ Nvidia ที่ค่อนข้างใหม่และแรง</font>
+   			<ul>
+   				<li><font size="5">ผมเคยใช้ GeForce GTX 1080 Ti และ TITAN RTX</font></li>
+   				<li><font size="5">อัพเดตไดร์เวอร์ให้ทันสมัย</font></li>
+   			</ul>
+   		</li>
+   		<li><font size="5">เว็บแคม</font></li>
+   	</ul>
+
+   	<h2><b>ซอฟต์แวร์ที่ต้องลงเอง</b></h2>
+
+   	<ul>
+   		<li><font size="5">Anaconda Individual Edition</font>
+   			<ul>
+   				<li><font size="5"><a href="https://www.anaconda.com/products/individual">https://www.anaconda.com/products/individual</a></font></li>
+   				<li><font size="5">ทดสอบโปรแกรมหลังลง</font>
+   					<ul>
+   						<li><font size="5">เปิด "Anaconda Prompt (Anaconda 3)"</font></li>
+   						<li><font size="5">เช็คว่าสามารถรันคำสั่ง python และ conda ได้</font></li>
+   					</ul>
+   				</li>
+   			</ul>
+   		</li>
+   	</ul>
+
+   	<h2><b>ดาวน์โหลด talking-head-anime-demo และข้อมูลที่เกี่ยวข้อง</b></h2>
+
+   	<ul>
+   		<li><font size="5">เข้า <a href="https://github.com/pkhungurn/talking-head-anime-demo">Github ของโปรแกรม</a></font></li>
+   		<li><font size="5">ดาวน์โหลดซอร์สโค้ดจากปุ่ม "Clone or download" > "Download ZIP"</a></font></li>
+   		<li><font size="5">ขยายไฟล์ใส่ไดเรคทอรีที่ชอบ</a></font>
+   			<ul>
+   				<li><font size="5">สมมติว่าใส่ <b><tt>c:\talking-head-anime-demo-master</tt></b></font></li>
+   			</ul>
+   		</li>
+   		<li><font size="5">ดาวน์โหลด<a href="https://drive.google.com/open?id=1ajHViqyLDKFKfBtGPE5cbSGcMNa8rz8k">โมเดลหลัก</a>แล้วขยายไฟล์ใส่ <b><tt>c:\talking-head-anime-demo-master\data</tt></b></font></li>
+   		<li><font size="5">ดาวน์โหลด<a href="https://github.com/davisking/dlib-models/blob/master/shape_predictor_68_face_landmarks.dat.bz2">โมเดลสำหรับการรู้จำใบหน้า</a>แล้วขยายไฟล์ใส่ <b><tt>c:\talking-head-anime-demo-master\data</tt></b> เช่นกัน</font></li>
+   	</ul>
+
+   	<h2><b>สร้างสภาพแวดล้อมสำหรับใช้ python</b></h2>
+
+   	<ul>
+   		<li><font size="5">เปิด Anaconda Prompt (Anaconda 3)</font></li>
+   		<li><font size="5">เปลี่ยนไดเรคทอรีไปที่ <b><tt>c:\talking-head-anime-demo-master</tt></b></font></li>
+   		<li><font size="5">รันคำสั่งต่อไปนี้</font>
+   			<blockquote>
+   				<font size="5"><b><tt>conda env create -f environment.yml</tt></b></font>
+   			</blockquote>
+   			<font size="5">แล้วรอให้โปรแกรมทำงานจนเสร็จ</font>
+   		</li>   		
+   	</ul>
+
+   	<h2><b>ใช้งานจริง</b></h2>
+   	<ul>
+   		<li><font size="5">เปิด Anaconda Prompt (Anaconda 3)</font></li>
+   		<li><font size="5">เปลี่ยนไดเรคทอรีไปที่ <b><tt>c:\talking-head-anime-demo-master</tt></b></font></li>
+   		<li><font size="5">รันคำสั่งต่อไปนี้</font>
+   			<blockquote>
+   				<font size="5"><b><tt>conda activate talking-head-anime</tt></b></font>
+   			</blockquote>
+   		</li>   		
+   		<li><font size="5">ถ้าจะใช้ manual_poser รันคำสั่งต่อไปนี้</font>
+   			<blockquote>
+   				<font size="5"><b><tt>python app/manual_poser.py</tt></b></font>
+   			</blockquote>
+   		</li>   		
+   		<li><font size="5">ถ้าจะใช้ puppeteer รันคำสั่งต่อไปนี้</font>
+   			<blockquote>
+   				<font size="5"><b><tt>python app/puppeteer.py</tt></b></font>
+   			</blockquote>
+   		</li>   		
+   	</ul>
+</div>
+
+<script type="text/javascript">
+$.bigfoot();
+</script>
+
+</body>
+</html>

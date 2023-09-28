@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>Papers on Face Image Manipulations</title>
+
+    <!-- Bootstrap -->
+    <link href="../../../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../../../css/theme.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      loader: {load: ['[tex]/boldsymbol']},
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+      TeX: { equationNumbers: {autoNumber: "AMS"} } 
+    });
+    </script>
+    <script type="text/javascript"
+            src="../../../MathJax/MathJax.js?config=TeX-AMS_HTML-full">
+    </script>
+
+    <script type="text/javascript" src="../../../js/jquery-3.4.1.min.js"></script>    
+    <script type="text/javascript" src="../../../js/bigfoot.min.js"></script>    
+
+    <link rel="stylesheet" type="text/css" href="../../../css/bigfoot-default.css">    
+
+</head>
+<body>
+<div class="container">
+    <span style="visibility: hidden;">
+        \(
+        \def\sc#1{\dosc#1\csod}
+        \def\dosc#1#2\csod{{\rm #1{\small #2}}}
+
+        \newcommand{\dee}{\mathrm{d}}
+        \newcommand{\Dee}{\mathrm{D}}
+        \newcommand{\In}{\mathrm{in}}
+        \newcommand{\Out}{\mathrm{out}}
+        \newcommand{\pdf}{\mathrm{pdf}}
+        \newcommand{\Cov}{\mathrm{Cov}}
+        \newcommand{\Var}{\mathrm{Var}}
+
+        \newcommand{\ve}[1]{\mathbf{#1}}
+        \newcommand{\mrm}[1]{\mathrm{#1}}
+        \newcommand{\etal}{{et~al.}}
+        \newcommand{\sphere}{\mathbb{S}^2}
+        \newcommand{\modeint}{\mathcal{M}}
+        \newcommand{\azimint}{\mathcal{N}}
+        \newcommand{\ra}{\rightarrow}
+        \newcommand{\mcal}[1]{\mathcal{#1}}
+        \newcommand{\X}{\mathcal{X}}
+        \newcommand{\Y}{\mathcal{Y}}
+        \newcommand{\Z}{\mathcal{Z}}
+        \newcommand{\x}{\mathbf{x}}
+        \newcommand{\y}{\mathbf{y}}
+        \newcommand{\z}{\mathbf{z}}
+        \newcommand{\tr}{\mathrm{tr}}
+        \newcommand{\sgn}{\mathrm{sgn}}
+        \newcommand{\diag}{\mathrm{diag}}
+        \newcommand{\Real}{\mathbb{R}}
+        \newcommand{\sseq}{\subseteq}
+        \newcommand{\ov}[1]{\overline{#1}}
+        \DeclareMathOperator*{\argmax}{arg\,max}
+        \DeclareMathOperator*{\argmin}{arg\,min}
+        \)
+    </span>
+
+    <br>
+    <h1>Papers on Face Image Manipulations</h1>
+    <hr>
+
+    <p>The only over-arching theme of this note is that all the papers deal with face manipulation.</p>
+
+    <h2>X2Face [Wiles et al. 2018]</h2>
+    <hr>
+
+    <ul>
+        <li><b>Objective:</b> To control the post and epxression of a given face image, using another face or other modality (e.g., pose code).</li>
+
+        <li><b>Contributions:</b>
+        <ol>
+            <li>A network, <b>X2Face</b>, that controls a <b>source</b> face using another face in a <b>driving</b> frame to produce a <b>generated</b> frame. The identity of the generated frame is that of the source frame, but the post and the expression is that of the driving frame.</li>
+
+            <li>A method for training X2Face in a self-supervised fashion, using a large collection of video data.</li>
+
+            <li>Showing that the generation method can be driven by other modalities such as audio or pose codes, <b>without any further training of the network</b>.</li>
+        </ol>
+        </li>
+
+        <li>The goal of the paper is to explore whether it is possible to control faces without an explicit face representation.</li>
+
+        <li>The <b>source</b> face is instantiated from a single or multiple <b>source</b> frames, which are extracted from the same face track.</li>
+
+        <li>The <b>driving vector</b> may come from multiple modalities:
+        <ul>
+            <li>A <b>driving frame</b> from the same or another video face track.</li>
+            <li>Pose information (i.e., pose code).</li>
+            <li>Audio information.</li>
+        </ul>
+        </li>
+
+        <li>The network is trained in a self-supervised manner using pairs of <b>source</b> and <b>driving</b> frames.</li>
+
+        <li>The network has two subnetworks.
+        <ul>
+            <li>The <b>embedding network</b> learns an embedded face representation from the source face, which is efffectively face frontalization.</li>
+
+            <li>The <b>driving network</b> learns how to map from the embedded face to the <b>generarted</b> frame, using the information from the driving vector.</li>
+        </ul>
+        </li>
+
+        <li>The paper also proposes:
+        <ul>
+            <li>A method for linearly regressing from a set of labels or features to the driving vector.</li>
+
+            <li>How the embedded face representation can be used for video face editing.</li>
+        </ul>
+        </li>        
+    </ul>    
+
+    <h3>Architecture</h3>
+
+    <ul>
+        <li>The X2Face network takes two inputs:
+        <ul>
+            <li>A <b>source</b> frame, which goes to the <b>embedding network</b>.</li>
+
+            <li>A <b>driving</b> frame, which goes to the <b>driving network</b>.</li>
+        </ul>
+        </li>
+
+        <li>The <b>embedding network</b>.
+        <ul>
+            <li>The embedding network learns a bilinear sampler (i.e., an optical flow) to determine how to map from the source frame to a face representation.</li>
+
+            <li>The architecture is based on U-Net and pix2pix.</li>
+
+            <li>The output is a 2-channel image, which encodes the flow.</li>
+        </ul>
+        </li>
+
+        <li>The <b>driving network</b>.
+        <ul>
+            <li>The driving network takes a driving frame as input and learns an optical flow to produce the generated frame.</li>
+
+            <li>It has an encoder-decoder architecture.</li>
+
+            <li>The latent embedding must encode post/expression/zoom/other factors of variation.</li>
+        </ul>
+        </li>
+    </ul>
+
+    <h3>Training</h3>
+
+    <ul>
+        <li>There are two stages of training.</li>
+
+        <li>In the first stage:
+        <ul>
+            <li>The process uses sonly a pixelwise L1 loss between the generated and the driving frame.</li>
+            
+            <li>It is sufficient to train the network such that the driving frame results in eoncding of expression and pose.</li>
+
+            <li>However, face shape expression leeks through the driving vector.</li>
+        </ul>
+        </li>
+
+        <li>In the second stage:
+        <ul>
+            <li>Identity loss functions are applied to enforce that the identity is the same between the generated and the source frame irrespective of the identity of the driving frame.</li>
+
+            <li>Three frames are used as inputs:
+            <ul>
+                <li>One source frame $s_A$ of identity $A$.</li>
+
+                <li>A driving frame $d_A$ of identity $A$.</li>
+
+                <li>Another driving frame $d_R$ of a random identity.</li>
+            </ul>
+            </li>
+
+            <li>Running the frames through the network gives two generated frames $g_{d_A}$ and $g_{d_R}$, which should both be of identity $A$.</li>
+
+            <li>The process imposes two identity losses: $\mathcal{L}_{\mathrm{identity}}(d_A, g_{d_A})$ and $\mathcal{L}_{\mathrm{identity}}(d_A, g_{d_R})$.</li>
+
+            <li>$\mathcal{L}_{\mathrm{identity}}$ is implemented using a network pre-trained for identity: the 11-layer VGG network trained on the VGG-Face dataset.</li>
+
+            <li>To measure the the similarity of the images in feature spaces by comparing appropriate layers of the VGG network:
+            <ul>
+                <li>For $\mathcal{L}_{\mathrm{identity}}(d_A, g_{d_A})$, we have that $g_{d_A}$ should have the same identiy, pose, and expression as $d_A$. So, the process uses the L1 loss and the L1 content loss on the Conv2-5 and Conv7 layers between $g_{d_A}$ and $d_A$.</li>
+
+                <li>For $\mathcal{L}_{\mathrm{identity}}(d_A, g_{d_R})$, we have that $g_{d_R}$ should have the identity of $s_A$, but the pose and expression of $d_R$. As a result, the process cannot use the straight L1 loss. So, it uses the L1 content loss on the Conv6-7 layer between $g_{d_A}$ and $s_A$.</li>
+            </ul>
+            </li>
+        </ul>
+        </li>
+    </ul>
+
+    <h3>Controlling image generation with pose code</h3>
+
+    <ul>
+        <li>The paper describes how to control faces with audio, but I'm not interested in that.</li>
+
+        <li>Controlling image generation with a pose code is done by learning a forward mapping $f_{p \rightarrow v}$ from head pose $p$ to the driving vector $v$.</li>
+
+        <li>However, this is an ill-posed problem because the driving vector encodes more than just pose.</li>
+
+        <li>The paper solves this problem through vector arithmetic.
+        <ul>
+            <li>First, it drives the source frame with itself, which results in a driving vector $v^{source}_{emb}$.</li>
+
+            <li>Then, it modifies the vector to remove the pose of the source frame and incorporates the new driving pose:
+            \begin{align*}
+                v^{driving}_{emb}
+                = v^{source}_{emb}
+                + v^{\Delta pose}_{emb}
+                = v^{source}_{emb} + f_{p \rightarrow v}(p_{driving} - p_{source})
+            \end{align*}
+            </li>
+        </ul>        
+
+        <li>However, the dataset that the trained the network with (VoxCeleb) does not come with the ground truth head pose. So, an additional mapping $f_{v \rightarrow p}$ is needed.
+        <ul>
+            <li>It is implemented with a fully connected layer with bias.</li>
+
+            <li>The training loss is an L1 loss.</li>
+
+            <li>The training pairs $(v,p)$ are obtained using an annotated dataset with image to pose labels $p$; $v$ is obtained by passing the image through the encoder of the driving network.</li>
+        </ul>
+        </li>
+
+        <li>$f_{p \rightarrow v}$
+        <ul>
+            <li>Implemented using a fully connected layer with bias, followed by batch-norm.</li>
+
+            <li>After we trained $f_{v \rightarrow p}$, this function can be learned direcly on VoxCeleb.</li>
+        </ul>
+        </li>        
+    </ul>
+
+    <h2>CONFIG [Kowalski et al. 2020]</h2>
+    <hr>
+
+    <ul>
+        <li>Kowalski et al. <b>CONFIG: Controllable Neural Face ImageGeneration.</b> <a href="https://arxiv.org/pdf/2005.02671.pdf">[LINK]</a></li>
+
+        <li>The model proposed by this paper has the following capabilities:
+        <ul>
+            <li>It can generate face images from latent codes.</li>
+
+            <li>Certain attributes of the face images can be manipulated by changing certain parts of the latent code.</li>
+
+            <li>Attributes that can be manipulated include:
+            <ul>
+                <li>Face rotation angle</li>
+                <li>Presence of facial hair</li>
+                <li>Degree of eye opening</li>
+                <li>Face rotation angle</li>
+                <li>How blonde the hair is</li>
+                <li>Lighting</li>
+            </ul>
+            </li>
+        </ul>
+        </li>
+
+        <li>The training process is also interesting. It uses synthetic data (fully annotated 3D renderings of faces) in tandem with unlabelled face images.
+        <ul>
+            <li>Real images come from the <a href="https://github.com/NVlabs/ffhq-dataset">FFHQ</a> dataset (70,000 images at 1024 $\times$ 1024).</li>
+
+            <li>The authors generated a synthetic face dataset called SynthFace, containing 30,000 images also at 1024 $\times$ 1024.</li>
+        </ul>
+        </li>        
+    </ul>
+
+    <h3>The Networks</h3>
+
+    <ul>
+        <li>Let $\mathcal{I}_S$ denote the set of synthetic images and $\mathcal{I}_R$ the set of real images. We use $I_S$ and $I_R$ to denote arbitrary elements of the two sets, respectively.</li>
+
+        <li>A synthetic image is specified by a parameter vector $\theta \in \Theta \subseteq \Real^m$. It is factorized into $k$ parts:
+        \begin{align*}
+            \theta = (\theta_1, \theta_2, \dotsc, \theta_k) \in \Real^{m_1} \times \Real^{m_2} \times \dotsb \times \Real^{m_k} = \Real^m.
+        \end{align*}
+        Each $\theta_i$ corresponds to semantically meaningful input of the graphics pipeline.
+        </li>
+
+        <li>Let $\mathcal{Z}$ denote the set of latent vectors. A latent code is denoted by $z$. We shall denote a "real" latent code with $z_R$ and the "synthetic" latent code with $z_S$.</li>
+
+        <li>On the generation side, the network consists of three networks:
+        <ul>
+            <li>The <b>generator</b> $G: \mathcal{Z} \rightarrow \mathcal{I}_R \cup \mathcal{I}_S$.</li>
+
+            <li>The <b>synthetic encoder</b> $E_S: \Theta \rightarrow \mathcal{Z}$.
+            <ul>
+                <li>$E_S$ must maps each $\theta_i$ to a separate output $z_i$, thereby partitioning $z$ into $k$ parts.</li>
+            </ul>
+            </li>
+
+            <li>The <b>real encoder</b> $E_R: \mathcal{I}_R \rightarrow \mathcal{Z}$.</li>
+        </ul>
+
+        <li>Image manipulation is thus done by modifying a desired part $z_i$ of the latent code, before feeding it to the generator $G$.</li>
+
+        </li>
+
+        <li>To train the generating networks above, the paper deploy three discriminator:
+        <ul>
+            <li>The <b>real discriminator</b> $D_R$, which decidees whether an image comes from the real image training set.</li>
+
+            <li>The <b>synthetic discriminator</b> $D_S$, which decides whether an image comes from the synthetic image training set.</li>
+
+            <li>The <b>domain discriminator</b> $D_{DA}$, which decides whether a latent code looks like a synthetic latent code. The subscript $DA$ probably stands for the "domain adversarial" loss.</li>
+        </ul>
+        </li>
+
+        <li>The domain discriminator, along with its associated domain adversarial loss, is there to ensure that the sets $E_R(\mathcal{I}_R)$ and $E_S(\Theta)$ are similar to each other.</li>
+    </ul>
+
+    <h3>Loss Functions</h3>
+
+    <ul>
+        <li>To make the generated synthetic image $G(E_S(\theta))$ as close as possible to the ground truth image $I_S(\theta)$ as possible, the paper uses two <b>perceptual content losses</b> <a href="https://arxiv.org/abs/1603.08155">[Johnson et al. 2016]</a>
+        <ul>
+            <li>The first is based on VGG-19 trained on ImageNet. Let us call this $\mathcal{L}_{perc}$. The layers used are <tt>conv_1_2</tt>, <tt>conv_2_2</tt>, <tt>conv_3_4</tt>, and <tt>conv_4_4</tt>.</li>
+
+            <li>The second is based on <a href="https://www.robots.ox.ac.uk/~vgg/publications/2015/Parkhi15/">VGGFace</a>. Let us call this $\mathcal{L}_{face}$.</li>
+        </ul>
+        </li>
+
+        <li>The perceptual loss above could not, however, preserve eye gaze directions of synthetic images. The paper thus add an <b>eye loss</b> just for this:
+        \begin{align*}
+            \mathcal{L}_{eye}
+            = w_M \sum M \otimes (I_{S}(\theta) - G(E_S(\theta)))
+        \end{align*}
+        where
+        <ul>
+            <li>$M$ is a pixel-wise binary mask that denotes the iris, and</li>
+            <li>$w_M = (1 + |M|_1)^{-1}$.</li>
+        </ul>
+        (WTF is this? How do you apply a sum to an image? Why is this not a norm?) If it were me, it would define it as:
+        \begin{align*}
+            \mathcal{L}_{eye}(\theta)
+            = w_M \| M \otimes (I_{S}(\theta) - G(E_S(\theta))) \|_1
+        \end{align*}
+        </li>
+
+        <li>As a standard practice, the paper also uses <b>adversarial losses</b>, which is the standard non-saturating GAN loss in the original paper:
+        \begin{align*}
+            \mathcal{L}_{GAN,D}(D, x, y) &= -\log D(x) - \log (1 - D(y)),\\
+            \mathcal{L}_{GAN,G}(D, y) &= -\log D(y).
+        \end{align*}
+        Here, $\mathcal{L}_{GAN,D}(D, x, y)$ is used to train the discriminator, and $\mathcal{L}_{GAN,G}$ is used to train the generator.
+        </li>
+    </ul>
+
+    <h3>Training Procedure</h3>
+
+    <ul>
+        <li>The procedure is divided into two stages.</li>
+
+        <li>In the first stage:
+        <ul>
+            <li>All the networks except $E_R$ are trained.</li>
+            <li>During this stage, the real latent code $z_R$ is sampled from the standard normal distribution $\mathcal{N}(0,1)$.</li>
+            <li>$E_S$ and $G$ are trained with the following loss:
+            \begin{align*}
+            \mathcal{L}^{(1)} := &- E_{z_R \sim \mathcal{N}(0,1)} [ \log D_R(G(z_R)) ] \\
+            &- E_{\theta \sim \Theta} [ \log D_S(G(E_S(\theta))) ] \\
+            &+ \lambda_{perc} E_{\theta \sim \Theta} [\mathcal{L}_{prec}(I_S(\theta), G(E_S(\theta)))] \\
+            &+ \lambda_{eye} E_{\theta \sim \Theta} [ \mathcal{L}_{eye}(\theta)]\\            
+            &- E_{\theta \sim \Theta} [\log D_{DA}(E_S(\theta))]
+            \end{align*}
+            </li>
+            <li>The discriminators are trained with the following loss functions:
+            \begin{align*}
+            \mathcal{L}_{D_R}^{(1)} &:= 
+            -E_{I_R \sim \mathcal{I}_R} [\log D_R(I_R)] 
+            - E_{z_R \sim \mathcal{N}(0,1)} [\log(1-D_R(G(z_R)))] \\
+            \mathcal{L}_{D_S}^{(1)} &:= 
+            -E_{\theta \sim \Theta} [\log D_S(I_S(\theta))] 
+            - E_{\theta \sim \Theta} [\log(1-D_S(G(E_S(\theta))))] \\
+            \mathcal{L}_{D_{DA}}^{(1)} &:=
+            -E_{z_R \sim \mathcal{N}(0,1)} [\log D_{DA}(z_R)] - E_{\theta \sim \Theta} [log(1 - D_{DA}(E_S(\theta)))]
+            \end{align*}
+            </li>
+
+            <li>The novel bit is the use of the domain discriminator $D_{DA}$. It is trained to make the distribution of $E_S(\theta)$ as closed as possible to $\mathcal{N}(0,1)$. In this way, the space for the real and synthetic latent codes would be forced to intersect.</li>
+        </ul>
+        </li>
+
+        <li>In the second stage:
+        <ul>
+            <li>In the second stage, we train $E_R$ in addition to the other networks.</li>
+
+            <li>When training the generators, we sample $z_R$ by sampling $I_R$ and then evaluating $E_R(I_R)$. The loss used is as follows:
+            \begin{align*}
+            \mathcal{L}^{(2)}
+            := 
+            &- E_{I_R \sim \mathcal{I}_R} [ \log D_R(G(E_R(I_R))) ] \\
+            &+ \lambda_{perc} E_{I_R \sim \mathcal{I}_R} [\mathcal{L}_{prec}(I_R, G(E_R(I_R)))] \\
+            &- E_{\theta \sim \Theta} [ \log D_S(G(E_S(\theta))) ] \\
+            &+ \lambda_{perc} E_{\theta \sim \Theta} [\mathcal{L}_{prec}(I_S(\theta), G(E_S(\theta)))] \\
+            &+ \lambda_{eye} E_{\theta \sim \Theta} [ \mathcal{L}_{eye}(\theta)]\\
+            &- E_{\theta \sim \Theta} [\log D_{DA}(E_S(\theta))] \\
+            &+ E_{I_R \sim \mathcal{I}_R} [\log (1 - D_{DA}(E_R(I_R)))]
+            \end{align*} 
+            </li>
+
+            <li>The paper mentions that the goal of the $E_{I_R \sim \mathcal{I}_R} [\log (1 - D_{DA}(E_R(I_R)))]$ is to bring the distribution of $E_R(I_R)$ closer to that of $E_S(\theta)$.</li>
+
+            <li>However, I found that the writing confusing because:
+            <ul>
+                <li>The paper defined the adversarial generator loss term as:
+                \begin{align*}
+                \mathcal{L}_{GAN,G}(D, y) &= \log D(y),
+                \end{align*}
+                dropping the minus sign. If you minimize this function, it will encourages $D(y)$ to be as close as $0$ as possible, which is not something we want to do.
+                </li>
+
+                <li>Then, when the paper introduce the $\log (1 - D_{DA}(E_R(I_R)))$ term to $\mathcal{L}^{(2)}$, it does not use the minus sign too. If you assume that this is the result of the same type of error as in the previous item, then the authors might have wanted to introduce $-\log (1 - D_{DA}(E_R(I_R)))$ instead. If you minimize this, it encourages $D_{DA}(E_R(I_R))$ to become zero, which is definitely not what we want.</li>
+
+                <li>Now, if you think about $\log (1 - D_{DA}(E_R(I_R)))$ with the positive sign, then why don't they use $\log D_{DA}(E_R(I_R))$, which has non-saturating gradient, instead?</li>
+            </ul>
+            </li>
+
+            <li>Since the paper does not mention anything about the loss functions for the discriminators, I presume that they are unchanged from the last step.</li>
+
+            <li>The paper also mentions increasing the weight $\lambda_{perc}$ in the second step.</li>
+        </ul>
+
+        </li>
+    </ul>
+
+    <h3>At Test Time</h3>
+
+    <ul>
+        <li>Given a real image $I_R$, we can use $E_R$ to compute the latent code $z_R = E_R(I_R)$.</li>
+
+        <li>However, the paper mentioned that, while $G(E_R(I_R))$ is similar to $I_R$ as a whole, its identity would not be the same as that of $I_R$.</li>
+
+        <li>To manipulate $I_R$, the paper proposes find-tuning the generator on it. To do so, the paper introduces $\hat{z}_R$, which is initialized to $z_R$. Then, it minimizes the following function:
+        \begin{align*}
+        \mathcal{L}_{ft} :=
+        & - \log D_R(G(\hat{z}_R)) \\
+        & + \log(1 - D_{DA}(\hat{z}_R)) \\
+        & + \lambda_{perc} \mathcal{L}_{perc} (G(\hat{z}_R), I_R) \\
+        & + \lambda_{perc} \mathcal{L}_{face} (G(\hat{z}_R), I_R).
+        \end{align*}
+        The optimization updates both the weights of $G$ and the vector $\hat{z}_R$. After the fine-tuning process, we then manipulate $\hat{z}_R$ instead of $z_R$.
+        </li>
+
+        <li>After we have embedded a real image to find a latent code $z$ (which can be further fine-tuned to preserve identity better), we can manipulate the semantics of the image by swapping any part, $z_i$, with ones obtained from other embeddings.</li>
+
+        <li>Here's another way to manipulate the image. Given a real image $I_R$, we use $E_R$ to map it to $z_R$. Then, we can find
+        \begin{align*}
+        \theta = \argmin_{\tilde{\theta}} \| z_r - E_S(\tilde{\theta}) \|^2
+        \end{align*}
+        Then, we can manipulate $\theta$ to change the relevant parts as we want.
+        </li>
+    </ul>
+
+    <h3>Implementation</h3>
+
+    <ul>
+        <li>The generator $G$ is based on HoloGAN <a href="https://arxiv.org/abs/1904.01326">[Nguyen-Phuoc et al. 2019]</a>.
+        <ul>
+            <li>The architecture allows one to specify the camera angle directly.</li>
+
+            <li>Using this architecture introduces modifications to the general training procedure previously introduced. Two more loss terms are introduced, and a part of the latent vector must be dealt with separately.</li>
+        </ul>        
+        </li>
+
+        <li>The model parameter $\theta$ is divided into $k$ parts.
+        <ul>
+            <li>One part is the camera angle, which is not encoded.</li>
+
+            <li>The other $k-1$ parts are encoded separately, each with its own multi-layer perception $E_{S_i}$. Each perceptron has 2 hidden layers who dimensions are equal to the the dimensions of $\theta_i$.</li>
+
+            <li>The real image encoder $E_R$ is a ResNet-50 pretrained on ImageNet.</li>
+
+            <li>The domain discriminator is a 4-layer MLP.</li>
+
+            <li>See more details in the supplementary sections of the paper. It is quite complicated and ugly.</li>
+        </ul>
+        </li>
+    </ul>
+
+    <a id="pirenderer"></a><h2>&#129383; &nbsp; PIRenderer [Ren et al. 2021]</h2>
+    <hr>
+
+    <ul>
+        <li>Citation: Yurui Ren, Ge Li, Yuanqi Chen, Thomas H. Li, and Shan Liu. <b>PIRenderer: Controllable Portrait Image Generation via Semantic Neural Rendering.</b> ICCV 2021.</li>
+        <li>Links: <a href="https://openaccess.thecvf.com/content/ICCV2021/papers/Ren_PIRenderer_Controllable_Portrait_Image_Generation_via_Semantic_Neural_Rendering_ICCV_2021_paper.pdf">[PDF]</a> <a href="https://github.com/RenYurui/PIRender">[GitHub]</a></li>
+        <li>This paper allows manipulation of a human face image by directly specifying 3DMM pose parameters. It stands out because most other paper concentrate on motion transfer instead.</li>
+        <li>Contrallable features include (1) facial expression, (2) head rotation, and (3) translation.</li>
+        <li>The paper also demonstrate that it can be used to:
+        <ul>
+            <li>Perform motion transfer.</li>
+            <li>Create a talking head animation from a voice recording. (Will not be covered here.)</li>
+        </ul>
+        </li>
+    </ul>
+
+    <h3>&#129383;.1 &nbsp; Motion Descriptor</h3>
+
+    <ul>
+        <li>$\ve{p}$ denotes a vector of 3DMM parameters, which the paper calls the <b>motion descriptor</b>.</li>
+
+        <li>The paper extracts the motion descriptor from training images by using the algorithm described by Deng et al. <a href="https://openaccess.thecvf.com/content_CVPRW_2019/papers/AMFG/Deng_Accurate_3D_Face_Reconstruction_With_Weakly-Supervised_Learning_From_Single_Image_CVPRW_2019_paper.pdf">[2019]</a>.
+            <ul>
+                <li>The algorithm uses a network to determine a parameter so that the model best matches the input photograph.</li>
+            </ul>
+            </li>
+        
+        <li>The 3DMM used is described by Paysan et al. <a href="https://gravis.dmi.unibas.ch/publications/2009/BFModel09.pdf">[2009]</a>.
+        <ul>
+            <li>The 3D shape $\ve{S}$ is given by
+            \begin{align*}
+                \ve{S} = \overline{\ve{S}} + \ve{B}_{\mathrm{id}} \boldsymbol{\alpha} + \ve{B}_{\mathrm{exp}} \boldsymbol{\beta}
+            \end{align*}
+            </li>
+            where 
+            <ul>
+                <li>$\ve{S}$ is the average shape,</li>
+                <li>$\ve{B}_{\mathrm{id}}$ is the basis for identity,</li>
+                <li>$\ve{B}_{\mathrm{exp}}$ is the basis for expression,</li>
+                <li>$\boldsymbol{\alpha} \in \Real^{80}$ is the identity parameters, and</li>
+                <li>$\boldsymbol{\beta} \in \Real^{64}$ is the expression parameters.</li>
+            </ul>
+            $\ve{B}_{\mathrm{id}}$ and $\ve{B}_{\mathrm{exp}}$ are computed by performing principal component analysis on scans of 200 faces.
+        </ul>
+        </li>
+
+        <li>$\ve{p}$ consists of the following three parts:
+        <ul>
+            <li>$\boldsymbol{\beta}$ is the expression parameters.</li>
+            <li>$\ve{R} \in SO(3)$ is the rotation matrix. The paper simply represents this with the <a href="https://en.wikipedia.org/wiki/Euler_angles">Euler angles</a>, so the representation is a member of $\Real^3$. </li>
+            <li>$\ve{t}$ is the (absolute) translation parameters.
+            <ul>
+                <li>The algorithm of Deng et al. does not output the absolute translation parameters though.</li>
+
+                <li>Instead, it outputs the relative translation $\ve{t}'$ to the aligned face.</li>
+
+                <li>The aligned face here is obtained from a preprocessing step before applying Deng et al.'s method. It basically crops the input image so that faces have similar sizes and positions.</li>
+
+                <li>The parameters used in the above cropping procedure is denoted by $\ve{t}_c$. According to the <a href="https://github.com/RenYurui/PIRender/blob/59cd5b3d51f0613eef7703dd01fe21ca1cbb6d43/data/vox_dataset.py#L122">code</a>, it is a member of $\Real^3$. It is unclear what each of the components represent.</li>
+
+                <li>The paper states that the absolute translation $\ve{t}$ can be obtained from the relative translation $\ve{t}'$ and the cropping parameters $\ve{t}_c$, so it just defines $\ve{t} = (\ve{t}', \ve{t}_c) \in \Real^6$.</li>
+            </ul>            
+            </li>
+        </ul>
+        All in all, we have that $\ve{p} \in \Real^{64 + 3 + 6} = \Real^{73}$.
+        </li>
+
+        <li>Augmented motion descriptor.
+        <ul>
+            <li>However, reconstruction error by Deng et al.'s algorithm is unavoidable.</li>
+
+            <li>To mitigate this problem, the paper uses video as training data. It then bundle of motion descriptors of a window of frames together. This bundle is used as the (augmented) motion descriptor of center frame.</li>
+            
+            <li>In particular, for each frame, it uses a window of size $k = 27$ around that frame. In symbols, if $\ve{p}_i$ is the motion descriptor of the center frame, then the augmented motion descriptor is $$\bigg(\ve{p}_{i-\frac{k-1}{2}}, \ve{p}_{i-\frac{k-1}{2}+1}, \dotsc, \ve{p}_{i-1}, \ve{p}_{i}, \ve{p}_{i+1}, \dotsc, \ve{p}_{i+\frac{k-1}{2}-1}, \ve{p}_{i+\frac{k-1}{2}}\bigg),$$
+            which is a matrix of size $73 \times 27$.
+            </li>
+
+            <li>The paper interprets the above matrix as a 1D image with $73$ channels and $27$ pixels.</li>
+
+            <li>For simplicity of discussion, we shall abuse notation and use $\ve{p}$ to denote this augmented motion descriptor.</li>
+        </ul>
+        </li>
+    </ul>
+
+    <h3>&#129383;.2 &nbsp; Networks</h3>
+
+    <ul>
+        <li>I think the network architecture is inspired by StyleGAN.</li>
+
+        <li>The whole system consists of three networks.</li>
+
+        <li><b>Mapping network $f_m$</b>
+        <ul>
+            <li>It receives a motion descriptor $\ve{p} \in \Real^{73 \times 27}$ and outputs a latent code $\ve{z} \in \Real^{256}$: $$\ve{z} = f_m(\ve{m}).$$</li>
+
+            <li>The latent vector $\ve{z}$ is used to modulate ADAIN units <a href="https://arxiv.org/abs/1703.06868">[Haung and Belongie 2017]</a> in the other two networks.</li>
+        </ul>
+        </li>
+
+        <li><b>Warping network $g_w$</b>
+        <ul>
+            <li>Inputs are the source image $\ve{I}_s$ and the latent code $\ve{z}$ produced by the mapping network.</li>
+
+            <li>The output is the (appeance) flow field $\ve{w} = g_w(\ve{I}_s, \ve{z})$ that is used to warp the input image.
+            <ul>
+                <li>$w$ is only $1/4$ the resolution of $\ve{I}_s$. (In other words, the width and the height are halved.)</li>
+            </ul>
+            </li>
+
+            <li>The flow field $\ve{w}$ is then scaled up to match the resolution of $\ve{I}_s$, and the "coarse" warped image $\hat{\ve{I}}_w$ is obtained from using the scaled up $\ve{w}$ to warp $\ve{I}_s$.</li>
+
+            <li>The network is trained with the perceptual content loss <a href="https://arxiv.org/abs/1603.08155">[Johnson et al. 2016]</a>.
+            \begin{align*}
+                \mathcal{L}_w = \sum_{i} \Big\| \phi(\ve{I}_t) - \phi_i(\hat{\ve{I}}_w) \Big\|_1
+            \end{align*}
+            where
+            <ul>
+                <li>$\phi_i$ is the $i$th used layer of a pre-trained VGG-19 network, and</li>
+                <li>$\ve{I}_t$ is the ground truth target image.</li>
+            </ul>
+            </li>
+
+            <li>The paper also downsamples $\hat{\ve{I}}_w$ and $\ve{I}_t$ to a number of resolutions and applies the above loss them, following <a href="https://aliaksandrsiarohin.github.io/first-order-model-website/">[Siarohin et al. 2019]</a>.</li>
+        </ul>
+        </li>
+
+        <li><b>Editing network</b> $g_e$
+        <ul>
+            <li>The editing network retouches the warped image $\hat{\ve{I}}_w$ to produce a better result, generating disoccluded parts and fixing artifacts.</li>
+
+            <li>It receives $\ve{I}_s$, $\hat{\ve{I}}_w$, and $\ve{z}$ as inputs and produces the final image $\hat{\ve{I}}$ as output:
+            \begin{align*}
+                \hat{\ve{I}} = g_e(\hat{\ve{I}}_w, \ve{I}_s, \ve{z}).
+            \end{align*}
+            </li>
+
+            <li>It is trained with the perceptual content loss
+            \begin{align*}
+                \mathcal{L}_c = \sum_{i} \Big\| \phi_i(\ve{I}_t) - \phi_i(\hat{\ve{I}}) \Big\|_1,
+            \end{align*}
+            and the perceptual style loss
+            \begin{align*}
+                \mathcal{L}_s = \sum_{i} \Big\| G_j^\phi(\ve{I}_t) - G_j^\phi(\hat{\ve{I}}) \Big\|_1,
+            \end{align*}
+            where $G_j^\phi(\cdot)$ is the Gram matrix computed from the activation $\phi_j(\cdot)$
+            </li>
+        </ul>
+        </li>
+
+        <li>The three networks are trained with the following loss:
+        \begin{align*}
+            \mathcal{L} = \lambda_w \mathcal{L}_w + \lambda_c \mathcal{L}_c + \lambda_s \mathcal{L}_s
+        \end{align*}
+        where the paper sets $\lambda_w = 2.5$, $\lambda_c = 4$, and $\lambda_s = 1000$.
+        </li>
+
+        <li>The training is divided into two phase.
+        <ul>
+            <li>In the first phase, only the mapping and the warping networks are trained.</li>
+
+            <li>In the second phase, all networks are trained jointly.</li>
+        </ul>
+        Each phase takes 200k iterations. The batch size is 20.
+        </li>
+
+        <li>The paper uses the Adam optimizer with initial learning rate of $10^{-4}$. The learning rate is decreased to $2 \times 10^{-5}$ after 300k iterations.</li>
+
+        <li>The networks were trained on the VoxCeleb dataset. The videos are cropped around the face. Each frame is $256 \times 256$.</li>
+
+        <li>It is surprising that the paper does not use any adversarial losses at all.</li>
+
+        <li>Moreover, the weight on the style loss is very high. I wonder if this is intentional or just that fact that the loss's magnitude tends to be smaller than the other losses.</li>
+    </ul>
+
+    <h4>&#129383;.2.1 &nbsp; Architecture of the Warping Network</h4>
+
+    <ul>
+        <li>The architecture of the network is as follows:<br>
+            <center><a href="pirenderer-mapping-network.png"><img src="pirenderer-mapping-network.png" width="640"></a></center>
+            </li>
+
+        <li>Here's how to read notations like "1DConv 7d1, 256."
+        <ul>
+            <li>"1DConv" means a 1D convolution. This is the <a href="https://pytorch.org/docs/stable/generated/torch.nn.Conv1d.html">Conv1d</a> class in PyTorch.</li>
+
+            <li>The number before "d" is the size of the kernel.</li>
+
+            <li>The number after "d" is the dilation parameter.</li>
+
+            <li>The last number is the output channel size.</li>
+
+            <li><p>So, "1DConv 7d1, 256" corresponds to the following PyTorch code</p> 
+            <p><tt>Conv1d(in_channels, 256, kernel_size=7, dilation=1)</tt>.</p>
+            <p>And "1DConv 3d3, 256" corresponds to</p>
+            <p><tt>Conv1d(in_channels, 256, kernel_size=3, dilation=3)</tt>.</p>
+            </li>                
+        </ul>
+        </li>
+
+        <li>For all the convolution layers, the stride is 1, and the padding is 0.</li>
+
+        <li>The paper uses leaky ReLU with with $0.1$ is the slope of the negative part.</li>
+    </ul>
+
+    <h4>&#129383;.2.2 &nbsp; ADAIN Unit</h4>
+
+    <ul>
+        <li>The paper uses an ADAIN unit that is more complicated than usual. <a href="https://github.com/RenYurui/PIRender/blob/59cd5b3d51f0613eef7703dd01fe21ca1cbb6d43/generators/base_function.py#L159">[Code]</a></li>
+
+        <li>The input to the unit is a feature $\ve{x} \in \Real^{c \times h \times w}$ and a latent code $\ve{z} \in \Real^{256}$.</li>
+
+        <li>First, the latent code $\ve{z}$ is converted to an activation $\ve{w} \in \Real^{128}$ by a linear unit followed by a ReLU:
+        \begin{align*}
+            \ve{w} = \mathrm{ReLU}(\mathrm{Linear}(\ve{z})).
+        \end{align*}
+        </li>
+
+        <li>Then, two vectors $\boldsymbol{\beta}$ and $\boldsymbol{\gamma}$, both members of $\Real^c$ are computed from $\ve{w}$ by simple linear units:
+        \begin{align*}
+            \boldsymbol{\beta} &= \mathrm{Linear}(\ve{w}) \\
+            \boldsymbol{\gamma} &= \mathrm{Linear}(\ve{w})
+        \end{align*}
+        </li>
+
+        <li>Lastly, the normalization is applied to $\ve{x}$:
+        \begin{align*}
+            \hat{\ve{x}}[i,:,:] = \frac{\ve{x}[i,:,:] - \mu(\ve{x}[i,:,:])}{\sigma(\ve{x}[i,:,:])} \times (1 + \boldsymbol{\gamma}[i]) + \boldsymbol{\beta}[i].
+        \end{align*}
+        for all $i \in \{ 1, \dotsc, c\}$.
+        </li>
+    </ul>
+
+    <h4>&#129383;.2.3 &nbsp; ADAIN-Modulated Convolution Block</h4>
+
+    <ul>
+        <li>Another unconventional choice is how the ADAIN unit is combined with convolution and nonlinearity.</li>
+
+        <li>Typically, a convolution block starts with a convolution, follows by a normalization, and ends with a nonlinearity:
+        \begin{align*}
+            \mathrm{output} = \mathrm{Nonlinear}(\mathrm{Normalize}(\mathrm{Conv}(\mathrm{input}))).
+        \end{align*}
+        </li>
+
+        <li>However, the paper uses a different sequence <a href="https://github.com/RenYurui/PIRender/blob/59cd5b3d51f0613eef7703dd01fe21ca1cbb6d43/generators/base_function.py#L107">[Code]</a>:
+        \begin{align*}
+        \mathrm{output} = \mathrm{Conv}(\mathrm{Nonlinear}(\mathrm{Normalize}(\mathrm{input}))).
+        \end{align*}
+        where the $\mathrm{Normalize}$ function here is ADAIN.
+        </li>
+
+        <li>Moreover, it seems that all the convolutional units are followed by a spectral normalization <a href="https://arxiv.org/abs/1802.05957">[Miyato et al. 2018]</a>.</li>
+    </ul>
+
+    <h4>&#129383;.2.4 &nbsp; Building Blocks for Warping Networks</h4>
+
+    <ul>
+        <li>The warping network is constructed out of the following building blocks.
+            <center><a href="pirenderer-warping-network-building-blocks.png"><img src="pirenderer-warping-network-building-blocks.png" width="640"></a></center>
+        </li>
+
+        <li>Each of the convolution block in the above picture is an ADAIN-modulated convolution block described in the above section.</li>
+
+        <li>In the notation "d1s2," the number after "d" is the dilation parameter, and the number after "s" is the stride.</li>
+    </ul>
+
+    <h4>&#129383;.2.5 &nbsp; Architecture of the Warnping Network</h4>
+
+    <center>
+        <a href="pirenderer-warping-network.png"><img src="pirenderer-warping-network.png" width="240"></a>
+    </center>
+
+    <ul>
+        <li>Again, all the convolutional blocks are ADAIN-modulated convolution blocks.</li>
+
+        <li>The number after the block name denotes the number of channels in the output.</li>
+    </ul>
+
+    <h4>&#129383;.2.6 &nbsp; Additional Building Blocks of the Editing Network</h4>
+
+    <ul>
+        <li>The editing network are made out of the following two building blocks.
+            <center>
+                <a href="pirenderer-editing-network-building-blocks.png"><img src="pirenderer-editing-network-building-blocks.png" width="240"></a>
+            </center>
+        </li>
+
+        <li>However, the convolution blocks above are not ADAIN-modulated convolutional blocks. They use layer normalization <a href="https://arxiv.org/abs/1607.06450">[Ba et al. 2016]</a>, which does not take $\ve{z}$ as input, instead.</li>
+    </ul>
+
+    <h4>&#129383;.2.7 &nbsp; Architecture of the Editing Network</h4>
+    
+    <center>
+        <a href="pirenderer-editing-network.png"><img src="pirenderer-editing-network.png" width="360"></a>
+    </center>
+
+    <p>
+    <hr>
+    <div class="page-header"></div>
+    <p>Last modified: 2021/12/04</p>    
+</div>
+
+<script type="text/javascript">
+$.bigfoot();
+</script>
+
+</body>
+</html>

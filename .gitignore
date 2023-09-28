@@ -1,0 +1,13 @@
+*.aux
+*.log
+*.synctex.gz
+*.thm
+*.bbl
+*.blg
+*.out
+*.drv
+*.std
+*.fdb_latexmk
+*.fls
+
+notes/scicomp/signal-processing/signal-processing.pdf

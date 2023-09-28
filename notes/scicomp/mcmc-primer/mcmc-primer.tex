@@ -1,0 +1,905 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+\usepackage{verbatim}
+\usepackage{hyperref}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\def\sc#1{\dosc#1\csod}
+\def\dosc#1#2\csod{{\rm #1{\small #2}}}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\Dee}{\mathrm{D}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\Var}{\mathrm{Var}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\ves}[1]{\boldsymbol{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+\newcommand{\ov}[1]{\overline{#1}}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+\title{A Primer on Markov Chain Monte Carlo Algorithms}
+\author{Pramook Khungurn}
+
+\begin{document}
+\maketitle
+
+This note is a primer on Markov chain Monte Carlo (MCMC) algorithms. I take materials from \cite{Andrieu:2003}, \cite{Gareth:2004}, and \cite{Neal:2011}.
+
+\section{Introduction}
+
+\begin{itemize}
+  \item We are given an unnormalized density function $\pi_u$ defined on a measurable space $(\Omega,\Sigma)$ such that $0 < \int_\Omega \pi_u(x)\, \dee x < \infty$.
+  
+  \item The above density gives rise to a probability measure $P$, which is given by
+  \begin{align*}
+    P(A) = \frac{\int_A \pi_u( x)\, \dee x}{\int_\Omega \pi_u( x)\, \dee x}
+  \end{align*}
+  for any $A \in \Sigma$. The corresponding probability density function is
+  \begin{align*}
+    \pi( x) = \frac{\pi_u( x)}{\int_\Omega \pi_u( x)\, \dee x}.
+  \end{align*}
+  We collectively call $P$ and $\pi$ the {\bf target distribution}.
+
+  \item MCMC algorithms allow us to perform the following two following tasks:
+  \begin{itemize}
+    \item Sample elements from $\Omega$ according to $P$.
+    \item Compute an estimate of 
+    \begin{align*}
+    \pi(f) 
+    = E_{ x \sim \pi}[f( x)]
+    = \int_\Omega f( x) \pi( x)\, \dee  x
+    = \frac{\int_\Omega f( x) \pi_u( x)\, \dee  x}{\int_\Omega \pi_u( x)\, \dee x}.
+    \end{align*}
+  \end{itemize}
+
+  \item There are a number of motivations for doing this.
+  \begin{itemize}
+    \item In statistictical mechanics, the probability density of state $ x$ is given by
+    \begin{align*}
+      \pi( x) = \frac{1}{Z} \exp\bigg(-\frac{E( x)}{kT}\bigg)
+    \end{align*}
+    where $E( x)$ is the Hamiltonian of $s$, $k$ is the Boltzmann's constant, and $T$ is the temperature of the system. The constant $Z$ is called the {\bf partition function}, and it is given by
+    \begin{align*}
+      Z = \int_{\Omega} \exp\bigg( -\frac{E( x)}{kT} \bigg)\, \dee  x.
+    \end{align*}    
+    We see that this setting is exactly the same as the one we just discuss after taking $\pi_u( x) = e^{-E( x)/(kT)}$. So, MCMC is useful for computing expectations arising from these probabilities.
+
+    \item In Bayesian parameter estimation, we are given data $x$, and we want to estimate parameter $\theta$ of our model, which includes the how to compute the prior $p(\theta)$, and the likelihood $p( x|x)$. The posterior is given by
+    \begin{align*}
+      p(\theta | x) = \frac{p(x|\theta)p(\theta)}{\int p(x|\theta)p(\theta)\, \dee \theta}
+    \end{align*}
+    In many cases, we also want to compute expectations such as
+    \begin{align*}
+      E_{\theta \sim p(\theta|x)}[f(\theta)] 
+      = \int f(\theta)p(\theta|x)\, \dee \theta
+      = \frac{\int f(\theta)p(x|\theta)p(\theta)\, \dee\theta}{\int p(x|\theta)p(\theta)\, \dee \theta}.
+    \end{align*}
+    So, if we let $\Theta$ be the set of the $\theta$'s, then we may set $\Omega = \{ (\theta,x) : \theta \in \Theta \}$, and $\pi_u(\theta,x) = p(x|\theta)p(\theta)$ be our unnormalized density.
+  \end{itemize}
+
+  \item In the above situations, what prevents us from computing probabilities and integrals is the difficulty of computing the integral $\int_\Omega \pi_u( x)\, \dee x$.
+  
+  \item MCMC gives a way to sample $ x$ according to the target distribution without explicity normalizing $\pi_u( x)$. The idea is to constructs a Markov chain $\{ X_i \}_{i=0}^\infty$ whose stationary distribution is the target distribution $\pi(x)$. To do so, we need to find a transition kernel $K$, whose density is $k$, such that
+  \begin{align*}
+    \pi(y) = \int_\Omega \pi(x) k(x, y)\, \dee x.
+  \end{align*}
+  
+  \item Then, we can run the Markov chain for a long time (starting from somewhere). When $n$ is large, the distribution of $X_n$ will be approximately $\pi$. We can now restart the Markov chain from $X_n$, run the chain for $M$ iterations to obtain $M$ samples $x_1$, $ x_2$, $\dotsc$, $ x_M$, and then compute the estimate
+  \begin{align*}
+    \int_\Omega f( x) \pi( x)\, \dee x \approx \widehat{\pi}(f) = \frac{1}{M} \sum_{i=1}^M f( x_i).
+  \end{align*}
+  This is an unbiased estimate, and the error $(\pi(f) - \widehat{\pi}(f))/\sqrt{M}$ has Gaussian distribution. We have this property despite the fact that the samples are correlated.\footnote{\url{https://en.wikipedia.org/wiki/Markov_chain_central_limit_theorem}}
+
+  \item We say that a Markov chain $\{ X_i \}_{i=0}^\infty$ with kernel density function $k$ is {\bf reversible} with respect to probability density function $\pi$ if
+  \begin{align} \label{eqn:detailed-balance}
+    \pi(x) k(x,y) &= \pi(y) k(y,x) 
+  \end{align}
+  for all $x,y \in \Omega$. The condition \eqref{eqn:detailed-balance} is called {\bf detailed balance}.  
+
+  \item Note that when $\pi$ satisfies detailed balance, we have that $\pi$ is a stationary distribution. This is because
+  \begin{align*}
+    \int_\Omega \pi(x) k(x, y)\, \dee x = \int_\Omega \pi(y)k(y, x)\, \dee x = \pi(y) \int_\Omega k(y, x)\, \dee x = \pi(y).
+  \end{align*}
+
+  \item Hence, the goal would be to find a kernel that satisfies detailed balance with respect to the target distribution. The most popular way to do so is the Metropolis--Hastings algorithm.
+\end{itemize}
+
+\section{The Metropolis--Hastings Algorithm} \label{sec:metropolis-hastings}
+
+\begin{itemize}
+  \item The algorithm presupposes a Markov chain over $\Omega$. Let $Q$ denote its transition kernel, and let $q$ denote the transition kernel's density. This density can be unnormalized, just like $\pi_u$, but we require a way to sample $y$ according to $q(x,y)$ for any $x$. We often call $q$ the {\bf proposal distribution}.
+  
+  \item The algorithm proceeds as follows.
+  \begin{enumerate}
+    \item Choose some $X_0$ as the starting point.
+    \item Given $X_n$, generates a proposal $Y_{n+1}$ according to $q(X_n, \cdot)$.
+    \item Compute $\alpha(X_n, Y_{n+1})$ where
+    \begin{align*}
+      \alpha(x,y) = \min\bigg( 1, \frac{\pi_u(y)q(y,x)}{\pi_u(x)q(x,y)} \bigg)
+    \end{align*}
+    is the {\bf acceptance probability}.
+    Here, if $\pi(x)q(x,y) = 0$, we set $\alpha(x,y) = 1$.
+    \item Sample $\xi$ uniformly from $[0,1)$.
+    \item If $\xi < \alpha(x,y)$, then set $X_{n+1} = Y_{n+1}$. Otherwise, set $X_{n+1} = X_n$.
+    \item Repeat Step 2 to Step 5 until you are satisfied.
+  \end{enumerate}
+
+  \item The algorithm creates a Markov chain whose transition density is given by $k(x,y) = q(x,y)\alpha(x,y)$. 
+  
+  \item To see that $\pi$ is the stationary distribution of this above Markov chain, we need to show that $k$ satisfies detailed balance with respect to $\pi$. In other words,
+  \begin{align*}
+    \pi(x)k(x,y) = \pi(y)k(y,x).
+  \end{align*}
+  To see this, let $\pi(x) = C^{-1} \pi_u(x,y)$ where $C = \int_\Omega p_u(x)\, \dee x$ is the normalizing constant. We have that
+  \begin{align*}
+    \pi(x) k(x,y)
+    &= \pi(x) q(x,y) \alpha(x,y) \\
+    &= C^{-1}\pi_u(x) q(x,y) \min\bigg( 1, \frac{\pi_u(y)q(y,x)}{\pi_u(x)q(x,y)} \bigg)\\
+    &= C^{-1} \min\bigg( \pi_u(x) q(x,y) , \pi_u(y)q(y,x) \bigg).    
+  \end{align*}
+  Notice that the expression on the RHS is symmetric in $x$ and $y$. Hence, we have that $\pi(x)k(x,y) = \pi(y)k(y,x)$ as required.
+
+  \item The main question for employing the Metropolis--Hastings algorithm is how to choose the proposal distribution $q(\cdot, \cdot)$.
+  
+  \item Of course, $q$ needs to be such that the Markov chain is irreducible and aperiodic so that it would converge to the stationary distribution regardless of where we start.
+    
+  \item Note, though, that transition kernel $k$ allows for rejection, so the chain is aperiodic by default. As a result, we only need to make sure that it covers the whole support of $\pi$. In other words, if $\pi_u(x) > 0$ and $\pi_u(y) > 0$, then $q(x,y)$ should be greater than $0$ too.  
+
+  \item There are many approaches to construct the proposal distribution.
+  \begin{itemize}
+    \item {\bf Symmetric Metropolis algorithm.} Here, $q$ is chosen such that $q(x,y) = q(y,x)$. The acceptance probability simplifies to
+    \begin{align*}
+      \alpha(x,y) = \min\bigg( 1, \frac{\pi_u(y)}{\pi_u(x)} \bigg).
+    \end{align*}
+    One way to arrange for this is to use $y \sim \mcal{N}(x, \sigma^2)$.
+
+    \item {\bf Random walk Metropolis algorithm.} Here, $q(x,y) = q(y-x)$. For example, we may have $y \sim \mrm{Uniform}(x-1, x+1)$.
+    
+    \item {\bf Independence sampler.} Here, $q(x,y) = q(y)$. The acceptance probability thus reduces to
+    \begin{align*}
+      \alpha(x,y) 
+      = \min\bigg( 1, \frac{\pi_u(y)q(x)}{\pi_u(x)q(y)} \bigg)
+      = \min\bigg( 1, \frac{w(y)}{w(x)} \bigg)
+    \end{align*}
+    where $w(x) = \pi_u(x)/q(x)$ for all $x$.
+
+    \item {\bf Langevin algorithm.} The proposal distribution is given by
+    \begin{align*}
+      \ve{y} \sim \mcal{N}\Big(\ve{x} + \frac{\sigma^2}{2} \nabla \log \pi_u(\ve{x}), \sigma^2 I \Big) 
+    \end{align*}
+    for some small $\sigma > 0$.    
+  \end{itemize}
+
+  \item Heuristics on the standard deviation of the proposal distribution.
+  \begin{itemize}
+    \item If it is too low (i.e., the proposal distribution is too narrow), then only a few modes of the target distribution $\pi(\cdot)$ would be visited.
+    \item If it is too wide, then there's a high chance of new samples being rejected, resulting in high correlation between samples.
+  \end{itemize}
+
+  \item If all modes of the target distribution is visited while the acceptance probability is high, we say that the chain {\bf mixes well}.
+\end{itemize}
+
+\section{Combining Markov Chains}
+
+\subsection{Mixture MCMC}
+
+\begin{itemize}
+  \item If transition kernel density $k_1$ and $k_2$ both result in the same stationary distribution $\pi$, then so does the kernel $$\nu k_1 + (1 - \nu)k_2$$ for any $0 \leq \nu \leq 1$.
+  
+  \item The update step of the MCMC algorithm that uses the mixed kernel would be as follows:
+  \begin{itemize}
+    \item[] Sample $\xi \sim \mrm{Uniform}(0,1)$.
+    \item[] {\bf if} $\xi < \nu$ {\bf then}
+    \item[] $\qquad$ Generate the next state $X_{n+1}$ using kernel $k_1$.
+    \item[] {\bf else}
+    \item[] $\qquad$ Generate the next state $X_{n+1}$ using kernel $k_2$.
+    \item[] {\bf end if}
+  \end{itemize}
+
+  \item Mixing more than two kernels is, of course, possible.
+
+  \item Mixture MCMC is useful when the target distribution has many narrow peaks. In this case, we can have a ``global'' kernel that has large variance and a ``local'' kernel that has small variance. The global proposal would jump between peaks, and the local proposals would allow one to explore the space around each peak.
+\end{itemize}
+
+\subsection{Cycle MCMC}
+
+\begin{itemize}
+  \item If we have multiple transition kernel densities $k_1$, $k_2$, $\dotsc$, $k_m$ that have $\pi$ as the stationary distribution of their Markov chains, then the Markov chain obtained by applying the kernels in the round robin fashion, would also have $\pi$ as its stationary distribution.
+  
+  \item Another use of this type of MCMC algorithm is when a sample $\ve{x}$ can be divided into $m$ blocks $\ve{x} = (\ve{x}^{(1)} | \ve{x}^{(2)} | \dotsb | \ve{x}^{(m)})$. If the kernel $k_i$ only change the $\ve{x}^{(i)}$ block, then applying all the kernels in succession would give us a kernel that change all components of the sample, and this can be engineered to have $\pi$ as the statinoary distribution.
+  
+  \item The update step of the cycle MCMC algorithm be as follows:
+  \begin{itemize}
+    \item[] Use $k_1$ to get a state $Y^{(1)}_{n+1}$ from $X_n$.
+    \item[] Use $k_2$ to get a state $Y^{(2)}_{n+1}$ from $Y^{(1)}_{n+1}$.
+    \item[] $\qquad \vdots$
+    \item[] Use $k_m$ to get a state $Y^{(m)}_{n+1}$ from $Y^{(1)}_{n+1}$. 
+    \item[] Set $X_{n+1}$ to $Y^{(m)}_{n+1}$.
+  \end{itemize}
+
+  \item The expression for the overall kernel $k$ would be
+  \begin{align*}
+    k(x,y) = \int \int \dotsm \int k_1(x, x^{(1)})k_2(x^{(1)}, x^{(2)}) \dotsb k_m(x^{(m-1)}, y)\, \dee x^{(1)}\dee x^{(2)} \dotsm \dee x^{(m)}.
+  \end{align*}
+  However, if $k_i$ only changes the $i$th block independent of the other blocks, then we can write
+  \begin{align*}
+    k(\ve{x},\ve{y}) = \prod_{i=1}^m k_i(\ve{x}^{(i)},\ve{y}^{(i)}).
+  \end{align*}
+  Weirdly, all the papers that I read write the overall kernel as
+  \begin{align*}
+    k = k_1 k_2 \dotsb k_m.
+  \end{align*}
+\end{itemize}
+
+\section{The Gibbs Sampler}
+
+\begin{itemize}
+  \item Suppose that $\Omega = \Real^d$. So, we denote an elements of $\Real^d$ by $\ve{x} = (x_1, x_2, \dotsc, x_d)$.
+  
+  \item Let $\ve{x}_{-i}$ denote $\ve{x}$ with the component $x_i$ removed. In other words,
+  \begin{align*}
+    \ve{x}_{-i} = (x_1, \dotsc, x_{i-1}, x_{i+1}, \dotsc, x_d) = (\ve{x}[1:i-1], \ve{x}[i+1:d]).
+  \end{align*}
+
+  \item Suppose that, in addition to an expression for $\pi_u(\ve{x})$, we are also given, for each $i$, an algorithm for sampling $x_i$ given all the other components (i.e., given $\ve{x}_{-i}$) according to the conditional probability distribution
+  \begin{align*}
+    \pi(x_i | \ve{x}_{-i}) = \frac{\pi_u(\ve{x})}{\int \pi_u(\ve{x}[1:i-1], x, \ve{x}[i+1,d])\, \dee x}.
+  \end{align*}
+  
+  \item For further derivativation, let us denote the marginal distribution of $\ve{x}_{-i}$ by
+  \begin{align*}
+    \pi(\ve{x}_{-i}) = \frac{1}{C} \pi_u(\ve{x}_{-i}) = \frac{1}{C} \int \pi_u(\ve{x}[1:i-1], x, \ve{x}[i+1,d])\, \dee x.
+  \end{align*}
+  where $C = \int \pi_u(\ve{x}')\, \dee \ve{x}'$ is the normalizing constant. It follows that $$\pi(\ve{x}) = \pi(x_i|\ve{x}_{-i}) \pi(\ve{x}_{-i}),$$ which is just the standard Bayes' rule. Moreover, $$\pi_u(\ve{x}) = C\pi(\ve{x}) = C \pi(x_i|\ve{x}_{-i}) \pi(\ve{x}_{-i}) = \pi(x_i|\ve{x}_{-i}) \pi_u(\ve{x}_{-i}).$$
+  
+  \item The $i$th component Gibbs sampler is a kernel $k_i$ that leaves all components besides $x_i$ unchanged and replaces $x_i$ by a sample drawn from the above expression. In other words, the proposal distribution $q_i(\ve{x},\ve{y})$ is defined only when $\ve{x}_{-i} = \ve{y}_{-i}$, and it is given by
+  \begin{align*}
+    q(\ve{x},\ve{y}) = \pi(y_i | \ve{x}_{-i}).
+  \end{align*}
+
+  \item When used with the Metropolis--Hastings algorithm, the acceptance probability is
+  \begin{align*}
+    \alpha_i(\ve{x}, \ve{y}) 
+    &= \min\bigg( 1, \frac{\pi_u(\ve{y}) q_i(\ve{y},\ve{x}) }{\pi_u(\ve{x})q_i(\ve{x},\ve{y}) } \bigg)
+    = \min\bigg( 1, \frac{\pi_u(\ve{y}) \pi(x_i|\ve{y}_{-i}) }{\pi_u(\ve{x}) \pi(y_i|\ve{x}_{-i}) } \bigg) \\
+    &= \min\bigg( 1, \frac{\pi_u(\ve{y}_{-i}) \pi(y_i|\ve{y}_{-i}) \pi(x_i|\ve{y}_{-i}) }{ \pi_u(\ve{x}_{-i}) \pi(x_i|\ve{x}_{-i}) \pi(y_i|\ve{x}_{-i}) } \bigg)
+  \end{align*}
+  Again, this is defined only when $\ve{x}_{-i} = \ve{y}_{-i}$. So,
+  \begin{align*}
+    \alpha_i(\ve{x}, \ve{y}) 
+    = \min\bigg( 1, \frac{\pi_u(\ve{x}_{-i}) \pi(y_i|\ve{x}_{-i}) \pi(x_i|\ve{x}_{-i}) }{ \pi_u(\ve{x}_{-i}) \pi(x_i|\ve{x}_{-i}) \pi(y_i|\ve{x}_{-i}) } \bigg)
+    = 1.
+  \end{align*}
+  This means that $k_i(\ve{x},\ve{y}) = q_i(\ve{x},\ve{y}) = \pi(y_i|\ve{x}_{-i})$ given that $\ve{x}_{-i} = \ve{y}_{-i}$.
+
+  \item With the above property, we have that, if $\ve{x}_{-i} = \ve{y}_{-i}$, 
+  \begin{align*}
+    \pi(\ve{x}) k_i(\ve{x},\ve{y}) 
+    &= \pi(x_i|\ve{x}_{-i}) \pi(\ve{x}_{-i}) \pi(y_i|\ve{x}_{-i}) 
+    = \pi(x_i|\ve{y}_{-i}) \pi(\ve{y}_{-i}) \pi(y_i|\ve{y}_{-i})
+    = \pi(x_i|\ve{y}_{-i}) \pi(\ve{y}) \\
+    &= \pi(\ve{y}) k_i(\ve{y},\ve{x}).
+  \end{align*}
+  So, the kernel $k_i$ is reversiable with respect to the conditional probability distribution $\pi(\ve{x}|\ve{x}_{-i})$.
+  
+  \item The above derivation implies that $k_1$, $k_2$, $\dotsc$, $k_d$ can be combined to obtain a kernel $k$ that has $\pi$ as the stationary distribution. There are at least two ways to combine them.
+  \begin{itemize}
+    \item The {\bf deterministic-scan Gibbs sampler} is
+    \begin{align*}
+      k = k_1 k_2 \dotsm k_d.
+    \end{align*} 
+
+    \item The {\bf random-scan Gibbs sampler} is
+    \begin{align*}
+      k = \frac{k_1 + k_2 + \dotsb + k_d}{d}.
+    \end{align*}
+  \end{itemize}
+  We note that the random-scan Gibbs sampler is reversible, but the deterministic-scan one is not. Moreover, for the deterministic scan one, $X_n$ is usable only when $d$ divides $n$.
+\end{itemize}
+
+
+\section{Hamiltonian Monte Carlo}
+
+\begin{itemize}
+  \item Hamiltonian Monte Carlo (HMC) is an algorithm that uses the gradient of the target distribution to create proposals, which allows a new proposal $Y_{n+1}$ to be far away from $X_n$ while still attaining high acceptance probability.
+  
+  \item The algorithm uses ideas from analytical mechanics and statistical physics.
+\end{itemize}
+
+\subsection{Hamiltonian Dynamics}
+
+\begin{itemize}  
+  \item In analytical mechanics, the state of a system can be described by its {\bf position vector} $\ve{x} \in \Real^d$ and its {\bf momentum vector} $\ve{p} \in \Real^d$. 
+  
+  \item The set of all $(\ve{x},\ve{p})$ pairs are called the {\bf phase space}. 
+  
+  \item The {\bf Hamiltonian}, denoted by $H(\ve{x},\ve{p})$, is a scalar function of $\ve{x}$ and $\ve{p}$. It is normally defined to be the total energy of the system: the sum of {\bf potential energy} $U(\ve{x},\ve{p})$ and {\bf kinetic energy} $K(\ve{x},\ve{p})$.
+  \begin{align*}
+    H(\ve{x},\ve{p}) = U(\ve{x},\ve{p}) + K(\ve{x},\ve{p}).
+  \end{align*}
+
+  \item However, for our use case, we shall require that the potential energy depends only on $\ve{x}$, so we can write $U(\ve{x})$ instead of $U(\ve{x},\ve{p})$. 
+  
+  \item We will also use a specific form of kinetic energy
+  \begin{align*}
+    K(\ve{x},\ve{p}) = K(\ve{p}) = \frac{1}{2} \ve{p}^T M^{-1} \ve{p}
+  \end{align*}
+  where $M$ is a symmetric positive-definite matrix called the {\bf mass matrix}. The mass matrix is typically diagonal and a scalar multiple of the identity matrix: $M = mI$. In such a case, we have that
+  \begin{align*}
+    K(\ve{p}) = \frac{\| \ve{p}\|^2}{2m},
+  \end{align*}
+  which agrees with the standard definition of kinetic energy in physics (i.e., $K = m\|\ve{v}\|^2/2$).
+  
+  \item Given the Hamiltonian, the dynamics of the system is determined by {\bf Hamilton's equations}:
+  \begin{align*}
+    \frac{\dee x_i}{\dee t} &= \frac{\partial H}{\partial p_i}, \\
+    \frac{\dee p_i}{\dee t} &= -\frac{\partial H}{\partial x_i}.
+  \end{align*}
+  Hamilton's equations are equivalent to Newton's laws, given that the energies included in the Hamiltonian account for all the forces in system.
+
+  \item Plugging in $H(\ve{x},\ve{p}) = U(\ve{x}) + \| \ve{p}^2 \|/(2m)$, we have
+  \begin{align*}
+    \frac{\dee x_i}{\dee t} &= \frac{p_i}{m}, \\
+    \frac{\dee p_i}{\dee t} &= -\frac{\partial U}{\partial x_i}.
+  \end{align*}
+
+  \item For any $t \geq 0$, Hamilton's equations give rise to the ``time evolution'' function $\mcal{E}_t: \Real^{2d} \rightarrow \Real^{2d}$ where $\mcal{E}_t((\ve{x},\ve{p}))$ gives the state of the system after letting it evolve according to Hamilton's equations for duration $t$, starting at state $(\ve{x},\ve{p})$. 
+
+  \item Hamiltonian dynamics has several nice properties.
+  \begin{itemize}
+    \item It is reversible in the sense that $$\mcal{E}_t((\ve{x},\ve{p})) = (\ve{x}',\ve{p}') \iff \mcal{E}_t((\ve{x}',-\ve{p}')) = (\ve{x},-\ve{p}).$$
+    In other words, we can run the dynamics backward by starting at the final position and negating the momentum.
+    \begin{itemize}
+      \item This property implies that the time evolution function $\mcal{E}_t$ for any fixed $t$ is a bijection. The inverse function is given by
+      \begin{align*}
+        \mcal{E}^{-1}_t((\ve{x},\ve{p})) = \mrm{flip}(\mcal{E}_t(\mrm{flip}((\ve{x},\ve{p}))))
+      \end{align*}
+      where $\mrm{flip}$ is a function that negates the momentum of the input: $\mrm{flip} (\ve{x},\ve{p}) = (\ve{x},-\ve{p}).$
+    \end{itemize}
+    
+    \item The Hamiltonian does not change in time as the result of the dynamics. In other words,
+    \begin{align*}
+      \mcal{E}_t((\ve{x},\ve{p})) = (\ve{x}',\ve{p}') \implies H(\ve{x},\ve{p}) = H(\ve{x}',\ve{p}').
+    \end{align*}
+    If we imagine the phase space as being partition into level sets of $H$, we have that Hamiltonian dynamics preserves them: a point is always mapped to another point in the same level set.
+    
+    \item It perserves volume in phase space. In other words, $A$ and $B$ be Lebesgue-measurable set in the phase space, and let $v$ denote the Lebesgue (i.e., volume) measure. Then, by abusing the notation a little, we have that
+    \begin{align*}
+      \mcal{E}_t(A) = B \implies v(A) = v(B).
+    \end{align*}
+    \begin{itemize}
+      \item This property can be restated as
+      \begin{align*}
+        \det(D\mcal{E}_t) = 1
+      \end{align*}
+      where $D$ is the derivative opeartor, and so $D\mcal{E}_t$ is the Jacobian of $\mcal{E}_t$.
+    \end{itemize}
+  \end{itemize}
+
+  \item The last property has an important implication when we use Hamiltonian dynamics as a way to create proposals in the Metropolis--Hastings algorithm.
+
+  \item To discuss the above implication, however, let us recall a fact regarding transformations and probability densities. Let $\pi$ be a probability density defined on the phase space, and let $f: \Real^{2d} \times \Real^{2d}$ be a bijection on the phase space. Consider the following random process:
+  \begin{itemize}
+    \item Sample $(\ve{x},\ve{p})$ according to $\pi$.
+    \item Compute $(\ve{x}',\ve{p}') \gets f((\ve{x},\ve{p})).$
+  \end{itemize}
+  If we let $\pi'$ denote the probability density of the resulting $(\ve{x}',\ve{p}')$, it follows that
+  \begin{align*}
+    \pi'((\ve{x}', \ve{p}')) = \frac{\pi((\ve{x},\ve{p}))}{|\det(Df((\ve{x},\ve{p})))|}.
+  \end{align*}
+  You can find more details about this at \cite{Khungurn:2022a}.
+
+  \item Now, if we replace the bijection $f$ with $\mcal{E}_t$, we have that $\pi'((\ve{x}',\ve{p}')) = \pi(\ve{x},\ve{p})$ because $\det(D\mcal{E}_t) = 1$. In other words, when we transform a point in phase space using time evolution according to Hamiltonian dynamics, we do not need to include any correction factors in our calculation.
+\end{itemize}
+
+\subsection{The HMC Algorithm}
+
+\begin{itemize}
+  \item The HMC algorithm uses time evolution according to Hamiltonian dynamics to create proposals in the Metropolis--Hastings algorithm. In other words, we want to use $\mcal{E}_t$ to construct the proposal distribution $q$.
+  
+  \item However, the construction is not that straightforward. To do so, we must solve the following problems.
+  \begin{enumerate}
+    \item[(a)] Recall that we are given only $\pi_u$, which is a function of $\ve{x}$. How should we define $\ve{p}$? Also, what would be the probability distribution of $(\ve{x},\ve{p})$?
+    
+    \item[(b)] How exactly should we define the proposal distribution $q(\cdot, \cdot)$?
+    
+    \item[(c)] How do we compute $\mcal{E}_t$? In other words, how do we simulate Hamiltonian dynamics?
+  \end{enumerate}
+\end{itemize}
+
+\subsubsection{Where Does the Momentum Come From?}
+
+\begin{itemize}
+  \item To design an MCMC algorithm, we first imagine the stationary distribution that we want the Markov chain to be converge to.
+
+  \item Here, we borrow an idea from statistical mechanics. When a system with state $\ve{x}$ of energy $E(\ve{x})$ is connected to a heat bath of temperature $T$, the probability density of observing a state $\ve{x}$ is given by the {\bf canonical distribution}
+  \begin{align*}
+    \pi(\ve{x}) = \frac{1}{Z}\exp\bigg( \frac{-E(\ve{x})}{k_B T} \bigg)
+  \end{align*}
+  where $k_B$ is the Boltzmann's constant, and $\ve{Z}$ is the partition function
+  \begin{align*}
+    Z = \int \exp\bigg( \frac{-E(\ve{x})}{k_B T} \bigg)\, \dee\ve{x},
+  \end{align*}
+  which is a constant needed to normalize the probability density so that it integrates to $1$ over the domain.
+
+  \item For simplicty, let us assume that $k_B T = 1$ from now on.
+  
+  \item The Hamiltonian $H(\ve{x},\ve{p})$ is the total energy of the system. So, we can just plug it into the canonical distribution to get a joint probability distributon of $\ve{x}$ and $\ve{p}$.
+  \begin{align*}
+    \pi(\ve{x},\ve{p}) = \frac{1}{Z} \exp( -H(\ve{x},\ve{p}) )
+  \end{align*}
+
+  \item Taking $H(\ve{x},\ve{p}) = U(\ve{x}) + K(\ve{p})$, we have that
+  \begin{align} \label{eqn:phase-space-prob}
+    \pi(\ve{x},\ve{p}) = \frac{1}{Z} \exp(-U(\ve{x})) \exp(-K(\ve{p})). 
+  \end{align}
+  We can see from this that the marginal probability distributions for $\ve{x}$ and $\ve{p}$ are independent.
+
+  \item What should $U(\ve{x})$ be then? Recall that we are interested in sampling from a probability distribution $\pi(\ve{x})$ that is proportional to $\pi_u(\ve{x})$. We can set the potential energy $U(\ve{x})$ to be $-\log \pi_u(\ve{x})$, which gives
+  \begin{align*}
+    \exp(-U(\ve{x})) = \exp(-(-\log \pi(\ve{x}))) = \pi_u(\ve{x}).
+  \end{align*}
+  Now, we can see that the marginal distribution of $\ve{x}$ would be proportional to $\pi_u(\ve{x})$, which means that it would be exactly $\pi(\ve{x})$, our target distribution. 
+
+  \item Equation~\eqref{eqn:phase-space-prob} also gives us a hint where $\ve{p}$ should come from: we can just sample $\ve{p}$ out of nowhere because $\ve{x}$ and $\ve{p}$ are independent of each other!
+  
+  \begin{itemize}
+    \item This is possible because there's nothing in our problem statement that tells us what the distribution of $\ve{p}$ should be, so we can choose a distribution that is easy to sample from.
+
+    \item So, we can pick $K(\ve{p}) = \| \ve{p} \|^2/2m$, which makes that the marginal distribution of $\ve{p}$ the Gaussian distribution $\mcal{N}(\ve{0}, mI)$.
+  \end{itemize}
+
+  \item Moreover, because $\ve{x}$ and $\ve{p}$ are independent, we can drop $\ve{p}$ at any time, and we would not lose any information on the distribution of $\ve{x}$.
+  
+  \item The above reasoning suggests an MCMC algorithm of the following form.
+  \begin{itemize}
+    \item Start with an arbitrary position $\ve{x}_0$.
+    \item {\bf for} $n = 0, 1, 2, \dotsc$ {\bf do}
+    \begin{itemize}
+      \item Sample $\ve{p}_n$ according to $\mcal{N}(0,mI)$.
+      \item Transition $(\ve{x}_n,\ve{p}_n)$ to $(\ve{x}_n',\ve{p}'_n)$ in such a way that satisfies detailed balance with the canonical distribution \eqref{eqn:phase-space-prob}.
+      \item Set $\ve{x}_{n+1} \gets \ve{x}'_n$.
+    \end{itemize}
+    \item[] {\bf end for}
+  \end{itemize}
+
+  \item We can see that the Markov chain above would have the target distribution $\pi(\ve{x})$ as the stationary distribution because the transition $(\ve{x}_n,\ve{p}_n) \rightarrow (\ve{x}_n',\ve{p}'_n)$ would preserve $\pi(\ve{x},\ve{p})$.
+  
+  \item Moreover, because we sample a new momentum in every step and because $\ve{N}(0,mI)$ has infinite support, we can say that the Markov chain is irreducible and aperiodic with respect to $\ve{p}$, which is a good thing.
+  \begin{itemize}
+    \item On the other hand, if we decide to keep maintain $\ve{p}_n$ along with $\ve{x}_n$, we would have to create some rules to let $\ve{p}_n$ vary through all of its domain, which would make the algorithm somewhat more complicated.
+  \end{itemize}
+
+  \item Note that our MCMC algorithm has an interesting behavior. Our Markov chain generate points $\ve{x}_0, \ve{x}_1, \dotsc$ in position space. However, in order to generate the next position, we ``lift'' the position to a random point in phase space. We then transition to another point in the phase space and then ``drop'' the point down to position space again.
+\end{itemize}
+
+\subsubsection{How to Define the Proposal Distribution}
+
+\begin{itemize}
+  \item Given a position $(\ve{x},\ve{p})$ in phase space, we need to figure out how to transition it to another point $(\ve{x}',\ve{p}')$ in such a way that satisfies detailed balance with the canonical distribution
+  \begin{align*}
+    H(\ve{x},\ve{p}) = \frac{1}{Z} \exp(-U(\ve{x}))\exp(-V(\ve{p})) = \frac{1}{Z} \pi_u(\ve{x}) \exp\bigg( \frac{-\| \ve{p} \|^2}{2m} \bigg).
+  \end{align*}
+  
+  \item To do so, we employ the Metropolis--Hastings proposal+acceptance step.
+
+  \item The idea of HMC is to fix a duration $t$ and propose $(\ve{x}',\ve{p}') = \mcal{E}_t((\ve{x},\ve{p}))$.
+  
+  \item Because $\mcal{E}_t$ is deterministic, we have that the transition kernel would be given by
+  \begin{align*}
+    q((\ve{x},\ve{p}), (\ve{x}',\ve{p}')) = \delta((\ve{x}',\ve{p}') - \mcal{E}_t((\ve{x},\ve{p})))
+  \end{align*}
+  where $\delta(\cdot)$ is Dirac's delta function. Note that there's no correction term on the RHS. This is because $\mcal{E}_t$ preserves volume in phase space.
+
+  \item However, this turns out to not be a good idea. Let's look at the acceptance probability
+  \begin{align*}
+    \alpha((\ve{x},\ve{p}), (\ve{x}',\ve{p}')) = \frac{H(\ve{x}',\ve{p}') q((\ve{x'},\ve{p}'),(\ve{x},\ve{p}))}{H(\ve{x},\ve{p})q((\ve{x},\ve{p}),(\ve{x}',\ve{p}'))}
+  \end{align*}
+  Taking $(\ve{x}',\ve{p}') = \mcal{E}_t((\ve{x},\ve{p}))$, we would have that the nominator would almost always be $0$ because we cannot expect that we would arrive back at $(\ve{x},\ve{p})$ if we start simulating the dynamics from $(\ve{x}',\ve{p}')$. So, the Metropolis--Hastings algorithm would not accept any proposal!
+  
+  \item To solve the above problem, we propose $$(\ve{x}',\ve{p}') = \mrm{flip}(\mcal{E}_t((\ve{x},\ve{p}))).$$ In other words, we run the Hamiltonian dynamics, and we simply negate the momentum after we finish.
+  
+  \item The great thing about the above proposal is that, if we take the end result of the above process $(\ve{x}',\ve{p}')$ and try to get a proposal out of it, we come back to the starting point $(\ve{x},\ve{p})$! Symbolically,
+  \begin{align} \label{eqn:flip-evolution-reversibility}
+    (\ve{x}',\ve{p}') = \mrm{flip}(\mcal{E}_t((\ve{x},\ve{p}))) \implies (\ve{x},\ve{p}) = \mrm{flip}(\mcal{E}_t((\ve{x}',\ve{p}'))).
+  \end{align}
+  This is the case because
+  \begin{align*}
+    \mcal{E}_t^{-1}(\cdot) = \mrm{flip}(\mcal{E}_t(\mrm{flip}(\cdot))).
+  \end{align*}
+  So,
+  \begin{align*}
+    \mrm{flip}(\mcal{E}_t((\ve{x}',\ve{p}')))
+    = \mrm{flip}(\mcal{E}_t(\mrm{flip}(\mcal{E}_t((\ve{x},\ve{p})))))
+    = \mcal{E}_t^{-1}(\mcal{E}_t((\ve{x},\ve{p}))) 
+    = (\ve{x},\ve{p}).
+  \end{align*}
+
+  \item The transition kernel for $\mrm{flip}(\mcal{E}_t((\ve{x},\ve{p})))$ is
+  \begin{align*}
+    q((\ve{x},\ve{p}),(\ve{x}',\ve{p}')) = \delta((\ve{x}',\ve{p}') - \mrm{flip}(\mcal{E}_t((\ve{x},\ve{p})))).
+  \end{align*}
+  Note that there's no scalar correction factor here either. This is because the Jacobian of $\mrm{flip}(\cdot)$ has determinant $(-1)^d$, so the absolute value is $1$.
+
+  \item Now, the acceptance probability becomes
+  \begin{align*}
+    \alpha((\ve{x},\ve{p}), (\ve{x}',\ve{p}')) 
+    &= \min\bigg(1, \frac{H(\ve{x}',\ve{p}') q((\ve{x'},\ve{p}'),(\ve{x},\ve{p}))}{H(\ve{x},\ve{p})q((\ve{x},\ve{p}),(\ve{x}',\ve{p}'))} \bigg) \\
+    &= \min\bigg( 1, \frac{H(\ve{x}',\ve{p}') \delta((\ve{x}',\ve{p}') - \mrm{flip}(\mcal{E}_t((\ve{x},\ve{p})))) }{H(\ve{x},\ve{p}) \delta((\ve{x},\ve{p}) - \mrm{flip}(\mcal{E}_t((\ve{x}',\ve{p}')))) } \bigg)\\
+    &= \min\bigg( 1, \frac{H(\ve{x}',\ve{p}')}{H(\ve{x},\ve{p})} \bigg).
+  \end{align*}
+  Here, the last line follows from \eqref{eqn:flip-evolution-reversibility}.
+
+  \item If we can compute $\mcal{E}_t$ perfectly, the acceptance probability would be $1$ because the Hamiltonian would be perfectly preserved. However, this does not happen in real computation, so we keep the $H$ terms there.
+
+  \item So, now, the algorithm is as follows.
+  \begin{itemize}
+    \item Start the simulation from some $\ve{x}_0$.
+    
+    \item {\bf for} $n = 0, 1, 2, \dotsc$ {\bf do}
+    
+    \begin{itemize}
+      \item Sample $\ve{p}_n$ from $\mcal{N}(\ve{0}, mI)$.
+      
+      \item Starting from the phase space point $(\ve{x}_n, \ve{p}_n)$, simulate the for a fixed time $t$ to obtain $(\ve{x}_n^*, \ve{p}^*_n) = \mcal{E}_t((\ve{x}_n, \ve{p}_n))$.
+      
+      \item Flip the momentum by setting $$(\ve{x}_n', \ve{p}_n') \gets (\ve{x}_n^*, -\ve{p}_n^*).$$      
+      
+      \item Compute the acceptance propability 
+      \begin{align*} 
+        \alpha(\ve{x}_n, \ve{x}'_n) = \min\bigg(1 , \frac{\exp(-H(\ve{x}_n', \ve{p}'_n))}{\exp(-H(\ve{x}_n, \ve{p}_n))} \bigg)
+      \end{align*}      
+      
+      \item With probability $\alpha(\ve{x}_n, \ve{x}_n')$, set $\ve{x}_{n+1} \gets \ve{x}_n'$. Otherwise, set $\ve{x}_{n+1} \gets \ve{x}_n$.
+    \end{itemize}
+
+    \item[] {\bf end for}
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{How to Simulate Hamiltonian Dynamics}
+
+\begin{itemize}
+  \item We now have to figure out how to simulate Hamiltonian dynamics. There are many ways to do so, including Euler's method, midpoint method, and Runge--Kutta method.
+  
+  \item The HMC algorithm as discussed in \cite{Neal:2011} uses an integration scheme called {\bf leapfrog} to simulate the Hamiltonian dynamics.
+  
+  \item The leapfrog method has several nice properties that make it very suitable as a component of an MCMC algorithm. More specifically, let $\mcal{L}_{\Delta t}((\ve{x},\ve{p}))$ denote the result of running the leapfrog method starting from state space point $(\ve{x},\ve{p})$ for a single time step $\Delta t$. We have that:
+  \begin{itemize}
+    \item The leapfrog method is a second-order method, meaning that, if we simulate the dynamics with step size $\Delta t$, the error would be of order $(\Delta t)^2$. In other words,
+    \begin{align*}
+      \mcal{L}_{\Delta t}((\ve{x},\ve{p})) = \mcal{E}_{\Delta t}((\ve{x},\ve{p})) + O((\Delta t)^2).
+    \end{align*}
+    
+    \item It is reversible in time in the same exact sense that Hamiltonian dynamics is reversible.
+    \begin{align*}
+      \mcal{L}_{\Delta t}((\ve{x},\ve{p})) = (\ve{x}',\ve{p}') 
+      \implies \mcal{L}_{\Delta t}((\ve{x}',-\ve{p}')) = (\ve{x},-\ve{p}).
+    \end{align*}
+    
+    \item It also preserves volume in the phase space.
+    \begin{align*}
+      \mcal{L}_{\Delta t}(A) = B \implies v(A) = v(B).
+    \end{align*}
+  \end{itemize}
+  See \cite{Young:2014} for justification of these properties.
+  
+  \item The last two properties allow us to show that the transition kernel $q$ defined by $\mcal{L}_{\Delta t}$ instead of $\mcal{E}_{\Delta t}$ satisfies the property
+  \begin{align*}
+    q((\ve{x},\ve{p}),(\ve{x}',\ve{p}')) = \delta((\ve{x}',\ve{p}') - \mrm{flip}(\mcal{L}_{\Delta t}((\ve{x},\ve{p})))).
+  \end{align*}
+  In other words, the RHS is just the Dirac's delta function without any scalar correction factor. Hence, the acceptance probability is simply
+  \begin{align*}
+    \alpha((\ve{x},\ve{p}),(\ve{x}',\ve{p}')) = \min\bigg(1, \frac{H(\ve{x}',\ve{p}')}{H(\ve{x},\ve{p})}\bigg)
+  \end{align*}
+
+  \item Here, we describe the leapfrog algorithm, running for one timestep of duration $\Delta t$. The input is $(\ve{x}_0,\ve{p}_0)$, and the output will be $(\ve{x}_1,\ve{p})$. The algorithm would first calculate the half way momentum, use it to compute $\ve{x}_1$, and then compute the momentum $\ve{p}_1$. Assuming that $H(\ve{x},\ve{p}) = U(\ve{x}) + K(\ve{p})$, the algorithm goes as follow.
+  \begin{align*}
+    \ve{p}_{1/2} & \gets \ve{p}_0 - \frac{\Delta t}{2} \frac{\partial U}{\partial \ve{x}}(\ve{x}_0) \\
+    \ve{x}_1 & \gets \ve{x}_0 + \Delta t \frac{\partial K}{\partial \ve{p}}(\ve{p}_{1/2}) \\
+    \ve{p}_1 & \gets \ve{p}_{1/2} - \frac{\Delta t}{2} \frac{\partial U}{\partial \ve{x}}(\ve{x}_1)
+  \end{align*}
+
+  \item However, when running the leapfrog algorithm for multiple time steps, it is not necessary to calculate the momentum at interger indices except for the first and the last one.
+  \begin{itemize}
+    \item[] Start with input phase space point $(\ve{x}_0, \ve{p}_0)$.
+    \item[] Compute $\ve{p}_{1/2} \gets \ve{p}_0 - \frac{\Delta t}{2} \frac{\partial U}{\partial \ve{x}}(\ve{x}_0)$.
+    \item[] {\bf for} $n = 0, 1, 2, \dotsc, N-1$ {\bf do}
+    \begin{itemize}
+      \item[] Compute $\ve{x}_{n+1} \gets \ve{x}_n + \Delta t \frac{\partial K}{\partial \ve{p}}(\ve{p}_{n+1/2}).$
+      \item[] Compute $\ve{p}_{n+3/2} \gets \ve{p}_{n+1/2} - \Delta t \frac{\partial U}{\partial \ve{x}}(\ve{x}_{n+1}).$
+    \end{itemize}
+    \item[] {\bf end for}
+    \item[] Compute $\ve{p}_N \gets \ve{p}_{N+1/2} + \frac{\Delta t}{2} \frac{\partial U}{\partial \ve{x}}(\ve{x}_{N})$
+    \item[] {\bf return} $(\ve{x}_N, \ve{p}_N)$.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Putting It All Together}
+
+\begin{itemize}
+  \item The HMC algorithm is as follows.
+  \begin{itemize}
+    \item Start the simulation from some $\ve{x}_0$.
+    
+    \item {\bf for} $n = 0, 1, 2, \dotsc$ {\bf do}
+    
+    \begin{itemize}
+      \item Sample $\ve{p}_n$ from $\mcal{N}(\ve{0}, mI)$.
+      
+      \item Starting from point $(\ve{x}_n, \ve{p}_n)$, simulate Hamiltonian dynamics with the leapfrog algorithm for $N$ step of size $\Delta t$ to obtain $(\ve{x}_n^*, \ve{p}^*_n)$.
+      
+      \item Flip the momentum by setting $$(\ve{x}_n', \ve{p}_n') \gets (\ve{x}_n^*, -\ve{p}_n^*).$$      
+      
+      \item Compute the acceptance propability 
+      \begin{align*} 
+        \alpha(\ve{x}_n, \ve{x}'_n) = \min\bigg(1 , \frac{\exp(-H(\ve{x}_n', \ve{p}'_n))}{\exp(-H(\ve{x}_n, \ve{p}_n))} \bigg)
+      \end{align*}      
+      
+      \item With probability $\alpha(\ve{x}_n, \ve{x}_n')$, set $\ve{x}_{n+1} \gets \ve{x}_n'$. Otherwise, set $\ve{x}_{n+1} \gets \ve{x}_n$.
+    \end{itemize}
+
+    \item[] {\bf end for}
+  \end{itemize}
+
+  \item Conceptually, the Markov chain simulates movement of a particle. It above keeps the current position $\ve{x}_n$ of the particle in memory. To get to the text positive, it gives the partical a random kick $\ve{p}_n$ and simulate Hamiltonian dynamics to see where the particle lands after time $N\Delta t$.
+\end{itemize}
+
+\section{Langevin Algorithm}
+
+\begin{itemize}
+  \item Previously in Section~\ref{sec:metropolis-hastings}, we said that the Langevin algoirthm is a special case of the Metropolis--Hastings algorithm where the proposal $\ve{y}$ is given by
+  \begin{align*}
+    \ve{y} \sim \mcal{N}\bigg( \ve{x} + \frac{\sigma^2}{2} \nabla \log \pi_u(\ve{x}), \sigma^2 I \bigg),
+  \end{align*}
+  which gives the proposal distribution
+  \begin{align*}
+    q(\ve{x},\ve{y}) = \frac{1}{ (\sqrt{2\pi} \sigma)^d } \exp\bigg( - \frac{ \| \ve{y} - \ve{x} - \sigma^2 \nabla \log \pi_u(\ve{x})/2 \|^2}{2 \sigma^2} \bigg).
+  \end{align*}
+  We will look further into this algorithm in this section.
+\end{itemize}
+
+\subsection{Connection to Hamiltonian Monte Carlo}
+
+\begin{itemize}
+  \item According to \cite{Neal:2011}, the Langevin algorithm can be viewed as a special case of HMC where only one time step is taken when simulating Hamiltonian dynamics.
+  
+  \item To see this, set $U(\ve{x}) = - \log \pi_u(\ve{x})$ and $K(\ve{p}) = \|\ve{p}\|^2/2$ (i.e. $m = 1$). We have that
+  \begin{align*}
+    \frac{\partial U}{\partial \ve{x}} &= -\nabla \log \pi_u(\ve{x}) \\
+    \frac{\partial K}{\partial \ve{p}} &= \ve{p}
+  \end{align*}
+  Let us run the leapfrog method for one iteration. We have that
+  \begin{align*}
+    \ve{p}_{1/2} &= \ve{p}_0 + \frac{\Delta t}{2} \nabla \log \pi_u(\ve{x}_0) \\
+    \ve{x}_1 &= \ve{x}_0 + \Delta t\, \ve{p}_{1/2} = \ve{x}_0 + \frac{(\Delta t)^2}{2} \nabla \log \pi_u(\ve{x}_0) + \Delta t\, \ve{p}_0
+  \end{align*}
+  Rewriting $\ve{x}_0$ as $\ve{x}$, $\ve{x}_1$ as $\ve{y}$, $\Delta t$ as $\sigma$, we have that
+  \begin{align} \label{eqn:hmc-one-step}
+    \ve{y} &= \ve{x} + \frac{\sigma^2}{2} \nabla \log \pi_u(\ve{x}) + \sigma \ve{p}_0.
+  \end{align}
+  Moreover, if we take $\ve{p}_0$ so that it is distributed according to the standard normal distribution $\mcal{N}(\ve{0}, I)$, then we have that
+  \begin{align*}
+    \ve{y} \sim \mcal{N}\bigg( \ve{x} + \frac{\sigma^2}{2} \nabla \log \pi_u(\ve{x}), \sigma^2 I \bigg),
+  \end{align*}
+  which is exactly the proposal distribution of the Langevin dynamics algorithm.
+
+  \item The difference between HMC and Langevin dynamics is when we calculate the acceptance propability. In HMC, we use the ratio 
+  \begin{align*}
+    \alpha((\ve{x},\ve{p}_0), (\ve{y},\ve{p}_1)) = \min\bigg(1, \frac{\exp(-H(\ve{y},\ve{p}_1))}{\exp(-H(\ve{x},\ve{p}_0))} \bigg).
+  \end{align*}
+  However, in Langevin dynamics, the momentum does not exist, so we have to use the full Metropolis--Hastings acceptance probability
+  \begin{align*}
+    \alpha(\ve{x},\ve{y}) = \min\bigg( 1, \frac{\pi_u(\ve{y}) q(\ve{y},\ve{x}) }{\pi_u(\ve{x}) q(\ve{x},\ve{y})} \bigg).
+  \end{align*}
+\end{itemize}
+
+\subsection{Langevin Equation}
+
+\begin{itemize}
+  \item Langevin dynamics gets its name from a stochastic differential equation (SDE) called the {\bf Langevin equation}
+  \begin{align*}
+    \dee \ve{x} = \frac{1}{2}\nabla \log \pi_u(\ve{x})\, \dee t + \dee \ve{W}.
+  \end{align*}
+  where $\ve{W}$ is the standard Brownian motion in $\Real^d$. The initial condition is $\ve{x}(0) = \ve{x}_0$ where $\ve{x}_0$ is an input.
+
+  \item The Langevin equation is related to the problem at hand because the ``stationary distribution'' of its solution is exactly the target distribution $\pi(\ve{x})$. 
+  
+  \item More precisely, if the stochastic process $\{ \ve{x}(t): 0 \leq t \leq \infty \}$ is a solution of the Langevin equation, then the probability of density $\nu(\ve{x},t) = \nu(\ve{x}(t))$ of $\ve{x}(t)$ must satisfy the {\bf Fokker--Planck equation}:
+  \begin{align*}
+    \frac{\partial \nu(\ve{x},t)}{\partial t}
+    &= - \sum_{i=1}^d \frac{\partial}{\partial x_i} \bigg( \frac{1}{2} \frac{\partial \log \pi_u(\ve{x})}{\partial x_i} \nu(\ve{x},t) \bigg) + \frac{1}{2} \sum_{i=1}^d \frac{\partial^2 \nu(\ve{x},t)}{\partial x_i^2} \\
+    &= - \frac{1}{2} \sum_{i=1}^d \frac{\partial}{\partial x_i} \bigg( \frac{1}{\pi_u(\ve{x})} \frac{\partial \pi_u(\ve{x})}{\partial x_i} \nu(\ve{x},t) \bigg) + \frac{1}{2} \sum_{i=1}^d \frac{\partial^2 \nu(\ve{x},t)}{\partial x_i^2}.
+  \end{align*}
+  (Again, see \cite{Khungurn:2022b} for more details.)
+
+  A stationary distribution does not change in time. In other words, there is no dependence on $t$, and $\nu(\ve{x},t) = \nu(\ve{x})$. The Fokker--Planck equation becomes
+  \begin{align*}
+    0 &= - \frac{1}{2} \sum_{i=1}^d \frac{\partial}{\partial x_i} \bigg( \frac{1}{\pi_u(\ve{x})} \frac{\partial \pi_u(\ve{x})}{\partial x_i} \nu(\ve{x}) \bigg) + \frac{1}{2} \sum_{i=1}^d \frac{\partial^2 \nu(\ve{x})}{\partial x_i^2}.
+  \end{align*}
+  We have that the target distributon $\pi(\ve{x}) = C\pi_u(\ve{x})$ satisfies it. This can be checked by plugging substituting $\nu(\ve{x})$ with $C \pi_u(\ve{x})$.
+  \begin{align*}
+    & - \frac{1}{2} \sum_{i=1}^d \frac{\partial}{\partial x_i} \bigg( \frac{1}{\pi_u(\ve{x})} \frac{\partial \pi_u(\ve{x})}{\partial x_i} C \pi_u(\ve{x}) \bigg) + \frac{1}{2} \sum_{i=1}^d \frac{\partial^2 (C\pi_u(\ve{x}))}{\partial x_i^2} \\
+    &= - \frac{C}{2} \sum_{i=1}^d \frac{\partial}{\partial x_i} \bigg( \frac{\partial \pi_u(\ve{x})}{\partial x_i} \bigg) + \frac{C}{2} \sum_{i=1}^d \frac{\partial^2 \pi_u(\ve{x})}{\partial x_i^2} \\
+    &= - \frac{C}{2} \sum_{i=1}^d \frac{\partial^2 \pi_u(\ve{x})}{\partial x_i^2}  + \frac{C}{2} \sum_{i=1}^d \frac{\partial^2 \pi_u(\ve{x})}{\partial x_i^2} \\
+    &= 0.  
+  \end{align*}
+  
+  \item What this means is that, if we let $t \rightarrow \infty$, we would expect that the probability distribution $\nu(\ve{x},t)$ would reach equilibrium and will not change in time. So, the distribution $\lim_{t \rightarrow \infty} \nu(\ve{x},t)$ would be given by $\pi(\ve{x})$. (Note that this is not at all a rigourous argument.)
+  
+  \item Now that we have intuited that the stationary distribution of the dynamics described by the Langevin equation is $\pi(\ve{x})$, we would expect that the distribution of its discrete approximation would approach $\pi(\ve{x})$ as well if we do things the right way.
+\end{itemize}
+
+\subsection{Langevin Algorithm as Discrete Approximation to Langevin Dynamics}
+\begin{itemize}
+  \item An approximate trajectory of the stochastic process $\{ \ve{x}(t) : 0 \leq t \leq T \}$ satisfying the Langevin equation can be obtained by the Euler--Maruyama method. (See \cite{Khungurn:2022b} for more details.) If we take only one time step, the calculation goes as follows:
+  \begin{enumerate}
+    \item Sample $\ve{W}_0$ from $\mcal{N}(\ve{0}, T)$.
+    \item Compute $\ve{x}_1 \gets \ve{x}_0 + \frac{T}{2} \nabla \log \pi_u(\ve{x}_0) + \ve{W}_0$.
+  \end{enumerate}
+  In the above process, we have that $\ve{W}_0$ can be rewritten as $\sqrt{T} \ves{\xi}$ where $\ves{\xi} \sim \mcal{N}(0, I)$, which means that
+  \begin{align*}
+    \ve{x}_1 = \ve{x}_0 + \frac{T}{2} \nabla \log \pi_u(\ve{x}_0) + \sqrt{T} \ves{\xi}.
+  \end{align*} 
+  Notice that the above equation is exactly the same as Equation~\eqref{eqn:hmc-one-step} if we substitute $\ve{x}_1$ with $\ve{y}$, $\ve{x}_0$ with $\ve{x}$, and $T$ with $\sigma^2$. This shows that the Langevin algorithm is a discrete approximation of the dynamics governed by the Langevin equation.
+
+  \item In \cite{Roberts:1996}, Roberts and Tweedie analyzed convergence of of the Langevin algorithm, for which they distinguished between several variants.
+  \begin{itemize}
+    \item The {\it unadjusted Langevin algorithm} (ULA) accepts the proposal
+    \begin{align*}
+      \ve{y} \sim \mcal{N}\bigg( \ve{x} + \frac{\sigma^2}{2} \nabla \log \pi_u(\ve{x}), \sigma^2 I \bigg)
+    \end{align*}
+    with probabilty one.
+
+    \item The {\it Metropolis-adjusted Langevin algorithm} (MALA) is where the proposal is accepted with the acceptance probability
+    \begin{align*}
+      \alpha(\ve{x},\ve{y}) = \min\bigg(1, \frac{\pi_u(\ve{y}q(\ve{y},\ve{x}))}{\pi_u(\ve{x})q(\ve{x},\ve{y})} \bigg)
+    \end{align*}
+    This is the algorithm we have been discussing all along.
+
+    \item The {\it Metropolis-adjusted Langevin truncated algorithm} (MALTA) is where the proposal is given by
+    \begin{align*}
+      \ve{y} \sim \mcal{N}\bigg(\ve{x} + \frac{\delta}{\max(\delta, \| \nabla \log \pi_u(\ve{x}) \|)} \nabla \log \pi_u(\ve{x}), \sigma^2 I\bigg)
+    \end{align*}
+    for some fixed constant $\delta > 0$. Here, the displacement of $\ve{x}$ is bounded by a fixed distance $\delta$. The proposal is accepted with probability $\alpha(\ve{x},\ve{y})$ as in MALA.        
+  \end{itemize}
+
+  \item In their analysis, they also consider two notions of ``ergodicity.''
+  \begin{itemize}
+    \item \begin{definition}
+      We say that a Markov chain is {\bf ergodic} if it is aperiodic and Harris-recurrent.
+    \end{definition}
+
+    \item \begin{definition}
+      We say that a Markov chain $\{ \ve{x}_t: t = 0, 1, 2, \dotsc \}$ with kernal transition function $K$ is {\bf geometrically ergodic} or {\bf exponentially ergodic} if it converges to the stationary measure $\Pi$ at geometric rate with multiplicative constant depending on the start point. In other words, there is a function $V: \Real^d \rightarrow \Real$ such that
+      \begin{align*}
+        d_{\mrm{TV}}(K^n(\ve{x}_0, \cdot), \Pi(\cdot) ) \leq V(\ve{x}_0) \gamma^n
+      \end{align*}
+      for some constant $0 < \gamma < 1$.
+    \end{definition}
+
+    \item Note that we know that, for an ergodic Markov chain that has a stationary measure $\Pi$, the transition probabilities $K^n(\ve{x}_0, \cdot)$ will converge to the $\Pi$ in the total variation norm.
+    \begin{align*}
+      \lim_{n \rightarrow \infty} d_{\mrm{TV}}(K^n(\ve{x}_0, \cdot), \Pi(\cdot)) = 0.
+    \end{align*}
+    Here, $K^n(\cdot, \cdot)$ denotes the kernel density of applying the Markov chain transition $n$ times, and the probability measure $\Pi$ is given by
+    \begin{align*}
+      \Pi(A) = \int_A \pi(\ve{x})\, \dee\ve{x}.
+    \end{align*}
+    
+    \item We shall assume that all the Markov chains in this section (ULA, MALA, MALTA) has stationary distributions, which would be the target distribution $\Pi$. So, ``ergodic'' would mean ``converges to staionary distribution.''
+    
+    \item On the other hand, exponential ergodicity is a much stronger notion than ergodicity. It means that the Markov chain converges exponentially fast to the target distribution.
+  \end{itemize}
+
+  \item For ULA:
+  \begin{itemize}
+    \item When a ULA chain is ergodic, it generally converges to another distribution which is not the target distribution $\pi$.
+    
+    \item The paper proves results on convergence of the ULA chain in 1D. To do so, they make use of the following limits.
+    \begin{align*}
+      S^+_{\alpha} &:= \lim_{x \rightarrow \infty} \frac{\sigma^2}{2 x^\alpha} \frac{\dee (\log \pi_u(x))}{\dee x} \\
+      S^-_{\alpha} &:= \lim_{x \rightarrow -\infty} \frac{\sigma^2}{2 |x|^\alpha} \frac{\dee (\log \pi_u(x))}{\dee x}.
+    \end{align*}
+
+    \item \begin{theorem}
+      A ULA chain on $\Real$ is exponentially ergodic if one of the following conditions hold:
+      \begin{itemize}
+        \item For some $\alpha \in [0,1)$, both $S^+_\alpha$ and $S^-_\alpha$ exist with $S_\alpha^+ < 0$ and $S_\alpha^- > 0$.
+        \item For $\alpha = 1$, both $S^+_\alpha$ and $S^-_\alpha$ exist with $S_\alpha^+ < 0$, $S_\alpha^- > 0$, and $(1 + S_\alpha^+)(1 - S_\alpha^-) < 1$.
+      \end{itemize}
+    \end{theorem}
+
+    \item \begin{theorem}
+      A ULA chain on $\Real$ is ergodic but not exponentially ergodic if, for some $\alpha \in (-1,0)$, both $S^+_\alpha$ and $S^-_\alpha$ exist with $S_\alpha^+ < 0$ and ($S_\alpha^- > 0$.
+    \end{theorem}
+
+    \item \begin{theorem}
+      A ULA chain on $\Real$ not ergodic and even transient if one of the following conditions hold.
+      \begin{itemize}
+        \item For some $\alpha > 1$, both $S^+_\alpha$ and $S^-_\alpha$ exist with $S_\alpha^+ < 0$, and $S_\alpha^- > 0$.
+        \item For $\alpha = 1$, both $S^+_\alpha$ and $S^-_\alpha$ exist with $S_\alpha^+ < -2$, and $S_\alpha^- > 2$.
+      \end{itemize} 
+    \end{theorem}
+  \end{itemize}
+
+  \item For MALA:
+  \begin{itemize}
+    \item Let $A(\ve{x})$ denote the ``acceptance region'' of $\ve{x}$. In other words, $A(\ve{x})$ is the set of proposal $\ve{y}$ that is always accepted. In other words,
+    \begin{align*}
+      A(\ve{x}) = \{ \ve{y} : \pi_u(\ve{y})q(\ve{y},\ve{x}) \geq \pi_u(\ve{x})q(\ve{x},\ve{y}) \}
+    \end{align*}
+
+    \item We say that $A(\cdot)$ {\bf converges inwards in $q$} if
+    \begin{align*}
+      \lim_{\ve{x} \rightarrow \infty} \int_{A(\ve{x}) - I(\ve{x})} q(\ve{x},\ve{y})\, \dee\ve{y} = 0
+    \end{align*}
+    where $I(\ve{x}) = \{ \ve{y} : \| \ve{y} \| \leq \ve{x} \}$.
+
+    \item \begin{theorem}
+      Let $\ve{c}(\ve{x}) = \ve{x} + \sigma^2 \nabla \log \pi_u(\ve{x}) / 2$ denote the ``next candidate position.'' Let
+      \begin{align*}
+        \eta = \liminf_{\|\ve{x} \| \rightarrow \infty} ( \|\ve{x}\| - \| \ve{c}(\ve{x}) \|).
+      \end{align*}
+      If $\eta > 0$ and $A(\cdot)$ converges inwards in $q$, then the MALA chain is exponentially ergodic with $V(\ve{x}) = e^{s\|\ve{x} \|}$ for some $s < 2 \eta \sigma^2.$
+    \end{theorem}
+
+    \item The above result is hard to interpret due to the cryptic way the conditionas are written down. Intuitively though, we can say that, if $\pi_u(\ve{x}) \rightarrow 0$ fast as $\|\ve{x}\| \rightarrow \infty$, then the MALA chain is exponentially ergodic.
+    
+    \item On the other hand, when $\ve{x}$ has large tails, then the MALA chain is not exponentially ergodic.
+    
+    \item \begin{theorem}
+      If $\pi_u$ is bounded and
+      \begin{align*}
+        \liminf_{\|\ve{x}\| \rightarrow \infty} \frac{\| \nabla \log \pi_u(\ve{x}) \|}{\| \ve{x}\|} > \frac{4}{\sigma^2},
+      \end{align*}
+      then the MALA chain is not exponentially ergodic.
+    \end{theorem}
+
+    \item \begin{theorem}
+      If $\| \nabla \log \pi_u(\ve{x})\| \rightarrow 0$ as $\| \ve{x} \| \rightarrow \infty$, then the MALA chain is not geometricaly ergodic.
+    \end{theorem}
+  \end{itemize}
+
+  \item For MALTA, the authors mentione that its exponential ergodicity is much more robust than that of MALA, but they did not give much details in the paper.
+\end{itemize}
+
+\bibliographystyle{apalike}
+\bibliography{mcmc-primer}  
+\end{document}

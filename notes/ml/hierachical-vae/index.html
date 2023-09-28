@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>Hierarchical VAEs</title>
+
+    <!-- Bootstrap -->
+    <link href="../../../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../../../css/theme.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+      TeX: { equationNumbers: {autoNumber: "AMS"} } 
+    });
+    </script>
+    <script type="text/javascript"
+            src="../../../MathJax/MathJax.js?config=TeX-AMS_HTML-full">
+    </script>
+
+    <script type="text/javascript" src="../../../js/jquery-3.4.1.min.js"></script>    
+    <script type="text/javascript" src="../../../js/bigfoot.min.js"></script>    
+
+    <link rel="stylesheet" type="text/css" href="../../../css/bigfoot-default.css">    
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.1/styles/default.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.1/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
+</head>
+<body>
+<div class="container">
+    <span style="visibility: hidden;">
+        \(
+        \def\sc#1{\dosc#1\csod}
+        \def\dosc#1#2\csod{{\rm #1{\small #2}}}
+
+        \newcommand{\dee}{\mathrm{d}}
+        \newcommand{\Dee}{\mathrm{D}}
+        \newcommand{\In}{\mathrm{in}}
+        \newcommand{\Out}{\mathrm{out}}
+        \newcommand{\pdf}{\mathrm{pdf}}
+        \newcommand{\Cov}{\mathrm{Cov}}
+        \newcommand{\Var}{\mathrm{Var}}
+
+        \newcommand{\ve}[1]{\mathbf{#1}}
+        \newcommand{\ves}[1]{\boldsymbol{#1}}
+        \newcommand{\mrm}[1]{\mathrm{#1}}
+        \newcommand{\etal}{{et~al.}}
+        \newcommand{\sphere}{\mathbb{S}^2}
+        \newcommand{\modeint}{\mathcal{M}}
+        \newcommand{\azimint}{\mathcal{N}}
+        \newcommand{\ra}{\rightarrow}
+        \newcommand{\mcal}[1]{\mathcal{#1}}
+        \newcommand{\X}{\mathcal{X}}
+        \newcommand{\Y}{\mathcal{Y}}
+        \newcommand{\Z}{\mathcal{Z}}
+        \newcommand{\x}{\mathbf{x}}
+        \newcommand{\y}{\mathbf{y}}
+        \newcommand{\z}{\mathbf{z}}
+        \newcommand{\tr}{\mathrm{tr}}
+        \newcommand{\sgn}{\mathrm{sgn}}
+        \newcommand{\diag}{\mathrm{diag}}
+        \newcommand{\Real}{\mathbb{R}}
+        \newcommand{\sseq}{\subseteq}
+        \newcommand{\ov}[1]{\overline{#1}}
+        \DeclareMathOperator*{\argmax}{arg\,max}
+        \DeclareMathOperator*{\argmin}{arg\,min}
+
+        \newcommand{\data}{\mathrm{data}}
+        \newcommand{\N}{\mathcal{N}}
+        \newcommand{\Hil}{\mathcal{H}}
+        \)
+    </span>
+
+    <br>
+    <h1>Hierarchical VAEs</h1>
+    <hr>
+
+    <p>There are a number of papers that propose variational autoencoder (VAE) models in which the latent code is hierarchical. For example, when generating an image, the latent code for that image would consist of images at various resolutions.</p>
+
+    <p>I found that these models are hard to understand because one cannot get a complete understanding of how they work by just reading papers. One also has to look at the code to fully understand how they work. This note attempts to explain how such a model work by looking at both the math and the code.</p>
+
+    <p>We will cover two papers.
+    <ul>
+      <li>"Very Deep VAEs Generalize Autoregressive Models and Can Outperform Them on Images
+      " by Rewon Child <a href="https://arxiv.org/abs/2011.10650">[2021]</a></li>
+      <li>"NVAE: A Deep Hierarchical Variational Autoencoder" by Vahdat and Kautz <a href="https://arxiv.org/abs/2007.03898">[2020]</a></li>
+    </ul>
+    </p>
+
+    <hr>
+    <h2>1 &nbsp; The General Framework</h2>
+
+    <ul>
+      <li>First, you should refresh yourself on the basics of VAE. My <a href="../vae/index.html">note</a> is a good starting place.</li>
+
+      <li>The formulation of the hierarchical VAE that the above two papers use come from a paper by Sønderby et al. <a href="https://arxiv.org/pdf/1602.02282.pdf">[2016]</a></li>
+
+      <li>The latent variable $\ve{z}$ is splitted into $N+1$ "layers."
+      \begin{align*}
+      \ve{z} = (\ve{z}_0, \ve{z}_1, \dotsc, \ve{z}_{N}).
+      \end{align*}
+      </li>
+
+      <li>The prior distribution of the latent codes is now not a simple isotropic Gaussian. It is now modeled by neural network with parameter $\ves{\theta}$. The prior distribution is given by
+      \begin{align*}
+      p_{\ves{\theta}}(\ve{z}) = p_{\ves{\theta}}(\ve{z}_0) \prod_{i=1}^N p(\ve{z}_i | \ve{z}_{&lt;i})
+      \end{align*}
+      where
+      \begin{align*}
+        p_{\ves{\theta}}(\ve{z}_0) 
+        &= \mcal{N}(\ve{z}_0; \ves{\mu}_{\ves{\theta}[0]}, \diag(\ves{\sigma}^2_{\ves{\theta}[0]}) \big) \\  
+        p(\ve{z}_i | \ve{z}_{&lt;i}) 
+        &= \mcal{N}\big(\ve{z}_i; \ves{\mu}_{\ves{\theta}[i]}(\ve{z}_{&lt;i}), \diag(\ves{\sigma}^2_{\ves{\theta}[i]}(\ve{z}_{&lt;i}) ) \big).
+      \end{align*}
+      </li>
+
+      <li>When applied to image generation, each layer of the latent is an image tensor at various resolutions. Typically, $\ve{z}_0$ has the lower resolution, and $\ve{z}_N$ has the highest.</li>
+
+      <li>The encoder is denoted by $q_{\ves{\phi}}$. Given an image $\ve{x}$, it also emits the layers of the latent code in the same order.
+      \begin{align*}      
+        q_{\ves{\phi}}(\ve{z}|\ve{x}) = q_{\ves{\phi}}(\ve{z}_0|\ve{x}) \prod_{i=1}^N q_{\ves{\phi}}(\ve{z}_i|\ve{z}_{&lt;i}, \ve{x}).
+      \end{align*}
+      Again, the conditional distribution has the same form
+      \begin{align*}
+        q_{\ves{\phi}}(\ve{z}_0|\ve{x})  
+        &= \mcal{N}\big(\ve{z}_0; \ves{\mu}_{\ves{\phi}[0]}, \diag(\ves{\sigma}^2_{\ves{\phi}[0]})\big) \\
+        q_{\ves{\phi}}(\ve{z}_i|\ve{z}_{&lt;i},\ve{x}) 
+        &= \mcal{N}\big(\ve{z}_i; \ves{\mu}_{\ves{\phi}[i]}(\ve{z}_{&lt;i},\ve{x}), \diag(\ves{\sigma}^2_{\ves{\phi}[i]}(\ve{z}_{&lt;i},\ve{x}))\big).
+      \end{align*}
+      </li>
+
+      <li>When optimizing VAE, we minimize the following loss:
+      \begin{align*}
+        E_{\ve{x} \sim p_{\data}}[\mrm{ELBO}(\ve{x})]
+        = E_{\ve{x} \sim p_{\data}}\big[ -E_{\ve{z} \sim q_{\ves{\phi}}(\ve{z}|\ve{x})}[\log p_{\ves{\psi}}(\ve{x}|\ve{z})] + \mrm{KL}(q_{\ves{\phi}}(\ve{z}|\ve{x})\| p_{\ves{\theta}}(\ve{z}))  \big]
+      \end{align*}
+      where $p_{\ves{\psi}}$ is the decoder.
+      </li>
+
+      <li>The $\log p_{\psi}(\ve{x}|\ve{z})$, the reconstruction term, is the same as normal VAE, so we will not dwell on this much.</li>
+
+      <li>What is different is now the KL-divergence term $\mrm{KL}(q_{\ves{\phi}}(\ve{z}|\ve{x})\| p_{\ves{\theta}}(\ve{z}))$ where both $q_{\ves{\phi}}(\ve{z}|\ve{x})$ and $p_{\ves{\theta}}(\ve{z})$ have become much more complicated. We have that
+      \begin{align*}
+        &\mrm{KL}(q_{\ves{\phi}}(\ve{z}|\ve{x})\| p_{\ves{\theta}}(\ve{z})) \\
+        &= E_{\ve{z} \sim q_{\ves{\phi}}(\ve{z}|\ve{x})} \bigg[ \log \frac{q_{\ves{\phi}}(\ve{z}|\ve{x})}{p_{\ves{\theta}}(\ve{z})} \bigg] \\
+        &= E_{\ve{z} \sim q_{\ves{\phi}}(\ve{z}|\ve{x})} \bigg[ \log 
+          \frac{
+            q_{\ves{\phi}}(\ve{z}_0|\ve{x}) \prod_{i=1}^N q_{\ves{\phi}}(\ve{z}_i|\ve{z}_{&lt;i}, \ve{x})
+          }
+          {
+            p_{\ves{\theta}}(\ve{z}_0) \prod_{i=1}^N p(\ve{z}_i | \ve{z}_{&lt;i})
+          } 
+          \bigg] \\        
+        &= E_{\ve{z} \sim q_{\ves{\phi}}(\ve{z}|\ve{x})} \bigg[ 
+          \log \frac{q_{\ves{\phi}}(\ve{z}_0|\ve{x})}{p_{\ves{\theta}}(\ve{x}_0)}
+          + 
+          \sum_{i=1}^N
+          \log 
+          \frac{
+            q_{\ves{\phi}}(\ve{z}_i|\ve{z}_{&lt;i}, \ve{x})
+          }
+          {
+            p(\ve{z}_i | \ve{z}_{&lt;i})
+          } 
+          \bigg] \\
+          &= E_{\ve{z} \sim q_{\ves{\phi}}(\ve{z}|\ve{x})} \bigg[ 
+          \log \frac{q_{\ves{\phi}}(\ve{z}_0|\ve{x})}{p_{\ves{\theta}}(\ve{x}_0)}
+          \bigg]
+          +
+          \sum_{i=1}^N
+          E_{\ve{z} \sim q_{\ves{\phi}}(\ve{z}|\ve{x})} \bigg[ 
+          \log 
+          \frac{
+            q_{\ves{\phi}}(\ve{z}_i|\ve{z}_{&lt;i}, \ve{x})
+          }
+          {
+            p(\ve{z}_i | \ve{z}_{&lt;i})
+          } 
+          \bigg] \\
+          &= E_{\ve{z} \sim q_{\ves{\phi}}(\ve{z}|\ve{x})} \bigg[ 
+          \log \frac{q_{\ves{\phi}}(\ve{z}_0|\ve{x})}{p_{\ves{\theta}}(\ve{x}_0)}
+          + 
+          \sum_{i=1}^N
+          \log 
+          \frac{
+            q_{\ves{\phi}}(\ve{z}_i|\ve{z}_{&lt;i}, \ve{x})
+          }
+          {
+            p(\ve{z}_i | \ve{z}_{&lt;i})
+          } 
+          \bigg] \\
+        &= E_{\ve{z}_0 \sim q_{\ves{\phi}}(\ve{z}_0|\ve{x})} \bigg[ 
+          \log \frac{q_{\ves{\phi}}(\ve{z}_0|\ve{x})}{p_{\ves{\theta}}(\ve{x}_0)}
+          \bigg]
+          +
+          \sum_{i=1}^N
+          E_{\ve{z}_{&lt;i} \sim q_{\ves{\phi}}(\ve{z}_{&lt;i}|\ve{x})} \Bigg[ 
+          E_{\ve{z}_i \sim q_{\ves{\phi}}(\ve{z}_i|\ve{z}_{&lt;i},\ve{x})} \bigg[
+          \log 
+          \frac{
+            q_{\ves{\phi}}(\ve{z}_i|\ve{z}_{&lt;i}, \ve{x})
+          }
+          {
+            p(\ve{z}_i | \ve{z}_{&lt;i})
+          }
+          \bigg]
+          \Bigg] \\
+        &= \mrm{KL}(q_{\ves{\phi}}(\ve{z}_0|\ve{x}) \| p_{\ves{\theta}}(\ve{x}_0) )
+          + \sum_{i=1}^N
+          E_{\ve{z}_{&lt;i} \sim q_{\ves{\phi}}(\ve{z}_{&lt;i}|\ve{x})} \big[         
+            \mrm{KL}(q_{\ves{\phi}}(\ve{z}_i|\ve{z}_{&lt;i},\ve{x}) \| p_{\ves{\theta}}(\ve{z}_i|\ve{z}_{&lt;i}) )
+          \big].
+      \end{align*}
+      </li>
+
+      <li>Each of the KL term in the above can be evaluated using the formula for the KL-divergence of two multivariate Gaussians. 
+      \begin{align*}
+        \mrm{KL}(\mcal{N}(\ves{\mu}_1,\Sigma_1)\| \mcal{N}(\ves{\mu}_2,\Sigma_2))
+        &= \frac{1}{2} \bigg(  \log \frac{\det \Sigma_2}{\det \Sigma_1} + (\ves{\mu}_2 - \ves{\mu}_1)^T \Sigma_2^{-1} (\ves{\mu}_2 - \ves{\mu}_1) + \tr(\Sigma_2^{-1} \Sigma_1) - n \bigg)
+      \end{align*}
+      where $n$ is the number of dimensions of the domain of the distribution.
+      This is because both $q_{\ves{\phi}}(\ve{z}_i|\ve{z}_{&lt;i},\ve{x})$ and $p_{\ves{\theta}}(\ve{z}_i|\ve{z}_{&lt;i})$ are Gaussian distributions.      
+      </li>
+
+      <li>Morever, because the distributions produced by the networks are diagonal, the KL-divergence formula can be simplified even further. If $\Sigma_1 = \diag(\ves{\sigma}^2_1)$ and $\Sigma_2 = \diag(\ves{\sigma}^2_2)$, then the formula becomes
+      \begin{align*}
+        &\mrm{KL}(\mcal{N}(\ves{\mu}_1, \diag(\ves{\sigma}^2_1)\| \mcal{N}(\ves{\mu}_2, \diag(\ves{\sigma}^2_2)) \\
+        &= \frac{1}{2}\bigg( 2 \sum_{i=1}^n \sigma_{2,i} - 2 \sum_{i=1}^n \sigma_{1,i} + \sum_{i=1}^n \frac{(\mu_{2,i} - \mu_{1,i})^2}{\sigma_{2,i}^2} + \sum_{i=1}^n \frac{\sigma_{1,i}^2}{\sigma_{2,i}^2} - n \bigg) \\
+        &= \sum_{i=1}^n \sigma_{2,i} - \sum_{i=1}^n \sigma_{1,i} + \frac{1}{2} \sum_{i=1}^n \frac{(\mu_{2,i} - \mu_{1,i})^2 + \sigma_{1,i}^2}{\sigma_{2,i}^2}  - \frac{n}{2}.
+      \end{align*}      
+      </li>
+      
+      <li>Here's an implementation of the above loss in the <a href="https://github.com/openai/vdvae/blob/ea35b490313bc33e7f8ac63dd8132f3cc1a729b4/vae_helpers.py#L8">official implementation of the Very Deep VAE paper</a>.
+<pre><code class="python">
+def gaussian_analytical_kl(mu1, mu2, logsigma1, logsigma2):
+  return -0.5 + logsigma2 - logsigma1 + 0.5 * (logsigma1.exp() ** 2 + (mu1 - mu2) ** 2) / (logsigma2.exp() ** 2)
+
+</code></pre>
+      I wonder why the implementation uses <tt>-0.5</tt> instead of $-n/2$. Although this does not affect the optimization, it may affect the negative log-likelihood computation.
+      </li>
+    </ul>
+
+    <hr>
+    <h2>2 &nbsp; Very Deep VAE</h2>
+
+    <h3>2.1 &nbsp; A Look at the Code</h3>
+
+    <ul>
+      <li>I have to admit that the <a href="https://github.com/openai/vdvae">official implementation</a> is quite hard to read because it make uses of so many data structures instead of being explicit. I think it is a nightmare to debug.</li>
+
+      <li>Let's look at the <a href="https://github.com/openai/vdvae/blob/ea35b490313bc33e7f8ac63dd8132f3cc1a729b4/hps.py#L15">hyperparameters for the network for CIFAR-10</a>.
+<pre><code class="python">
+  cifar10 = Hyperparams()
+  cifar10.width = 384
+  cifar10.lr = 0.0002         # learning rate (training parameter)
+  cifar10.zdim = 16
+  cifar10.wd = 0.01           # weight decay (training parameter)
+  cifar10.dec_blocks = "1x1,4m1,4x2,8m4,8x5,16m8,16x10,32m16,32x21"
+  cifar10.enc_blocks = "32x11,32d2,16x6,16d2,8x6,8d2,4x3,4d4,1x3"
+  cifar10.warmup_iters = 100  # (training parameter)
+  cifar10.dataset = 'cifar10' # (training parameter)
+  cifar10.n_batch = 16        # (training parameter)
+  cifar10.ema_rate = 0.9999   # (training parameter)
+  HPARAMS_REGISTRY['cifar10'] = cifar10
+
+</code></pre>      
+      </li>
+      <li>
+      Filtering out parameters that are irrelevant to the network architecture, we have only the following parameters.
+<pre><code class="python">
+  cifar10.width = 384
+  cifar10.zdim = 16
+  cifar10.dec_blocks = "1x1,4m1,4x2,8m4,8x5,16m8,16x10,32m16,32x21"
+  cifar10.enc_blocks = "32x11,32d2,16x6,16d2,8x6,8d2,4x3,4d4,1x3"
+
+</code></pre>
+      </li>
+
+      <li>The strings that specify the decoder and encoder blocks are parsed by the <code><a href="https://github.com/openai/vdvae/blob/ea35b490313bc33e7f8ac63dd8132f3cc1a729b4/vae.py#L31">parse_layer_string</a></code> function.
+      <ul>
+        <li>The strings are comma separated list of words. Each word corresponds to a block or a group of blocks.</li>
+        <li>A word is of one of the following forms.
+        <ul>
+          <li><code>AxB</code>
+            <ul>
+              <li>This type of word appear in both the encoder and decoder specifications.</li>              
+              <li>This string corresponds to a group of blocks.</li>
+              <li>The number before <code>x</code> denotes the image resolution all blocks in the group would operate on.</li>
+              <li>The number after <code>x</code> denotes the number of blocks in the group.</li>
+              <li>I think the block does not change the resolution of the image tensor it operates on.</li>
+            </ul>
+          </li>
+          
+          <li><code>AmB</code>
+            <ul>
+              <li>This type of word only appears in the decoder specification.</li>
+              <li>The word corresponds to a single block in the decoder.</li>
+              <li>The number before <code>m</code> is the resolution at which the block operates.</li>
+              <li>The number after <code>m</code> is the resolution from which there would be "mixin" from another resolution. Typically, this is the resolution that comes directly before the operating resolution.</li>
+              <li>I think this type of block provides transition between the resolutions.</li>              
+            </ul>
+          </li>
+          
+          <li><code>AdB</code>
+            <ul>
+              <li>This type of the word only appears in the encoder specification.</li>
+              <li>The word corresponds to a single block in the encoder.</li>
+              <li>The number before <code>d</code> is the resolution at which the block operates.</li>
+              <li>The number after <code>d</code> is the downsampling rate.</li>
+              <li>Again, this type of block provides a transition between image resolutions.</li> 
+            </ul>
+          </li>
+        </ul>
+        </li>
+        <li>Let's look at the string <code>"1x1,4m1,4x2,8m4,8x5,16m8,16x10,32m16,32x21"</code> that specifies the blocks of the decoder. It specifies:
+          <ul>
+            <li><code>1x1</code>: 1 block at resolution $1 \times 1$.</li>
+            <li><code>4m1</code>: A transition block from resolution $1 \times 1$ to $4 \times 4$.</li>
+            <li><code>4x2</code>: 2 blocks at resolution $4 \times 4$.</li>
+            <li><code>8m4</code>: A transition block from resolution $4 \times 4$ to $8 \times 8$.</li>
+            <li><code>8x5</code>: 5 blocks at resolution $8 \times 8$.</li>
+            <li><code>16m8</code>: A transition block from resolution $8 \times 8$ to $16 \times 16$.</li>
+            <li><code>16x10</code>: 10 blocks at resolution $16 \times 16$.</li>
+            <li><code>32m16</code>: A transition block from resolution $16 \times 16$ to $32 \times 32$.</li>
+            <li><code>32x21</code>: 21 blocks at resolution $32 \times 32$.</li>
+            <li>There are $1 + 1 + 2 + 1 + 5 + 1 + 10 + 1 + 21 = 43$ blocks.</li>
+          </ul>
+        </li>
+        <li>Let's look at the string <code>"32x11,32d2,16x6,16d2,8x6,8d2,4x3,4d4,1x3"</code> that specifies the blocks of the encoder. It specifies:
+          <ul>
+            <li><code>32x11</code>: 11 blocks at resolution $32 \times 32$.</li>
+            <li><code>32d2</code>: A transition block from resolution $32 \times 32$ to $16 \times 16$.</li>
+            <li><code>16x6</code>: 6 blocks at resolution $16 \times 16$.</li>
+            <li><code>16d2</code>: A transition block from resolution $16 \times 16$ to $8 \times 8$.</li>
+            <li><code>8x6</code>: 6 blocks at resolution $8 \times 8$.</li>
+            <li><code>8d2</code>: A transition block from resolution $8 \times 8$ to $4 \times 4$.</li>
+            <li><code>4x3</code>: 3 blocks at resolution $4 \times 4$.</li>
+            <li><code>4d4</code>: A transition block from resolution $4 \times 4$ to $1 \times 1$.</li>
+            <li><code>1x3</code>: 3 blocks at resolution $1 \times 1$.</li>
+            <li>There are $11 + 1 + 6 + 1 + 6 + 1 + 3 + 1 + 3 = 33$ blocks.</li>
+          </ul>
+        </li>
+        <li>So, the encoder and the decoder have unequal numbers of layers.</li>
+      </ul>
+      </li>
+
+      <li>A block in both the encoder and decoder is modeled by the <code><a href="https://github.com/openai/vdvae/blob/ea35b490313bc33e7f8ac63dd8132f3cc1a729b4/vae.py#LL10C9-L10C9">Block</a></code> class.
+      <ul>
+        <li>The parameters of the constructors are:
+        <ul>
+          <li><code>in_width</code>: the number of channels of the input tensor.</li>
+          <li><code>middle_width</code>: the number of channels of the intermediate tensors.</li>
+          <li><code>out_width</code>: the number of channels of the output tensor.</li>
+          <li><code>down_rate</code>: the downsampling rate of the block. The default value is <code>None</code>.</li>
+          <li><code>residual</code>: whether the block should be a residule block. The default value is <code>False</code></li>
+          <li><code>use_3x3</code>: whether the block should use $3\times3$ convolution to process the intermediate tensors.</li>
+          <li><code>zero_last</code>: whether the last convolution layer in the block should be initilized to zero.</li>
+        </ul>
+        </li>
+
+        <li>A block contains 4 convolution layers.
+        <ol>
+          <li>$1 \times 1$ convolution from <code>in_width</code> channels to <code>middle_width</code> channels.</li>
+          <li>$1 \times 1$ or $3 \times 3$ convolution from <code>middle_width</code> channels to <code>middle_width</code> channels.
+          <ul>
+            <li>Kernel size is indicated by <code>use_3x3</code></li>
+          </ul>
+          </li>
+          <li>$1 \times 1$ or $3 \times 3$ convolution from <code>middle_width</code> channels to <code>middle_width</code> channels.
+          <ul>
+            <li>Kernel size is indicated by <code>use_3x3</code></li>
+          </ul>
+          </li>
+          <li>$1 \times 1$ convolution from <code>middle_width</code> channels to <code>out_width</code> channels.</li>
+        </ol>
+        </li>
+
+        <li>The output of the convolutional layer is added to the input if the <code>residual</code> parameter is true.</li>
+
+        <li>If <code>down_rate</code> is not <code>None</code>, the block perform and average pooling operation with the given <code>down_rate</code> on the output of the last step before returning it as the output.</li>
+
+        <li>Here's the code.
+<pre><code class="python">
+class Block(nn.Module):
+  def __init__(self, 
+                in_width, middle_width, out_width, 
+                down_rate=None, residual=False, use_3x3=True, zero_last=False):
+      super().__init__()
+      self.down_rate = down_rate
+      self.residual = residual
+      self.c1 = get_1x1(in_width, middle_width)
+      self.c2 = get_3x3(middle_width, middle_width) if use_3x3 else get_1x1(middle_width, middle_width)
+      self.c3 = get_3x3(middle_width, middle_width) if use_3x3 else get_1x1(middle_width, middle_width)
+      self.c4 = get_1x1(middle_width, out_width, zero_weights=zero_last)
+
+  def forward(self, x):
+      xhat = self.c1(F.gelu(x))
+      xhat = self.c2(F.gelu(xhat))
+      xhat = self.c3(F.gelu(xhat))
+      xhat = self.c4(F.gelu(xhat))
+      out = x + xhat if self.residual else xhat
+      if self.down_rate is not None:
+          out = F.avg_pool2d(out, kernel_size=self.down_rate, stride=self.down_rate)
+      return out
+
+</code></pre>
+        </li>
+
+        <li>Interestingly, there are no normalization layers in this block.</li>
+      </ul>      
+      </li>
+
+      <li>The encoder is modeled by the <a href="https://github.com/openai/vdvae/blob/ea35b490313bc33e7f8ac63dd8132f3cc1a729b4/vae.py#LL67C7-L67C7"><code>Encoder</code> class.</a> 
+      <ul>
+        <li>The code is rather compact, so let's reproduce it here.
+<pre><code class="python">
+class Encoder(HModule):
+  def build(self):
+      H = self.H
+      self.in_conv = get_3x3(H.image_channels, H.width)
+      self.widths = get_width_settings(H.width, H.custom_width_str)
+      enc_blocks = []
+      blockstr = parse_layer_string(H.enc_blocks)
+      for res, down_rate in blockstr:
+          use_3x3 = res > 2  # Don't use 3x3s for 1x1, 2x2 patches
+          enc_blocks.append(Block(
+              self.widths[res], 
+              int(self.widths[res] * H.bottleneck_multiple), 
+              self.widths[res], 
+              down_rate=down_rate, 
+              residual=True, 
+              use_3x3=use_3x3))
+      n_blocks = len(blockstr)
+      for b in enc_blocks:
+          b.c4.weight.data *= np.sqrt(1 / n_blocks)
+      self.enc_blocks = nn.ModuleList(enc_blocks)
+
+  def forward(self, x):
+      x = x.permute(0, 3, 1, 2).contiguous()
+      x = self.in_conv(x)
+      activations = {}
+      activations[x.shape[2]] = x
+      for block in self.enc_blocks:
+          x = block(x)
+          res = x.shape[2]
+          x = x if x.shape[1] == self.widths[res] else pad_channels(x, self.widths[res])
+          activations[res] = x
+      return activations
+
+</code></pre>    
+        </li>
+
+        <li>From the code, we see that all layers of the encoder are residual layers.</li>
+
+        <li>The number of channels that the blocks deal with are controlled by the <code>self.width</code> dictionary.
+        <ul>
+          <li>It is constructed by the <code><a href="https://github.com/openai/vdvae/blob/ea35b490313bc33e7f8ac63dd8132f3cc1a729b4/vae.py#L57">get_width_settings</a></code> function.</li>
+
+          <li>By default, the dictionary would map all resolution to the <code>width</code> hyperparameter of the network.</li>
+
+          <li>The user can specify exceptions to the above rule by specifying <code>custom_width_str</code> hyperparameter.</li>
+
+          <li>For the CIFAR-10 dataset, the <code>custom_width_str</code> hyperparameter does not exist, so all blocks deal with 384-channel tensors.</li>
+
+          <li><code>custom_width_str</code> are specified for some datasets. For example, the value for FFHQ-1024 is <code>"512:32,256:64,128:512,64:512,32:512,16:512,8:512,4:512,1:512"</code>.</li>
+
+          <li>The <code>middle_width</code> value for each block also depends on the <code>bottleneck_multiple</code> hyperparameter. This is 0.25 by default.</li>
+        </ul>
+        </li>
+
+        <li>Looking at the <code>forward</code> method...
+          <ul>
+            <li>We see that the encoder first adjust the number of channels of the input tensor <code>x</code> to that of the <code>width</code> hyperparameter.</li>
+
+            <li>Then, the blocks are applied to the output of the last step in order. The output of each block is stored in the <code>activations</code> dictionary using the resolution of the output as the key.</li>
+
+            <li>Because the output of a later block will overwrite the output of an earlier block with the same resolution, only the outputs of the last layer at each resolutions are returned.</li>
+
+            <li>So, for the network of the CIFAR-10 datset, the output of the encoder would be 5 tensors wih the following sizes:
+            <ul>
+              <li>$384 \times 1 \times 1$</li>
+              <li>$384 \times 4 \times 4$</li>
+              <li>$384 \times 8 \times 8$</li>
+              <li>$384 \times 16 \times 16$</li>
+              <li>$384 \times 32 \times 32$</li>
+            </ul>
+            </li>
+
+            <li>When going from one resolution to the next, if the number of channels of the processed tensor does not match the one required by the current block, the tensor is padded in the channels dimension with zero to fulfill the requirement.</li>
+
+            <li>Note that the output tensors are not the latent code. Obtaining them does not involve any stochasticity. They are tensors that will be used to generate the latent code later.</li>
+          </ul>
+          </li>
+      </ul>
+      </li>
+
+      <li>The decoder is modeled by the <a href="https://github.com/openai/vdvae/blob/ea35b490313bc33e7f8ac63dd8132f3cc1a729b4/vae.py#L173">Decoder</a> class.
+      <ul>
+        <li>The class's constructor is as follows.
+<pre><code class="python">
+  def build(self):
+    H = self.H
+    resos = set()
+    dec_blocks = []
+    self.widths = get_width_settings(H.width, H.custom_width_str)
+    blocks = parse_layer_string(H.dec_blocks)
+    for idx, (res, mixin) in enumerate(blocks):
+        dec_blocks.append(DecBlock(H, res, mixin, n_blocks=len(blocks)))
+        resos.add(res)
+    self.resolutions = sorted(resos)
+    self.dec_blocks = nn.ModuleList(dec_blocks)
+    self.bias_xs = nn.ParameterList([
+      nn.Parameter(torch.zeros(1, self.widths[res], res, res)) 
+      for res in self.resolutions if res <= H.no_bias_above
+    ])
+    self.out_net = DmolNet(H)
+    self.gain = nn.Parameter(torch.ones(1, H.width, 1, 1))
+    self.bias = nn.Parameter(torch.zeros(1, H.width, 1, 1))
+    self.final_fn = lambda x: x * self.gain + self.bias
+
+</code></pre>
+        </li>
+        
+        <li>We see that, in addition to the decoder blocks, the decoder has a number of extra parameters.
+        <ul>
+          <li><code>bias_xs</code>: A collection of "bias" tensors. One per image resolution. The bias tensor's size is equal to the size of the tensor being manipulated at that resolution.
+          <ul>
+            <li>Entries for <code>bias_xs</code> are available for only up to the resolution indicated by the <code>no_bias_above</code> hyperparameter. By default, <code>no_bias_above</code> is 64.</li>
+
+            <li>If there is no entry for <code>bias_xs</code> for a certain resolution, the network would use a zero tensor by default.</li>
+          </ul>
+          </li>
+
+          <li><code>out_net</code>: A subnetwork that is used to convert feature tensors to image.
+          <ul>
+            <li>I believe this is based on modeling the probabiliy density over pixel values by a mixture of discretized logistic distributions. This technique was proposed in the PixelCNN++ paper <a href="https://arxiv.org/pdf/1701.05517.pdf">[Salimans et al. 2017]</a></li>
+          </ul>
+          </li>
+
+          <li><code>gain</code> and <code>bias</code>: These are parameters for the last layer, represented by the <code>self.final_fn</code> function.</li>
+        </ul>
+        </li>
+
+        <li>Now, the class has two "forward" methods: <code>forward</code> and <code>forward_uncond</code>.
+        <ul>
+          <li><code>forward</code> is used to decode an image given the tensors that the encoder outputs.</li>
+
+          <li><code>forward_uncond</code> is used to unconditionally sample and image from noise.</li>
+
+          <li>We note that these two methods do not receive any latent code because the latent code would be generated inside the decoder.</li>
+        </ul>
+        </li>
+
+        <li>Let's take a look at the <code>forward_uncond</code> method.
+        <ul>
+          <li>Here's the code.
+<pre><code class="python">
+def forward_uncond(self, n, t=None, y=None):
+  xs = {}
+  for bias in self.bias_xs:
+      xs[bias.shape[2]] = bias.repeat(n, 1, 1, 1)
+  for idx, block in enumerate(self.dec_blocks):
+      try:
+          temp = t[idx]
+      except TypeError:
+          temp = t
+      xs = block.forward_uncond(xs, temp)
+  xs[self.H.image_size] = self.final_fn(xs[self.H.image_size])
+  return xs[self.H.image_size]
+
+</code></pre>
+          </li>
+
+          <li>The parameters of the method are:
+          <ul>
+            <li><code>n</code>: the number of images to sample.</li>
+            <li><code>t</code>: the sampling "temperature".
+            <ul>
+              <li>During the image generation process, we will sample latent codes $\ve{z} \sim \mcal{N}(\ves{\mu}, \diag(\ves{\sigma}^2))$.</li>
+              
+              <li>If no temperature is specified, then
+              \begin{align*}
+                \ve{z} := \ves{\mu} + \diag(\ves{\sigma}) \ves{\xi}
+              \end{align*}
+              where $\ves{\xi} \sim \mcal{N}(\ve{0},I)$.
+              </li>
+
+              <li>However, if a temperator $T$ is specified, then the sampling process is modified to:
+              \begin{align*}
+                \ve{z} := \ves{\mu} + T \diag(\ves{\sigma}) \ves{\xi}.
+              \end{align*}
+              </li>
+
+              <li>So, if we want a deterministic sampling where the latent code is equal to the mean, then we should set the temperator to $0$.</li>
+            </ul>
+            </li>
+            <li><code>y</code>: I don't know what it is. This parameter does not seem to be used in any way.</li>
+          </ul>
+          </li>
+
+          <li>The <code>forward_uncond</code> method works by mutating the dictionary <code>xs</code>, which maps image resolution to a feature tensor at that resolution.</li>
+
+          <li>At first, <code>xs</code> is filled with the bias tensors stored in <code>self.bias_xs</code>.</li>
+
+          <li>Then, the blocks of the decoder are invoked to mutate the dictionary <code>xs</code> one by one.</li>
+
+          <li>At the end of the above process, there should be a tensor at the image resolution in <code>xs</code>. This tensor is passed to the last layer, and the result is returned.</li>
+
+          <li>The output of the method is a tensor of size <code>width</code> $\times S \times S$ where $S$ is the image size.
+          <ul>
+            <li>For the CIFAR-10 network, the size is $384 \times 32 \times 32$.</li>
+          </ul>
+          </li>
+
+          <li>Notice that that this output is just another feature tensor. This feature tensor will be converted to an image in the <a href="https://github.com/openai/vdvae/blob/ea35b490313bc33e7f8ac63dd8132f3cc1a729b4/vae.py#LL224C8-L224C8"><code>VAE</code></a> class through the use of the <code>out_net</code> subnetwork of the decoder.</li>
+        </ul>
+        </li>
+
+        <li>Now, let's look at the <code>forward</code> method.
+        <ul>
+          <li>Here's the code.
+<pre><code class="python">
+def forward(self, activations, get_latents=False):
+  stats = []
+  xs = {a.shape[2]: a for a in self.bias_xs}
+  for block in self.dec_blocks:
+      xs, block_stats = block(xs, activations, get_latents=get_latents)
+      stats.append(block_stats)
+  xs[self.H.image_size] = self.final_fn(xs[self.H.image_size])
+  return xs[self.H.image_size], stats
+
+</code></pre>          
+          </li>
+
+          <li>We see that the method has one mandatory argument, <code>activations</code>. This is the output of the encoder.</li>
+
+          <li>Again, we see that the method works by preparing a dictinoary <code>xs</code> of feature tensors and mutating is with the decoder blocks.</li>
+
+          <li>This time, however, the method also pass <code>activatiions</code> when it invoke the layers.</li>
+        </ul>
+        </li>
+      </ul>
+      </li>
+
+      <li>The main workhorse of the decoder is the decoder block, represented by the <a href="https://github.com/openai/vdvae/blob/ea35b490313bc33e7f8ac63dd8132f3cc1a729b4/vae.py#L95"><code>DecBlock</code></a> class.
+      <ul>
+        <li>A decoder block is characterized by two important parameters.
+        <ul>
+          <li><b>The block's resolution.</b>
+          <ul>
+            <li>The parameter indicates the resolution of the tensor the block is supposed to manipulate.</li>
+
+            <li>This is stored in the <code>self.base</code> field.</li>
+          </ul>
+          </li>
+          <li><b>The mixin resolution.</b>
+          <ul>
+            <li>This parameter is only present in decoder blocks that transition from one image resolution to the next.</li>
+
+            <li>Its value is the resolution of the tensor mutated by the previous block.</li>
+
+            <li>This is called the "mixin resolution" because we would take the tensor at the resolution, upsample it, and just add it to the bias tensor at the current resolution.</li>
+
+            <li>This parameter is stored in the <code>self.mixin</code> field.</li>
+          </ul>
+          </b>
+          </li>
+        </ul>
+        </li>
+        <li>The <code>DecBlock</code> class has two main methods.
+        <ul>
+          <li><code>forward</code>: Used to decode an image.</li>
+          <li><code>forward_uncond</code>: Used to unconditionally sample an image.</li>
+        </ul>
+        </li>
+
+        <li>Let us look at the <a href="https://github.com/openai/vdvae/blob/ea35b490313bc33e7f8ac63dd8132f3cc1a729b4/vae.py#L158"><code>forward_uncond</code></a> method first because it is the easier one.
+        <ul>
+          <li>Here is the method's signature.
+<pre><code class="python">def forward_uncond(self, xs, t=None, lvs=None):</code></pre>            
+          </li>
+          
+          <li>The arguments of the method are:
+          <ul>
+            <li><code>xs</code>: A dictinary mapping image resolutions to feature tensors at that resolutions. This is given by the <code>forward_uncond</code> of the <code>Decoder</code> class.</li>
+
+            <li><code>t</code>: The sampling temperature.</li>
+
+            <li><code>lvs</code>: The user-provided latent code. If this is set, the decoder block will not sample a latent code by itself.</li>
+          </ul>
+          </li>
+
+          <li>The job of the method is to mutute the tensor in <code>xs</code> whose resolution matches <code>self.base</code>, evolving it so that it becomes closer to to being able to be turned to an image.
+          <ul>
+            <li>This tensor is represented by the variable <code>x</code>.
+<pre><code class="python">try:
+  x = xs[self.base]
+except KeyError:
+  ref = xs[list(xs.keys())[0]]
+  x = torch.zeros(
+    dtype=ref.dtype, 
+    size=(ref.shape[0], self.widths[self.base], self.base, self.base), 
+    device=ref.device)
+</code></pre>              
+            </li>            
+
+            <li>From the code, we see that, if the method cannot retrieve the tensor from <code>xs</code>, it defaults to the zero tensor of the appropriate size.</li>
+          </ul>
+          </li>
+
+          <li>The process of evolving <code>x</code> has 4 steps.
+          <ol>
+            <li>If the block is a resolution-transition block, take the tensor from <code>xs</code> whose resolution matches <code>self.mixin</code>, upscale it, and add it to <code>x</code>.
+<pre><code class="python">if self.mixin is not None:
+  x = x + F.interpolate(xs[self.mixin][:, :x.shape[1], ...], scale_factor=self.base // self.mixin)
+</code></pre>              
+            </li>
+            
+            <li>Sample a latent code <code>z</code> from <code>x</code> by calling the <code>sample_uncond</code> method.
+<pre><code class="python">z, x = self.sample_uncond(x, t, lvs=lvs)</code></pre>              
+            <ul>
+              <li>Note that the <code>sample_uncond</code> method also mutates <code>x</code>. So, the the method is not a straightforward sampling procedure.</li>
+
+              <li>This is bad coding practice as it violates the single responsibility principle.</li>
+            </ul>
+            </li>            
+
+            <li>Combine the latent code <code>z</code> with <code>x</code>.
+<pre><code class="python">x = x + self.z_fn(z)</code></pre>
+            <ul>
+              <li><code>self.z_fn</code> is a $1\times 1$ convolution layer defined in the constructor. We'll look at its definition later.</li>
+            </ul>
+            </li>
+
+            <li>Transform <code>x</code> yet again by passing it to a residual block.
+<pre><code class="python">x = self.resnet(x)</code></pre>
+            <ul>
+              <li><code>self.resnet</code> is a <code>Block</code> configured as a residual block. We will look at its definition in the constructor later.</li>
+            </ul>
+            </li>
+          </ol>
+          </li>
+
+          <li>Lastly, the transformed <code>x</code> is put back into the <code>xs</code> dictionary.
+<pre><code class="python">xs[self.base] = x</code></pre>
+          </li>
+        </ul>
+        </li>
+
+        <li>Next, let us look at the <a href="https://github.com/openai/vdvae/blob/ea35b490313bc33e7f8ac63dd8132f3cc1a729b4/vae.py#L123"><code>sample_uncond</code></a> method used by the <code>forward_uncond</code> method.
+        <ul>
+          <li>First, the tensor <code>x</code> is passed to a <code>Block</code> called <code>self.prior</code> to generate a feature tensor <code>feats</code>.
+<pre><code class="python">feats = self.prior(x)</code></pre>
+          </li>
+
+          <li>Then, <code>feats</code> is splitted along the channel dimension into three tensors.
+<pre><code class="python">pm = feats[:, :self.zdim, ...]
+pv = feats[:, self.zdim:self.zdim * 2, ...]
+xpp = feats[:, self.zdim * 2:, ...]</code></pre>
+          <ul>
+            <li><code>pm</code> and <code>pv</code> are the mean and standard deviation of the Gaussian distribution of the latent code.</li>
+            <li><code>xpp</code> is a tensor used to modify <code>x</code> in the next step.
+            <ul>
+              <li>I have no idea why this tensor is even necessary. This can easily be done by <code>self.resnet</code> later.</li>
+            </ul></li>
+            <li>The field <code>self.zdim</code> is the number of channels of a latent code.            
+            </li>
+          </ul>
+          </li>        
+
+          <li>We then add <code>xpp</code> to <code>x</code>.
+<pre><code class="python">x = x + xpp</code></pre>
+          </li>
+
+          <li>Lastly, we use <code>pm</code> and <code>pv</code> to sample a latent code <code>z</code>.
+<pre><code class="python">z = draw_gaussian_diag_samples(pm, pv)</code></pre>
+          <ul>
+            <li>Here's the definition of <code>draw_gaussian_diag_samples</code>.
+<pre><code class="python">def draw_gaussian_diag_samples(mu, logsigma):
+  eps = torch.empty_like(mu).normal_(0., 1.)
+  return torch.exp(logsigma) * eps + mu
+</code></pre>
+            </li>
+          </ul>
+          </li>
+
+          <li>The method outputs <code>z</code> and the modified <code>x</code> as its return values.</li>
+        </ul>
+        </li>
+
+        <li>Next, let us look at the <a href="https://github.com/openai/vdvae/blob/ea35b490313bc33e7f8ac63dd8132f3cc1a729b4/vae.py#L146"><code>forward</code></a> method.
+        <ul>
+          <li>This method is used to decode an image.</li>
+          
+          <li>Here's the method's signature.
+<pre><code class="python">def forward(self, xs, activations, get_latents=False):</code></pre>
+          </li>
+          
+          <li>The method's arguments are as follows.
+          <ul>
+            <li><code>xs</code> is the dictionary of tensors, which is the same one the <code>forward_uncond</code> method gets.</li>
+            <li><code>activations</code> is the dictionary of feature tensors produced by the encoder.</li>
+          </ul>
+          </li>
+
+          <li>The method's job is, again, to modify a tensor in <code>xs</code> at the right resolution.
+          <ul>
+            <li>This is represented by the variable <code>x</code>.</li>
+            
+            <li>A tensor in <code>activations</code> that has the same resolution as <code>x</code> is also fetched and and stored in the variable <code>acts</code>.</li>
+            
+            <li>The two variables are retrieved using the <code>get_inputs</code> method.
+<pre><code class="python">x, acts = self.get_inputs(xs, activations)</code></pre>            
+            </li>
+
+            <li>Here's the code of the <code>get_input</code> method.
+<pre><code class="python">def get_inputs(self, xs, activations):
+  acts = activations[self.base]
+  try:
+      x = xs[self.base]
+  except KeyError:
+      x = torch.zeros_like(acts)
+  if acts.shape[0] != x.shape[0]:
+      x = x.repeat(acts.shape[0], 1, 1, 1)
+  return x, acts
+</code></pre>    
+            <ul>
+              <li>If <code>x</code> with the appropriate size cannot be found in <code>xs</code>, the method defaults to a zero tensor.</li>              
+            </ul>          
+            </li>
+          </ul>
+          </li>
+
+          <li>The process of evolving <code>x</code> is very similar to that used in the <code>forward_uncond</code> method. The only difference is the process of sampling the latent code, which now uses the <code>sample</code> method instead of the <code>sample_uncond</code> method.
+<pre><code class="python">z, x, kl = self.sample(x, acts)</code></pre>            
+          </li>
+        </ul>
+        </li>
+
+        <li>Let's do the <a href="https://github.com/openai/vdvae/blob/ea35b490313bc33e7f8ac63dd8132f3cc1a729b4/vae.py#L114"><code>sample</code></a> method next.
+        <ul>
+          <li>The mehod is very similar to the <code>sample_uncond</code> method.</li>
+          <li>In fact, there are only 4 lines that are different.</li>
+          
+          <li>The first differing line is the first line.
+<pre><code class="python">qm, qv = self.enc(torch.cat([x, acts], dim=1)).chunk(2, dim=1)</code></pre>
+          <ul>
+            <li><code>qm</code> and <code>qv</code> are the mean and the standard deviation of the Gaussian distribution from which we are going to sample the latent code from.</li>
+
+            <li>Unlike <code>pm</code> and <code>pv</code>, the above two tensors are computed not only from <code>x</code> but also <code>acts</code>. As a result, the distribution of the latent code here depends on the input image (which produces <code>acts</code>).</li>
+
+            <li><code>self.enc</code> is a <code>Block</code> created separately from <code>self.prior</code> in the constructor.</li>
+          </ul>
+          </li>
+
+          <li>The second differing line is the line that samples the latent code. We now use <code>qm</code> and <code>qv</code>, rather than <code>pm</code> and <code>pv</code>.
+<pre><code class="python">z = draw_gaussian_diag_samples(qm, qv)</code></pre>
+          </li>
+
+          <li>The third differing line is the line that computes the KL-divergence between the distribution generated by the decoding branch and the unconditoinal sampling branch.
+<pre><code class="python">kl = gaussian_analytical_kl(qm, pm, qv, pv)</code></pre>
+          <ul>
+            <li>The KL-divergence is only used for training.</li>
+          </ul>
+          </li>
+
+          <li>The fourth differing line is the last line. We now return the KL-divergence along with <code>z</code> and the modified <code>x</code>.
+<pre><code class="python">return z, x, kl</code></pre>
+          </li>
+        </ul>
+        </li>
+
+        <li>Lastly, let us look at the constructor.
+<pre><code class="python">
+def __init__(self, H, res, mixin, n_blocks):
+  super().__init__()
+  self.base = res
+  self.mixin = mixin
+  self.H = H
+  self.widths = get_width_settings(H.width, H.custom_width_str)
+  width = self.widths[res]
+  use_3x3 = res > 2
+  cond_width = int(width * H.bottleneck_multiple)
+  self.zdim = H.zdim
+  self.enc = Block(width * 2, cond_width, H.zdim * 2, residual=False, use_3x3=use_3x3)
+  self.prior = Block(width, cond_width, H.zdim * 2 + width, residual=False, use_3x3=use_3x3, zero_last=True)
+  self.z_proj = get_1x1(H.zdim, width)
+  self.z_proj.weight.data *= np.sqrt(1 / n_blocks)
+  self.resnet = Block(width, cond_width, width, residual=True, use_3x3=use_3x3)
+  self.resnet.c4.weight.data *= np.sqrt(1 / n_blocks)
+  self.z_fn = lambda x: self.z_proj(x)
+
+</code></pre>
+        <ul>
+          <li>You should confirm the definition of <code>self.enc</code>, <code>self.prior</code>, <code>self.z_fn</code>, and <code>self.resnet</code>.</li>
+        </ul>
+        </li>
+
+        <li>An important hyparameter of the model is the <code>zdim</code> parameter. This is the number of channels of each layer of the latent code.
+          <ul>
+            <li>For the CIFAR-10 network, <code>zdim</code> = 16. So, each layer of the latent code is a tensor of one of the following shapes:
+            <ul>
+              <li>$16 \times 1 \times 1$,</li>
+              <li>$16 \times 4 \times 4$,</li>
+              <li>$16 \times 8 \times 8$,</li>
+              <li>$16 \times 16 \times 16$, or</li>
+              <li>$16 \times 32 \times 32$.</li>
+            </ul>
+            </li>
+           </ul>
+        </li>        
+      </ul>
+      </li>
+    </ul>
+
+    <h3>2.2 &nbsp; Exposition Using Mathematical Notations and Diagrams</h3>
+
+    <ul>
+      <li></li>
+    </ul>
+    
+    <hr>
+    <h2>3 &nbsp; NVAE</h2>
+
+    <hr>
+    <div class="page-header"></div>
+    <p>Last modified: 2023/06/19</p>    
+</div>
+
+<script type="text/javascript">
+$.bigfoot();
+</script>
+
+</body>
+</html>

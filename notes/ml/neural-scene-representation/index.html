@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>Neural Scene Representation for Computer Graphics Applications</title>
+
+    <!-- Bootstrap -->
+    <link href="../../../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../../../css/theme.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+      TeX: { equationNumbers: {autoNumber: "AMS"} } 
+    });
+    </script>
+    <script type="text/javascript"
+            src="../../../MathJax/MathJax.js?config=TeX-AMS_HTML-full">
+    </script>
+
+    <script type="text/javascript" src="../../../js/jquery-3.4.1.min.js"></script>    
+    <script type="text/javascript" src="../../../js/bigfoot.min.js"></script>    
+
+    <link rel="stylesheet" type="text/css" href="../../../css/bigfoot-default.css">    
+
+</head>
+<body>
+<div class="container">
+    <span style="visibility: hidden;">
+        \(
+        \def\sc#1{\dosc#1\csod}
+        \def\dosc#1#2\csod{{\rm #1{\small #2}}}
+
+        \newcommand{\dee}{\mathrm{d}}
+        \newcommand{\Dee}{\mathrm{D}}
+        \newcommand{\In}{\mathrm{in}}
+        \newcommand{\Out}{\mathrm{out}}
+        \newcommand{\pdf}{\mathrm{pdf}}
+        \newcommand{\Cov}{\mathrm{Cov}}
+        \newcommand{\Var}{\mathrm{Var}}
+
+        \newcommand{\ve}[1]{\mathbf{#1}}
+        \newcommand{\mrm}[1]{\mathrm{#1}}
+        \newcommand{\etal}{{et~al.}}
+        \newcommand{\sphere}{\mathbb{S}^2}
+        \newcommand{\modeint}{\mathcal{M}}
+        \newcommand{\azimint}{\mathcal{N}}
+        \newcommand{\ra}{\rightarrow}
+        \newcommand{\mcal}[1]{\mathcal{#1}}
+        \newcommand{\X}{\mathcal{X}}
+        \newcommand{\Y}{\mathcal{Y}}
+        \newcommand{\Z}{\mathcal{Z}}
+        \newcommand{\x}{\mathbf{x}}
+        \newcommand{\y}{\mathbf{y}}
+        \newcommand{\z}{\mathbf{z}}
+        \newcommand{\tr}{\mathrm{tr}}
+        \newcommand{\sgn}{\mathrm{sgn}}
+        \newcommand{\diag}{\mathrm{diag}}
+        \newcommand{\Real}{\mathbb{R}}
+        \newcommand{\sseq}{\subseteq}
+        \newcommand{\ov}[1]{\overline{#1}}
+        \newcommand{\iprod}{\mathbin{\lrcorner}}
+        \)
+    </span>
+
+    <br>
+    <h1>Neural Scene Representations for Computer Graphics Applications</h1>
+
+    <p>There is a bunch of recent works on representing scenes and 3D objects implicitly with neural networks. This note is written as I read some of these papers.</p>
+    <hr>
+
+
+    <h2>1 &nbsp; Neural Radiance Fields</h2>
+
+    <ul>
+        <li>This is an ECCV 2020 paper by Mildenhall et al. <a href="https://www.matthewtancik.com/nerf">[LINK]</a></li>
+        <li>This paper deals with the problem of <b>view synthesis.</b>
+        <ul>
+            <li>We are given multiple photographs of a scene, and we assume that the camera parameters for each photograph is also given.</li>
+
+            <li>The goal is to render the scene from a new view point, given a new camera parameter.</li>
+        </ul>
+        </li>
+
+        <li>The paper represent a scene with a continous 5D function.
+        <ul>
+            <li>The input is a 3D position $(x,y,z)$ and a direction $(\theta, \phi)$.</li>
+            <li>The function outputs two things:
+            <ul>
+                <li>The material density $\sigma$ at point $(x,y,z)$.</li>
+                <li>The RGB radiance from point $(x,y,z)$ in the direction $(\theta,\phi)$.</li>
+            </ul>
+            </li>
+        </ul>
+        This function is called the <b>neural radiance field</b> (NeRF).
+        </li>        
+
+        <li>The paper optimizes an MLP (without any convolutional layers) to represent the function.</li>
+
+        <li>NeRF can be rendered by any volume rendering algorithm.
+        <ul>
+            <li>The paper uses standard ray marching.</li>
+        </ul>
+        </li>
+
+        <li>NeRF has two obvious advantages:
+        <ul>
+            <li>Because it encodes volume density, it can automatically handle translucency.</li>
+
+            <li>Because radiance is also a function of direction, it can represent specular reflections.</li>
+        </ul>
+        </li>        
+
+        <li>Because the rendering process is differentiable, we have an end-to-end optimization process that fits a neural representation to photographs.
+        <ul>
+            <li>The loss is just a simple L2 difference.</li>
+        </ul>
+        </li>
+
+        <li>Two important tricks.
+        <ul>
+            <li>The 5D coordinate input is transformed into a sequence of sine and cosine values (similar to the <a href="https://arxiv.org/abs/1706.03762">positional encoding used in transformers</a>) before being fed to the network. This enables the network to represent high frequency details.</li>
+
+            <li>To reduce the number of sample points along a ray, the paper proposes a two-level hierachical sampling algorithm.</li>
+        </ul>
+        </li>
+    </ul>
+
+    <h3>1.1 &nbsp; Rendering Algorithm</h3>
+
+    <ul>
+        <li>We start with a review of volume rendering. More details can be found in <a href="../../gfx/volume-rendering/volume-rendering.pdf">another note of mine</a>. In particular, see Section 2.1 and 2.2.</li>
+
+        <li>In the setting of NeRF, we have a volume consisting of absorbing materials that is also emitting light. There is no scattering. NeRF encodes:
+        <ul>
+            <li>The absorption cross section $\sigma(\ve{x})$ where $\ve{x} \in \Real^3$.</li>
+
+            <li>The radiance per density $\ve{c}(\ve{x},\omega)$ where $\omega \in \mathbb{S}^2$. With this, the source term in the radiative transfer equation can be written as:
+            \begin{align*}
+                Q(\ve{x},\omega) = \sigma(\ve{x},\omega) \ve{c}(\ve{x},\omega).
+            \end{align*}
+            </li>
+        </ul>
+        </li>
+
+        <li>Let $L(\ve{x},\omega)$ denote the radiance going out of $\ve{x}$ in direction $\omega$. We have that the directional derivative of $L$ is given by:
+        \begin{align*}
+            \omega \cdot \nabla L(\ve{x}, \omega) 
+            = \frac{\dee L(\ve{x} + s\omega, \omega)}{\dee s}
+            = -\sigma(\ve{x},\omega)L(\ve{x},\omega) + \sigma(\ve{x},\omega) \ve{c}(\ve{x},\omega).
+        \end{align*}
+        </li>
+
+        <li>The solution to the above equation is given as follows.
+        <ul>
+            <li>Let $\omega_0$ be a direction.</li>
+
+            <li>Let $\ve{x}_0$ be a point in $\Real^3$ such that, at and beyond $\ve{x}_0$ in the direction $-\omega_0$, there is no light being emitted in direction $\omega_0$.
+            <ul>
+                <li>In other words, $\ve{x}_0$ may be a point on the boundary of the scene.</li>
+
+                <li>By this assumption, we have that $L(\ve{x}_0,\omega_0) = 0$.</li>
+            </ul>            
+            </li>
+
+            <li>Then, for any $s_0 > 0$, we have that:
+            \begin{align*}
+                L(\ve{x}_0 + s_0 \omega_0,\omega_0)
+                = \int_{0}^{s_0} T(\ve{x}_0 + s\omega_0 \rightarrow \ve{x}_0 + s_0 \omega_0) \sigma(\ve{x}_0 + s\omega_0, \omega_0)\ve{c}(\ve{x}_0 + s\omega_0, \omega_0)\, \dee s
+            \end{align*}
+            where
+            \begin{align*}
+                T(\ve{x}_0 + s\omega_0 \rightarrow \ve{x}_0 + s_0\omega_0) 
+                = \exp\bigg( - \int_s^{s_0} \sigma(\ve{x}_0 + u\omega_0)\, \dee u \bigg).
+            \end{align*}
+            is the <b>transmittance</b> between $\ve{x}_0 +s\omega_0$ and $\ve{x}_0 + s_0\omega_0$.
+            </li>
+        </ul>
+        </li>
+
+        <li>We now discuss how to approximate the above integral with ray marching.</li>
+
+        <li>
+            Suppose we have a camera ray $\ve{r}(s) = \ve{o} + s \omega$ that intersects the scene's bounding box in $s$-interval $[s_n, s_f]$.
+        </li>
+
+        <li>We would like to compute $L(\ve{o},-\omega) = L(\ve{o}+s_n \omega, -\omega)$.</li>
+
+        <li>A quantity that will be important is the transmisstancde $T(\ve{o} + s \omega \rightarrow \ve{o} + s_n \omega)$ where $s > s_n$. Let us abbrevitate this by just $T(s)$.</li>
+
+        <li>We partition $[s_n,s_f]$ into $N$ evenly-spaced bins, and then draw one sample uniformly at random from within each bin:
+        \begin{align*}
+            s_i \sim \mathrm{Uniform}\bigg( \bigg[ s_n + \frac{i-1}{N}(s_f - s_n), t_n + \frac{i}{N}(s_f - s_n) \bigg] \bigg).
+        \end{align*}
+        </li>
+
+        <li>We then evaluate the NeRF at $\ve{o} + s_i\omega$. Let 
+        \begin{align*}
+        \sigma_i &= \sigma(\ve{o} + s_i\omega), \\
+        \ve{c}_i &= \ve{c}(\ve{o} + s_i\omega, -\omega), \\
+        \delta_i &= s_i - s_{i-1}.
+        \end{align*}
+        where $s_0 = s_n$. Also, let $\sigma_0 = 0$.
+        </li>
+
+        <li>The mental picture is that we have now partition in interval $[s_n, s_f]$ into $N+1$ subinternals:
+        \begin{align*}
+            [s_0, s_1), [s_1, s_2), \dotsc, [s_{N-1}, s_N), [s_N, s_{N+1}]
+        \end{align*}
+        where $s_{N+1} = s_f$. For the purpose of approximating the integral, we assume that the $i$th interval has uniform absorption cross section $\sigma_{i-1}$.
+        </li>
+
+        <li>With the above mental picture, we have $T(s_i)$ is given by:
+        \begin{align*}
+            T(s_i) \approx T_i = \exp\bigg( -\sum_{j=1}^i \delta_i \sigma_{i-1} \bigg).
+        \end{align*}
+        Moreover, for any $s$ such that $s_{i} \leq s_{i+1}$, we have that
+        \begin{align*}
+            T(s) 
+            &= \exp\bigg(-\int_{s_0}^{s} \sigma(\ve{o} + u \omega )\, \dee u \bigg) \\
+            &= \exp\bigg(-\int_{s_0}^{s_i} \sigma(\ve{o} + u \omega )\, \dee u -\int_{s_i}^{s} \sigma(\ve{o} + u \omega )\, \dee u \bigg) \\
+            &= \exp\bigg(-\int_{s_0}^{s_i} \sigma(\ve{o} + u \omega )\, \dee u\bigg) \exp\bigg( -\int_{s_i}^{s} \sigma(\ve{o} + u \omega )\, \dee u \bigg) \\
+            &= T(s_i) \exp\bigg( -\int_{s_i}^{s} \sigma(\ve{o} + u \omega )\, \dee u \bigg) \\
+            &\approx T_i \exp(-\sigma_i(s - s_i)).
+        \end{align*}
+        </li>
+
+        <li>Now,
+        \begin{align*}
+            L(\ve{o},-\omega)
+            &= \int_{s_0}^{s_{N+1}} T(s) \sigma(\ve{o} + s\omega, -\omega) \ve{c}(\ve{o} + s\omega, -\omega)\, \dee s \\
+            &= \sum_{i=0}^{N} \int_{s_{i}}^{s_{i+1}} T(s) \sigma(\ve{o} + s\omega, -\omega) \ve{c}(\ve{o} + s\omega, -\omega)\, \dee s \\
+            &\approx \sum_{i=0}^{N} \int_{s_{i}}^{s_{i+1}} T_i \exp(-\sigma_i(s - s_i)) \sigma_i \ve{c}_i \, \dee s \\
+            &= \sum_{i=0}^{N} T_i \ve{c}_i \int_{s_i}^{s_{i+1}} \sigma_i \exp(-\sigma_i(s-s_i))\, \dee s.
+        \end{align*}    
+        Let $t = s - s_i$, we have
+        \begin{align*}
+        \int_{s_i}^{s_{i+1}} \sigma_i  \exp(-\sigma_i(s-s_i))\, \dee s
+        &= \int_0^{\delta_{i+1}} \sigma_i e^{-\sigma_i t}\, \dee t
+        = [ - e^{\sigma_i t} ]_{0}^{\delta_{i+1}}
+        = 1 - e^{-\sigma_i \delta_{i+1}}.
+        \end{align*}
+        As a result,
+        \begin{align*}
+            L(\ve{o},-\omega)
+            &\approx \sum_{i=0}^N T_i \ve{c}_i (1 - e^{-\sigma_i \delta_{i+1}}).
+        \end{align*}
+        Because $\sigma_0 = 0$, we can rewrite the above expression as:
+        \begin{align*}
+            L(\ve{o},-\omega)
+            &\approx \sum_{i=1}^N T_i \ve{c}_i (1 - e^{-\sigma_i \delta_{i+1}})
+            = \sum_{i=1}^N T_i (1 - e^{-\sigma_i \delta_{i+1}}) \ve{c}_i,
+        \end{align*}
+        which is very similar to the expression given in the paper.
+        </li>
+    </ul>
+
+    <h3>1.2 &nbsp; Hierarchical Sampling</h3>
+    
+    <ul>
+        <li>Instead of using one network, the paper optimizes two networks together in order to use them to perform hierarchical sampling.</li>
+
+        <li>The two networks have the same structure. One is called the "coarse" network, and the other is called the "fine" network.</li>
+
+        <li>Given a ray $\ve{r}(s) = \ve{o} + s\omega$, we compute two estimates of the radiance.</li>
+
+        <li>The first estimate use the ray marching algorithm above with the coarse network. For this, we choose $N_c$ samples and compute:
+        \begin{align*}
+            \hat{\ve{C}}_c(\ve{r})
+            &= \sum_{i=1}^{N_c} T_i  (1 - e^{-\sigma_i \delta_{i+1}}) \ve{c}_i.
+        \end{align*}        
+        </li>       
+
+        <li>Letting $w_i = T_i  (1 - e^{-\sigma_i \delta_{i+1}})$, we can write $\hat{\ve{C}}_c(\ve{r})$ as a weighted sum of the $\ve{c}_i$'s:
+        \begin{align*}
+        \hat{\ve{C}}_c(\ve{r})
+            &= \sum_{i=1}^{N_c} w_i \ve{c}_i.
+        \end{align*}
+        </li>
+
+        <li>We normalize the weights by computing:
+        \begin{align*}
+            \hat{w_i} = \frac{w_i}{\sum_{i=1}^{N_c} w_i}.
+        \end{align*}
+        The weights give a piecewise-constasnt PDF along the ray. (It is unclear what intervals the paper uses for this PDF. I presume that it is the original equally-sized intervals.)
+        </li>
+
+        <li>From the above PDF, the paper samples $N_f$ samples. It then uses the $N_c + N_f$ samples to estimate the radiance with the fine network. The resulting value $\hat{\ve{C}}_f(\ve{r})$ is the output radiance value.</li>
+
+        <li>The sampling strategy above will put more samples in areas where visible materials are present.</li>
+
+        <li>The paper uses $N_c = 64$ and $N_f = 128$ in their experiments.
+        <ul>
+            <li>This kind of mean that the rendering cannot be real time.</li>
+        </ul>
+        </li>
+    </ul>
+
+    <h3>1.3 &nbsp; Network Architecture and Optimization</h3>
+
+    <h4>1.3.1 &nbsp; Positional Encoding</h4>
+    <ul>
+        <li>The input to the network is the 5-tuple $(x,y,z,\theta,\phi).$
+        <ul>
+            <li>Each comoponent is normalized to lie in the interval $[-1,1]$. (I don't think it is necessary to do this to $\theta$ and $\phi$ though.)</li>
+        </ul>
+        </li>
+
+        <li>The paper found that operating directly on these coordinates makes it hard for the network to learn high-frequency features.</li>
+
+        <li>For each compontent $p$ of the input tuple, the network maps it to:
+        \begin{align*}
+            \gamma(p)
+            = \begin{bmatrix}
+                \sin(2^0\pi p) \\
+                \cos(2^0\pi p) \\
+                \sin(2^1\pi p) \\
+                \cos(2^1\pi p) \\
+                \vdots \\
+                \sin(2^{L-1}\pi p) \\
+                \cos(2^{L-1}\pi p) \\
+            \end{bmatrix}
+        \end{align*}        
+        </li>
+
+        <li>The paper uses $L = 10$ for each of the $xyz$-components, an $L = 4$ for each of the $\theta\phi$-compnents.</li>
+
+        <li>The mappings are then passed to the next part of the network.</li>
+    </ul>
+
+    <h4>1.3.2 &nbsp; The Main Network Body</h4>
+
+    <ul>
+        <li>The positional encoding of the 3D position $\gamma(\ve{x}) \in \Real^{60}$ is first processed with an MLP with 8 fully connected layers.
+        <ul>
+            <li>Each layer having 256 neurons, except the last one, which has 257 neurons.</li>
+
+            <li>One component of the output of the last layer is the density. The rest is a 256-dimensional feature vector.</li> 
+        </ul>
+
+        <li>The 256-dimensional feature vector is then concatenated with $\gamma(\theta,\phi) \in \Real^{16}$.</li>
+
+        <li>The above vector is then passed to another fully-connected layer with 128 neurons and ReLU activation. The output is then passed to another fully connected layer with 3 neurons to produce the RGB color. (The paper does not write which activation function is used here.)</li>
+    </ul>
+
+    <h4>1.3.3 &nbsp; Optimization</h4>
+
+    <ul>
+        <li>From the camera settings of the input photographs, we generate rays $\ve{r}$ that look into the pixels of the photos. We then optimize the following loss:
+        \begin{align*}
+            \mathcal{L} = \sum_{\ve{r}} \Big[ \| \hat{\ve{C}}_c(\ve{r}) - \ve{C}(\ve{r}) \|^2 + \| \hat{\ve{C}}_f(\ve{r}) - \ve{C}(\ve{r}) \|^2 \Big]
+        \end{align*}
+        where $\ve{C}(\ve{r})$ denote the ground truth radiance of the ray, obtained from the color of the corresponding pixel in the photograph.
+        </li>
+
+        <li>The paper uses a batch size of $4096$ rays.</li>
+
+        <li>The optimizating algorithm is Adam with $\beta_1 = 0.9, \beta = 0.999$. The learing rate starts at $5 \times 10^{-4}$ and decays exponentially to $5 \times 10^{-5}$ over the course of the optimization.</li>
+
+        <li>A typical scene takes around 100k to 300k iterations to converge. This is about 1-2 days on a NVIDIA V100 GPU.</li>
+    </ul>
+    <hr>
+
+    <h2>2 &nbsp; Dynamic NeRF [Gafni et al. 2020]</h2>
+
+    <ul>
+        <li>Here's <a href="https://gafniguy.github.io/4D-Facial-Avatars/">the project page</a>.</li>
+        
+        <li>Problem specification.
+        <ul>
+            <li><b>Input:</b> A monocular video of a human talking in front of a static camera.</li>
+            <li><b>Output:</b> A NeRF that satisfies the following contracts.
+            <ul>
+                <li><b>Inputs</b>
+                <ul>
+                    <li>A 3D position $(x,y,z).$</li>
+                    <li>A direction $\ve{d} = (\theta,\phi)$.</li>
+                    <li>A pose parameter $\delta \in \Real^{76}$.</li>
+                    <li>A per-frame latent code $\gamma \in \Real^{32}$.</li>
+                </ul>
+                </li>
+
+                <li><b>Outputs</b>
+                <ul>
+                    <li>A volume density $\sigma$ at $(x,y,z)$.</li>
+                    <li>An RGB radiance $\ve{c}$ emiited per (differential) mass from $(x,y,z)$ in direction $(\theta,\phi)$.</li>                    
+                </ul>
+                The outputs are of the human in the video frame indicated by $\gamma$, taking the pose specified by $\delta$.
+                </li>
+            </ul>
+            In other words, this is a rigged NeRF of the human in the video.
+            </li>
+        </ul>
+        </li>
+
+        <li>The pose parameter $\delta$ is the one used by a 3D morphable model that is used by the <a href="https://arxiv.org/abs/2007.14808">Face2Face paper</a>.</li>
+
+        <li>The latent code $\gamma$ is there to compensate for the fact that $\delta$ might not be able to capture all variations.
+        <ul>
+            <li>For certain, it does not capture shoulder movements or hair movements, which can be present in the video.</li>
+        </ul>
+        </li>
+
+        <li>Network architecture.
+        <ul>
+            <li>The architecture is very similar to that of the NeRF paper. They just add the extra parameters as input.</li>
+
+            <li>Look at the picture:
+            <a href="dynamic-nerf-architecture.png"><img src="dynamic-nerf-architecture.png" width="600" /></a>
+            </li>
+
+            <li>Also, the paper also uses the "coarse" and the "fine" networks, just like how the NeRF paper does it.
+            <ul>
+                <li>However, this time $N_c = N_f = 64$.</li>
+            </ul>
+            </li>            
+        </ul>
+        </li>
+
+        <li>Training.
+        <ul>
+            <li>Given a video with $M$ frames, let $I_i$ denote the $i$th frame where $i \in \{1, 2, \dotsc, M\}$.</li>
+
+            <li>Let $\gamma_i$ denote the latent code for the $i$th frame. The paper says that these latent codes are learnable parameters.</li>
+
+            <li>For each frame, the paper uses the 3D morphable model to regress the pose parameter $\delta_i$ and the transformation matrix $P_i$ associated with the head rotation.</li>
+
+            <li>Let $\Theta$ be the parameters of a network. The lost associated with the $i$th frame is given by:
+            \begin{align*}
+                \mathcal{L}_i(\Theta) = \sum_{j \in \mathrm{pixels}} \| C(\ve{r}_j; \Theta, P_i, \delta_i, \gamma_i) - I_i[j] \|^2
+            \end{align*}
+            where
+            <ul>
+                <li>$\ve{r}_j$ is the camera ray associated with Pixel $j$. The ray is transformed into the object space by $P_i^{-1}$ first before being fed to the underlying NeRF.</li>
+                
+                <li>$C(\ve{r}_j; \Theta, P_i, \delta_i, \gamma_i)$ is the radiance seen through the ray $\ve{r}_j$ given the relevant parameters.</li>
+            </ul>
+            </li>
+
+            <li>To facilitate foreground-background segmentation, the paper modifies the radiance computation procedure a little.
+            <ul>
+                <li>In addition to the video, the paper also takes a snapshot of the background (i.e., the scene without a person talking).</li>
+
+                <li>The function $C$ is modified so that the last sample along each rays evaluates to the associated background pixel's color.</li>
+            </ul>
+            </li>
+
+            <li>The overall loss is the sum of the losses of the coarse and the fine networks over the frames.
+            \begin{align*}
+                \mathcal{L}_{\mathrm{total}}
+                = \sum_{i=1}^M \Big( \mathcal{L}_i(\Theta_{\mathrm{coarse}}) + \mathcal{L}_i(\Theta_{\mathrm{fine}}) \Big).
+            \end{align*}
+            </li>
+
+            <li>In real training, however, the paper does not use the whole images in a batch. It instead samples 2048 rays such that 95% of the rays intersect the head's bounding box.</li>
+
+            <li>The opimization algorithm was Adam with learning rate $5 \times 10^{-4}$.</li>
+
+            <li>Each model is trained for 400k iterations.</li>
+
+            <li>Input image size was 512.</li>
+
+            <li>The paper mentions that it needs a large number of training images---more than those of static scene reconstruction---to be able to generalize on the poses.</li>
+        </ul>
+        </li>
+    </ul>
+    <hr>
+
+    <h2>3 &nbsp; Portrait NeRF [Gao et al. 2020]</h2>
+
+    <ul>
+        <li><a href="https://portrait-nerf.github.io/">Link to the project page</a>.</li>
+
+        <li>This paper presents a way to generate (non-posable) NeRF from a single photograph.
+        <ul>
+            <li>The input photograph contains a face looking straight ahead. It covers the upper head, hairs, and torso.</li>
+        </ul>
+        </li>
+
+        <li>The paper looks at the problem as an instance of meta-learning.
+        <ul>
+            <li>The paper pretrains a NeRF with portrait images obtained from light stage captures.</li>
+
+            <li>At test time, we are given a portrait image and use it to finetune the above NeRF.</li>
+
+            <li>In meta-learning lingo:
+            <ul>
+                <li>The problem of synthesizing view from a camera pose is called a <b>query</b>.</li>
+
+                <li>Light stage captures are called the <b>labels</b>.</li>
+
+                <li>Training a subject specific NeRF is called a <b>task</b>.</li>
+
+                <li>At test time, we are given a single label (the frontal capture), and we need to optimize the <b>testing task</b>, which must be able to answer multiple queries.</li>
+            </ul>
+            </li>
+
+            <li>The paper learns a single NeRF and uses it to initialize the weight of the NeRF that is going to be optimize at test time. It does so by solving multiple tasks given the labels. These are called <b>meta-training tasks</b>.
+            <ul>
+                <li>That is, we learn a single MLP for multple subjects.</li>
+            </ul>
+            </li>
+        </ul>
+        </li>
+    </ul>
+
+    <h3>3.1 &nbsp; Overview</h3>
+
+    <ul>
+        <li>The method contains two stages:
+        <ul>
+            <li><b>Pretraining</b>
+            <ul>
+                <li>We train a coordinate-based NeRF $f_\Theta$ on subjects captured from a light stage.</li>
+
+                <li>The end project is a model parameter $\Theta^*_p$.</li>
+            </ul>
+            </li>
+
+            <li><b>Testing</b>
+            <ul>
+                <li>We initialize the NeRF with $\Theta^*_p$.</li>
+                <li>We finetune it on the frontal view of the test subject.</li>
+            </ul>
+            </li>
+        </ul>
+        </li>
+
+        <li>To address the variety of size and translation among different subjects, the input to the NeRF is defined in a <b>canonical face coordinate</b> (i.e., the object space). Camera rays are transformed into these coordinates before being fed to the NeRF.</li>
+    </ul>
+
+    <h3>3.2 &nbsp; Training Data</h3>
+
+    <ul>
+        <li>The paper uses a light stage to cpature multiple subjects.</li>
+
+        <li>For each subject:
+        <ul>
+            <li>The paper construct a 3D mesh of the subject.</li>
+
+            <li>It then renders a 5 $\times$ 5 training views. These views form a uniform grid on the solid angles with $25^\circ$ vertical field-of-view and $15^\circ$ horizonal field-of-view and with the center being the view looking straight to the subject's face.            
+            </li>
+
+            <li>The set containing only the center view is called the <b>support set</b> and is denoted by $\mathcal{D}_s$.</li>
+
+            <li>The set containing the other 24 views are called the <b>query set</b> and is denoted by $\mathcal{D}_q$.</li>
+        </ul>
+        </li>        
+    </ul>
+
+    <h3>3.3 &nbsp; Pretraining</h3>
+
+    <ul>
+        <li>Let there be $K$ subjects in the training data. The subjects are indexed by $m \in \{0,1,\dotsc, K-1\}$.</li>
+
+        <li>The paper starts with a NeRF with randomly initialized parameter $\Theta_{p,-1}$.</li>
+
+        <li>It then loops for the subjects, one by one, from Subject $m = 0$ to Subject $m = K-1$.
+        <ul>
+            <li>Now, consider Subject $m$.</li>
+
+            <li>We train two NeRF, whose parameters are denoted by $\Theta_m$ and $\Theta_{p,m}$.
+            <ul>
+                <li>$\Theta_m$ is optimized with both $\mathcal{D}_s$ and $\mathcal{D}_q$. We discard it after the iteration. Its only use is to generate gradients to update $\Theta_{p,m}$.</li>
+
+                <li>$\Theta_{p,m}$ is optimized with only $\mathcal{D}_q$. We use it in the next iteration.</li>
+            </ul>
+            </li>
+
+            <li>First, we optimize $\Theta_m$ with data from $\mathcal{D}_s$.
+            <ul>
+                <li>We initialize $\Theta_m^0 \gets \Theta_{p,m-1}$.</li>
+
+                <li>For $N_s$ iterations, we perform the gradient update:
+                \begin{align*}
+                    \Theta_m^{t+1} 
+                    \gets \Theta_m^t - \alpha \frac{\partial \mathcal{L}(\mathcal{D}_s, \Theta^t_m)}{\partial \Theta_m^t}.
+                \end{align*}
+                where $\mathcal{L}(\mathcal{D}_s, \Theta^t_m)$ is the L2 loss between the view predicts by the NeRF with parameters $\Theta^t_m$, and $\alpha$ is the learning rate.
+                </li>
+
+                <li>Let $\Theta_m^*$ denote the parameter at the end of the $N_s$th iteration, $\Theta^{N_s}_m$.</li>
+            </ul>
+            </li>
+
+            <li>Second, we optimize $\Theta_m$ and $\Theta_{p,m}$ jointly.
+            <ul>
+                <li>We initialize $\Theta_m^0 \gets \Theta_m^*$ and $\Theta_{p,m}^0 \gets \Theta_{p,m-1}$.</li>
+
+                <li>For $N_q$ iterations, we perform the following gradient updates:
+                \begin{align*}
+                    \Theta_{m}^{t+1} &\gets \Theta_m^t - \beta \frac{\partial \mathcal{L}(\mathcal{D}_q, \Theta^t_m)}{\partial \Theta_m^t} \\
+                    \Theta_{p,m}^{t+1} &\gets \Theta_{p,m}^t - \beta \frac{\partial \mathcal{L}(\mathcal{D}_q, \Theta^t_m)}{\partial \Theta_m^t}.
+                \end{align*}
+                where $\beta$ is the learning rate.
+                </li>
+
+                <li>At the end, we set $\Theta_{p,m} \gets \Theta_{p,m}^{N_q}$.</li>
+            </ul>            
+            </li>
+        </ul>
+        In the end, the pretrained parameters $\Theta_p^*$ is $\Theta_{K-1}^*$.
+        </li>
+    </ul>
+
+    <h3>3.4 &nbsp; Finetuning</h3>
+
+    <ul>
+        <li>Finetuning at test time is equivalent to performing the $N_s$ gradient updates as discussed the last section.</li>
+    </ul>
+
+    <h3>3.5 &nbsp; Canonical Face Space</h3>
+
+    <ul>
+        <li>For each subject $m$ in the training data, we approximate its geometry with a 3D morphable model. Say, the morphable model for Subject $m$ is $F_m$.</li>
+
+        <li>We average the geometry to obtain an average mesh $\overline{F}$.</li>
+
+        <li>We use the correspondence between $F_m$ and $\overline{F}$ to find a rigid transform $\ve{x} \mapsto s_m R_m \ve{x} + \ve{t}_m$ where $s_m$ is a scaling factor, $R_m$ is a rotation matrix, and $\ve{t}_m$ is translation vector.
+        <ul>
+            <li>This optimization is done by computing an SVD. (More details in the paper.</li>
+        </ul>
+        </li>
+
+        <li>The above rigid transformation is applied to the incoming ray before feeding it to the underlying NeRf.</li>
+
+        <li>At test time, the rigid transformation can be computed in the same way.</li>
+    </ul>
+    <hr>
+
+    <h2>4 &nbsp; SIREN [Sitzmann et al. NeurIPS 2020]</h2>
+
+    <ul>
+        <li><a href="https://vsitzmann.github.io/siren/">Link to project page</a>.</li>
+
+        <li>There are many classes of problem that can be formulated as solving the following equation:
+        \begin{align*}
+            F(\ve{x}, \Phi, \nabla_{\ve{x}} \Phi, \nabla^2_{\ve{x}} \Phi, \dotsc, ) = 0
+        \end{align*}
+        where $\phi: \ve{x} \mapsto \Phi(\ve{x})$.
+        <ul>
+            <li>A prime example of problems of this classes are <b>boundary value problems</b>: solving differential equations with respect to some boundary conditions.</li>
+
+            <li>This can also be used to model discrete signals (images, videos, 3D shapes) with continuous functions.</li>
+        </ul>
+        </li>
+
+        <li>We would like to learn a network that computes $\Phi(\ve{x})$ that satisfies the above equation.
+        <ul>
+            <li>Such a network is called a <b>implicit neural representation</b> of $\Phi$.</li>
+        </ul>
+        </li>
+
+        <li>An implicit neural representation has many advantanges over discrete grid-based representations.
+        <ul>
+            <li>It is limited by the network's capacity, not the resolution.</li>
+
+            <li>It is differentiable, and so may be used to solve inverse problems.</li>
+        </ul>
+        </li>
+
+        <li>There are many recent works that try to use implicit neural representation for various tasks. (NeRF is one of them.) Most of these works use ReLU-based MLPs.</li>
+
+        <li>However, ReLU-based MLPS have the following cons:
+        <ul>
+            <li>They cannot represent fine details.</li>
+
+            <li>They cannot represent gradients well because ReLU networks are piecewise linear and so their second order derivatives are zero everywhere.</li>
+        </ul>
+        </li>
+
+        <li>Their are also other choices of activation functions such as $\tanh$ and $\mathrm{softplus}$. The paper shows that, while they can represent higher-order derivatives, these are not well behaved. Moreover, such networks cannot represent fine details.</li>
+
+        <li>The paper proposed using periodic function (the sine) as the activation function.
+        <ul>
+            <li>SIREN = SInusoidal REpresentation Network.</li>
+        </ul>
+        </li>
+
+        <li>The NeRF paper and <a href="https://bmild.github.io/fourfeat/index.html">a subsequent paper</a> propose using positional encoding in conjunction with ReLU-based MLPs as implicit representations. The paper shows that SIREN is better than this alternative in representing details and derivatives.</li>
+    </ul>
+
+    <h3>4.1 &nbsp; Formulation</h3>
+
+    <ul>
+        <li>Let us formulate the problem another way. We would like to solve the following problem:<br><br>
+        <p style="margin-left:40px;">
+            Find $\Phi(\ve{x})$ subjected to contrains $\mathcal{C}_m(\ve{a}({x}), \Phi(\ve{x}), \nabla_\ve{x} \Phi(\ve{x}), \nabla^2_\ve{x} \Phi(\ve{x}), \dotsc) = 0$ for any $\ve{x} \in \Omega_m$ where $m = 1, \dotsc, M$.
+        </p><br>
+        </li>
+
+        <li>The problem can be cast as minimizing the following loss function:
+        \begin{align*}
+            \mathcal{L} = \int_{\Omega} \bigg( \sum_{m=1}^M \mathbf{1}[\ve{x} \in \Omega_m] |\mathcal{C}_m(\ve{a}({x}), \Phi(\ve{x}), \nabla_\ve{x} \Phi(\ve{x}), \nabla^2_\ve{x} \Phi(\ve{x}), \dotsc) | \bigg)\, \dee\ve{x}
+        \end{align*}
+        where $\mathbf{1}[\ve{x} \in \Omega_m]$ is the indiciator function that is 1 if $\ve{x} \in \Omega_m$ and 0 otherwise.
+        </li>
+
+        <li>In practice, we have a dataset $\ve{D} = \{ (\ve{x}_i, \ve{a}(\ve{x}_i)) : i = 1, 2, \dotsc, N \}$, and the loss becomes:
+        \begin{align*}
+            \mathcal{L} = \sum_{i=1}^N \sum_{m=1}^M |\mathcal{C}_m(\ve{a}(\ve{x}_i), \Phi(\ve{x}), \nabla_\ve{x} \Phi(\ve{x}), \nabla^2_\ve{x} \Phi(\ve{x}), \dotsc) |.
+        \end{align*}
+        </li>
+
+        <li>In the problem of signal representation, $\ve{x}_i$ would be dynamically sampled at test time.</li>
+        
+        <li>The paper proposes to use a neural network for the form:
+        \begin{align*}
+            \Phi(\ve{x}) = \ve{b}_n + W_n(\phi_{n-1} \circ \phi_{n-2} \circ \dotsm \circ \phi_0)(\ve{x})
+        \end{align*}
+        where
+        \begin{align*}
+            \phi_j: \ve{x}^{(j)} \rightarrow \sin(\ve{b}_j + W_j\ve{x}^{(j)})
+        \end{align*}
+        is just appying the sine function as an activation function after an affine transformation.
+        </li>
+
+        <li>Now, note that:
+        \begin{align*}
+            \frac{\partial}{\partial \ve{x}^{(j)}} \phi_j(\ve{x}^{(j)})
+            &= W_j \cos(\ve{b}_j + W_j\ve{x}^{(j)})
+            = W_j \sin\bigg( \frac{\pi}{2} - \ve{b}_j - W_j\ve{x}^{(j)} \bigg).
+        \end{align*}
+        So, we can deduce that the $\nabla_\ve{x} \Phi(\ve{x})$ is also a SIREN as well. As a result, the derivative remains well behaved.
+        </li>        
+    </ul>
+
+    <h3>4.2 &nbsp; Initialization Scheme</h3>
+
+    <ul>
+        <li>The paper presents an initialization scheme such that the distribution of activations do not dependent on the number of network layers.</li>
+
+        <li>Consider the output distribution of a single sine neuron.
+        <ul>
+            <li>Say, the input $x$ comes from the uniformly distributed input $x \sim \mathrm{Uniform}[-1,1]$.</li>
+
+            <li>The neuron's output is $y = \sin(ax+b)$ with $a, b \in \Real$.</li>
+
+            <li>It can be show nthat for any $a > \pi/2$., the output of the sine is $y \sim sin^{-1}([-1,1])$, a special case of of a U-shaped Beta distribution, independent of the choice of $b$.</li>
+
+            <li>Now, consider $y = \sin(\ve{w}^T\ve{x} + b)$.</li>
+
+            <li>We assume that the neuron is in the second layer, so each if its input is arcsine distributed.</li>
+
+            <li>We can show that when each component of $\ve{w}$ comes from the distribution $\mathrm{Uniform}(-c/\sqrt{n}, c/\sqrt{n})$ with $c \in \Real$ and $n$ is the number of components of $\ve{w}$, we have that the dot product satisfies $\ve{w}^T\ve{x} \sim \mathcal{N}(0, c^2/6)$ as $n$ grows.</li>
+
+            <li>Feeding the above distribution to a sine function gives an arcsine distributed random variable for any $c > \sqrt{6}$.</li>
+
+            <li>The weights of SIREN can be interpreted as angular frequencies, and the biases can be interpreted as phase shifts. As a result, large frequencies appear when the weights have large magnitude.</li>
+
+            <li>When $|\ve{w}^T\ve{x}| < \pi / 4$, the sine layer will leav e the frequencies unchanged because the sine is approximateley linear in that regime.
+            <ul>
+                <li>The paper even found that a sine layer keeps spatial frequencies approximate constant for $|\ve{w}^T\ve{x}| < \pi$. The spatial frequencies increase above this value though.</li>
+            </ul>
+            </li>
+
+            <li>The paper proposes to draw weights with $c = 6$, which ensures that the input to each sine activation is normally distributed with standard deviation of $1$.</li>
+
+            <li>Because few weights would be larger in magnitude than $\pi$, the frequency throughout the sine netowkr grows only slowly.</li>
+
+            <li>For the first layer, the paper proposes to initialize the first layer with weights so that the sine function $\sin(\omega_0 \cdot W\ve{x} + \ve{b})$ spans multiple periods over $[-1,1]$.
+            <ul>
+                <li>The paper found that $\omega_0 = 30$ works well.</li>
+            </ul>
+            </li>
+        </ul>
+        </li>
+    </ul>
+
+    <hr>
+
+    <h2 id="pifu">5 &nbsp; PIFu [Saito et al. ICCV 2019]</h2>
+
+    <ul>
+        <li><a href="https://shunsukesaito.github.io/PIFu/">[Project page]</a></li>
+
+        <li><b>Goal.</b> Given a single image of a human subject or multiple images taken from different angles, construct the underlying 3D geometry and texture.</li>
+
+        <li>Convention used in the paper.
+        <ul>
+            <li>It denotes a 3D position with capital letters such as $X$.</li>
+            <li>On the other hand, a 2D position is denoted with small letters such as $x$.</li>
+        </ul>
+        </li>
+
+        <li>Let us assume that there is a single input image, denoted by $I$.
+        <ul>
+            <li>The image pixel at 2D position $x$ is denoted by $I[x]$. This is computed by bilinear sampling because $x$ is a continuous variable, but $I$ has a discrete representation.</li>
+
+            <li>We assume that the camera parameter for $I$.</li>
+        </ul>
+        </li>
+
+        <li>The paper first processes the input image $I$ to produce two pixel-aligned feature embeddings. To do so, it uses two encoders.
+        <ul>
+            <li>$F_V$ is used to produce an embedding for volumetric represention.</li>
+            <li>$F_C$ is used to produce an embedding for the geometry's texture. ($C$ might stand for "color.")</li>
+        </ul>
+        </li>
+
+        <li>To reconstruct the surface, the paper approximates the groundtruth 3D occupancy field:
+        \begin{align*}
+        f^*_v(X) = \begin{cases}
+        1, & \mbox{if X is inside the surface} \\
+        0, & \mbox{otherwise}
+        \end{cases}
+        \end{align*}
+        </li>
+        
+        <li>The surface is the 0.5-level set: $\{ X : f_v^*(X) = 0.5 \}$. The paper approximates it with the function:
+        \begin{align*}
+        f^*_v(X) \approx f_v(F_V(I)[x], z(X))  
+        \end{align*}
+        where
+        <ul>
+            <li>$f_v$ is a neural network,</li>
+            <li>$F_V(I)[x]$ denotes fetching the feature embedding at 2D position $x$ with bilinear interpolation,</li>
+            <li>$x = \pi(X)$ is the 2D projection of $X$ into the image plane of $I$, and</li>
+            <li>$z(X)$ is the depth value of $X$ according to $I$'s view transformation. </li>
+        </ul>
+        The surface can be extracted from the approximated level-set with, say, the marching cubes altorithm.
+        </li>
+
+        <li>The paper views the texture as a vector (in other words, RGB) field: $f^*_c: \Real^3 \rightarrow \Real^3$, which it approximates as:
+        \begin{align*}
+            f^*_c(X) \approx f_c(F_C(I, F_V(I))[x], z(X))
+        \end{align*}
+        where $f_c$ is another neural network. The approximated RGB field can be evaluated on the level-set to get the texture values for the reconstructed surface.
+        <ul>
+            <li>Note that the encoder $F_C$ also takes the feature for volumetric reconstruction as input. The paper observes that, without it, the texture function would be forced to learn the volumetric representation as well. Including the feature embedding can lessen $f_c$'s and $F_C$'s burden and make them generalize better.</li>
+        </ul> 
+        </li>
+    </ul>
+
+    <h3>5.1 &nbsp; Single-View Surface Reconstruction</h3>
+
+    <ul>
+        <li>We require a dataset containing pairs of (1) an input image and (2) a corresponding 3D mesh that is aliged with the input image.
+        <ul>
+            <li>It is assumed that the meshs is water-tight so that the ground truth occupancy field can be computed.</li>
+        </ul>
+        </li>
+
+        <li>For each pair of image and mesh, we sample $n$ 3D points $X_1$, $X_2$, $\dotsc$, $X_n$ and minimize the loss:
+        \begin{align*}
+            \mathcal{V} = \frac{1}{n} \sum_{i=1}^n \big( f_v(F_V(I)[x_i], z(X_i)) - f^*_v(X_i) \big)^2
+        \end{align*}
+        by jointly updating the paramters of $F_V$ and $f_v$.
+        </li>
+
+        <li>The 3D points above are sampled on the fly from the ground truth mesh. The paper combines two sampling strategies:
+        <ul>
+            <li>It randomly sample points on the surface geometry and add offsets with normal distribution $\mathcal{N}(0, 0.5\,\mathrm{cm})$.</li>
+
+            <li>It also uniformly sample points within the bounding box of the scene.</li>
+        </ul>
+        The ratio for the two types of samples points is 16 : 1.
+        </li>
+    </ul>
+
+    <h3>5.2 &nbsp; Texture Inference</h3>
+
+    <ul>
+        <li>Again, we need pairs of (1) an image and (2) a texture mesh that is aligned with it.</li>
+
+        <li>For each pair, we sample $n$ points $X_1$, $X_2$, $\dotsc$, $X_n$ on the surface. Let $C(X_i)$ denote the texture color at points $X_i$.</li>
+
+        <li>To make the learning task easier, the paper perturb each point's position by displacing along the normal direction:
+        \begin{align*}
+            X'_i = X_i + \epsilon N(X_i)
+        \end{align*}
+        where $\epsilon \sim \mathcal{N}(0, 1\,\mathrm{cm})$, and $N(X_i)$ is the normal vector at $X_i$.
+        </li>
+
+        <li>The loss function is given by:
+        \begin{align*}
+            \mathcal{L}_C = \frac{1}{n} \sum_{i=1}^n \big| f_c(F_C(I, F_V(I))[x'_i] , z(X'_i)) - C(X_i) \big|
+        \end{align*}
+        </li>
+    </ul>
+
+    <h3>5.3 &nbsp; Multi-View Reconstruction</h3>
+
+    <ul>
+        <li>Suppose we have multiple images $I_1$, $I_2$, $\dotsc$, $I_m$, taken from different camera angles, of the same subject and with the same underlying ground truth mesh.
+        <ul>
+            <li>Again, it is assumed that the camera setting for each image is known.</li>
+
+            <li>Let $\pi_k(X)$ be the 2D projection of the 3D point $X$ into the image plane of $I_k$.</li>
+
+            <li>Let $z_k(X)$ be the depth according to the camera projection of $I_k$.</li>
+        </ul>
+        </li>
+
+        <li>To enable reconstruction from multiple images, we need to modify $f_v$ and $f_c$ so that it takes multiple images into account. In this section, we will focus on $f_v$. The transformation for $f_c$ would be similar.</li>        
+
+        <li>We decompose $f_v$ to be a composition of two functions:
+        <ol>
+            <li>$f^{(1)}_v$ transforms $F_V(I_i)[\pi_i(X)]$ and $z_i(X)$ into a feature embedding $\Phi_i$ for each image $i$.</li>
+
+            <li>$f^{(2)}_v$ transforms $\Phi = \frac{1}{m} \sum_{k=1}^m \Phi_k$ into the occupancy propability.</li>
+        </ol>
+        In other words, we approximate the ground truth occupancy field with:
+        \begin{align*}
+            f^*_v(X) \approx f^{2}_v\bigg( \frac{1}{m}\sum_{k=1}^m f^{(1)}_v\big( F_V(I)[\pi_i(X)], z_i(X) \big) \bigg).
+        \end{align*}
+        </li>
+    </ul>
+
+    <h3>5.4 &nbsp; Details</h3>
+
+    <ul>
+        <li>The image encoder for surface reconstruction uses the <a href="https://arxiv.org/abs/1603.06937">stacked hourglass</a> architecture.</li>
+
+        <li>The image encoder for texture uses the one used by CycleGAN.</li>
+
+        <li>The implicit functions $f_v$ and $f_c$ are multi-layer perceptions that have skip connections from the inputs.</li>
+
+        <li>From the paper, we can infer that:
+        <ul>
+            <li>The input image size is $512 \times 512$.</li>
+
+            <li>The feature embedding has $256$ channels.</li>
+
+            <li>However, the spatial size of the feature embedding was not clearly stated. One would assume that it is also $512 \times 512$. However, it became clear in a subsequent paper (PIFuHD) that it was $128 \times 128$.</li>
+        </ul>
+        </li>
+    </ul>
+
+    <hr>
+    <h2>6 &nbsp; PIFuHD [Saito et al. CVPR 2020]</h2>
+
+    <ul>
+        <li>According to the paper, PIFu takes a $512 \times 512$ image. However, the feature embedding is of size $128 \times 128$, which has low resolution.</li>
+
+        <li>This paper aims to expand the input image size to $1024 \times 1024$. I believe this is allegely hard to do because:
+        <ul>
+            <li>The feature embedding of PIFu is low resolution, so it is hard for it to capture the details of the $1024 \times 1024$ image.</li>
+
+            <li>It is not possible to increase the internal representation size because of the memory limit of current GPU.</li>
+        </ul>
+        </li>
+
+        <li>One thing to note is that the present paper, unlike PIFu, focuses on <i>geometry reconstruction</i>.
+        <ul>
+            <li>There's no mention of how to infer texture values at all. The output meshes have no color.</li>
+
+            <li>While this paper is built on PIFu, the texture inferrence component of PIFu is entirely dropped from discussion.</li>
+        </ul>
+        </li>
+    </ul>
+
+    <h3>6.1 &nbsp; PIFu Recap</h3>
+
+    <ul>
+        <li>We denote a 3D position with $\ve{X} = (\ve{X}_x, \ve{X}_y, \ve{X}_z) \in \Real^3$.</li>
+
+        <li>PIFu seeks to learn a function $f$ that predicts occupancy at position $\ve{X}$ given a single RGB image $\ve{I}$:
+        \begin{align*}
+            f(\ve{X},\ve{I}) = \begin{cases}
+                1, & \mbox{if }\ve{X}\mbox{ is inside the mesh surface}, \\
+                0, & \mbox{otherwise}.
+            \end{cases}
+        \end{align*}
+        </li>
+
+        <li>The function $f$ first extracts a feature embedding. This is a function $\Phi(\ve{x},\ve{I})$ that maps a 2D position $\ve{x} = (\ve{X}_x, \ve{X}_y)$ and the image $\ve{I}$ to a feature vector in $\Real^K$.
+        <ul>
+            <li>In the original paper, $K = 256$.</li>
+        </ul>
+        </li>
+
+        <li>Then, it passes the feature embedding to another function $g$, which also takes the depth component $\ve{X}_z$, and decides whether the point $\ve{X}$ is in the mesh or not. In other words:
+        \begin{align*}
+            f(\ve{X}, \ve{I}) = g(\Phi(\ve{x}, \ve{I}), \ve{X}_z).
+        \end{align*}
+        </li>
+
+        <li>In the original paper, $\Phi$ is implemented by passing $\ve{I}$ to a CNN, denoted by $F_C$, to produce an image feature embedding of size $\Real^{K \times H \times W}$ for some image height $H$ and width $W$. Then, we use bilinear sampling at $\ve{x}$ to compute the feature embedding. In other words,
+        \begin{align*}
+            \Phi(\ve{x},\ve{I}) = F_C(\ve{I})[\ve{x}].
+        \end{align*}
+        </li>
+
+        <li>The function $g$ is an MLP.</li>
+
+        <li>The dataset used to train a PIFu is generated by using models from <a href="https://renderpeople.com">Renderpeople</a>.</li>
+
+        <li>The image $I$ is of size $512 \times 512$. The feature embedding $F_C(I)$ is of size $128 \times 128$ in the original paper.</li>
+
+        <li>The authors claim that it is hard to go bigger, both in the input image resolution and the resolution of the feature embedding, because:
+        <ul>
+            <li>GPU memory is limited.</li>
+
+            <li>The CNN should also be designed so that its receptive field is the entire image to get holistic depth predictions. It thus uses the <a href="https://arxiv.org/pdf/1603.06937.pdf">stacked hourglass architecture</a>. Because there are many hourglass modules, the feature embedding cannot be too large in spatial size.            
+            </li>
+        </ul>
+        </li>
+    </ul>
+
+    <h3>6.2 &nbsp; Frontside and Backside Normal Maps as Extra Inputs</h3>
+
+    <ul>
+        <li>The original PIFu takes in only one RGB as the conditioning input.</li>
+
+        <li>The paper observes that, from this image, it has to predict the back side of the human subject as well.</li>
+
+        <li>From the lost employed in the original paper, the back side would tend to be overly smooth.</li>
+
+        <li>To produce more detailed back side, the paper produces more conditioning inputs: <i>predicted normal maps</i> of the front side and the back side of the human subject.
+        <ul>
+            <li>These two images are computed by running an image translation network (<a href="https://github.com/NVIDIA/pix2pixHD">pix2pixHD</a>) on the original input image.</li>
+        </ul>
+        </li>
+    </ul>
+
+    <h3>6.3 &nbsp; PIFuHD = Two-Level PIFu</h3>
+
+    <ul>
+        <li>The paper proposes a two-level PIFu in order to be able to work with $1024 \times 1024$ input images.
+        <ul>
+            <li>The <i>coarse level</i> PIFu is very similar to the one in the original paper.The mathematical form is:
+            \begin{align*}
+                f^L(\ve{X})
+                = g^L(\Phi^L(\ve{x}, \ve{I}_L, \ve{F}_L, \ve{B}_L), \ve{X}_z)
+            \end{align*}
+            where
+            <ul>
+                <li>$\ve{I}_L$ is the $512 \times 512$ RGB image obtained by downsampling the input image by a factor of 2.</li>
+
+                <li>$\ve{F}_L$ and $\ve{B}_L$ are $512 \times 512$ normal maps produced by image translation.</li>
+            </ul>                
+            </li>
+
+            <li>The <i>fine level</i> PIFu is give by:
+            \begin{align*}
+                f^H(\ve{X})
+                = g^H(\Phi^H(\ve{x}, \ve{I}_H, \ve{F}_H, \ve{B}_H), \Omega(\ve{X}))
+            \end{align*}
+            where
+            <ul>
+                <li>$\ve{I}_H$ is the $1024 \times 1024$ RGB image input.</li>
+
+                <li>$\ve{F}_H$ and $\ve{B}_H$ are predicted frontside and backside normal maps at $1024 \times 1024$ resolution.</li>
+
+                <li>$\Omega(\ve{X})$ is a 3D embedding extracted from the coarse level network. The paper takes a feature from an intermediate layer of $g^L$.</li>
+            </ul>
+            </li>
+
+            <li>The embedding network $\Phi^H$ is different from $\Phi^L$ are different in the following ways:
+            <ul>
+                <li>$\Phi_L$ produces a $256 \times 128 \times 128$ feature embedding.</li>
+
+                <li>$\Phi_H$ produces a $16 \times 512 \times 512$ feature embedding.</li>
+
+                <li>While $\Phi_L$'s receptive field covers the whole image, $\Phi_H$'s receptive field does not cover the whole image. In particular,
+                <ul>
+                    <li>Both $\Phi_L$ and $\Phi_H$ uses the stacked hourglass architecture. However, $\Phi_L$ uses 4 stacks while $\Phi_H$ uses only 1 stack.</li>
+                </ul>                
+                </li>
+            </ul>
+            </li>
+        </ul>
+        </li>
+
+        <li>In the original PIFu paper, the occupancy function was trained with an L2 loss. However, the present paper uses the extended binary cross entry loss instead:
+        \begin{align*}
+            \mathcal{L}_L = \sum_{\ve{X} \in S} \lambda f^*(\ve{X}) \log f^L(\ve{X}) + (1-\lambda)(1 - f^*(\ve{X}))\log(1 - f^L(\ve{X})).
+        \end{align*}
+        where
+        <ul>
+            <li>$S$ is the ste of samples at which the loss is evaluated.</li>
+
+            <li>$\lambda$ is the ratio of points ouside the surface in $S$.</li>
+
+            <li>$f^*(\ve{X})$ is the ground truth occupancy at $\ve{X}$.</li>            
+        </ul>
+        Note that the loss above is only for the coarse level. The loss for the fine level can be defined similarly.
+        </li>
+
+        <li>As with the original paper, the training points are sampled with two strategies:
+        <ul>
+            <li>Sampling points uniformly in the bounding box.</li>
+
+            <li>Sampling points uniformly from the surface and perturb the points with Gaussian noise.</li>
+        </ul>
+        </li>
+    </ul>
+
+    <hr>
+    <div class="page-header"></div>
+    <p>Last modified: 2021/03/28</p>    
+</div>
+
+
+<script type="text/javascript">
+$.bigfoot();
+</script>
+
+</body>
+</html>

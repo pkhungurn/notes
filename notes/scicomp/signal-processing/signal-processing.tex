@@ -1,0 +1,150 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+\usepackage{verbatim}
+\usepackage{hyperref}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\Dee}{\mathrm{D}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\Var}{\mathrm{Var}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\ves}[1]{\boldsymbol{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+\newcommand{\ov}[1]{\overline{#1}}
+\newcommand{\N}{\mathcal{N}}
+\newcommand{\data}{\mathrm{data}}
+\newcommand{\SNR}{\mathrm{SNR}}
+
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+\title{A Pocket Reference to Signal Processing}
+\author{Pramook Khungurn}
+
+\begin{document}
+\maketitle
+
+\section{Signals}
+
+\begin{itemize}
+  \item In this note, a {\bf signal} is a 1D real or complex function.
+
+  \item The independent variable of a signal often denotes time, so it is commonly refered to as ``time''and denoted by $t$.
+\end{itemize}
+  
+\subsection{Continous-Time and Discrete-Time Signals}
+
+\begin{itemize}  
+  \item A {\bf continuous-time signal} is a function $x(t)$ whose independent variable $t$ is a continous real variable.
+  
+  \item On the other hand, a {\bf discrete-time signal} is a function where time is  a discrete variable.
+  \begin{itemize}
+    \item We denote a discrete-time signal by $\{ x_n \}$ where $n \in \mathbb{Z}$ when we want to treat it as a sequence of numbers.
+    
+    \item Each individual term of the sequence is denoted by $x[n]$.
+  \end{itemize}
+
+  \item A discrete-time signal $x[n]$ may be obtained by {\bf sampling} a continous-time signal $x(t)$ at specific times:
+  \begin{align*}
+    x_n = x[n] = x(t_n).
+  \end{align*}
+  Each value above is called a {\bf sample}. The time interval between two consective samples is called the {\bf sampling interval}.
+
+  \item When all time internvals are equal, we have the important special case of {\bf uniform sampling}:
+  \begin{align*}
+    x_n = x[n] = x(nT_s)
+  \end{align*}
+  where the constant $T_s$ is the sampling interval.
+\end{itemize}
+
+\subsection{Analog and Digital Signals}
+
+\begin{itemize}
+  \item An {\bf analog signal} is a continous-time signal whose range is continous.
+  
+  \item A {\bf digitial signal} is a discrete-time signal whose range is discrete and finite.
+  
+  \item Obviously, digital computers can only process digital signals.
+\end{itemize}
+
+\subsection{Odd and Even Signals}
+
+\begin{itemize}
+  \item For brevity, we will discuss only continous-time signals in subsection and the next. Definintions for discrete-time signals can be written in a similar fashion.
+
+  \item A signal $x(t)$ {\bf even} if
+  \begin{align*}
+    x(-t) &= x(t) 
+  \end{align*}
+  for all $t$.
+
+  \item A signel $x(t)$ {\bf odd} if 
+  \begin{align*}
+    x(-t) &= -x(t)
+  \end{align*}
+  for all $t$.
+
+  \item Any signal can be decomposed as a sum of an even and an odd signal:
+  \begin{align*}
+    x(t) = x_{\mrm{even}}(t) + x_{\mrm{odd}}(t)
+  \end{align*}
+  where
+  \begin{align*}
+    x_{\mrm{even}} &= \frac{x(t) + x(-t)}{2},\\
+    x_{\mrm{odd}} &= \frac{x(t) - x(-t)}{2}.
+  \end{align*}
+\end{itemize}
+
+\subsection{Periodic Signals}
+
+\begin{itemize}
+  \item A signal $x(t)$ is said to be {\bf periodic} if there is a positive real number $T$ such that $$x(t + T) = x(t)$$ for all $t$. The number $T$ is called a {\bf period} of $x(t)$.
+  
+  \item The smallest period of a signal is called the {\bf fundamental period}. It is denoted by $T_0$.  
+  \begin{itemize}
+    \item A constant continuous-time signal $x(t) = c$ does not have a fundamental period because we cannot pinpoint the smallest positive real number.
+    
+    \item On the other hand, for a constant discrete-time signal $x[n] = c$, its fundamental period is $1$.
+  \end{itemize}
+
+  \item A signal that is not periodic is called {\bf aperiodic}.
+\end{itemize}
+
+\bibliographystyle{alpha}
+\bibliography{signal-processing}  
+\end{document}

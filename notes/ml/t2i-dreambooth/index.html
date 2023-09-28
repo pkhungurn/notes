@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>DreamBooth</title>
+
+    <!-- Bootstrap -->
+    <link href="../../../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../../../css/theme.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+      TeX: { equationNumbers: {autoNumber: "AMS"} }
+    });
+    </script>
+    <script type="text/javascript"
+            src="../../../MathJax/MathJax.js?config=TeX-AMS_HTML-full">
+    </script>
+
+    <script type="text/javascript" src="../../../js/jquery-3.4.1.min.js"></script>
+    <script type="text/javascript" src="../../../js/bigfoot.min.js"></script>
+
+    <link rel="stylesheet" type="text/css" href="../../../css/bigfoot-default.css">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.1/styles/default.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.1/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
+</head>
+<body>
+<div class="container">
+    <span style="visibility: hidden;">
+        \(
+        \def\sc#1{\dosc#1\csod}
+        \def\dosc#1#2\csod{{\rm #1{\small #2}}}
+
+        \newcommand{\dee}{\mathrm{d}}
+        \newcommand{\Dee}{\mathrm{D}}
+        \newcommand{\In}{\mathrm{in}}
+        \newcommand{\Out}{\mathrm{out}}
+        \newcommand{\pdf}{\mathrm{pdf}}
+        \newcommand{\Cov}{\mathrm{Cov}}
+        \newcommand{\Var}{\mathrm{Var}}
+
+        \newcommand{\ve}[1]{\mathbf{#1}}
+        \newcommand{\ves}[1]{\boldsymbol{#1}}
+        \newcommand{\mrm}[1]{\mathrm{#1}}
+        \newcommand{\etal}{{et~al.}}
+        \newcommand{\sphere}{\mathbb{S}^2}
+        \newcommand{\modeint}{\mathcal{M}}
+        \newcommand{\azimint}{\mathcal{N}}
+        \newcommand{\ra}{\rightarrow}
+        \newcommand{\mcal}[1]{\mathcal{#1}}
+        \newcommand{\X}{\mathcal{X}}
+        \newcommand{\Y}{\mathcal{Y}}
+        \newcommand{\Z}{\mathcal{Z}}
+        \newcommand{\x}{\mathbf{x}}
+        \newcommand{\y}{\mathbf{y}}
+        \newcommand{\z}{\mathbf{z}}
+        \newcommand{\tr}{\mathrm{tr}}
+        \newcommand{\sgn}{\mathrm{sgn}}
+        \newcommand{\diag}{\mathrm{diag}}
+        \newcommand{\Real}{\mathbb{R}}
+        \newcommand{\sseq}{\subseteq}
+        \newcommand{\ov}[1]{\overline{#1}}
+        \DeclareMathOperator*{\argmax}{arg\,max}
+        \DeclareMathOperator*{\argmin}{arg\,min}
+
+        \newcommand{\data}{\mathrm{data}}
+        \newcommand{\N}{\mathcal{N}}
+        \newcommand{\Hil}{\mathcal{H}}
+        \)
+    </span>
+
+    <br>
+    <h1>DreamBooth</h1>
+    
+    <p>This note is written as I read the paper "DreamBooth: Fine Tuning Text-to-Image Diffusion Models for Subject-Driven Generation" by Ruiz et al from Google. Here's the project page: <a href="https://dreambooth.github.io/">https://dreambooth.github.io/</a>.</p>
+
+    <hr>
+    <h2>1 &nbsp; Introduction</h2>
+
+    <ul>
+      <li>DreamBooth is a popular technique that solves the "few-shot generation using a pre-trained text-to-image model."
+      <ul>
+        <li>This is the same problem that <a href="https://pkhungurn.github.io/notes/notes/ml/t2i-textual-inversion/index.html">Textual Inversion</a> tries to solve.</li>
+
+        <li>The paper calls it "subject-driven generation". However, it can be used to generate image in a particular style as well.</li>
+      </ul>
+      </li>
+
+      <li>Input
+      <ul>
+        <li>Several images of a subject or a concept.
+        <ul>
+          <li>Photos of a sculpture taken from multiple camera angles.</li>
+          <li>Photos of a specific animal.</li>
+          <li>Illustrations of the same character.
+          <ul>
+            <li>Unlike Textual Inversion, DreamBooth can generate conviencing human images.</li>
+            <li>Here are some examples.
+            <ul>
+              <li><a href="https://www.reddit.com/r/StableDiffusion/comments/yfpijn/dreambooth_finetune_on_ranni_the_witch/">Ranni the Witch</a></li>
+              <li><a href="https://note.com/lisa_s/n/n5fb5468e8998">アンルシア (Dragon Quest X)</a></li>
+              <li><a href="https://huggingface.co/waifu-research-department/senko">Senko-san</a></li>
+              <li>This <a href="https://huggingface.co/waifu-research-department">Hugging Face page</a> lists a ton more of such models.</li>
+            </ul>
+            </li>
+          </ul>
+          </li>
+        </ul>
+        </li>
+
+        <li>A pre-trained text-to-image model.
+        <ul>
+          <li>The paper uses <a href="https://imagen.research.google/">Imagen</a> <a href="https://arxiv.org/abs/2205.11487">[Saharia et al. 2022]</a>.</li>
+        </ul>
+        </li>
+
+        <li>A word that indicates the category of the concept.
+        <ul>
+          <li>"Sculpture," "dog," "cat," "sunglasses", "girl", etc.</li>
+        </ul>
+        </li>
+      </ul>
+      </li>
+
+      <li>Output
+      <ul>
+        <li>A token and its associated plain text that can be used to represent the concept.</li>
+        <li>A fine-tuned text-to-image model that can generate images of the concept.</li>
+      </ul>
+      </li>
+    </ul>
+
+    <hr>
+    <h2>2 &nbsp; Background</h2>
+
+    <ul>
+      <li>The paper uses Imagen as its text-to-image model. The model has multiple components.
+      <ul>
+        <li>A text-conditioned DDPM that generates images at the $64 \times 64$.</li>
+
+        <li>Two text-conditioned super-resolution models (also DDPMs).
+        <ul>
+          <li>$64 \times 64 \rightarrow 256 \times 256$</li>
+          <li>$256 \times 256 \rightarrow 1024 \times 1024$</li>
+        </ul>
+        </li>
+
+        <li>A tokenizer $f$ that turns a prompt text $\ve{P}$ to a fixed length vector $f(\ve{P})$.
+        <ul>
+          <li>The paper uses the <a href="https://github.com/google/sentencepiece">SentencePiece</a> tokenizer <a href="https://aclanthology.org/D18-2012/">[Kudo and Richardson 2018]</a></li>
+        </ul>
+        </li>
+
+        <li>A language model $\Gamma$ that turns $f(\ve{P})$ into a conditioning vector $\ve{c} := \Gamma(f(\ve{P}))$.
+        <ul>
+          <li>$\ve{c}$ is fed to the DDPMs later.</li>
+          <li>The paper uses <a href="https://github.com/google-research/text-to-text-transfer-transformer">T5-XXL</a>.</li>
+        </ul>
+        </li>
+      </ul>
+      </li>
+
+      <li>The DDPM at the lowest level ($64 \times 64$) is denoted by $\widehat{\ve{x}}_{\ve{\theta}}$.
+      <ul>
+        <li>It is trained to minimize the following loss:
+        \begin{align*}
+        E_{
+          \substack{
+            \ve{x},\ve{c} \sim p_{\mathrm{data}}, \\
+            t \sim \mcal{U}([0,1]), \\
+            \ves{\xi} \sim \mcal{N}(\ve{0},I) 
+          }
+        } 
+        \Big[ w_t \big\| \ve{x} - \widehat{\ve{x}}_{\ves{\theta}} (\ve{z}_t, t, \ve{c}) \big\|^2  \Big]
+        \end{align*}
+        where
+        <ul>
+          <li>$\ve{z}_t := \alpha_t \ve{x} + \sigma_t \ves{\xi}$,</li>
+          <li>$\sigma_t$ is the noise schedule at time $t$, and $\alpha_t = \sqrt{1 - \sigma^2_t}$,</li>
+          <li>$\mcal{U}([0,1])$ is the uniform distribution on the interval $[0,1]$,</li>
+          <li>$w_t$ is the weight of the loss at the $t$th time step.</li>
+        </ul>
+        </li>
+      </ul>
+      </li>
+
+      <li>The super-resolution DDPMs can be formulated similarly.
+      <ul>
+        <li>Let $\ve{y}$ denote the low-resolution image of $\ve{x}$.</li>
+        
+        <li>Let $\ve{y}_s := \alpha_s \ve{y} + \sigma_s \xi'$ where $\xi' \sim \mcal{N}(\ve{0}, I)$.</li>
+        
+        <li>The DDPM is now conditioned on $t$, $\ve{c}$, $s$, and $\ve{y}_s$. So, its signature is $$\widehat{\ve{x}}(\ve{z}_t, t, \ve{c}, \ve{y}_s, s).$$</li>
+        
+        <li>Conditioning the super-resolution model on $\ve{y}_s$ and $s$ instead of just $\ve{y}$ is called <b>noise conditioning augmentation</b>.</li>
+
+        <li>At training time, $s$ is randomly samped in the range of $[0,1]$.</li>
+        
+        <li>At test time, however, we fix $s$. It is typically in the range $[0.1,0.3]$.</li>
+
+        <li>In the Imagen paper, higher $s$ results in poorer FID score, but it allows the super-resolution module to generate more varied images.</li>
+      </ul>
+      </li>
+    </ul>
+
+    <hr>
+    <h2>3 &nbsp; Method</h2>
+
+    <h3>3.1 &nbsp; Choosing a token and a placeholder text</h3>
+
+    <ul>
+      <li>The first step of the method is to pick a token and its associated placeholder text that is used to represent the concept.
+      <ul>
+        <li>Note that Textual Inversion allows you to pick a placeholder text, and it would learn the token embedding.</li>
+
+        <li>DreamBooth, on the other hand, will choose an existing token and its placeholder text for you.</li>
+      </ul>
+      </li>
+
+      <li>We pick a relatively rare token in the vocabulary of the tokenizer.
+      <ul>
+        <li>As far as I understand, this is done by a rejection sampling algorithm.</li>
+        <li>That is, we uniformly sample a token with ID in the range $\{ 5000, 5001, \dotsc, 10000 \}$. (I presume the tokens are sorted by their frequency of appearance in a corpus.) We accept the token if it corresponds to 3 or fewer Unicode characters. Otherwise, we reject and repeat.</li>
+        <li>Let us call the placeholder string $\widehat{\ve{V}}$.</li>
+      </ul>
+      </li>
+
+      <li>We choose a rare token and its associated text because we want to avoid the prior associated with the placeholder text constructed otherwise.
+      <ul>
+        <li>If we use English words like "unique" or "special", then the prior associated with these words would result in increased training time and decreased performance.</li>
+
+        <li>If we use random identifiers like "xxy5syt00", then the tokenizer might tokenize each letter separately. The image generator have strong priors for these letter. If we generate an image with such a text in the prompt, we will see the letters in the resulting image.</li>
+      </ul>
+      </li>
+    </ul>
+
+    <h3>3.2 &nbsp; Fine-tune the DDPMs</h3>
+
+    <ul>
+      <li>We prepare the following data.
+      <ul>
+        <li>The sample images $\ve{x}_1$, $\ve{x}_2$, $\dotsc$, $\ve{x}_N$ from the input.
+        <ul>
+          <li>$N$ is typically 3 to 5.</li>
+        </ul>
+        </li>
+        
+        <li>Two text prompts.
+        <ul>
+          <li>"A $\widehat{\ve{V}}$ [category word]".
+          <ul>
+            <li>For example, "a $\widehat{\ve{V}}$ dog".</li>
+            <li>Let us call the conditioning vector associated with this prompt $\ve{c}$.</li>
+          </ul>
+          </li>
+          <li>"A [category word]"
+          <ul>
+            <li>For example, "a dog".</li>
+            <li>Let us call the conditioning vector associated with this prompt $\ve{c}'$.</li>
+          </ul>
+          </li>
+        </ul>
+        </li>        
+      </ul>
+      </li>
+
+      <li>We then fine-tune the $64 \times 64$ DDPM with the following <b>prior preservation loss</b>.
+      \begin{align*}
+      & E_{
+        \substack{
+          t \sim \mcal{U}([0,1]), \\
+          n \sim \mcal{U}\{1:N\}, \\
+          \xi \sim \mcal{N}(\ve{0},I)          
+        }
+      }
+      \Big[
+        \big\| \ve{x}_n - \widehat{\ve{x}}_{\ves{\theta}}(\alpha_t \ve{x}_n + \sigma_t \ves{\xi}, t, \ve{c}) \big\|^2      
+      \Big] \\      
+      & \qquad + \lambda E_{
+        \substack{
+          t \sim \mcal{U}([0,1]) \\
+          \xi' \sim \mcal{N}(\ve{0},I), \\
+          \ve{x}' \sim \mathrm{OriginalDDPM}(\ve{c}')
+        }
+      }
+      \Big[
+        \big\| \ve{x}' - \widehat{\ve{x}}_{\ves{\theta}}(\alpha_t \ve{x}' + \sigma_t \ves{\xi}', t, \ve{c}') \big\|^2      
+      \Big].
+      \end{align*}
+      Here, $\ve{x}'$ is an image generated from the pre-trained DDPM using the conditioning vector $\ve{c}'$. The constant $\lambda$ is a hyperparameter.
+      </li>
+
+      <li>The term that involves images generated with the conditioning vector $\ve{c}'$ is there to solve two problems: overfitting and language drift.
+      <ul>
+        <li><b>Overfitting</b>. Say, your example images are those of a specific dog that are taken in a room. Overfitting means that, when the fine-tuned model is given the prompt "a $\widehat{\ve{V}}$ dog", it would generate dogs that are too close in pose, lighting (and other attributes that should vary) to the example images. Moreover, the environment that the dogs are in would just be the room of the example images.</li>
+
+        <li><b>Language drift.</b> This is the problem where the fine-tuned model would lose syntactic and semantics knowledge of the language it has learned. This is manifested as forgetting how to generate dogs other than the one given in the example images when given the "a dog" prompt.</li>
+      </ul>
+      </li>
+
+      <li>The paper fine-tunes the model for about $200$ epochs using a learning rate of $10^{-5}$ with $\lambda = 1$.
+      <ul>
+        <li>During this process, it has to generate $200N$ images with the pre-trained model.</li>
+
+        <li>This takes about 15 minutes on a TPUv4.</li>
+
+        <li>The Github repository for <a href="https://github.com/XavierXiao/Dreambooth-Stable-Diffusion">an implementation</a> that works with Stable Diffusion found that it also takes about 15 minutes using two A6000 GPUs.
+        <ul>
+          <li>However, the settings are different. The model is Stable Diffusion, not Imagen. Training is run for 800 steps, not 200 epochs. Regularizing images are also generated before hand, not on the fly.</li>
+        </ul>
+        </li>
+      </ul>
+      </li>
+
+      <li>We must also fine-tune the super-resolution models using the same loss above.</li>
+
+      <li>However, the part about fine-tuning the super-resolution models left me quite confused.
+      <ul>
+        <li>First, the paper never states how the $s$ value is picked. I presumed $s$ is fixed to the value used in the test configuration of Imagen (i.e., $s \in [0.1,0.3]$) and not randomly sampled during the fine-tuning process.</li>
+
+        <li>The paper then says that they had to decrease the level of noise augmentation from $10^{-3}$ to $10^{-5}$ during the fine-tuning of the $64 \times 64 \rightarrow 256 \times 256$ model. This lost me because $s$ is supposed to be in the range $[0.1,0.3]$.
+        <ul>
+          <li>I guess they might be referring to $\sigma_s$ instead of $s$?</li>          
+        </ul>
+        </li>
+      </ul>
+      </li>
+    </ul>
+
+    <h2>3.3 &nbsp; At test time</h2>
+
+    <ul>
+      <li>The fine-tuned model, together with the selected placeholder text, can be used to generate new images of the concept.</li>
+
+      <li>The model is now "specialized" to generate images of the subject. You should not expect that it do as well as the pre-trained model when given general prompts. </li>
+    </ul>
+
+    <hr>
+    <div class="page-header"></div>
+    <p>Last modified: 2022/12/03</p>
+</div>
+
+<script type="text/javascript">
+$.bigfoot();
+</script>
+
+</body>
+</html>

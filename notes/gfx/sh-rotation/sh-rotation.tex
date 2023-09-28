@@ -1,0 +1,703 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{mathrsfs}
+\usepackage{mathdots}
+\usepackage{graphicx}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+\usepackage{verbatim}
+\usepackage{hyperref}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\Dee}{\mathrm{D}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\Var}{\mathrm{Var}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+\newcommand{\ov}[1]{\overline{#1}}
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+\title{Spherical Harmonics Rotation}
+\author{Pramook Khungurn}
+
+\begin{document}
+	\maketitle
+
+    \section{Preliminaries}
+
+    \begin{itemize}
+        \item Let $\omega \in S^2$.  The direction is parametermized by two angles---the \textbf{elevation angle} $\theta$ and the \textbf{azimuthal angle} $\phi$---such that:
+        \begin{align*}
+            \omega
+            = \begin{bmatrix}
+                x \\ y \\ z
+            \end{bmatrix}
+            = \begin{bmatrix}
+                \sin\theta \cos\phi \\
+                \sin\theta \sin\phi \\
+                \cos\theta
+            \end{bmatrix}.
+        \end{align*}
+
+        \item We denote a \textbf{real spherical harmonic basis function} by the symbol $Y_{l,m}: S^2 \ra \Real$ where $l \geq 0$ and $-l \leq m \leq l$.  We have that:
+        \begin{align*}
+            Y_{l,m}(\omega)
+            = \begin{cases}
+                \sqrt{2} K_l^m \cos (m\phi) P_l^m (\cos\theta), & m > 0 \\
+                \sqrt{2} K_l^m \sin (|m|\phi) P_l^{|m|} (\cos\theta), & m > 0 \\
+                K_l^0 P_l^0 (\cos\theta), & m = 0
+            \end{cases}.
+        \end{align*}
+        Here,
+        \begin{align*}
+            K_l^m \sqrt{\frac{(2l+1)(l-|m|)!}{4\pi(l+|m|)!}},
+        \end{align*}
+        and $P_l^m$ is the \textbf{associated Legendre polynomial}, which may be computed by the following recurrence relations:
+        \begin{align*}            
+            P_0^0(x) &= 1 \\
+            P^{l+1}_{l+1}(x) &= -(2l+1) \sqrt{1 - x^2} P^l_l(x) \\
+            P^l_{l+1}(x) &= x(2l+1)P^l_l(x)
+        \end{align*}
+
+        \item We shall call the basis functions with the same $l$-index as belonging to the same \textbf{band}.  We will also refer to the bands by its $l$-index; for examples, Band 0, Band 1, and so on.
+
+        \item The \textbf{SH expansion of order $L$} of a spherical function $f$ is an approximation of $f$ by a linear combination of SH basis functions:
+        \begin{align*}
+            f(\omega) \approx \sum_{l=0}^L \sum_{m=-l}^l \tilde{f}_{l,m} Y_{l,m}(\omega)
+        \end{align*}
+        where the coefficient $\tilde{f}^m_l$ is given by:
+        \begin{align*}
+            \tilde{f}_{l,m} = \int_{S^2} f(\omega) Y_{l,m}(\omega)\ \dee\omega.
+        \end{align*}
+        It follows that an expansion of order $L$ has $(L+1)^2$ coefficients.        
+        
+        \item We shall let $\tilde{f}$ denote the vector of coefficients 
+        \begin{align*}
+            \tilde{f} &= (\tilde{f}_{0,0}, \tilde{f}_{1,-1}, \tilde{f}_{1,0}, \tilde{f}_{1,1}, \dotsc, \tilde{f}_{L,-L}, \tilde{f}_{L,-L+1}, \dotsc, \tilde{f}_{L,L-1}, \tilde{f}_{L,L} )^T.
+        \end{align*}
+        Moreover, we shall let $Y$ denote the column vectors of basis functions:
+        \begin{align*}
+            Y &= \begin{bmatrix}
+                Y_{0,0} & Y_{1,-1} & Y_{1,0} & Y_{1,1} & \cdots & Y_{L,-L} & Y_{L,-L+1} & \cdots & Y_{L,L-1} & Y_{L,L}
+            \end{bmatrix}.
+        \end{align*}
+        So, we may write:
+        \begin{align*}
+            f \approx Y \tilde{f}.
+        \end{align*}
+
+        \item We shall extend the vector notation above to specific bands.  Let $\tilde{f}_l$ denote the column vector of coefficients, containing only those in Band $l$:
+        \begin{align*}
+            \tilde{f}_l &= (\tilde{f}_{l,-l}, \tilde{f}_{l,-l+1}, \dotsc, \tilde{f}_{l,l-1}, \tilde{f}_{l,l})^T.
+        \end{align*}
+        Also, let $Y_l$ denote the row vectors of the basis functions in Band $l$:
+        \begin{align*}
+            Y_l &= \begin{bmatrix}
+                Y_{l,-l} & Y_{l,-l+1} & \cdots & Y_{l,l-1} & Y_{l,l}
+            \end{bmatrix}.
+        \end{align*}
+        So, $f \approx Y \tilde{f}$ may be written as:
+        \begin{align*}
+            f \approx 
+            \left[ \begin{array}{c|c|c|c} Y_0 & Y_1 & \cdots & Y_L \end{array} \right]
+            \left[ \begin{array}{c} 
+                \tilde{f}_0 \\ \hline
+                \tilde{f}_1 \\ \hline
+                \vdots \\ \hline
+                \tilde{f}_L 
+            \end{array} \right].
+        \end{align*}
+
+        \item We shall think of $Y$ and $Y_l$ as bases where functions are expanded.
+
+        \item Given a rotation matrix $R$, a spherical function might be rotated with it.  The \textbf{rotation} $Rf$ is given by:
+        \begin{align*}
+            (Rf)(\omega) &= f(R^{-1}\omega).
+        \end{align*}
+        The main goal of this document is to compute the coefficients of the SH expasion of a rotated function.
+
+        \item It turns out that the SH basis functions in Band $l$ are complete under rotation.  More specifically, for all $y_l^m$ and for all rotation matrix $R$, we have that $RY_{l,m}$ can be written as a linear combination of SH basis functions in the same band.
+
+        \item Because of the above property, there exists a matrix $\tilde{R}$ such that:
+        \begin{align*}
+            \widetilde{Rf} = \tilde{R} \tilde{f}.
+        \end{align*}
+        Moroever, the matrix $\tilde{R}$ has the following diagonal block structure:
+        \begin{align*}
+            \tilde{R} = \begin{bmatrix}
+                * &   &   &   &   &   &   &   &   & \cdots \\
+                  & * & * & * &   &   &   &   &   & \cdots \\
+                  & * & * & * &   &   &   &   &   & \cdots \\
+                  & * & * & * &   &   &   &   &   & \cdots \\
+                  &   &   &   & * & * & * & * & * & \cdots \\  
+                  &   &   &   & * & * & * & * & * & \cdots \\  
+                  &   &   &   & * & * & * & * & * & \cdots \\  
+                  &   &   &   & * & * & * & * & * & \cdots \\  
+                  &   &   &   & * & * & * & * & * & \cdots \\  
+                \vdots & \vdots & \vdots & \vdots & \vdots & \vdots & \vdots & \vdots & \vdots & \ddots
+            \end{bmatrix}
+        \end{align*}
+        The $l$th (starting from $0$) diagonal block is of size $(2l+1)\times(2l+1)$.
+
+        \item The basis function $Y_{l,0}$ is called a \textbf{zonal harmonic}.  A zonal harmonics is easy to rotate.  Let $f = RY_{l,0}$.  We have that:
+        \begin{align*}
+            \tilde{f}_l^m &= \sqrt{\frac{4\pi}{2l+1}} Y_{l,m}(\omega_d)
+        \end{align*}
+        where $\omega_d = R(0,0,1)^T$.
+    \end{itemize}
+
+    \section{Pinchon and Hoggan}
+
+    \begin{itemize}
+        \item Pinchon and Hoggan discussed how to compute the rotation matrix $\tilde{R}$ \cite{Pinchon:2007}.
+
+        \item The paper bases its derivation on the \textbf{complex spherical harmonics basis functions}, which we shall denote by $\mathcal{Y}_{l,m}$.  We have that
+        \begin{align*}
+            \mathcal{Y}_{0,0}(\omega) &= \frac{1}{\sqrt{4\pi}},
+        \end{align*}
+        and
+        \begin{align*}
+            \mathcal{Y}_{l,m}(\omega) &= i^{m+|m|} \sqrt{\frac{(2l+1)(l-|m|)!}{4\pi(l+|m|)!}} P_l^{|m|}(\cos\theta) e^{im\phi}
+        \end{align*}
+        for all $(l,m) \neq (0,0)$.
+
+        \item The complex basis functions are related to the real basis functions as follows:
+        \begin{align*}
+            Y_{l,m}(\omega) &= \begin{cases}
+                \mathcal{Y}_{l,0}(\omega), & m=0 \\
+                \frac{1}{\sqrt{2}}[\mathcal{Y}_{l,m}(\omega) + (-1)^m \mathcal{Y}_{l,-m}(\omega)] , & m>0 \\
+                \frac{i}{\sqrt{2}}[(-1)^m \mathcal{Y}_{l,m}(\omega) - \mathcal{Y}_{l,-m}(\omega)] , & m<0 \\
+            \end{cases}
+        \end{align*}
+
+        \item Let $C_l$ be the matrix that converts from the real SH basis in Band $l$ to the complex SH basis in Band $l$.  That is, $C_l$ should satisfy the following equation:
+        \begin{align*}
+            Y_l &= \mathcal{Y}_l C_l.
+        \end{align*}
+        We have that:
+        \begin{align*}
+            C_l = \begin{bmatrix}
+                \frac{(-1)^l i}{\sqrt{2}} & & & & & & & & \frac{(-1)^l}{\sqrt{2}} \\
+                & \frac{(-1)^{l-1}i}{\sqrt{2}} & & & & & & \frac{(-1)^{l-1}}{\sqrt{2}} & \\
+                & & \ddots & & & & \iddots & & \\
+                & & & \frac{-i}{\sqrt{2}} & & \frac{-1}{\sqrt{2}} & & & \\
+                & & & & 1 & & & & \\
+                & & & \frac{-i}{\sqrt{2}} & & \frac{1}{\sqrt{2}} & & & \\
+                & & \iddots & & & & \ddots & & \\
+                & \frac{-i}{\sqrt{2}} & & & & & & \frac{1}{\sqrt{2}} & \\
+                \frac{-i}{\sqrt{2}} & & & & & & & & \frac{1}{\sqrt{2}}
+            \end{bmatrix}
+        \end{align*}
+        The matrix $C$ that converts the \emph{whole} real SH basis to the \emph{whole} complex SH basis is just a diagonal block matrix with $C_l$ on the diagonal. 
+
+        \item We will see that that some rotation matrices are easy to express under the complex SH basis.  The task then is to convert this matrix to the real SH basis.
+
+        \item Let $R$ an arbitrary rotation matrix.  It can be decomposed into a rotation around the $z$-axis, followed by a rotation around $y$-axis, followed by another rotation around the $z$-axis.  That is:
+        \begin{align*}
+            R 
+            &= R_z(\gamma) R_y(\beta) R_z(\alpha)
+            = \begin{bmatrix}
+                \cos\gamma & -\sin\gamma & 0 \\
+                \sin\gamma & \cos\gamma & 0 \\
+                0 & 0 & 1
+            \end{bmatrix}
+            \begin{bmatrix}
+                \cos\beta & 0 & -\sin\beta \\
+                0 & 1 & 0 \\
+                \sin\beta & 0 & \cos\beta \\
+            \end{bmatrix}
+            \begin{bmatrix}
+                \cos\alpha & -\sin\alpha & 0 \\
+                \sin\alpha & \cos\alpha & 0 \\
+                0 & 0 & 1
+            \end{bmatrix}.
+        \end{align*}
+        Naturally, we have that:
+        \begin{align*}
+            \tilde{R} = \widetilde{R_z(\gamma)} \widetilde{R_y(\beta)} \widetilde{R_z(\alpha)}
+        \end{align*}
+
+        \item For notational convenience, we shall denote $\widetilde{R}_z(\alpha)$ by $X(\alpha)$ and $\widetilde{R}_y(\beta)$ by $D(\beta)$.  So,
+        \begin{align*}
+            \tilde{R} &= X(\gamma) D(\beta) X(\alpha).
+        \end{align*}
+
+        \item By the virtue of being matrices that represent rotation, $X(\cdot)$ and $D(\cdot)$ has block diagonal structure.  Let us denote the block corresponding to Band $l$ with $X_l(\cdot)$ and $D_l(\cdot)$, respectively.
+    \end{itemize}
+
+    \subsection{Rotation Around the $z$-Axis}
+
+    \begin{itemize}
+        \item The matrix $X(\alpha)$, when expressed in the complex SH basis, is a diagonal matrix whose $(l,m)$-entry is given by $e^{-im\alpha}$.
+
+        \item Consider the block corresponding to Band $l$, we have that:
+        \begin{align*}
+            X_l(\alpha) &= C^{-1}_l \begin{bmatrix}
+                e^{il\alpha} & & & & & & & & \\
+                & e^{i(l-1)\alpha} & & & & & & & \\
+                & & \ddots & & & & & & \\
+                & & & e^{i\alpha} & & & & & \\
+                & & & & 1 & & & & \\
+                & & & & & e^{-i\alpha} & & & \\
+                & & & & & & \ddots & & \\
+                & & & & & & & e^{-i(l-1)\alpha} & \\
+                & & & & & & & & e^{-il\alpha}
+            \end{bmatrix}
+            C
+        \end{align*}
+        The paper says that:
+        \begin{align*}
+            X_l(\alpha) &= \begin{bmatrix}
+                \cos (l\alpha) & & & & & & & & \sin (l\alpha) \\
+                & \cos ((l-1)\alpha) & & & & & & \sin ((l-1)\alpha) & \\
+                & & \ddots & & & & \iddots & & \\
+                & & & \cos\alpha & & \sin\alpha & & & \\
+                & & & & 1 & & & & \\
+                & & & -\sin\alpha & & \cos\alpha & & & \\
+                & & \iddots & & & & \ddots & & \\
+                & -\sin((l-1)\alpha) & & & & & & \cos((l-1)\alpha) & \\
+                -sin(l\alpha) & & & & & & & & \cos(l\alpha) 
+            \end{bmatrix}.
+        \end{align*}
+    \end{itemize}
+
+    \subsection{Rotation Around the $y$-Axis}
+
+    \begin{itemize}
+        \item We now turn to the problem of how to compute $\widetilde{R_y(\beta)}$.
+
+        \item The paper decomposes the rotation around the $y$-axis into three matrices:
+        \begin{align*}
+            \begin{bmatrix}
+                \cos\beta & 0 & \sin\beta \\
+                0 & 1 & 0 \\
+                -\sin\beta & 0 & \cos\beta
+            \end{bmatrix}
+            &=
+            \begin{bmatrix}
+                1 & 0 & 0 \\
+                0 & 0 & 1 \\
+                0 & 1 & 0
+            \end{bmatrix}
+            \begin{bmatrix}
+                \cos\beta & \sin\beta & 0 \\
+                -\sin\beta & \cos\beta & 0 \\
+                0 & 0 & 1
+            \end{bmatrix}
+            \begin{bmatrix}
+                1 & 0 & 0 \\
+                0 & 0 & 1 \\
+                0 & 1 & 0
+            \end{bmatrix} \\
+            &=
+            \begin{bmatrix}
+                1 & 0 & 0 \\
+                0 & 0 & 1 \\
+                0 & 1 & 0
+            \end{bmatrix}
+            \begin{bmatrix}
+                \cos(-\beta) & \sin(-\beta) & 0 \\
+                \sin(-\beta) & \cos(-\beta) & 0 \\
+                0 & 0 & 1
+            \end{bmatrix}
+            \begin{bmatrix}
+                1 & 0 & 0 \\
+                0 & 0 & 1 \\
+                0 & 1 & 0
+            \end{bmatrix}
+        \end{align*}
+
+        \item The paper claims that, the rotation matrix in the real SH basis restricted to Band $l$, is given by:
+        \begin{align*}
+            D_l(\beta) &= J_l X_l(-\beta) J_l
+        \end{align*}
+        where $J_l$ is a $(2l+1) \times (2l+1)$ matrix.  Our task is reduced to the computation of $J_l$, which does not depend on the rotation being considered.
+
+        \item Define the \textbf{Gaunt coefficient} as:
+        \begin{align*}
+            \begin{bmatrix}
+                l_1 & l_2 & l_3 \\
+                m_1 & m_2 & m_3
+            \end{bmatrix}_\Real
+            &= \int_{S^2} Y_{l_1,m_1}(\omega) Y_{l_2,m_2}(\omega) Y_{l_3,m_3}(\omega)\ \dee\omega.
+        \end{align*}
+
+        \item Let $v \in \{x, y, z\}$.  Define the $(2l+3) \times (2l+1)$ matrix $G^l_v$ as follows:
+        \begin{align*}
+            [G_v^l]_{i,j} = (-1)^{s(v)} \frac{2\sqrt{\pi}}{\sqrt{3}}
+            \begin{bmatrix}
+                l+1 & l & l \\
+                i-l-2 & j-l-1 & s(v)
+            \end{bmatrix}_\Real
+        \end{align*}
+        where $s(y) = -1$, $s(z) = 0$, and $s(x) = 1$.
+
+        \item For $l \geq 1$, then non-zero elements of $G^l_x$ and $G^l_y$ are given by the following equations.
+        \begin{itemize}
+            \item For $1 \leq k \leq l-1$,
+            \begin{align*}
+                [G^l_x]_{2+k,k}
+                = [G^l_x]_{2l+2-k,2l+2-k}
+                = [G^l_y]_{2l+2-k,k}
+                = -[G^l_y]_{2+k,2l+2-k}
+                = \frac{\sqrt{k(k+1)}}{2\sqrt{(2l+1)(2l+3)}}.
+            \end{align*}
+            \item For $1 \leq k \leq l$,
+            \begin{align*}
+                [G^l_x]_{k,k}
+                = [G^l_x]_{2l+4-k,2l+2-k}
+                = [G^l_y]_{k,2l+2-k}
+                = -[G^l_y]_{2l+4-k,k}
+                = -\frac{\sqrt{(2l+2-k)(2l+3-k)}}{2\sqrt{(2l+1)(2l+3)}}
+            \end{align*}
+            \item Lastly,
+            \begin{align*}
+                [G^l_x]_{l+2,l+2} &= [G^l_y]_{l+2,l} = \frac{\sqrt{2l(l+1)}}{2\sqrt{(2l+1)(2l+3)}} \\
+                [G^l_x]_{l+3,l+1} &= [G^l_y]_{l+1,l+1} = \frac{\sqrt{2(l+1)(l+3)}}{2\sqrt{(2l+1)(2l+3)}}
+            \end{align*}
+        \end{itemize}
+
+        \item For $l \geq 1$, $G^l_z$ si given by:
+        \begin{itemize}
+            \item  For $1 \leq k \leq 2l+1$,
+            \begin{align*}
+                [G^l_z]_{k+1,k} = \frac{\sqrt{k(2l+2-k)}}{\sqrt{(2l+1)(2l+3)}}.
+            \end{align*}
+            \item $[G^l_z]_{i,j} = 0$ elsewhere.
+        \end{itemize}
+        
+        \item For $l \geq 2$, we have that:
+        \begin{align*}
+            G^l_x J_l &= J_{l+1} G^l_x \\
+            G^l_z J_l &= J_{l+1} G^l_y \\
+            G^l_y J_l &= J_{l+1} G^l_z 
+        \end{align*}
+
+        \item We see that $G^l_z$ with its first and last rows is a diagonal matrix.  Let $\hat{G}^l_z$ be $G^l_z$ with the first and last rows removed.  We have that $G^l_y J_l (\hat{G}^l_z)^{-1}$ is just $J_{l+1}$ with its first and last columns.
+        Since $J_{l+1}$ is a symmetric matrix, all the elements of the first and last columns (except the cornders), may be receovered in the first and last rows of $G^l_y J_l (\hat{G}^l_z)^{-1}$.
+
+        \item The corner values of $J_{l+1}$ are given by the following facts: for $l \geq 1$,
+        \begin{align*}
+            [J_l]_{1,1} = [J_l]_{l,2l+1} = [J_l]_{2l+1,1} &= 0 \\
+            [J_l]_{2l+1,2l+1} &= 2^{1-l}.
+        \end{align*}
+
+        \item Lastly, $J_0 = \begin{bmatrix}
+            1
+        \end{bmatrix}$.
+    \end{itemize}
+
+    \section{Nowrouzezahrai--Simari--Fiume (NSF)}
+
+    \begin{itemize}
+        \item The paper \cite{Nowrouzezahrai:2012} proposes a method to decompose a general SH-projected function to a sum of ZHs, which are eays to rotate.
+
+        \item Each Band $l$ basis function can be perfectly represented as a weighted sum of at most $2l+1$ rotated $Y_{l,0}$ lobes.  This is trivially true for Band $0$ because there is only one function there.
+
+        \item For Band $1$, we have that:
+        \begin{align*}
+            Y_{1,-1}(\omega) &= -\nu y &
+            Y_{1,0}(\omega) &= \nu z &
+            Y_{1,1}(\omega) &= -\nu x
+        \end{align*}
+        where $\nu = \sqrt{3}/(2\sqrt{2})$.  The lobe $\nu z$ can be rotated to either the $y$- or the $x$-axes using the ZH rotation formular with $\omega_d = \omega_{1,-1} = (0,1,0)$  and $\omega_d = \omega_{1,1} = (1,0,0)$, respectively.  In particular:
+        \begin{align*}
+            Y_{1,-1}(\omega) &= -1 \times (R_{1,-1}Y_{1,0})(\omega) &
+            Y_{1,1}(\omega) &= -1 \times (R_{1,1} Y_{1,0})(\omega)
+        \end{align*}
+        where $R_{1,-1}$ denotes the rotation that transform $(0,0,1)$ to $\omega_{1,-1}$, and $R_{1,1}$ denotes the similar rotation for $\omega_{1,1}$.
+
+        \item The paper attempts to generalize the above facts to cases where $l \geq 2$.  It postulates that there are directions $\omega_{l,d}$ for $-l \leq d \leq l$ and coefficients $\alpha_{l,m;d}$ with $-l\leq m,d \leq l$ such that
+        \begin{align}
+            Y_{l,m}(\omega) &= \sum_{d=-l}^l \alpha_{l,m;d} (R_{l,d}Y_{l,0}) (\omega). \label{zh-decomposition}
+        \end{align}
+        where $R_{l,d}$ is the rotation matrix that rotates $(0,0,1)$ to $\omega_{l,d}$.  The paper solves for these directions and coefficients.
+        
+        \item From the above definition, we have that:
+        \begin{align*}
+            (\alpha_{1,-1;-1}, \alpha_{1,-1;0}, \alpha_{1,-1;1}) &= (-1, 0, 0) \\
+            (\alpha_{1,0;-1}, \alpha_{1,0;0}, \alpha_{1,0;1}) &= (0, 1, 0) \\
+            (\alpha_{1,1;-1}, \alpha_{1,1;0}, \alpha_{1,1;1}) &= (0, 0, -1).
+        \end{align*}
+        
+        \item Before we proceed to solve for the directions and the coefficients, we call attention to the \textbf{SH addition theorem}, which states that a rotated ZH can be written as a sum fo SH basis functions:
+        \begin{align*}
+            (R_{l,d} Y_{l,0})(\omega) = n_l^* \sum_{m'=-l}^l Y_{l,m'}(\omega_{l,d}) Y_{l,m'}(\omega).
+        \end{align*}
+        where
+        \begin{align*}
+            n_l^* = \sqrt{\frac{4\pi}{2l+1}}.
+        \end{align*}
+
+        \item Expressing Equation~\eqref{zh-decomposition} in matrix form, we have:
+        \begin{align*}
+            \begin{bmatrix}
+                Y_{l,-l}(\omega) \\
+                \vdots \\
+                Y_{l,l}(\omega)
+            \end{bmatrix}
+            &=
+            \begin{bmatrix}
+                a_{l,-l;-l} & \cdots & a_{l,-l;l} \\
+                \vdots & \ddots & \vdots \\
+                a_{l,l;-l} & \cdots & a_{l,l;-l}
+            \end{bmatrix}
+            \begin{bmatrix}
+                (R_{l,-l} Y_{l,0}) (\omega) \\
+                \vdots \\
+                (R_{l,l} Y_{l,0}) (\omega)
+            \end{bmatrix}
+            = 
+            \mathsf{A}_l
+            \begin{bmatrix}
+                (R_{l,-l} Y_{l,0}) (\omega) \\
+                \vdots \\
+                (R_{l,l} Y_{l,0}) (\omega)
+            \end{bmatrix}.
+        \end{align*}
+        Applying the SH addition theorem, we may write:
+        \begin{align*}
+            \begin{bmatrix}
+                (R_{l,-l} Y_{l,0}) (\omega) \\
+                \vdots \\
+                (R_{l,l} Y_{l,0}) (\omega)
+            \end{bmatrix}
+            &=
+            \begin{bmatrix}
+                n_l^* & & \\
+                & \ddots & \\
+                & & n_l^*
+            \end{bmatrix}
+            \begin{bmatrix}
+                Y_{l,-l}(\omega_{l,-l}) & \cdots & V_{l,l}(\omega_{l,-l}) \\
+                \vdots & \ddots & \vdots \\
+                Y_{l,-l}(\omega_{l,l}) & \cdots & V_{l,l}(\omega_{l,l})
+            \end{bmatrix}
+            \begin{bmatrix}
+                Y_{l,-l}(\omega) \\
+                \vdots \\
+                Y_{l,l}(\omega)
+            \end{bmatrix}
+            &= \mathsf{D}_l \mathsf{Y}_l
+            \begin{bmatrix}
+                Y_{l,-l}(\omega) \\
+                \vdots \\
+                Y_{l,l}(\omega)
+            \end{bmatrix}.
+        \end{align*}
+        As a result, we have that
+        \begin{align*}
+            \begin{bmatrix}
+                Y_{l,-l}(\omega) \\
+                \vdots \\
+                Y_{l,l}(\omega)
+            \end{bmatrix}
+            &= \mathsf{A}_l \mathsf{D}_l \mathsf{Y}_l 
+            \begin{bmatrix}
+                Y_{l,-l}(\omega) \\
+                \vdots \\
+                Y_{l,l}(\omega)
+            \end{bmatrix}.
+        \end{align*}
+        In other words, $\mathsf{A}_l \mathsf{D}_l \mathsf{Y}_l$ must be as close to the identify matrix as possible.  So, we may solve for the $\alpha_{l,m;d}$ coefficients and the directions $\omega_{l,d}$ by solving the following optimization problem:
+        \begin{align*}
+            \argmin_{\alpha_{l,m;d},\omega_{l,d}} \sum_{i,j} ([\mathsf{A}_l \mathsf{D}_l \mathsf{Y}_l - I]_{ij})^2.
+        \end{align*}
+        There $(2l+1)^2$ $\alpha_{l,m;d}$ coefficients and $2l+1$ directions $\omega_{l,d}$.  Since a direction can be represented with two angles ($\theta$ and $\phi$), we have that there are $(2l+1)^2 + 2(2l+1) = 2l(2l+3)$ unknowns.
+
+        \item The unknowns can be solved for using a constrained non-linear solver; the constraints are needed to restrict the angles to their appropriate ranges.  Nevertheless, the paper found that an unconstrained solver sufficed with rapid convergence to $0$.
+
+        \item Another work \cite{Lessig:2012} shows that any non-singular choice of the $\omega_{l,d}$ is valid and results in an invertible $\mathsf{Y}_l$.  (It's unclear what a non-singular choice of $\omega_{l,d}$ means.)  So, the optimization problem can be solved by picking a random $\omega_{l,d}$ and set $\mathsf{A}_l = (\mathsf{D}_l \mathsf{Y}_l)^{-1}$.
+
+        \item Given the set of weights and lobe functions, we have that:
+        \begin{align*}
+            \begin{bmatrix}
+                Y_{l,-l}(\omega) \\
+                \vdots \\
+                Y_{l,l}(\omega)
+            \end{bmatrix}            
+            &= 
+            \mathsf{A}_l
+            \begin{bmatrix}
+                (R_{l,-l} Y_{l,0}) (\omega) \\
+                \vdots \\
+                (R_{l,l} Y_{l,0}) (\omega)
+            \end{bmatrix}.
+        \end{align*}
+        In other words,
+        \begin{align*}
+            \begin{bmatrix}
+                Y_{l,-l} \\
+                \vdots \\
+                Y_{l,l}
+            \end{bmatrix}            
+            &= 
+            \mathsf{A}_l
+            \begin{bmatrix}
+                R_{l,-l} Y_{l,0} \\
+                \vdots \\
+                R_{l,l} Y_{l,0}
+            \end{bmatrix} \\
+            \begin{bmatrix}
+                Y_{l,-l} &
+                \cdots &
+                Y_{l,l}
+            \end{bmatrix}
+            &= 
+            \begin{bmatrix}
+                R_{l,-l} Y_{l,0} &
+                \cdots &
+                R_{l,l} Y_{l,0}
+            \end{bmatrix}
+            \mathsf{A}_l^T.
+        \end{align*}
+        In other words, $\mathsf{A}_l^T$ denotes the matrix that transforms the SH basis $Y_l$ to the \textbf{rotated zonal harmonics basis} (RZHB).
+
+        As a result, given a spherical function $f$ whose expansion in the SH basis has coefficients $\tilde{f}$.  Then, the Band $l$ SH coefficient vector $\tilde{f}_l$ can be transformed into the Band $l$ coefficients $\hat{f}_l$ in RZHB as follows:
+        \begin{align*}
+            \hat{f}_l = \mathsf{A}_l^T \tilde{f}_l.
+        \end{align*}
+        The process of computing $\hat{f}_l$ from $\tilde{f}_l$ is called \textbf{zonal harmonic factorization} (ZHF).  The reverse process is called \textbf{zonal harmonic expansion}.  The equation of which is given by:
+        \begin{align*}
+            \tilde{f}_l 
+            &= (\mathsf{A}_l^T)^{-1} \hat{f}_l
+            = (\mathsf{A}_l^{-1})^{T} \hat{f}_l
+            = (\mathsf{D}_l \mathsf{Y}_l)^{T} \hat{f}_l.
+        \end{align*}
+
+        \item To make ZHF and ZHE efficient, we would like to have a sparse $\mathsf{A}_l$ and $\mathsf{Y}_l$.  The paper states that choosing the directions so that they are roots of the basis functions promote sparsity.  With this insight, they are able to reduce the search for directions that yield the sparsest matrices from a continous search to a combinatorial search.  They solve this problem with a genetic algorithm and include the results of their search in the supplementary material of the paper.
+
+        \item The paper also investigates sharing directions across bands by requiring that:
+        \begin{align*}
+            \omega_{0,0} = \omega_{1,-1} = \omega_{2,-2} = \omega_{3,-3} = \dotsb &= \omega_{l_{\max},-l_{\max}} \\
+            \omega_{1,0} = \omega_{2,-1} = \omega_{3,-2} = \dotsb &= \omega_{l_{\max},-l_{\max}+1} \\
+            \omega_{2,0} = \omega_{3,-1} = \dotsb &= \omega_{l_{\max},-l_{\max}+2} \\
+            \vdots & \\
+            \omega_{l_{\max-1},l_{\max-1}} &= \omega_{l_{\max},l_{\max}-1}.
+        \end{align*}
+        In this way, for an expansion of order $L$, instead of havig $(L+1)^2$ directions, we only need $2L+1$ directions.
+
+        \item With the ability to do ZHF, how to we rotate a spherical function represented by SH coefficient $\tilde{f}$?
+        First, compute $\hat{f}$.  We have that:
+        \begin{align*}
+            f = \sum_{l=0}^L \begin{bmatrix}
+                R_{l,-l} Y_{l,0} & \cdots & R_{l,l} Y_{l,0}
+            \end{bmatrix}
+            \hat{f}_l
+        \end{align*}
+        So,
+        \begin{align*}
+            Rf = R \sum_{l=0}^L \begin{bmatrix}
+                R_{l,-l} Y_{l,0} & \cdots & R_{l,l} Y_{l,0}
+            \end{bmatrix}
+            \hat{f}_l
+            = \sum_{l=0}^L \begin{bmatrix}
+                (R R_{l,-l}) Y_{l,0} & \cdots & (R R_{l,l}) Y_{l,0}
+            \end{bmatrix}
+            \hat{f}_l.
+        \end{align*}
+        By the SH addition theorem, we have that:
+        \begin{align*}
+            \begin{bmatrix}
+                (RR_{l,-l}) Y_{l,0} \\
+                \vdots \\
+                (RR_{l,l}) Y_{l,0}
+            \end{bmatrix}
+            &=
+            \mathsf{D}_l
+            \begin{bmatrix}
+                Y_{l,-l}(R\omega_{l,-l}) & \cdots & Y_{l,l}(R\omega_{l,-l}) \\
+                \vdots & \ddots & \vdots \\
+                Y_{l,-l}(R\omega_{l,l}) & \cdots & Y_{l,l}(R\omega_{l,l})
+            \end{bmatrix}
+            \begin{bmatrix}
+                Y_{l,-l} \\
+                \vdots \\
+                Y_{l,l}
+            \end{bmatrix}
+            = \mathsf{D}_l
+            \mathsf{Y}^R_l
+            \begin{bmatrix}
+                Y_{l,-l} \\
+                \vdots \\
+                Y_{l,l}
+            \end{bmatrix}
+        \end{align*}
+        So,
+        \begin{align*}
+            \begin{bmatrix}
+                (RR_{l,-l}) Y_{l,0} &
+                \cdots &
+                (RR_{l,l}) Y_{l,0}
+            \end{bmatrix}
+            &= \begin{bmatrix}
+                Y_{l,-l} & \cdots & Y_{l,l}
+            \end{bmatrix}
+            (\mathsf{Y}^R_l)^T \mathsf{D}_l^T,
+        \end{align*}
+        and
+        \begin{align*}
+            Rf 
+            &= \sum_{l=0}^L \begin{bmatrix}
+                Y_{l,-l} & \cdots & Y_{l,l}
+            \end{bmatrix}
+            (\mathsf{Y}^R_l)^T \mathsf{D}_l^T \hat{f}_L \\
+            &= \sum_{l=0}^L \begin{bmatrix}
+                Y_{l,-l} & \cdots & Y_{l,l}
+            \end{bmatrix}
+            (\mathsf{Y}^R_l)^T \mathsf{D}_l^T \mathsf{A}_l^T \tilde{f}_l\\
+            &= \sum_{l=0}^L \begin{bmatrix}
+                Y_{l,-l} & \cdots & Y_{l,l}
+            \end{bmatrix}
+            (\mathsf{Y}^R_l)^T (\mathsf{A}_l \mathsf{D}_l)^T \tilde{f}_l \\
+            &= \sum_{l=0}^L \begin{bmatrix}
+                Y_{l,-l} & \cdots & Y_{l,l}
+            \end{bmatrix}
+            (\mathsf{Y}^R_l)^T (\hat{\mathsf{A}}_l)^T \tilde{f}_l
+        \end{align*}
+        where $\hat{\mathsf{A}}_l = \mathsf{A}_l \mathsf{D}_l$.
+        In other words,
+        \begin{align*}
+            \widetilde{Rf} &= (\mathsf{Y}^R)^T \hat{A}^T \tilde{f}.
+        \end{align*}
+        Here, the matrix $\mathsf{Y}^R$ has to be evaluated once per rotation.
+
+        \item So, what do you actually do to use this paper?  Just copy the code in the supplementary material!  The most important piece is the multiplication $\hat{\mathsf{A}}_l^T\tilde{f}_l$, which they have source code up until $l = 6$.
+    \end{itemize}
+
+	\bibliographystyle{apalike}
+	\bibliography{sh-rotation}  
+\end{document}

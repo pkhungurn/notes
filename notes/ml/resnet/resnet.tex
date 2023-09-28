@@ -1,0 +1,137 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+\usepackage{verbatim}
+\usepackage{hyperref}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\Dee}{\mathrm{D}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\Var}{\mathrm{Var}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+\newcommand{\ov}[1]{\overline{#1}}
+
+\title{ResNet}
+
+\begin{document}
+  \maketitle
+
+  This article is written as I read ``Deep Residual Learning for Image Recognition'' by He \etal\ \cite{He:2015}. This architecture in this paper won the ILSVRC 2015 classification task and is used as building blocks by many subsequent papers.
+
+  \section{Introduction}
+
+  \begin{itemize}
+  	\item Theoretically, deeper networks have more capacity than shallower ones. This is because the deeper layers can implement the identify function.
+
+  	\item In practice however, this is not the case. It is often observed deeper networks have higher training losses. This is called the \emph{degradation problem}.
+
+  	\item How this happens is as follows. You start training. The training loss drops. It gets saturated. Then, it degrades rapidly.
+
+ 	\item The degradation problem is not caused by overfitting. Otherwise, the training loss would have become lower as we increase the depth.
+
+  	\item You may think this is because deeper networks suffer from with vanishing/exploding gradients. However, this has been solved by careful initialization (for examples, Xavier \cite{Glorot:2010} and He \cite{HeInit:2015}) and batch normalization \cite{Ioffe:2015}.
+
+  	\item This kind of means that deeper network is just too hard to train. The optimizers we have at hand have a hard time making the deeper layers into the identify mapping or something better.
+
+  	\item To solve the degradation, the problem proposes the following \emph{deep residual learning} framework:
+  	\begin{quote}
+  		Supposed the desired underlying mapping is $\mathcal{H}(\ve{x})$, we let the network fits $\mathcal{F}(\ve{x}) := \mathcal{H}(\ve{x}) - \ve{x}$ instead.
+  	\end{quote}
+  	The paper says this is easier to optimize. If we want $\mathcal{H}$ to be the identity mapping, it would be easier to push $\mathcal{F}(\ve{x})$ than to fit a network to the identity function.
+
+  	\item The mapping $\mathcal{H}(\ve{x}) = \mathcal{F}(\ve{x}) + \ve{x}$ can be implemented by adding \emph{shortcut connection} that bypass the layers that implement $\mathcal{F}$. The output of the shortcut connection is added directly to the output of $\mathcal{F}(\ve{x})$.
+
+  	\item The paper showed that, for the ImageNet and the CIFAR-10 datasets, the degradation problem exist in plain networks without shortcut connections. Moreover, when shortcut connections are added, the opposite outcome is true: deeper networks achieve better training losses than shallower ones.
+
+  	\item The shortcut connection trick enables the authors to train a 152-layer network for ImageNet and won the ILSVRC 2015 classification competition and various others.  
+  \end{itemize}
+
+  \section{Deep Residual Learning}  
+
+  \begin{itemize}
+  	\item Let $\mathcal{H}(\ve{x})$ be an underlying mapping to be learned by a few layers. 
+
+  	\item Rather than let the network learn $\mathcal{H}(\ve{x})$ directly, the paper let the network learn the residual function $\mathcal{F}(\ve{x}) := \mathcal{H}(\ve{x}) - \ve{x}$. The original function becomes $\mathcal{H}(\ve{x}) = \mathcal{F}(\ve{x}) + \ve{x}$.
+
+  	\item The transformation is motivated by the fact that solvers may have a hard time making $\mathcal{H}$ approximate theh identity function. On the other hand, it should be easier for it to drive the weights of the layers down to $0$ to make $\mathcal{F}(\ve{x})$ close to zero.
+
+  	\item The transformation above is employed at every few layers.
+
+  	\item The paper does so every two layers. That is:
+  	\begin{align*}
+  		\mathcal{F}(\ve{x}) = \ve{b}_2 + W_2 \sigma (\ve{b}_1 + W_1 \ve{x})
+  	\end{align*}
+  	where $W_1$ and $W_2$ denote weight matrices, $\ve{b}_1$ and $\ve{b}_2$ denote the bias vectors, and $\sigma$ denotes a non-linear function, which is ReLU in the paper. Note that we phrase the $W_i$, $\ve{b}_i$ combo as a fully connected layer, but this can be a convolutional layer as well.
+
+  	\item The operation $\mathcal{F}(\ve{x}) + \ve{x}$ is performed by a shortcut connection from the input.
+
+  	\item The paper actually applies a second ReLU to the block. That is, in the end, the block ends up computing:
+  	\begin{align*}
+  		\ve{y} = \sigma(\ve{x} + \ve{b}_1 + W_1 \sigma(\ve{b}_2 + W_2 \ve{x})).
+  	\end{align*}
+
+  	\item However, Gross and Wilber suggested that removing the second ReLU actually leads to small improve in test performance \cite{Gross:2016}.
+
+  	\item Batch normalization layers is typically placed after each affine layer. However, Gross and Wilber observed that putting a batch normalization layer after the addition with the input actually hurts test performance on the CIFAR dataset.
+
+  	\item In the construction so far, the dimension of $\mathcal{F}(\ve{x})$ must match that of $\ve{x}$. If this is not the case, we can perform a linear projection $W_s$ to make the dimension match:
+  	\begin{align*}
+  		\mathcal{F}(\ve{x}) + W_s \ve{x}.
+  	\end{align*}
+
+  	\item The paper details a 34-layer residual network for ImageNet classification with the following details:
+  	\begin{itemize}
+  		\item Most convolution layers have kernel size of $3 \times 3$.
+
+  		\item Most convolution layers preserve the input size.
+
+  		\item Image size is halved and channels doubled every 6 layers. Downsampling is done by a convolutional layer with stride 2.
+
+  		\item Shortcut connections skip two convolution layers. When they skip to a downsampled version, the projection $W_s$ is a convolution with stride 2. The paper consider two options in making the number of channel matches:
+  		\begin{itemize}
+  			\item $W_s$ does not increase the number of channels. Instead, $0$ are appended to make the number of channels match.
+  			\item $W_s$ does not increase the number of channels. A $1\times 1$ convolution is performed afterwards to make the channel match.
+  		\end{itemize}
+  		The paper found that the second option is slightly better than the first one.
+  	\end{itemize}
+  \end{itemize}
+
+  \bibliographystyle{acm}
+  \bibliography{resnet}  
+\end{document}

@@ -1,0 +1,481 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{epstopdf}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+
+\newtheorem{lemma}{Lemma}[section]
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\Dee}{\mathrm{D}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\likelihood}{\mathcal{L}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\new}{\mathrm{new}}
+\newcommand{\Arg}{\mathrm{Arg\,}}
+\newcommand{\Log}{\mathrm{Log\,}}
+\newcommand{\RE}{\mathrm{Re\,}}
+\newcommand{\IM}{\mathrm{Im\,}}
+\newcommand{\Res}{\mathrm{Res}}
+\newcommand{\pv}{\mathrm{p.v.}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+\newcommand{\II}{\mathrm{II}}
+
+\title{Differential Geometry Notes of 05/02/2013}
+\author{Pramook Khungurn}
+
+\begin{document}
+  \maketitle
+
+  \section{The Exponential Map}
+  \begin{itemize}
+    \item Given a point $p$ of a regular surface $S$,\\
+    and a non-zero vector $v \in T_p(S)$,\\
+    tehre exist a unique parameterized geodesic $\gamma: (-\epsilon, \epsilon) \ra S$ with $\gamma(0) = p$ and $\gamma'(0) = v$.
+
+    \item We shall denote $\gamma(t,v) = \gamma$  to indicate the depencence of the geodesic on $v$.
+
+    \item \begin{lemma}
+      If the geodesic $\gamma(t,v)$ is defined for $t \in (-\epsilon, \epsilon)$,\\
+      then the geodesic $\gamma(t, \lambda v)$ with $\lambda \in \Real$, $\lambda \neq 0$, is defined for $t \in (-\epsilon/\lambda, \epsilon/\lambda)$, and\\
+      $\gamma(t,\lambda v) = \gamma(\lambda t, v)$.
+    \end{lemma}
+
+    \begin{proof}
+      Let $\alpha:(-\epsilon/\lambda, \epsilon/\lambda) \ra S$ be a parameterized curve defined by $\alpha(t) = \gamma(\lambda t).$ Then, $\alpha(0) = \gamma(0) = p.$ Also, $\alpha'(0) = \frac{\dee \gamma(\lambda t)}{\dee t} \big|_{t=0} = \lambda \gamma'(0) = \lambda v.$ By the linearity of 
+      \begin{align*}
+        \frac{D\alpha'(t)}{\dee t} = \frac{D (\gamma'(\lambda t))}{\dee t} = \frac{D(\gamma'(\lambda t))}{\dee (\lambda t)} \frac{\dee (\lambda t)}{\dee t} = \ve{0}.
+      \end{align*}
+      This is because $\gamma(\lambda t)$ is a geodesic. It follows that $\alpha$ is a geodesic whose $\alpha(0) = \lambda(0)$ and $\alpha'(0) = \lambda \gamma'(0)$. By uniqueness of geodesic,
+      \begin{align*}
+        \alpha(t) = \gamma(t, \lambda v) = \gamma(\lambda t, v)
+      \end{align*}
+      as required.      
+    \end{proof}
+
+    \item If $v \in T_p(S)$, $v \neq \ve{0}$, is that $\gamma(|v|, v/|v|) = \gamma(1, v)$ is defined, we set
+    \begin{align*}
+      \exp_p(v) = \gamma(1, v)\mbox{, and } \exp_p(\ve{0}) = p.
+    \end{align*}
+
+    \item \begin{proposition}
+      Given $p \in S$, there exists an $\epsilon > 0$ such that $\exp_p$ is defined and differentiable in the interior of $B_\epsilon$ of a disk of radius $\epsilon$ of $T_p(S)$, with the center in the origin.
+    \end{proposition}
+
+    \begin{proof}
+      For every direction of $T_p(S)$, it is possible by the last lemma to take $v$ sufficiently small so that the definition of $\gamma(t,v)$ contains $1$. Thus, $\gamma(1,v) = \exp_p(v)$ is defined.
+
+      The next problem is that, if we let $v$ varies through all the direction, $\epsilon$ does not go to zero. However, the following proposition is true:
+      \begin{quote}
+        Given $p \in S$, there exists numbers $\epsilon_1 > 0$ and $\epsilon_2 > 0$ and a differentiable map
+        \begin{align*}
+          \gamma: (-\epsilon_2, \epsilon_2) \times B_{\epsilon_1} \ra S
+        \end{align*}
+        such that, for $v \in B_{\epsilon_1}$, $v \neq \ve{0}$, $t \in (-\epsilon_2, \epsilon_2)$, the curve $\gamma(t,v)$ is a geodesic of $S$ with $\gamma(0, v) = p$ and $\gamma'(0,v) = v$. Moreover, $\gamma(t, \ve{0}) = p$.
+      \end{quote}
+
+      Since $\gamma(t, v)$ is defined for $|t| < \epsilon_2$ and $|v| < \epsilon_1$, we can set $\lambda = \epsilon_2/2$, so that $\gamma(t, (\epsilon_2/2)v)$ is defined for $|t| < 2$ and $|v| < \epsilon_1$. Hence, $\exp_p(v) = \gamma(1, v)$ is defined for all $|v| < \epsilon_1 \epsilon_2 / 2$. The differentiability of $\exp_p$ follows from the differentiability of $\gamma(t, v)$.
+    \end{proof}
+
+    \item \begin{proposition}
+      $\exp_p: B_\epsilon \sseq T_p(S) \ra S$ is a diffeomorphism in a neighborhood $U \sseq B_\epsilon$ of the origin $\ve{0}$ of $T_p(S)$.
+    \end{proposition}
+    \begin{proof}
+      We shall show that $\dee (\exp_p)$ is non-singular at $\ve{0} \in T_p(S)$. To do this, we identify the space of the tangent vectors to $T_p(S)$ at $\ve{0}$ with $T_p(S)$ itself.
+
+      Consider the curve $\alpha(t) = tv$, $v \in T_p(S)$. We have that $\alpha(0) = \ve{0}$ and $\alpha'(0) = v$. The curve $(\exp_p \circ \alpha)(t) = \exp_p(tv)$. Therefore,
+      \begin{align*}
+        \frac{\dee}{\dee t} (\exp_p(tv))\bigg|_{t=0} = \frac{\dee}{\dee t} (\gamma(t, v))\bigg|_{t=0} = v.
+      \end{align*}
+      If follows that $\dee(\exp_p)_{\ve{0}}(v) = v$, which means that it is non-singular. The proposition is true by applying the inverse function theorem.
+    \end{proof}
+
+    \item We call $V \sseq S$ a {\bf normal neighborhood of $p \in S$} if $V$ is the image of $\exp_p(U)$ of the origin of $T_p(S)$, restricted to which $\exp_p$ is a diffeomorphism.   
+  \end{itemize}
+
+  \section{Coordinates Defined by Exponential Maps}
+  \begin{itemize}
+    \item The exponential map at $p \in S$ is diffeomorphism on $U$, it can be used to define coordinates in $V$. The most usual coordinate systems are:
+    \begin{itemize}
+      \item The {\bf normal coordinates} which corresponds to a system of rectangular coordinates in the tangent space $T_p(S)$.
+
+      \item The {\bf geodesic polar coordinates} which corresponds to the polar coordinates in the tangent space $T_p(S)$.      
+    \end{itemize}
+
+    \item The normal coordinate system can be obtained by choosing two orthogonal vectors $e_1$ and $e_2$ in $T_p(S)$.
+    Now, we can define the parameterization $\ve{x}: U \sseq \Real^2 \ra S$ as:
+    \begin{align*}
+      \ve{x}(u,v) = \exp_p(ue_1 + ve_2).
+    \end{align*}
+    The parameterization, of course, depends on $e_1$ and $e_2$.
+
+    \item In the normal coordinate system, the geodesics that pass through $p$ are the images of $\exp_p$ of the line:
+    \begin{align*}
+      u &= at\\
+      v &= vt,
+    \end{align*}
+    which pass through $(0,0)$, which maps to $p$.
+
+    \item Let us calculate $\ve{x}_u$ and $\ve{x}_v$ at $p$. We have that
+    \begin{align*}
+      \frac{\dee(\ve{x}(u't e_1 + v' t e_2))}{\dee t}\bigg|_{t=0} = \ve{x}_u u' + \ve{x}_v v'.
+    \end{align*}
+    Therefore,
+    \begin{align*}
+      \ve{x}_u &= \frac{\dee(\ve{x}(te_1))}{\dee t}\bigg|_{t=0}
+      = \frac{\dee\gamma(1,te_1)}{\dee t}\bigg|_{t=0} 
+      = \frac{\dee\gamma(t,e_1)}{\dee t}\bigg|_{t=0} 
+      = e_1.
+    \end{align*}
+    Also, we can similarly argue that $\ve{x}_v = e_2$.
+
+    Hence, the coefficients of the first fundamental form are $E = \langle \ve{x}_u, \ve{x}_u \rangle = 1$, $G = \langle \ve{x}_v, \ve{x}_v \rangle = 1$, and $F = \langle \ve{x}_u, \ve{x}_v \rangle = 0.$
+
+    \item We now study the geometric polar coordinates.\\
+    We pick a system of polar coordinate $(\rho, \theta)$ around $p$ in $T_p(S)$.\\
+    Here, $\theta \in (0, 2\pi)$, and $\rho \in (0, \infty)$.
+
+    The polar coordinates are not defined in the half line $l = \{ (x, 0) : x \in [0, \infty) \}$.\\
+    Let $L = \exp_p(l)$.\\
+    So, the geodesic polar coordinate is a function from $U-l$ to $V - L$.
+
+    \item The images by $\exp_p: U \ra V$ of circles in $U$ centered at $\ve{0}$ are called the {\bf geodesic circles}.\\
+    The images of $\exp_p$ of the lines through $\ve{0}$ are called the {\bf radial geodesics}.\\
+    These are curves with $\rho = const.$ and $\theta = const.$, respectively.
+
+    \item \begin{proposition}
+      Let $\ve{x} : U - l \ra V - L$ be a system of geodesic polar coordinate $(\rho, \theta)$. Then, the coefficients $E = E(\rho, \theta)$. $F = F(\rho,\theta)$, and $G = G(\rho, \theta)$ of the first fundamental form statisfy the coditions.
+      \begin{align*}
+        E &= 1, & F &= 0, & \lim_{\rho \ra 0} G &= 0, & \lim_{\rho \ra 0} (\sqrt{G})_\rho &= 1.
+      \end{align*}
+    \end{proposition}
+    \begin{proof}
+      We first show that $E = 1$. Fix $\theta$ and pick a curve with $\rho = \rho_0 + t$. We have that
+      \begin{align*}
+        \ve{x}_\rho(\rho, \theta) = \frac{\partial \ve{x}(\rho,\theta)}{\partial \rho} = \frac{\partial \gamma(\rho,(\cos \theta, \sin\theta))}{\partial \rho} = \gamma'(\rho, (\cos\theta, \sin\theta)).
+      \end{align*}
+      So, $E = \langle \ve{x}_u, \ve{x}_u \rangle = 1$ because the velocity of the geodesic is constant and is equal to $|(\cos\theta, \sin\theta)| = 1$.
+
+      Next, we will show that $F = 0$. To do so, we proceed in two steps.
+      \begin{enumerate}
+        \item We will show that $F$ does not depend on $\rho$; that is $F_\rho = 0$.
+        \item Second, we will show that $\lim_{\rho \ra 0} F(\rho, \theta) = 0$.
+      \end{enumerate}
+      The two assertions together show that $F = 0$ identically.
+
+      Now, we show that $F_\rho = 0$. Notice that the curve given by setting $\theta = const.$ and $\rho = t$ is a geodesic. The curve satistfies the following differential equations of the geodesics:
+      \begin{align*}
+        \rho'' + \Gamma_{11}^1 (\rho')^2 + 2\Gamma_{12}^1 \rho'\theta' + \Gamma_{22}^1(\theta')^2 &= 0\\
+        \theta'' + \Gamma_{11}^2(\rho')^2 + 2\Gamma_{12}^2 \rho' \theta' + \Gamma_{22}^2 (\theta')^2 &= 0.
+      \end{align*}
+      Because $\theta' = 0$ and $\rho' = 1$, we have that the second equation becomes:
+      \begin{align*}
+        \Gamma_{11}^2 = 0.
+      \end{align*}
+      Now, the definition of the Christoffel symbols requires that:
+      \begin{align*}
+        \Gamma_{11}^1 E + \Gamma_{11}^2 F = \frac{1}{2}E_{\rho}.
+      \end{align*}
+      Because $E = 1$ and $\Gamma_{11}^2 = 0$, we also have that
+      \begin{align*}
+        \Gamma_{11}^1 = 0.
+      \end{align*}
+      Also, because
+      \begin{align*}
+        \Gamma_{11}^1 F + \Gamma_{11}^2 G = F_\rho - \frac{1}{2}E_\theta,
+      \end{align*}
+      we have that
+      \begin{align*}
+        F_\rho = 0.
+      \end{align*}
+      Hence, $F(\rho,\theta)$ does not depend on $\rho$.
+
+      Next, we show that $\lim_{\rho \ra 0} F(\rho,\theta) = 0$. For each $q \in V$, denote by $\alpha(\sigma)$ the geodesic circle that passes through $q$. Here, $\sigma \in (0,2\pi)$. (Notice that, if $q = p$, then $\alpha(\sigma) = p$ reduces to a point.) Also, denote by $\gamma(s)$, where $s$ is arclength of $\gamma$, the radial geodesics that passes through $q$. With this notation, we may write:
+      \begin{align*}
+        F(\rho, \theta) = \bigg\langle \frac{\dee \alpha}{\dee \sigma}, \frac{\dee \gamma}{\dee s} \bigg\rangle.
+      \end{align*}
+      Notice that $F(\rho,\theta)$ is not defined at $p$. However, if we fix the radial geodesic $\theta = const.$   , the derivative $\dee \gamma/ \dee s$ is defined for every point on the geodesic. Also, since at $p$, $\alpha(\sigma) = p$ for all $\sigma$, it means that $\dee \alpha / \dee s = \ve{0}.$ Thus, we have that
+      \begin{align*}
+        \lim_{\rho \ra 0} F(\rho,\theta) = \lim_{\rho \ra 0} \bigg\langle \frac{\dee \alpha}{\dee \sigma}, \frac{\dee \gamma}{\dee s} \bigg\rangle = 0.
+      \end{align*}
+
+      It remains to show that $\lim_{\rho \ra 0} G = 0$, and $\lim_{\rho \ra 0} \sqrt{G}_\rho = 1$. Now, observe that since $E = 1$ and $F = 0$, we have that
+      \begin{align*}
+        \sqrt{EG - F^2} = \sqrt{G}.
+      \end{align*}
+      Hence,
+      \begin{align*}
+        \lim_{\rho \ra 0} \sqrt{G} &= \lim_{\rho \ra 0} \sqrt{EG - F^2},\\
+        \lim_{\rho \ra 0} (\sqrt{G})_\rho &= \lim_{\rho \ra 0} (\sqrt{EG - F^2})_\rho.
+      \end{align*}
+      Therefore, we can study the behavior of $\sqrt{EG-F^2}$ instead of $G$.
+
+      To study the behavior of $\sqrt{EG-F^2}$, we reparameterize the neighborhood with thenew variables $\bar u$ and $\bar v$ such that:
+      \begin{align*}
+        \bar u &= \rho \cos\theta,& \bar v &= \rho \sin\theta
+      \end{align*}
+      which is just the normal coordinate system. Recall that
+      \begin{align*}
+        \sqrt{EG - F^2} = \sqrt{\bar E \bar G - \bar F^2} \frac{\partial (\bar u, \bar v)}{\partial (\rho, \theta)}.
+      \end{align*}
+      We know that $\sqrt{ \bar E \bar G - \bar F^2 } = 1$ at $p$. Also,
+      \begin{align*}
+        \frac{\partial \bar u}{\partial \rho} &= \cos \theta, &
+        \frac{\partial \bar v}{\partial \rho} &= \sin \theta, &
+        \frac{\partial \bar u}{\partial \theta} &= -\rho \sin\theta &
+        \frac{\partial \bar v}{\partial \theta} &= \rho \cos\theta.
+      \end{align*}
+      So,
+      \begin{align*}
+        \frac{\partial(\bar u,\bar v)}{\partial(\rho,\theta)} = \frac{\partial \bar u}{\partial \rho} \frac{\partial \bar v}{\partial \theta} - \frac{\partial u}{\partial \theta} \frac{\partial \bar v}{\partial \rho}
+        &= \rho \cos^2\theta + \rho \sin^2 \theta = \rho.
+      \end{align*}
+      Hence, $\sqrt{G} = \sqrt{EG-F^2} = \rho$ at $p$. Thus,
+      \begin{align*}
+        \lim_{\rho \ra 0} G &= \lim_{\rho \ra 0} \rho^2 = 0,\\
+        \lim_{\rho \ra 0} \sqrt{G}_\rho &= \lim_{\rho \ra 0} 1 = 1
+      \end{align*}
+      as required.
+    \end{proof}
+
+    \item The fact that $F = 0$ means that, in the normal neighborhood, the family of geodesic circles is orthogonal to the family of radial geodesics.
+
+    This is known as the {\bf Gauss lemma}.
+
+    \item Since in the polar geodesic coordinate system, we have that $E = 1$ and $F = 0$. Now,
+    \begin{align*}
+      K 
+      &= -\frac{1}{2\sqrt{EG}} \bigg\{ \bigg( \frac{E_\theta}{\sqrt{EG}}\bigg)_\theta  + \bigg( \frac{G_\rho}{\sqrt{EG}} \bigg)_\rho \bigg\}
+      = -\frac{1}{2\sqrt{G}} \bigg( \frac{G_\rho}{\sqrt{G}} \bigg)_\rho
+      = -\frac{1}{\sqrt{G}} \bigg( \frac{G_\rho}{2\sqrt{G}}\bigg)_\rho\\
+      &= -\frac{1}{\sqrt{G}} \big( (\sqrt{G})_\rho \big)_\rho
+      = -\frac{(\sqrt{G})_{\rho\rho}}{\sqrt{G}}.
+    \end{align*}
+    The expression
+    \begin{align*}
+      K = -\frac{\sqrt{G}_{\rho\rho}}{\sqrt{G}}
+    \end{align*}
+    can be thought of as the differential equation which $\sqrt{G}(\rho,\theta)$ should satisfy if we want to have the surface to have the curvature $K(\rho,\theta).$
+  \end{itemize}
+
+  \section{Theorem of Minding}
+  \begin{itemize}
+    \item If $K$ is constant, the equation simplifies to
+    \begin{align*}
+      (\sqrt{G})_{\rho\rho} + K \sqrt{G} &= 0,
+    \end{align*}
+    which is a linear differential equation of second order with constant coefficient.
+
+    \item Let us study what $E$, $F$, and $G$ have to be when $K$ is constant.\\
+    There are three cases: $K = 0$, $K > 0$, and $K < 0$.
+
+    \item If $K = 0$, we have htat $(\sqrt{G}_{\rho\rho}) = 0$. Thus $(\sqrt{G})_\rho = g(\theta)$, a function of $\theta$. Since
+    \begin{align*}
+      \lim_{\rho \ra 0} (\sqrt{G})_\rho = 1,
+    \end{align*}
+    we conclude that $(\sqrt{G})_\rho = 1$ identically. So, $\sqrt{G} = \rho + f(\theta)$ with $f'(\theta) = g(\theta).$ Now,
+    \begin{align*}
+      0 = \lim_{\rho \ra 0} \sqrt{G} = \lim_{\rho \ra 0} \rho + \lim_{\rho \ra 0} f(\theta) = f(\theta).
+    \end{align*}
+    Hence, we can conclude that $\sqrt{G} = \rho$. So,
+    \begin{align*}
+      E = 1,\quad F = 0,\quad G(\rho,\theta) = \rho^2.
+    \end{align*}
+
+    \item If $K > 0$, the general solution of $(\sqrt{G})_{\rho\rho} + K \sqrt{G} = 0$ is given by:
+    \begin{align*}
+      \sqrt{G} = A(\theta) \cos(\sqrt{K}\rho) + B(\theta) \sin(\sqrt{K}\rho).
+    \end{align*}
+    Since $\lim_{\rho \ra 0} \sqrt{G} = 0$, we have that $A(\theta) = 0$. Thus,
+    \begin{align*}
+      \sqrt{G} = B(\theta)\sin(\sqrt{K} \rho).
+    \end{align*}
+    Also, we have that
+    \begin{align*}
+      1 
+      &= \lim_{\rho \ra 0} (\sqrt{G})_\rho 
+      =  \lim_{\rho \ra 0} B(\theta) \sqrt{K} \cos(\sqrt{K} \rho)
+      = B(\theta)\sqrt{K}.
+    \end{align*}
+    If follows that $B(\theta) = 1 / \sqrt{K}$. Hence,
+    \begin{align*}
+      E = 1, \quad F = 0, \quad G = \frac{1}{K}\sin^2 {\sqrt{K} \rho}.
+    \end{align*}
+
+    \item If $K < 0$, the general solution of $(\sqrt{G})_{\rho\rho} + K \sqrt{G} = 0$ is given by:
+    \begin{align*}
+      \sqrt{G} = A(\theta) \cosh(\sqrt{-K}\rho) + B(\theta) \sinh(\sqrt{-K}\rho).
+    \end{align*}
+    Again, we can find that:
+    \begin{align*}
+      E = 1, \quad F = 0, \quad G = \frac{1}{-K} \sinh^2 (\sqrt{-K}\rho).
+    \end{align*}
+
+    \item \begin{theorem}[Minding]
+      Any two regular surfaces with the same constant Gaussian curvature are locally isometric.
+
+      More precisely, let $S_1$, $S_2$ be two regular surfaces with the same constant curvature $K$.\\
+      Choose point $p_1 \in S_1$ and $p_2 \in S_2$.\\
+      Choose orthonormal basis $\{e_1, e_2\} \in T_{p_1}(S_1)$ and $\{ f_1, f_2 \} \in T_{p_2}(S_2).$\\
+      Then, there exists a neighborhood $V_1$ of $p_1$ and $V_2$ of $p_2$, and\\
+      an isometry $\psi: V_1 \ra V_2$ such that $\dee\psi_{p_1}(
+      e_1) = f_1$ and $\dee \psi_{p_1}(e_2) = f_2.$
+    \end{theorem}
+
+    \begin{proof}
+      Let $V_1$ and $V_2$ be normal neighborhood of $p_1$ and $p_2$, respectively. Let $\varphi : T_{p_1}(S_1) \ra T_{p_2}(S_2)$ be the linear map such that $\varphi(e_1) = f_1$ and $\varphi(e_2) = f_2$. We have that $\varphi$ is an isometry from $T_{p_1}(S_1)$ to $T_{p_2}(S_2)$. Let $\psi: V_1 \ra V_2$ be defined by:
+      \begin{align*}
+        \psi = \exp_{p_2} \circ \varphi \circ (\exp_{p_1})^{-1}.
+      \end{align*}
+      We claim that $\psi$ is the required isometry.
+
+      Take a poloar coordinate system $(\rho, \theta)$ in $T_{p_1}(S_1)$ with axis $l$ and set $L_1 = \exp_{p_1}(l)$ and $L_2 = \exp_{p_2}(\varphi(l)).$ The restriction of $\bar \psi$ of $\psi$ to $V_1 - L_1$ maps a polar coordinate neighborhood with coordinates $(\rho, \theta)$ centered at $p_1$ into a polar coordinate neighborhood with coordinates $(\rho, \theta)$ centered at $p_2$. Through the study of the coefficients of the first fundamental forms above, we have that the coefficients of the fundamental forms before and after the isometry are equal. So, $\bar \psi$ is an isometry. By continuity, $\psi$ still preserves inner products of points of $L_1$, and so is an isometry. It is also easy to check that $\dee \psi_{p_1}(e_1) = f_1$ and $\dee \psi_{p_1}(e_2) = f_2$.
+    \end{proof}
+
+    \item When $K$ is not constant but maintains its sign, the expression $\sqrt{G} K = - (\sqrt{G})_{\rho\rho}$ has a nice intuitive meaning.
+
+    \item Consider the arc length $L(\rho)$ of the curve $\rho = const.$ between two close geodesics $\theta = \theta_0$ and $\theta = \theta_1$:
+    \begin{align*}
+      L(\rho) = \int_{\theta_0}^{\theta_1} \sqrt{E (\rho')^2 + F\rho' \theta' + G(\rho,\theta) (\theta')^2}\, \dee \theta
+      = \int_{\theta_0}^{\theta_1} \sqrt{G(\rho,\theta)}\, \dee\theta
+    \end{align*}
+    where $\rho' = 0$ because $\rho = const.$ and $\theta' = 1$ because we want $\theta$ to vary constantly.
+
+    Assume that $K < 0$. Since,
+    \begin{align*}
+      \lim_{\rho \ra 0} (\sqrt{G})_\rho = 1, \quad \mbox{and} \quad (\sqrt{G})_{\rho\rho} = -K \sqrt{G} > 0.
+    \end{align*}
+    This means that $(\sqrt{G})_\rho$ is increasing. Since $(\srt{G})_\rho$ is always positive, it means that $\sqrt{G}$ is increasing with $\rho$. Hence, $L(\rho)$ is increasing with $\rho$. That is, as $\rho$ increases, $\theta = \theta_0$ and $\theta = \theta_1$ get farther and farther apart.
+
+    On the other hand, if $K < 0$, $L(p)$ may or may not get closer to gether. It depends on whether $\sqrt{G}_\rho$ becomes negative or not. However, the rate that the two radial geodesic get further from each other will become slower.
+  \end{itemize}  
+
+  \section{Geometric Interpretation of Gaussian Curvature}
+  \begin{itemize}
+    \item The expression of $K$ in geodesic polar coordinate with center $p \in S$ is given by:
+    \begin{align*}
+      K = -\frac{(\sqrt{G})_{\rho\rho}}{\sqrt{G}}.
+    \end{align*}
+    So,
+    \begin{align*}
+      (\sqrt{G})_{\rho\rho} &= - K \sqrt{G}\\
+      \frac{\partial^3 (\sqrt{G})}{\partial \rho^3} &= - K(\sqrt{G})_\rho - K_\rho (\sqrt{G}).
+    \end{align*}
+    Now, because
+    \begin{align*}
+      \lim_{\rho \ra 0} \sqrt{G} = 0, \quad \mbox{and} \quad \lim_{\rho \ra 0} (\sqrt{G})_\rho = 1,
+    \end{align*}
+    we have 
+    \begin{align*}
+      -K(p) = \lim_{\rho \ra 0} \frac{\partial^3 (\sqrt{G})}{\partial \rho^3}
+    \end{align*}
+
+    \item By Taylor's theorem, we have that
+    \begin{align*}
+      \sqrt{G}(\rho, \theta) = \sqrt{G}(0,\theta) + \rho (\sqrt{G})_\rho(0,\theta) + \frac{\rho^2}{2!} (\sqrt{G})_{\rho\rho}(0,\theta) + \frac{\rho^3}{3!} (\sqrt{G})_{\rho\rho\rho}(0,\theta) + R(\rho,\theta)
+    \end{align*}
+    where
+    \begin{align*}
+      \lim_{\rho \ra 0} \frac{R(\rho,\theta)}{\rho^3} = 0
+    \end{align*}
+    uniformly in $\theta$. Substituting the values obtained above, we have that
+    \begin{align*}
+      \sqrt{G}(\rho, \theta) &= 0 + \rho - \frac{\rho^3}{3!} K(p) + R.
+    \end{align*}
+    The $\rho^2 / 2! (\sqrt{G})_{\rho\rho}(0, \theta)$ disappear because $\sqrt{G}_{\rho\rho}(0,\theta) = -K(0,\theta) \sqrt{G}(0,\theta) = 0$.
+
+    \item With the value for $\sqrt{G}$, we compute the arc length $L$ of a geodesic circle of radius $\rho = r$:
+    \begin{align*}
+      L 
+      &= \lim_{\epsilon \ra 0} \int_{0 + \epsilon}^{2\pi - \epsilon} \sqrt{G}(r, \theta)\, \dee\theta\\
+      &= \lim_{\epsilon \ra 0} \int_{0 + \epsilon}^{2\pi - \epsilon} r - \frac{r^3}{6} K(p) + R(r, \theta) \, \dee\theta\\
+      &= 2\pi r - \frac{\pi r^3}{3} K(p) + R_1
+    \end{align*}
+    where
+    \begin{align*}
+      \lim_{r \ra 0} \frac{R_1}{r^3} = 0.
+    \end{align*}
+    It follows that
+    \begin{align*}
+      K(p) = \frac{3}{\pi}\frac{2\pi r - L}{r^3} - \frac{3R_1}{\pi r^3}
+    \end{align*}
+    So,
+    \begin{align*}
+      K(p) = \lim_{r \ra 0} \frac{3}{\pi} \frac{2\pi r - L}{r^3}.
+    \end{align*}
+    This gives an intrinsic interpretation of $K(p)$ in terms of the length of the geodesic circle $L$ and the length of the circle or radius $r$ in $T_p(S)$ that gives rise to it.
+  \end{itemize}
+
+  \section{Geodesics Minimize Distance}
+  
+  \begin{itemize}
+    \item \begin{proposition}
+      Let $p$ be a point on a surface $S$. Then, there exists a neighborhood $W \sseq S$ of $p$ such that, if $\gamma: I \ra W$ is a parameterized beodesci with $\gamma(0) = p$ and $\gamma(t_1) = q$, $t_1 \in I$, and $\alpha: [0,t_1] \ra S$ is a paraetermized regular curve joining $p$ to $q$, we have that
+      \begin{align*}
+        l_\gamma \leq l_\alpha
+      \end{align*}
+      where $l_\alpha$ denotes the length of the curve $\alpha$. Moreover, if $l_\gamma = l_\gamma$, then the trace of $\alpha$ coincides with the trace of $\gamma$ between $p$ and $q$.
+    \end{proposition}
+    \begin{proof}
+      Let $V$ be a normal neighborhood of $p$. Let $\bar W$ be the closed region bounded by a geodesic circle of radius $r$ contained within $V$. Let $(\rho,\theta)$ be geodesic polar coordinates in $\bar W - L$ centered in $p$ such that $q \in L$.
+
+      Suppose first that $\alpha((0,t_1)) \sseq \bar W - L$, and set $\alpha(t) = (\rho(t), \theta(t))$. Observe initially that
+      \begin{align*}
+        \sqrt{(\rho')^2 + G(\theta')^2} \geq \sqrt{(\rho')^2},
+      \end{align*}
+      and equality holds if and only if $\theta' \equiv 0$; that is $\theta = const.$ Therefore, the length $l_\alpha(\epsilon)$ of $\alpha$ between $\epsilon$ and $t_1 - \epsilon$ satisfies:
+      \begin{align*}
+        l_\alpha(\epsilon) = \int_{\epsilon}^{t_1 -\epsilon} \sqrt{(\rho')^2 + G(\theta')^2}\, \dee t \geq \int_{\epsilon}^{t_1 - \epsilon} \sqrt{(\rho')^2}\, \dee t \geq \int_{\epsilon}^{t_1 - \epsilon} \rho'\, \dee t = l_\gamma - 2\epsilon.
+      \end{align*}
+      Equation holds if and only if $\theta = const.$ and $\rho' > 0$. By making $\epsilon \ra 0$ in the expression above, we bontain that $l_\alpha \geq l_\gamma$, and that equality holds if and only if $\alpha$ is the radius geodesic $\theta = const.$ with a parameterization $\rho = \rho(t)$ where $\rho'(t) > 0$. It follows that, if $l_\alpha = l_\gamma$, then the traces of $\alpha$ and $\gamma$ between $p$ and $q$ coincide.
+
+      Suppose now that $\alpha((0,t_1))$ intersects $L$, and assume that this occurs for the first time at, say, $\alpha(t_2)$. Then, by the previous argument, $l_\alpha \geq l_\gamma$ between $t_0$ and $t_2$, and $l_\alpha = l_\gamma$ implies that the traces of $\alpha$ and $\gamma$ conincide. Since $\alpha([0,t_1])$ and $L$ are compact, there exists a $\bar t \geq t_2$ such that either $\alpha(\bar t)$ is the last point where $\alpha((0,t_1))$ intersects $L$ or $\alpha([\bar t, t_1]) \sseq L$. In any case, applying the above case, the conclusions of the proposition follows.
+
+      Suppose finally that $\alpha([0,t_1])$ is not entirely contained in $\bar W$. Let $t_0 \in [0,t_1]$ be the first value for which $\alph(t_0) = x$ belongs to the boundary of $\bar W$. Let $\bar \gamma$ be the radial geodesic $px$ and let $\bar \alpha$ be the restriction of the curve $\alpha$ to the interval $[0,t_0]$. It is clear that $l_\alpha \geq l_{\bar \alpha}$. By the previous argument, $l_{\bar \alpha} \geq l_{\bar \gamma}$. Since $q$ is a point in the interior of $\bar W$, we have that $l_{\bar \gamma} > l_{\gamma}$. We conclude that $l_{\alpha} > l_{\gamma}$, which ends the proof.
+    \end{proof}
+
+    \item The above prosition is true for piecewise regular curve as well.
+
+    \item The converse of the proposition is true. However, if we relax the requirement and  make $\alpha$ a piecewise regular curve, then the converse is not true.
+
+    \item The proposition is not true globally.
+
+    \item \begin{proposition}
+      Let $\alpha : I \ra S$ be a regular parameterized curve with a parameter proportional to arc length. Suppose that the arc length of $\alpha$ between any two points $t, \tau \in I$ is smaller than or equal to the arc length of any regular parameterized curve joining $\alpha(t)$ to $\alpha(\tau)$. Then, $\alpha$ is a geodesic.
+    \end{proposition}
+    \begin{proof}
+      Let $t_0 \in I$ be an arbitrary point on $I$ and let $W$ be the neighborhood of $\alpha(t_0) = p$ given by the last proposition. Let $q = \alpha(t_1) \in W$. From the case of equality in the last proposition, it follows that $\alpha$ is a geodesic in $(t_0, t_1)$. Otherwise, $\alpha$ would have, between $t_0$ and $t_1$, a length greater than the radial geodesic joining $\alpha(t_0)$ and $\alpha(t_1)$, a contradiction to the hypothesis. Since $\alpha$ is regular, we have, by continuity, that $\alpha$ is still a geodesic in $t_0$.
+    \end{proof}
+  \end{itemize}
+\end{document}

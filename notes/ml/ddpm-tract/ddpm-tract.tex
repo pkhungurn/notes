@@ -1,0 +1,261 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+\usepackage{verbatim}
+\usepackage{hyperref}
+\usepackage{algorithm}
+\usepackage{clrscode3e}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\Dee}{\mathrm{D}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\Var}{\mathrm{Var}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\ves}[1]{\boldsymbol{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+\newcommand{\ov}[1]{\overline{#1}}
+\newcommand{\N}{\mathcal{N}}
+\newcommand{\data}{\mathrm{data}}
+\newcommand{\SNR}{\mathrm{SNR}}
+
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+\title{TRACT: Denoising Diffusion Models with Transitive Closure Time-Distillation}
+\author{Pramook Khungurn}
+
+\begin{document}
+\maketitle
+
+This note was written as I read the paper ``TRACT: Denoising Diffusion Models with Transitive Closure Time-Distillation'' by Berthelot \etal~\cite{Berthelot:2023}.
+
+\section{Introduction}
+
+\begin{itemize}
+  \item TRACT stands for TRAnsitive Closure Time-distillation.
+  
+  \item The paper proposes a distillation technique for diffusion models. 
+  
+  \item It is heavily based on progressive distillation \cite{Salimans:2022}, which the paper refers to as binary time distillation (BTD).
+  
+  \item The drawback of BTD is that the performance, as measured by FID score, is not very good when a diffusion model is distilled to 1 step.
+  \begin{itemize}
+    \item CIFAR-10: 9.12
+    \item ImageNet 64: $>10$
+    \item LSUN Bedroom 128: $>10$
+    \item LSUN Church-Outdoor: $>10$.
+  \end{itemize}
+
+  \item The paper claims that BTD fails because of two reasons.
+  \begin{enumerate}
+    \item {\bf Objective degeneracy.} In BTD, distillation is divided into many phases. The student from the previous phase becomes the teacher of the next phase. Error can thus accumulates, leading to poor performance at the end of the process.
+    
+    \item {\bf The inability to apply weight averaging.} Performance of a diffusion model improve considerably when the model's weights are subjected to moving average techniques such as Exponential Moving Average (EMA). However, such a technique is hard to apply in the BTD setting because each training phase is short, so EMA would lead to overly-regularized models.
+  \end{enumerate}
+
+  \item TRACT is a multi-phase distillation technique with very few phase counts. This makes it harder for errors to accumulate and make moving average techniques more effective.
+\end{itemize}
+
+\section{Background}
+
+\begin{itemize}
+  \item The paper follows the classic DDPM formulation \cite{Ho:2020}.
+  
+  \item Here, the forward and backward process is divided into $T$ steps at times $t = 1,2,3,\dotsc,T$. The data itme at time $t$ is denoted by $\ve{x}_t$.
+  
+  \item The noise schedule is a function $\gamma_t: \{1, 2, \dotsc, T \} \rightarrow [0,1)$.
+  \begin{itemize}
+    \item If we use the notation of the VDM paper \cite{Kingma:2021}, we have that $\gamma_t = \sqrt{\alpha_t}$.
+  \end{itemize}
+  
+  \item The time $t=0$ denotes the time where the data item is free of noise. So, $\ve{x}_0 \sim p_{\data}$, and $\gamma_0 = 1$.
+  
+  \item The paper uses the variance perserving formulation, so \begin{align*}
+    \ve{x}_t \sim \mcal{N}(\ve{x}_t; \sqrt{\gamma_t} \ve{x}_0, (1 - \gamma_t) I ).
+  \end{align*}
+  In other words,
+  \begin{align*}
+    \ve{x}_t = \sqrt{\gamma_t} \ve{x}_0 + \sqrt{1 - \gamma_t} \ves{\xi}
+  \end{align*}
+  where $\xi \sim \mcal{N}(\ve{0},I)$.
+
+  \item A diffusion model is a neural network $\ve{f}_{\ves{\theta}}$ that is trained so that $\ve{f}_{\ves{\theta}}(\ve{x}_t, t) \approx \ve{x}_0$.\\ This prediction is denoted by $\ve{x}_{0|t}$. 
+  
+  \item Given $\ve{x}_{0|t}$, we may estimated the noise $\ves{\xi}$ that was used to construct $\ve{x}_t$ as follows:
+  \begin{align*}
+    \ves{\xi}_{0|t} = \frac{\ve{x}_t - \sqrt{\gamma_t} \ve{x}_{0|t}}{\sqrt{1 - \gamma_t}}.
+  \end{align*}
+
+  \item The DDIM sampler \cite{Song:DDIM:2020} allows one to estimate $\ve{x}_{t'}$ from $\ve{x}_t$ for $t' < t$.
+  \begin{align*}
+    \ve{x}_{t'} 
+    &= \sqrt{\gamma_{t'}} \ve{x}_{0|t} + \sqrt{1 - \gamma_{t'}} \ves{\xi}_{0|t} \\
+    &= \frac{\sqrt{1 - \gamma_{t'}}}{\sqrt{1 - \gamma_t}} \ve{x}_t + \ve{f}_{\ves{\theta}}(\ve{x}_t, t) \frac{\sqrt{\gamma_{t'}(1-\gamma_t)} - \sqrt{\gamma_t(1 - \gamma_{t'})}}{\sqrt{1 - \gamma_t}}.
+  \end{align*}
+  The paper defines the {\bf step function}, $\delta(\ve{f}_{\ves{\theta}}, \ve{x}_t, t, t')$, to denote the RHS of the above equation.
+
+  \item In a phase of BTD, the student is trained so that one application of it through the step function is equal to two applications of the teacher through the step function. In other words, if we denote the student model with $\ve{g}_{\ves{\phi}}$, we want
+  \begin{align*}
+    \delta(\ve{g}_{\ves{\phi}}, \ve{x}_t, t, t-2)
+    = \delta(\ve{f}_{\ves{\theta}}, \delta(\ve{f}_{\ves{\theta}}, \ve{x}_t, t, t-1), t-1, t-2).
+  \end{align*}
+  The value of $\ve{g}_{\ves{\phi}}(\ve{x}_t, t)$ that would satisfy the above equation is
+  \begin{align*}
+    \hat{\ve{x}} = \frac{\ve{x}_{t-2} \sqrt{1 - \gamma_t} - \ve{x}_t \sqrt{1 - \gamma_{t-2}}}{\sqrt{\gamma_{t-2}}\sqrt{1 - \gamma_t} - \sqrt{\gamma_t} \sqrt{1 - \gamma_{t-2}} }
+  \end{align*}
+  where
+  \begin{align*}
+    \ve{x}_{t-2} = \delta(\ve{f}_{\ves{\theta}}, \delta(\ve{f}_{\ves{\theta}}, \ve{x}_t, t, t-1), t-1, t-2).
+  \end{align*}
+  So, the BTD approach trains $\ve{g}_{\ves{\phi}}$ according to the following loss:
+  \begin{align*}
+    \mcal{L}(\ves{\phi}) = \frac{\gamma_t}{1 - \gamma_t} \| \ve{g}_{\ves{\phi}}(\ve{x}_t, t) - \hat{\ve{x}} \|^2.
+  \end{align*}
+\end{itemize}
+
+\section{Method}
+
+\subsection{TRACT}
+
+\begin{itemize}
+  \item TRACT is a multi-phase method.
+  
+  \item In a TRACT phase, we distill a model with $T$ steps into a model with $T' < T$ steps.
+  
+  \item In a phase, the $T$ steps is partitioned into $T'$ contiguous groups.
+  
+  \item The paper partitioned the time steps so that each group has $T/T'$ steps.
+  
+  \item For BTD, we have that $T' = T/2$, but TRACT does not have this restruction.
+  
+  \item For a contiguous section $\{t_i, t_{i+1}, \dotsc, t_j \}$, TRACT wants to train the student model $\ve{g}_{\ves{\phi}}$ so that $\ve{g}_{\ves{\phi}}$ would jumpt to $t_i$ from any $t \in \{ t_i, t_{i+1}, \dotsc, t_j \}$.
+  \begin{align*}
+    \delta(\ve{g}_{\ves{\theta}}, \ve{x}_t, t, t_i)
+    = \delta(\ve{f}_{\ves{\theta}}, \delta( \ve{f}_{\ves{\phi}} \dotsc \delta(\ve{f}_{\ves{\theta}}, \ve{x}_t, t, t-1 ) \dotsc), t_{i+1}, t_i).
+  \end{align*}
+
+  \item The above formulation, however, requires one to evaluate the teacher model up to $t_j - t_i$ times in an iteration to train the student model. We need something faster.
+  
+  \item The paper uses the technique employed by the consistency model approach \cite{Song:2023}: training the student model against the its EMA parameters.
+  \begin{itemize}
+    \item Let us denote the EMA parameters by $\tilde{\ves{\phi}} = \texttt{EMA}(\ves{\phi}, \mu_S)$ where $\mu_S \in [0,1]$ is the decay parameter.
+    
+    \item Now, we want to train $\ve{g}_{\ves{\phi}}$ so that
+    \begin{align*}
+      \delta(\ve{g}_{\ves{\phi}}, \ve{x}_t, t, t_i)
+      \approx \ve{x}_{t_i} := \delta(\ve{g}_{\tilde{\ves{\phi}}}, \delta(\ve{f}_{\ves{\theta}}, \ve{x}_t, t, t-1), t-1, t_i).
+    \end{align*}
+    
+    \item As a result, we want $\ve{g}_{\ves{\phi}}(\ve{x}_t, t)$ to have value
+    \begin{align*}
+      \hat{\ve{x}} = \frac{\ve{x}_{t_i} \sqrt{1 - \gamma_t} - \ve{x}_t \sqrt{1 - \gamma_{t_i}}}{\sqrt{\gamma_{t_i}}\sqrt{1 - \gamma_t} - \sqrt{\gamma_t}\sqrt{1 - \gamma_{t_i}}}
+    \end{align*}
+
+    \item Note that, when $t_i = t-1$, we have that $\hat{\ve{x}} = \ve{f}_{\ves{\theta}}(\ve{x}_t, t)$, so we are fine in the corner case.
+    
+    \item The training loss is just the same as the one used in BTD, but with a different definition of $\hat{\ve{x}}$.
+    \begin{align*}
+      \mcal{L}(\ves{\phi}) = \frac{\gamma_t}{1 - \gamma_t} \| \ve{g}_{\ves{\phi}}(\ve{x}_t, t) - \hat{\ve{x}} \|^2.
+    \end{align*}
+  \end{itemize}
+
+  \item The TRACT training algorithm is general enough that it can be applied to diffusion models formulated with the variance exploding variation like in the EDM paper \cite{Karras:2022} or when the step function is an integration step other than the DDPM one, like the update used in the Huen's integrator.
+\end{itemize}
+
+\subsection{EMA Implementation}
+
+\begin{itemize}
+  \item During training, the algorithm uses two EMA schedules.
+  \begin{itemize}
+    \item {\bf Self-teaching EMA} uses decay parameter $\mu_S$. This is the source of the EMA parameter $\tilde{\ves{\phi}}$ that is used to computed the training target.
+    
+    \item {\bf Inference EMA} uses a separate decay parameter $\mu_I$. It is administered to the parameters of the student model at the same time as the self-teaching EMA. The resulting parameters are used at inference time while the parameters of the self-teaching EMA is thrown away.
+  \end{itemize}
+
+  \item Low $\mu_S$ makes the training process updates faster and also give unstable training targets. On the other hand, large $\mu_S$ gives stable training target but makes it take a long time for the model to converge.
+  
+  \item On the other hand, $\mu_I$ can be set to be a very high value to get a model that performs well at inference time.
+  
+  \item The paper found through ablation study that performance degrates if $\mu_S > 0.9$, and that $\mu_S$ in the interval $[0.1, 0.9]$ tends to give good performance. The best value it found was $\mu_S = 0.5$.
+  
+  \item The best value fo $\mu_I$ the paper found was $\mu_I = 0.99995 = 1 - 5 \times 10^{-5}$.
+  
+  \item The paper's implementation of EMA uses the following formula:
+  \begin{align*}
+    \tilde{\ves{\phi}}_i = \bigg( 1 - \frac{1 - \mu_S}{1 - \mu_S^i} \bigg) \tilde{\ves{\phi}}_{i-1} + \frac{1 - \mu_S}{1 - \mu_S^i} \ves{\phi}_i
+  \end{align*}
+  for $i > 0$. The EMA parameter is initialized with $\tilde{\ves{\phi}}_0 = \ves{\phi}_0$.
+\end{itemize}
+
+\section{Experiments}
+
+\subsection{CIFAR-10}
+
+\begin{itemize}
+  \item The paper distilled diffusion models in two phases: $1024 \times 32 \times 1$.
+  
+  \item When distilling the model from the BTD paper \cite{Salimans:2022}, the paper ahcieves the following results:
+  \begin{itemize}
+    \item If the distillation runs for 96M samples, the achieved FID score was $5.02$, which is better than $9.12$ achieved by the BTD paper.
+    
+    \item If the distillation runs for 256M asamples, the achieved FID score was $4.45$.
+  \end{itemize}
+
+  \item When distlling the model from the EDM paper \cite{Karras:2022}, the FID scores were 4.17 (96M samples) and 3.78 (256M samples).
+\end{itemize}
+
+\subsection{ImageNet $64\times64$}
+
+\begin{itemize}
+  \item The FID score achieved by 1-step BTD is $17.5$.
+  
+  \item The FID scores achived by TRACT when distiling the BTD paper's model is 7.43.\\
+  The score is 7.52 when distilling the EDM paper's model.\\
+  In both cases the training length was 96M samples.
+\end{itemize}
+
+\subsection{Ablation Studies on Number of Distillation Phases}
+
+\begin{itemize}
+  \item When the overall training lenght is fixed, using 2 phases gave the best FID score.
+  
+  \item When the length of each phase is fixed, using 2 phases also give the best result.
+\end{itemize}
+
+\bibliographystyle{alpha}
+\bibliography{ddpm-tract}  
+\end{document}

@@ -1,0 +1,109 @@
+\documentclass{article}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+
+\usepackage{fullpage}
+\usepackage{clrscode}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{collorary}[lemma]{Collorary}
+
+\newcommand{\E}{\mathbf{E}}
+\newcommand{\divides}{\ |\ }
+
+\title{Notes on Hashing}
+\author{Pramook Khungurn}
+
+\begin{document}
+\maketitle
+
+\section{Hashing}
+\begin{itemize}
+\item The \emph{dictionary} ADT supports the following operations:
+\begin{itemize}
+\item $insert(x)$: Insert $x$ into the dictionary.
+\item $remove(x)$: Remove $x$ from the dictionary.
+\item $find(x)$: Check whether $x$ is in the dictionary.
+\end{itemize}
+
+\item A \emph{hash table} is an implementation of the dictionary ADT where the items to manipulate are integers or can be mapped to the integers. Let us suppose that the items comes from the set $[U] = \{0, 1, \dotsc, U-1\}$ for some positive integer $U$. 
+
+A hash table consists of an array $a$ with $M$ slots, and a \emph{hash functions} $h: [U] \rightarrow [m].$ The array $a$ starts empty. The three operations can be implemented as follows:
+\begin{itemize}
+\item $insert(x)$: Compute $h(x)$ and put $x$ in $a[h(x)]$.
+\item $remove(x)$: Compute $h(x)$ and remove $x$ from $a[h(x)]$ if it is there.
+\item $find(x)$: Compute $h(x)$ and check whether $x$ is in $a[h(x)]$.
+\end{itemize}
+
+\item The simple implementation above has the problem of \emph{collision}: there may be $x_1, x_2 \in [U]$ such that $x_1 \neq x_2$ and $h(x_1) \neq h(x_2)$. Collision is unaviodable if $U > m$.
+
+\item There are many ways to resolve collision. The most simple way is called \emph{chaining}: instead of each slot storing only one item, it stores a linked list of items placed there. It is clear that the performance of hasing with chaining depends on the distribution of items into slots. Any operation involving items that go into a particular slot takes time linear to the number of items already in the slot.
+
+\item We are interested in the problem of building \emph{static hash tables}. A fixed set of $n$ items $\{x_1, x_2, \dotsc, x_n \} \subseteq [U]$ is given to us. We would like to build a data structure that can perform $find(x)$ --- i.e., testing whether $x$ belongs to the set --- very fast. An example of an application of static hash table is the English language dictionary.
+
+We describe a scheme invented by Fredman, Koml\'{o}s, Szemer\'{e}di, which builds a static hash table for $n$ items in $O(n)$ expected time using $O(n)$ space and each $find(x)$ operation takes $O(1)$ worst case time.
+
+\item The mathematical tool used in the scheme is the \emph{universal family of hash functions}.
+
+\begin{definition}
+A set of hash functions $\mathcal{H}$ is called a \emph{universal family of hash function} if, for all $x, y \in [U]$ such that $x \neq y$, $$\Pr_{h \leftarrow \mathcal{H}} [h(x) = h(y)] = \frac{O(1)}{m}.$$
+\end{definition}
+
+In other words, if we pick a random hash function out of $h$, the probability that any two fixed items collide is a constant over the size of the hash table.
+
+\item Is it easy to construct a universal family of hash function? Yes. We first pick a prime number $p > U$, and let $$\mathcal{H}_{p,m} = \{ h_{a,b} : a \in \{1, 2, \dotsc, p-1\}, b \in \{0, 1, \dotsc, p-1 \} \},$$ where $$h_{a,b}(x) = ((ax + b) \bmod p) \bmod m.$$
+\begin{proposition}
+$\mathcal{H}_{p,m}$ is a universal family of hash function.
+\end{proposition}
+
+We prove the following lemma first:
+\begin{lemma}
+Let $x,y,z,w \in [p]$ be such that $x \neq y$. Then, $$\Pr_{(a,b) \leftarrow [p]^2} [(ax+b)\bmod p = z \ \wedge\ (ay+b) \bmod p = w]  = \frac{1}{p^2}.$$
+\end{lemma}
+\begin{proof}
+The fact that $(ax+b)\bmod p = z$ and $(ay+b) \bmod p = w$ is equivalent to the following system of equations:
+\begin{align*}
+ax + b &\equiv z \pmod p\\
+ay + b &\equiv w \pmod p
+\end{align*}
+which is equivalent to the following matrix equation:
+\begin{align*}
+\begin{bmatrix} x & 1 \\ y & 1 \end{bmatrix} \begin{bmatrix} a \\ b \end{bmatrix} \equiv \begin{bmatrix} z \\ w \end{bmatrix} \pmod p.
+\end{align*}
+The two-by-two matrix has determinant $x-y$, which is not zero. This means that there is one and only one solution to the system of equation. Since we pick $a$ and $b$ uniformly at random, the probability that $a$ and $b$ make up the solution for the system is $1 / p^2$.
+\end{proof}
+
+\begin{proof} (Proposition)
+Fix $x, y \in U$ such that $x \neq y$. We have that $h_{a,b}(x) = h_{a,b}(y)$ if and only if $(ax+b) \bmod p = z$ for some pair of $z$ and $w$ such that $z \equiv w \pmod m$. 
+
+We claim that there are at most $4p^2/m$ such $(z,w)$ pairs. To see why, consider the set ${0, 1, \dotsc, p-1}$. It can be partitioned into $m$ subsets based on the value of each element modulo $m$. Each subset has at most $2p/m$ elements. Any pair of elements in each subset are congruent modulo $m$, so there are $4p^2/m^2$ pairs per subset. Since there are $m$ subsets, it follows that there are at most $4p^2/m$ pairs.
+
+By the union bound,
+\begin{align*}
+\Pr_{h_{a,b} \leftarrow \mathcal{H}_{p,m}} [h_{a,b}(x) = h_{a,b}(y)] 
+&\leq \sum_{z\equiv w (\bmod m)}\Pr_{(a,b) \leftarrow [p]^2}[(ax+b)\bmod p = z \ \wedge\ (ay+b) \bmod p = w]\\
+&= \sum_{z\equiv w (\bmod m)} \frac{1}{p^2} \leq \frac{4p^2}{m} \bigg( \frac{1}{p^2} \bigg) = \frac{4}{m}
+\end{align*}
+as desired.
+\end{proof}
+
+\item We now describe the construction of FKS dictionary. We pick $m > cn$ for some constant $c$ and let $\mathcal{H}$ be a universal family of hash functions. We try pick $h$ from $\mathcal{H}$ at random, and hash $x_1, x_2, \dotsc, x_n$ into the table. We stop if there are no more than $n$ collisions. Otherwise, we pick a new hash function an try again. 
+
+We show that the above process takes $O(n)$ expected time. Let $I_{ij}$ be an indicator random variable such that $I_{ij} = 1$ if and only if $x_i = x_j$. Then,
+\begin{align*}
+E[\mathrm{\# collisions}] = E\bigg[ \sum_{1\leq i<j < n} I_{ij} \bigg] = \sum_{1\leq i<j< n} \E[I_{ij}] = \sum_{1\leq i<j< n} \frac{O(1)}{cn} < \frac{n^2}{2}\frac{O(1)}{cn} = \frac{O(1)}{2c}n.
+\end{align*}
+We can use $c$ large enough such that the expected number of collisions is less than $n/2$. By Markov's inequality, the probability that the number of collisions is greater than $n$ is less than $1/2$. Thus, the expected number of trials is constant. Since each trial takes linear time, the process takes expected linear time.
+
+Now, we look to the $m$ slots of the hash table produced above. Let there be $n_i$ elements in slot $a[i]$. For each slot, we create a \emph{collision-free} hash table of size $cn_i^2$ by the process above: we pick a hash function from $h$, hash the elements, and try again if there's a collision. We claim that this process takes $O(n_i^2)$ expected time because
+\begin{align*}
+E[\mathrm{\# collisions}] \leq \frac{n_i^2}{2} \frac{O(1)}{cn_i^2} = \frac{O(1)}{2c}.
+\end{align*}
+Summing the time and space used for all slots together, the total time and space taken is $O(n_0^2) + O(n_1^2) + \dotsc + O(n_{m-1}^2) = O(n)$ because the total number of collisions is less than $n_0^2 + n_1^2 + \dotsb + n_{p-1}^2$.
+\end{itemize}
+\end{document}

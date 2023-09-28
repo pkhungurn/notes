@@ -1,0 +1,555 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{epstopdf}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+
+\newtheorem{lemma}{Lemma}[section]
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\likelihood}{\mathcal{L}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\new}{\mathrm{new}}
+\newcommand{\Arg}{\mathrm{Arg\,}}
+\newcommand{\Log}{\mathrm{Log\,}}
+\newcommand{\RE}{\mathrm{Re\,}}
+\newcommand{\IM}{\mathrm{Im\,}}
+\newcommand{\Res}{\mathrm{Res}}
+\newcommand{\pv}{\mathrm{p.v.}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+\newcommand{\II}{\mathrm{II}}
+
+\title{Differential Geometry Notes of 04/23/2013}
+\author{Pramook Khungurn}
+
+\begin{document}
+  \maketitle
+
+  \section{The Gauss Map}
+  
+  \begin{itemize}
+    \item Given a parameterization $\ve{x} : U \sseq \Real^2 \ra S$ at a point $p$. We can choose a unit normal vector at each point of $\ve{x}(U)$ by the rule $$N(q) = \frac{\ve{x}_u \wedge \ve{x}_v}{|\ve{x}_u \wedge \ve{x}_v|}(q)$$
+    for all $q \in U$.
+
+    It is clear that $N$ is differentiable.
+
+    \item If $V \sseq S$ is an open set in $S$ and $N:S \ra \Real^3$ is differentiable map which associates each point $q \in V$ a unit vector at $q$, we say that $N$ is a {\bf differentiable field of unit normal vectors on $V$}
+
+    \item Not all surfaces admit a differentiable field of unit normal vectors {\it defined on the whole surface}.
+
+    For example, the M\"{o}bius strip does not have one.
+
+    \item We say that a regular surface is {\bf orientable} if it admits a differentiable field of unit normal vectors defined on the whole surface.
+
+    The choice of one such $N$ is called an {\bf orientation} of $S$.
+
+    \item An orientation on $N$ on $S$ induces an orientation on each tangent plane $T_p(S)$, $p \in S$.
+
+    A basis $\{v, w\} \in T_p(S)$ to be {\bf positive} if $\langle v \wedge w, N \rangle$ is positive.
+
+    \item In this note, $S$ denotes an orientable surface. That is, there exists an orientation $N$ is defined on the whole surface.
+
+    \item \begin{definition}
+      Let $S \sseq \Real^3$ be a regular surface with an orientation $N$. The map $N: S \ra \Real^3$ takes its value in the unit sphere $S^2 = \{(x,y,z) \in \Real^3: x^2 + y^2 + z^2 = 1 \}.$\\
+      The map $N: S \ra S^2$ thus defined is called the {\bf Gauss map} of $S$.
+    \end{definition}    
+
+    \item The differential $\dee N_p$ of $N$ at $p \in S$ is a linear map from $T_p(S)$ to $T_{N(p)}(S^2)$.
+
+    Because $T_p(S)$ and $T_{N(p)}(S^2)$ are parallel, $\dee N_p$ can be viewed as a linear map on $T_p(S)$.
+
+    \item The map $\dee N_p: T_p(S) \ra T_p(S)$ works as follows. For each curve $\alpha : (-\epsilon, \epsilon) \ra S$ with $\alpha(0) = 0$. We have that
+    \begin{align*}
+      \dee N_p(\alpha'(0)) = (N \circ \alpha)'(0).
+    \end{align*}
+    It measures the rate of change of the normal $N$ when restricted to the points of the curve $\alpha$. In other words, it measures how fast $N$ pulls away from $N(p)$ in the neighborhood of $p$. 
+
+    In the case of curve, this measure is given by a number, which is the curvature. However, in the case of surfaces, this measure is characterized by a linear map. (This is because the point $p$ can be approached from a whole range of directions.)
+
+    \item Consider the sphere unit sphere $S^2$. 
+
+    Let $\alpha(t) = (x(t), y(t), z(t))$. Since $x^2 + y^2 + z^2 = 1$, we have that $2xx' + 2yy' + 2zz' = 0$. Hence, $0 = (x, y, z) \cdot (x', y', z') = (x,y,z) \cdot \alpha'.$ So, $p = (x,y,z)$ is normal to any vector in $T_p(S^2)$. As such, $\bar N(p) = p$ and $N(p) = -p$ are fields of unit normal vectors in $S^2$. Fix $N$ as the orientation of the sphere. Notice that $N$ points inside the sphere.
+
+    Now, we have that
+    \begin{align*}
+      (N \circ \alpha)(t) = (-x(t), -y(t), -z(t)).
+    \end{align*}
+    So,
+    \begin{align*}
+      \dee N_p(x'(t), y'(t), z'(t)) = (N \circ \alpha)'(t) = (-x(t), -y(t), -z(t)).
+    \end{align*}
+    That is, $\dee N_p(v) = -v$.
+
+    \item Consider the cylinder $\{ (x,y,z) \in \Real^3 : x^2 + y^2 = 1 \}.$
+
+    We have that for $\alpha(t) = (x(t), y(t), z(t))$. Because $x^2 + y^2 = 1$, we have that $2xx' + 2yy' = 0$. We have that $(x, y, 0)$ is perpedicular to $(x'(t), y'(t), z'(t))$, which consists of all vectors in $T_p(S)$. As a result, we have two possible orientations $\bar N = (x, y, 0)$ and $N = (-x, -y, 0).$ We choose $N$ as the orientation again.
+
+    So,
+    \begin{align*}
+      \dee N_p(x'(t), y'(t), z'(t)) = (N \wedge \alpha)'(t) = (-x'(t), -y'(t), 0).
+    \end{align*}
+    As a result, if $v$ is tangent to the cylinder and parallel to the $z$-axis, then $\dee N_p(v) = \ve{0} = \ve{0}v$. Otherwise, if $w$ is tangent to the cylinder and parallel to the $xy$-plane, then $\dee N_p(w) = w$. Therefore, $v$ and $w$ are eigenvectors of $\dee N_p$ with eigenvalues $0$ and $-1$.
+
+    \item \begin{proposition}
+      The differential $\dee N_p : T_p(S) \ra T_p(S)$ of the Gauss map is a self-adjoint linear map.
+    \end{proposition}
+    \begin{proof}
+      We have to verify that $\langle \dee N_p(w_1), w_2 \rangle = \langle w_1, \dee N_p(w_2) \rangle$. Let $\ve{x}$ be a parameterization of $S$ at $p$. We have that $\ve{x}_u$ and $\ve{x}_v$ consist a basis of $T_p(S)$. If $\alpha(t) = \ve{x}(u(t), v(t))$ and $\alpha(0) = p$, we have that $\alpha'(0) = \ve{x}_u u'(0) + \ve{x}_v v'(0)$. Therefore,
+      \begin{align*}
+        \dee N_p(\alpha'(0)) &= \dee N_p(\ve{x}_u u'(0) + \ve{x}_v v'(0)) = \frac{\dee}{\dee t}N(u(t),v(t)) \bigg|_{t=0} = N_u u'(0) + N_v v'(0).
+      \end{align*}
+      In particular $\dee N_p(\ve{x}_u) = N_u$ and $\dee N_p(\ve{x}_v) = N_v$. Thus, to show that $\dee N_p$ is self-adjoint, it suffices to show that
+      \begin{align*}
+        \langle N_u, \ve{x}_v \rangle = \langle \ve{x}_u, N_v \rangle.
+      \end{align*}
+      To see this, we differentiate $\langle N, \ve{x}_u \rangle = 0$ and $\langle N, \ve{x}_v \rangle = 0$ relative to $v$ and $u$, respectively:
+      \begin{align*}
+        \langle N_v, \ve{x}_u \rangle + \langle N, \ve{x}_{uv} \rangle &= 0\\
+        \langle N_u, \ve{x}_v \rangle + \langle N, \ve{x}_{uv} \rangle
+      \end{align*}
+      Therefore, $\langle \ve{x}_u, N_v \rangle = \langle N_u, \ve{x}_v \rangle = -\langle N, \ve{x}_{uv} \rangle$.
+    \end{proof}
+  \end{itemize}
+
+  \section{Second Fundamental Form}
+
+  \begin{itemize}
+    \item Because $\dee N_p$ is a self-adjoint linear map, we can associate it with a quadratic form $Q(w) = \langle w, \dee N_p(w) \rangle$ defined for all $w \in T_p(S)$. For convenience, we shall work with the quadratic form $-Q$ instead.
+
+    \item \begin{definition}
+      The quadratic form $\II_p(v) = -\langle v, \dee N_p(v) \rangle$ is called the {\bf second fundamental form} of $S$ at $p$.
+    \end{definition}
+
+    \item \begin{definition}
+      Let $C$ be a regular curve in $S$ passing through $p \in S$.\\
+      Let $\kappa$ being the curvature of $C$ at $p$.\\
+      Let $\cos \theta = \langle n, N \rangle$ where $n$ is the normal vector to $C$ at $p$ and $N$ is the normal vector to $S$ at $p$.\\
+      The number $\kappa_{n} = k \cos \theta$ is then called the {\bf normal curvature} of $C$  at $p$.
+    \end{definition}
+
+    In other words, $\kappa_n$ is the length of the projected vector $\kappa n$ over the normal to the surface at $p$.
+
+    \item Consider a regular curve $C \sseq S$ parameterized by $\alpha(s)$ where $s$ is the arc length of $C$. Suppose that $\alpha(0) = p$. Let $N(s)$ denote $N(\alpha(s))$. We have that
+    \begin{align*}
+      \langle N(s), \alpha'(s) \rangle = 0
+    \end{align*}
+    because $\alpha'(s)$ lies inside $T_p(\alpha(s))$. Thus, differentiating both sides of the above equation with respective to $s$, we have
+    \begin{align*}
+      \langle N(s), \alpha''(s) \rangle = -\langle N'(s), \alpha'(s) \rangle.
+    \end{align*}
+    Therefore,
+    \begin{align*}
+      \II_p(\alpha'(0)) 
+      &= -\langle \alpha'(0), \dee N_p(\alpha'(0)) \rangle\\
+      &= -\langle \alpha'(0), N'(0) \rangle\\
+      &= \langle \alpha''(0), N(0) \rangle\\
+      &= \langle \kappa n(p), N(p) \rangle\\
+      &= \kappa_n(p).
+    \end{align*}
+    As such, the value of the second fundamental form $\II_p(v)$ for a unit vector $v$ is equal to the normal curvature of a regular curve passiting through $p$ with tangent $v$.
+
+    \item \begin{proposition}[Meusnier]
+      All curves lying on a surface $S$ and having at a given point $p \in S$ the same tangent line have at this point the same normal curvature.
+    \end{proposition}
+
+    This allows us to talk about the {\bf normal curvature along a given direction} at $p$.
+
+    \item Let $v \in T_p(S)$ be a unit vector.\\
+    The intersection of $S$ with the plane containing $v$ and $N(p)$ is called the {\bf normal section} of $S$ at $p$ along $v$.
+
+    \item The normal section of $S$ at $p$ along $v$ is a curve whose normal vector $n$ at $p$ is parallel to $N$. (The curve is contained in a plane whose orthonormal basis is given by $v$ and $N$. The normal $n$ is perpendicular to $v$, so $n$ must be parallel to $N$.) So, the curvature of the curve is equal to the absolute value of the normal curvature along $v$ at $p$.
+
+    As such, the normal curvature at $p$ along $v$ is the curvature of the normal section of $S$ at $p$ along $v$.
+
+    \item Consider a plane. All of the normal sections are straight lines, which have curvature $0$. Therefore, we have that the differential of the Gauss map $\dee N_p$ must be identically zero.
+
+    \item Consider a sphere. All of the normal sections are circles with radius 1. The curvature of the normal sections are all $1$, so the normal curvature at any point along any direction is $1$.
+
+    \item Since linear map $\dee N_p$ is self-adjoint, there exists an orthonormal basis $\{ e_1, e_2 \}$ of $T_p(S)$ such that $\dee N_p(e_1) = -\kappa_1 e_1$ and $\dee N_p(e_2) = -\kappa_2 e_2$, and $\kappa_1$ and $\kappa_2$ are the minimum and the maximum values of the second fundamental form $\II_p$ restricted to the unit circle of $T_p(S)$. These are the extereme values of the normal curvatures at $p$.
+
+    \item \begin{definition}
+      The maximum normal curvature $\kappa_1$ and the minimum normal curvature $\kappa_2$ are called the {\bf principal curvatures} at $p$. The corresponding directions $e_1$ and $e_2$ are called the {\bf principal directions at $p$}.
+    \end{definition}
+
+    \item In the plane, all directions at all points are principal directions. The same also happans with the sphere.
+
+    This is because, for these surfaces, the second fundamental form at each point is constant for unit vectors.
+
+    \item \begin{definition}
+      If a regular connecte curve $C$ on $S$ is such that for all $p \in C$, the tangent line of $C$ is a principal direction at $p$, then $C$ is said to be a {\bf line of curvature} of $S$.
+    \end{definition}
+
+    \item \begin{proposition}[Olinde Rodrigues]
+      A necessary and sufficient condition for a connected regular curve $C$ on $S$ to be a line of curvature of $S$ is that $(N\circ \alpha)(t) = \lambda(t) \alpha'(t)$ for any parameterization $\alpha(t)$ of $C$ and $\lambda(t)$ is a differentiable function of $t$. In this case, $-\lambda(t)$ is the (principal) curvature along $\alpha$.
+    \end{proposition}
+    \begin{proof}
+      If $\alpha'(t)$ is parallel to the principal direction, then $\alpha'(t)$ is an eigenvector of $\dee N$. Thus,
+      \begin{align*}
+        \dee N(\alpha'(t)) = (N \circ \alpha)'(t) = \lambda(t)\alpha'(t).
+      \end{align*}
+      Now, if the above equation is true, $\alpha'(t)$ is an eigenvector, so it is along the principal direction. So $\alpha$ is a line of curvature.
+    \end{proof}
+
+    \item Given a vector $v \in T_p(S)$, we can write $v$ as a linear combination of $e_1$ and $e_2$. In particular, since $e_1$ and $e_2$ are orthonormal, there exists $\theta$ such that:
+    \begin{align*}
+      v = e_1 \cos \theta + e_2 \sin \theta.
+    \end{align*}
+    Here, $\theta$ is the angle from $e_1$ to $v$. With the knowledge of $\theta$, $\kappa_1$ and $\kappa_2$, we can compute the normal curvature along $v$ as follows:
+    \begin{align*}
+      \kappa_n(v) 
+      &= \II_p(v)\\
+      &= -\langle v, \dee N_p(v) \rangle\\
+      &= -\langle e_1 \cos \theta + e_2 \sin\theta, \dee N_p(e_1 \cos \theta + e_2 \sin\theta) \rangle\\
+      &= -\langle e_1 \cos \theta + e_2 \sin\theta, - e_1 \kappa_1 \cos \theta - e_2 \kappa_2 \sin\theta \rangle\\
+      &= \kappa_1 \cos^2 \theta + \kappa_2 \sin^2 \theta.
+    \end{align*}
+    This last expression is know as {\bf Euler's formula}.
+
+    \item The determinant of $\dee N_p$ is given by $(-\kappa_1)(-\kappa_2) = \kappa_1 \kappa_2$, the product of the principal curvatures.\\
+    The trace of $\dee N_p$ is given by $-(\kappa_1 + \kappa_2)$, the negative of the sum of the principal curvatures.
+
+    \item If we change the orientation of the surface, the determinant does not change. However, the trace changes sign.
+
+    \item \begin{definition}
+      Let $p \in S$, and let $\dee N_p: T_p(S) \ra T_p(S)$ be the differential of the Gauss map.\\
+      The determinant of $\dee N_p$ is called the {\bf Gaussian curvature} $K$ of $S$ at $p$.\\
+      The negative of the half of the trace of $\dee N_p$ is called the {\bf mean curvature} $H$ of $S$ at $p$.
+    \end{definition}
+
+    \item By the definition, we have that
+    \begin{align*}
+      K &= \kappa_1 \kappa_2\\
+      H &= \frac{\kappa_1 + \kappa_2}{2}.
+    \end{align*}
+
+    \item \begin{definition}
+      A point of a surface is called
+      \begin{itemize}
+        \item {\bf Elliptic} if $K > 0$.
+        \item {\bf Hyperbolic} if $K < 0$.
+        \item {\bf Parabolic} if $K =0$, but $\dee N_p \neq 0$.
+        \item {\bf Planar} if $\dee N_p \neq 0$.
+      \end{itemize}      
+    \end{definition}
+
+    \item At an elliptic point, the principal curvatures have the same sign. So, all the curves passing through this point have their normal vectors pointing toward the same side of the tangent plane.
+
+    At a hyberbolic point, the principal curvatures have different signs. So, some curves have their normals point toward the different sides of the tangent plane.
+
+    At a planar point, one of the principal direction is an eigenvector with eigenvalue $0$, but the other has a non-zero eigenvalue. All points on a cylinder are parabolic points.
+
+    AT a planar point, all principal curvatures are zero.    
+  \end{itemize}  
+
+  \section{Umbilical Points}
+
+  \begin{itemize}
+    \item \begin{definition}
+      If at $p \in S$, $\kappa_1 = \kappa_2$, then $p$ is called an {\bf umbilical point} of $S$.
+    \end{definition}
+
+    \item All planar points are umbilical points.\\
+    All points on a plane and on a sphere are umbilical points.
+
+    \item \begin{proposition}
+      If all points of a connected surface $S$ are umbilical points, then $S$ is either contained in a sphere or in a plane.
+    \end{proposition}
+
+    \begin{proof}
+      Let $p \in S$ and let $\ve{x}(u,v)$ be a parameterization of $S$ at $p$ such that the coordinate neighborhood $V$ is connected.
+
+      Since each $q \in V$ is an umbilical point, we have, for any vector $w = a_1 \ve{x}_u + a_2 \ve{x}_v$ in $T_q(S)$,
+      \begin{align*}
+        \dee N(w) = \lambda(q)w
+      \end{align*}
+      where $\lambda(q)$ is a real differentiable function in $V$. We will show that $\lambda(q)$ is constant in $V$. For that, we write the above equation as
+      \begin{align*}
+        N_u a_1 + N_v a_1 = \lambda(\ve{x}_u a_1 + \ve{x}_v a_2).
+      \end{align*}
+      Since $w$ is arbitrary,
+      \begin{align*}
+        N_u &= \lambda \ve{x}_u\\
+        N_v &= \lambda \ve{x}_v
+      \end{align*}
+      Differentiating the first equation in $u$ and the second one in $v$, we have
+      \begin{align*}
+        N_{uv} &= \lambda_v \ve{x}_u + \lambda \ve{x}_{uv}\\
+        N_{uv} &= \lambda_u \ve{x}_v + \lambda \ve{x}_{uv}.
+      \end{align*}
+      Subtracting the first from the second, we have
+      \begin{align*}
+        \lambda_u \ve{x}_v - \lambda_v \ve{x}_u = 0
+      \end{align*}
+      Because $\ve{x}_u$ and $\ve{x}_v$ are linearly independent, we conclude that $\lambda_u = \lambda_v = 0$ for all $q \in V$. Since $V$ is connected, $\lambda$ is constant in $V$, as we claimed.
+
+      If $\lambda \equiv 0$, we have that $N_u = N_v = 0$. So, $N = N_0$ is a constant in $V$. This allows us to conclude that the all points in $V$ is contained in a plane.
+
+      If $\lambda \neq 0$, then the point $\ve{x}(u,v) - (1/\lambda)N(u,v) = \ve{y}(u,v)$ is fixed becaused
+      \begin{align*}
+        \bigg( \ve{x}(u,v) - \frac{1}{\lambda}N(u,v) \bigg)_u = \bigg( \ve{x}(u,v) - \frac{1}{\lambda}N(u,v) \bigg)_v = 0.
+      \end{align*}
+      Since
+      \begin{align*}
+        |\ve{x}(u,v) - \ve{y}|^2 = \frac{1}{\lambda^2},
+      \end{align*}
+      all points of $V$ are contained in a sphere of center $\ve{y}$ and radius $1/|\lambda|$.
+
+      This proves that, for any neighborhood of any point $p$, the neighborhood is contained either in a plane or in a sphere. We can use the Heine-Borel theorem to prove that the path from any two points are contained either in a plane or in a sphere. We can then conclude that the proposition is true for all points.
+    \end{proof}
+  \end{itemize}
+
+  \section{Asymtotic Directions}
+
+  \begin{itemize}
+    \item \begin{definition}
+      Let $p$ be a point in $S$. \\
+      An {\bf asymptotic direction} of $S$ at $p$ is a direction of $T_p(S)$ for which the normal curvature is zero.\\
+      An {\bf asymptotic curve} of $S$ is a regular connected curve $C \sseq S$ such that for each $p \in C$ the tangent line of $C$ at $p$ is an asymptotic direction.
+    \end{definition}
+
+    \item At an elliptical point, there are no asymtotic directions.\\
+    At a parabolic point, there's one asymtotic directions.\\
+    At a hyperbolic point, there are two asymtotic directions.\\
+    At a planar point, every direction is the asymptotic direction.    
+  \end{itemize}
+
+  \section{The Gauss Map in Local Coordinates}
+
+  \begin{itemize}
+    \item We shall assume that, for any parameterization $\ve{x}$, it is compatible with the orientation $N$. That is,
+    \begin{align*}
+      N = \frac{\ve{x}_u \wedge \ve{x}_v}{|\ve{x}_u \wedge \ve{x}_v|}.
+    \end{align*}
+
+    \item Let $\ve{x}(u,v)$ be a prametermization at point $p \in S$.\\
+    Let $\alpha(t) = \ve{x}(u(t), v(t))$ and $\alpha(0) = p$.
+
+    \item To simplify the notation, assume that all functions take values at $p$.
+
+    \item The tangent vector to $\alpha(t)$ at $p$ is $\alpha' = \ve{x}_u u' + \ve{x}_v v'$. Moreover,
+    \begin{align*}
+      \dee N(\alpha') = N'(u(0), v(0)) = N_u u' + N_v v'.
+    \end{align*}
+    Since $N_u$ and $N_v$ belong to $T_p(S)$, we may write
+    \begin{align*}
+      N_u &= a_{11} \ve{x}_u + a_{21} \ve{x}_v\\
+      N_v &= a_{12} \ve{x}_u + a_{22} \ve{x}_v.
+    \end{align*}
+    In other words,
+    \begin{align*}
+      \begin{bmatrix}
+        N_u \\
+        N_v
+      \end{bmatrix}
+      =
+      \begin{bmatrix}
+        a_{11} & a_{21}\\
+        a_{12} & a_{22}
+      \end{bmatrix}
+      \begin{bmatrix}
+        \ve{x}_u\\
+        \ve{x}_v
+      \end{bmatrix}.
+    \end{align*}
+    Therefore,
+    \begin{align*}
+      \dee N(\alpha') = (a_{11}u' + a_{12}v')\ve{x}_u + (a_{21}u' + a_{22}v')\ve{x}_v.
+    \end{align*}
+    Hence,
+    \begin{align*}
+      \dee N \begin{bmatrix}
+        u'\\
+        v'
+      \end{bmatrix}
+      =
+      \begin{bmatrix}
+        a_{11} & a_{12}\\
+        a_{21} & a_{22}
+      \end{bmatrix}
+      \begin{bmatrix}
+        u'\\
+        v'
+      \end{bmatrix}.
+    \end{align*}
+    That is, in the basis $\{ \ve{x}_u, \ve{x}_v \}$, the linear map $\dee N$ is given by the matrix $(a_{ij})$.
+
+    \item Now, the expression of the second fundamental form is given by:
+    \begin{align*}
+      \II_p(\alpha') 
+      &= - \langle \dee N(\alpha'), \alpha' \rangle = -\langle N_u u' + N_v v', \ve{x}_u u' + \ve{x}_v v' \rangle\\
+      &= e(u')^2 + 2f u'v' + g(v')^2
+    \end{align*}
+    where
+    \begin{align*}
+      e &= -\langle N_u, \ve{x}_u \rangle = \langle N, \ve{x}_{uu} \rangle\\\
+      f &= -\langle N_u, \ve{x}_v \rangle = \langle N, \ve{x}_{uv} \rangle = \langle N, \ve{x}_{vu} \rangle = -\langle N_v, \ve{x}_u \rangle\\
+      g &= -\langle N_v, \ve{x}_v \rangle = \langle N, \ve{x}_{vv} \rangle
+    \end{align*}
+
+    \item Now, we can obtain the expression for the $a_{ij}$'s in terms of the above coefficients. We have that
+    \begin{align*}
+      -f &= \langle N_u, \ve{x}_v \rangle = a_{11}F + a_{21}G\\
+      -f &= \langle N_v, \ve{x}_u \rangle = a_{12}E + a_{22}F\\
+      -e &= \langle N_u, \ve{x}_u \rangle = a_{11}E + a_{21}F\\
+      -g &= \langle N_v, \ve{x}_v \rangle = a_{12}F + a_{22}G.
+    \end{align*}
+    As a result
+    \begin{align*}
+      - \begin{bmatrix}
+        e & f\\
+        f & g
+      \end{bmatrix}
+      =
+      \begin{bmatrix}
+        a_{11} & a_{21}\\
+        a_{12} & a_{22}
+      \end{bmatrix}
+      \begin{bmatrix}
+        E & F\\
+        F & G
+      \end{bmatrix}.    
+    \end{align*}
+    Therefore,
+    \begin{align*}
+      \begin{bmatrix}
+        a_{11} & a_{21}\\
+        a_{12} & a_{22}
+      \end{bmatrix}
+      =
+      - \begin{bmatrix}
+        e & f\\
+        f & g
+      \end{bmatrix}
+      \begin{bmatrix}
+        E & F\\
+        F & G
+      \end{bmatrix}^{-1}
+    \end{align*}
+    Because
+    \begin{align*}
+      \begin{bmatrix}
+        E & F\\
+        F & G
+      \end{bmatrix}^{-1}
+      =
+      \frac{1}{EG-F^2}
+      \begin{bmatrix}
+        G & -F\\
+        -F & E
+      \end{bmatrix}
+    \end{align*}
+    As such, we have that
+    \begin{align*}
+      a_{11} &= \frac{fF-eG}{EG-F^2}\\
+      a_{12} &= \frac{gF-fG}{EG-F^2}\\
+      a_{21} &= \frac{eF-fE}{EG-F^2}\\
+      a_{22} &= \frac{fF-gE}{EG-F^2}.
+    \end{align*}
+    The equations above are know as {\bf equations of Weingarten}.
+
+    \item We have that
+    \begin{align*}
+      K 
+      =
+      \begin{vmatrix}
+        a_{11} & a_{12}\\
+        a_{21} & a_{22}
+      \end{vmatrix}
+      =
+      \begin{vmatrix}
+        a_{11} & a_{21}\\
+        a_{12} & a_{22}
+      \end{vmatrix}
+      =
+      \frac
+      {
+        \begin{vmatrix}
+          e & f \\
+          f & g
+        \end{vmatrix}
+      }
+      {
+        \begin{vmatrix}
+          E & F \\
+          F & G
+        \end{vmatrix}
+      }
+      = \frac{eg-f^2}{EG-F^2}.
+    \end{align*}
+
+    \item For the mean curvatures, we recall that $-\kappa_1$ and $-\kappa_2$ are the eigenvalues of $\dee N$. Let $-\kappa$ be an eigenvalue, we have that
+    \begin{align*}
+      \begin{vmatrix}
+        a_{11} + \kappa & a_{12}\\
+        a_{21} & a_{22} + \kappa
+      \end{vmatrix}
+      = 
+      0
+    \end{align*}
+    In other words,
+    \begin{align*}
+      \kappa^2 + \kappa(a_{11} + a_{22}) + a_{11}a_{22} - a_{21}a_{12} = 0 = (\kappa - \kappa_1)(\kappa - \kappa_2).
+    \end{align*}
+    As a result,
+    \begin{align*}
+      H = \frac{1}{2}(\kappa_1 + \kappa_2) = -\frac{1}{2}(a_{11}+a_{22}) = \frac{1}{2} \frac{eG - 2fF + gE}{EG-F^2}.
+    \end{align*}
+
+    \item Now, because
+    \begin{align*}
+      \kappa^2 - 2H\kappa + K = 0,
+    \end{align*}
+    we have that
+    \begin{align*}
+      \kappa = H \pm \sqrt{H^2 - K}.
+    \end{align*}
+
+    \item If we denote $\langle u \wedge v, w \rangle$ with $(u,v,w)$, we have that we have another set of expressions for $e$, $f$, and $g$.
+    \begin{align*}
+      e 
+      &= \langle N, \ve{x}_{uu} \rangle 
+      = \bigg\langle \frac{\ve{x}_u \wedge \ve{x}_v}{|\ve{x}_u \wedge \ve{x}_v|}, \ve{x}_{uu} \bigg\rangle
+      = \frac{\langle \ve{x}_u \wedge \ve{x}_v, \ve{x}_{uu} \rangle}{\sqrt{EG-F^2}}
+      = \frac{(\ve{x}_u, \ve{x}_v, \ve{x}_{uu})}{\sqrt{EG-F^2}}\\
+      f
+      &= \frac{(\ve{x}_u, \ve{x}_v, \ve{x}_{uv})}{\sqrt{EG-F^2}}
+      = \frac{(\ve{x}_u, \ve{x}_v, \ve{x}_{vu})}{\sqrt{EG-F^2}}\\
+      g
+      &= \frac{(\ve{x}_u, \ve{x}_v, \ve{x}_{vv})}{\sqrt{EG-F^2}}.
+    \end{align*}
+      
+   
+  \end{itemize}
+ \end{document}

@@ -1,0 +1,435 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+\usepackage{verbatim}
+\usepackage{hyperref}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\Dee}{\mathrm{D}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\Var}{\mathrm{Var}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+\newcommand{\ov}[1]{\overline{#1}}
+
+\DeclareMathOperator*{\argmax}{argmax}
+\DeclareMathOperator*{\argmin}{argmin}
+
+\title{Generative Adversarial Networks}
+
+\begin{document}
+  \maketitle
+
+  I wrote this note as I study papers about generative adversarial networks (GANs). The main paper that I read is the tutorial by Ian Goodfellow at NIPS 2016 \cite{Goodfellow:2016}.
+
+  \section{Introduction}
+
+  \begin{itemize}
+  	\item A generative model is capable of generating samples of a probability distribution.
+
+  	\item Generative models are worth studyting because:
+
+  	\begin{itemize}
+  	  \item Making models that perform well tests for our ability to represent and manipulate high-dimensional probability distribution.
+
+  	  \item They can be used in reinforcement learning.
+
+  	  \begin{itemize}
+  	  	\item They can simulate possible futures while planning.
+
+  	  	\item They enable learning in a simulated environment, where mistakes are not costly.
+
+  	  	\item They can be used to guide exploration by keeping tracking of previous states and actions.
+
+  	  	\item They can be used for inverse reinforcement learning (i.e., given a learned plan, recover the reward function). The paper doesn't say how this is possible.
+  	  \end{itemize}
+
+  	  \item Generative models can be trained with missing data to output predictions on missing data. This can be used in unsupervised learning.
+
+  	  \item Generative models can work with \emph{multi-modal} outputs; i.e., where multiple outputs can be considered correct for a single input. Training models to minimize mean square loss tends to blur valid outputs together, but generative models can just sample them and produce sharp results.
+
+  	  \item A lot of tasks require generating samples for some distribution.
+  	  \begin{itemize}
+  	  	\item Single image super-resolution.
+  	  	\item Creation of art.
+  	  	\item Image-to-image translation.  	  	
+  	  \end{itemize}
+  	\end{itemize}  	
+  \end{itemize}
+
+  \section{A Glossary of Generative Models}
+
+  \begin{itemize}
+  	\item We focus only on models that uses the principle of \emph{maximum likelihood}. GANs does not use this but can be made to do so.
+
+  	\item Let our model be parameterized by parameters $\theta$. Let us also assume that training data $\ve{x}^{(1)}, \ve{x}^{(2)}, \dotsc, \ve{x}^{(m)}$ is given to us. The principle of maximum likelihood dictates that we find $\theta$ that maximize the \textbf{likelihood} $\prod_{i=1}^m p_{\mathrm{model}}(\ve{x}^{(i)}; \theta)$. This is equivalent to solving the following problem:
+  	\begin{align*}
+  		\argmax_{\theta} \sum_{i=1}^n \log p_{\mathrm{model}}(\ve{x}^{(i)}; \theta).
+  	\end{align*}
+  	
+  	\item The principle of maximum likelihood can also be thought of as minimizing the KL-divergence between the data generating distribution and the model:
+  	\begin{align*}
+  		\argmax_{\theta} D_{\mathrm{KL}}(p_{\mathrm{data}}(\ve{x})\|p_{\mathrm{model}}(\ve{x};\theta)).
+  	\end{align*}
+  	In practice, we don't have $p_{\mathrm{data}}$. We only have samples from it. These are used to generate the \textbf{empirical distribution} $\hat{p}_{\mathrm{data}}(\ve{x})$.
+
+  	\item Generative models that use maximum likelihood can be classified as follows:
+  	\begin{itemize}
+  	  \item \emph{Explicit density}
+  	  \begin{itemize}
+  	  	\item \emph{Tractable density}
+  	  	\begin{itemize}
+  	  	  \item \emph{Fully visible belief nets}: NADE, MADE, PixelRNN
+  	  	  \item \emph{Change of variables models}: nonlinear ICA
+  	  	\end{itemize}
+  	  	\item \emph{Approximate density}
+  	  	\begin{itemize}
+  	  	  \item \emph{Variational}: variational autoencoders
+  	  	  \item \emph{Markov chain:} Boltzmann machine
+  	  	\end{itemize}
+  	  \end{itemize}
+  	  \item \emph{Implicit density}
+  	  \begin{itemize}
+  	  	\item \emph{Direct}: GANs
+  	  	\item \emph{Markov chain}: GSN
+  	  \end{itemize}
+  	\end{itemize}  	
+  \end{itemize}
+
+  \subsection{Explicit Density Models}
+
+  \begin{itemize}
+  	\item Explicit models define an explicit density function $p_{\mathrm{model}}(\ve{x}, \theta)$.
+
+  	\item It is easy to maximize the model once we have the definition: just do gradient descent. The difficulty is designing a tractable model that captures all the details in the data. You either (1) go ahead and construct such a model or (2) work with a tractable approximation of the likelihood.
+
+  	\item There are two popular approaches to tractable explicit density models.
+  	\begin{itemize}
+  	  \item Fully visible belief networks
+  	  \item Nonlinear independent component analysis
+  	\end{itemize}
+
+  	\item \textbf{Fully visible belief networks} (FVBNs) decomposes the probability into a chain of conditional probabilities where a component of the data is conditioned on previous components:
+	\begin{align*}
+      p_{\mathrm{model}}(\ve{x}) 
+      = \prod_{i=1}^n p_{\mathrm{model}}(x_i | x_1, \dotsc, x_{i-1}).
+    \end{align*}
+	\begin{itemize}
+	  \item It takes $O(n)$ time to generate a sample. These $O(n)$ steps cannot be parallelized.
+	  \item WaveNet is such a system \cite{Oord:2016}. It can generate realistic human speech, but it takes a long time to generate an example though.
+	\end{itemize}
+
+	\item \textbf{Nonlinear independent component analysis} defines (1) a space of latent vectors and (2) a complicated nonlinear function that transforms the latent vectors to the real target vectors. The whole distribution is tractable if both the distribution over latent vectors and the nonlinear mapping are tractable.
+	\begin{itemize}
+	  \item Non-volume preserving transformation (NVP) is a member of this group. It can generate ImageNet images.
+	  \item The main drawback of nonlinear ICA is that it restricts the choice of the mapping. It requires that the latent vectors must have the same dimensionality as the data vectors to make the mapping invertible.
+	\end{itemize}
+
+	\item Explicit density models can be effective, but they impose a lot of restriction on the models.
+
+	\item Working with approximations of the likelihood can reduce the restrictions on the models. There are two popular approaches:
+	\begin{itemize}
+	  \item Variational approximation.
+	  \item Markov chain approximation.
+	\end{itemize}
+
+  \item The \textbf{variational approximation} approach defines a lower bound $$\mathcal{L}(x;\theta) \leq \log p_{\mathrm{model}}(x;\theta)$$
+  and optimize for $\mathcal{L}(x;\theta)$ instead of the log likelihood. It is possible to define $\mathcal{L}$ that is tractable.
+
+  \item The \textbf{variational autoencoder} (VAE) is currently the most popular variational method to date \cite{Kingma:2013}.
+
+  \begin{itemize}
+    \item One problem with VAE is that, when weak models are used to approximate prior or posterior distributions, the gap between $\mathcal{L}$ and the true likelihood would result in $p_{\mathrm{model}}$ learning something other than $p_{\mathrm{data}}$.
+
+    \item VAE can produce good likelihood but is generally regarded as producing lower quality samples than GAN. However, there is no good objective measure for sample quality.
+  \end{itemize}
+
+  \item The \textbf{Markov chain method} generates sample by starting from an initial value $x_0$ and repeatedly sampling the next value from the conditional propbability distribution $x_{i+1} \sim q(x_{i+1}|x_i)$. The premise is that the later elements of the sequence $x_0$, $x_1$, $x_2$, $\dotsc$ would be distributed according to $p_{\mathrm{model}}$, so an element $x_i$ where $i$ is large would be a sample that we want.
+
+  \item \textbf{Botlzman machines} are a family of Markov chain generative machines that have been widely researched for a long time. They are not popular now because it takes a long time to generate samples because it hard to hell how long we have to sample before we reach a good one. Moreover, they do not scale well to problems such as ImageNet generation.
+
+  \end{itemize}
+
+  \subsection{Implicit Density Models}
+
+  \begin{itemize}
+    \item These models do not compute or approximate $p_{\mathrm{model}}$ directly.
+
+    \item The \textbf{generative stochastic network} (GSN) uses Markov chain to  generate samples \cite{Alain:2015}. As a result, it doesn't scale well to higher dimentionss and takes a long time generate one sample.
+
+    \item \textbf{Generative Adversarial Networks} (GANs), the subject of this document, can be classified into this category.
+
+    \item When comparing GANs against other models:
+    \begin{itemize}
+      \item GANs can generate all components of a sample in parallel unlike FVBNs.
+
+      \item GANs have very few restriction on the model used.
+
+      \item GANs does not use Markov chains, so a sample can be generated in one shot.
+
+      \item GANs can be shown to be asymptotically consistent. That is, given enough data and model complexity, it approximates the data distribution correctly without bias.
+
+      \item Training GANs requires finding a Nash equilibrium of a game, which is harder than minimizing an objective function.      
+    \end{itemize}
+  \end{itemize}
+
+  \section{GANs}
+
+  \subsection{The Framework}
+
+  \begin{itemize}
+    \item We set up a game with two players:
+
+    \begin{itemize}
+      \item The \textbf{generator} creates samples that are intended to come from the same distribution as the training data.
+
+      \item The \textbf{discriminator} examines samples to determine whether they actually come from the data distribution or not.
+    \end{itemize}
+
+    \item We evolve the two players together:
+
+    \begin{itemize}
+      \item The discriminator learns to do its job with labeled training data. The data labeled \emph{real} come from the training data. The data labeled \emph{fake} are generated by the generator.
+
+      \item The generator is trained to fool the discriminator.
+    \end{itemize}
+
+    In the end, the generator should be able to fool the discriminator by generating samples that are very similar to the real samples, and the discriminator should be totally confused.
+
+    \item Notationally:
+    \begin{itemize}
+      \item The discriminator is a function $D$, with parameter $\theta^{(D)}$ that takes $x$ (i.e., something with the same dimensionality as a training example) as input. It typically outputs the probability that $x$ comes from the real distribution.
+
+      \item The generator is a function $G$, with parameter $\theta^{(G)}$ that takes a latent vector $z$ (sampled from a prior distribution, which is usually a Gaussian) and produces a sample $x$.      
+    \end{itemize}
+
+    \item The discriminator has a cost function $J^{(D)}(\theta^{(D)}, \theta^{(G)})$ that it wants to minimize. However, it can only do so by changing $\theta^{(D)}$. On the other hand, the generator wants to minimize another cost funtion $J^{(G)}(\theta^{(D)}, \theta^{(G)})$, and it can only do so by changing $\theta^{(G)}$.
+
+    \item The two optimization problems above, when taken together, is a \emph{game} rather than a simple optimization problem.
+
+    \item The solution to a game is a \textbf{Nash equilibrium}: a tuple $(\theta^{(D)}, \theta^{(G)})$ that is a local minimum of $J^{(D)}$ with respect to $\theta^{(D)}$ and also a local minimum of $J^{(G)}$ with respect to $\theta^{(G)}$. (In the original tutorial, it is not mentioned explicitly whether we want a local minimum when the other variable is heled fixed, but it should be so.)
+
+    \item There are some restrictions on the generator.
+    \begin{itemize}
+      \item $G(z;\theta^{(G)})$ should be differentiable with respect to $\theta^{(G)}$. This is because the output will be fed to the discriminator, whose output will be consumed by the cost function. This means that GANs cannot output discrete values.      
+
+      \item If we want $p_{\mathrm{model}}$ to have the full support on $x$, we need the dimension of $z$ to be as large as the dimension of $x$.      
+    \end{itemize}
+
+    \item Typically, $G$ and $D$ are deep neural networks. (Duh!)
+
+    \item As said earlier, $z$ is a random vector. It does not have to be vanilla input to the network $G$. It can be incorporated in the form of additive or multiplicative noise to hidden layers (e.g., dropout).
+
+    \item The training process.
+    \begin{itemize}
+      \item On each step, two minibatches are sampled:
+      \begin{itemize}
+        \item A minibatch of $x$ values from the training data.
+        \item A minibatch of $z$ values from the prior distribution.
+      \end{itemize}
+
+      \item We feed $z$ value to $G(\cdot;\theta^{(G)})$ to generate a batch of fake $x$'s.
+
+      \item Both the real batch and fake batch are used to do an SGD step on $D$ to minimize $J^{(D)}$.
+
+      \item The fake batch and its output from $D$ are then used to perform an SGD step to minimize $J^{(G)}$.
+    \end{itemize}
+
+    \item We can use any gradient-based optimization algorithm to perform the two gradient steps above. Goodfellow recommends Adam.
+
+    \item Some researchers recommend running more steps of one player than the other. However, around the end of 2016, Goodfellow thought doing one step for each player at a time works the best.
+  \end{itemize}
+
+  \subsection{Cost Functions}
+
+  \subsubsection{The Discriminator's Cost}  
+
+  \begin{itemize}
+    \item The cost function for the discriminator is usually:
+    \begin{align*}
+      J^{(D)}(\theta^{(D)},\theta^{(G)}) 
+      &= -\frac{1}{2} E_{x \sim p_{\mathrm{data}}} [\log D(x)] - \frac{1}{2} E_z [\log(1 - D(G(z)))]
+    \end{align*}
+
+    \item As mentioned earlier, we train the discriminator with two batches.
+    \begin{itemize}
+      \item When training the the real batch, the cost function is reduced to:
+      \begin{align*}
+        -\frac{1}{2n} \sum_{i=1}^n \log D(x_i).
+      \end{align*}
+
+      \item When training with the fake batch, the cost function is reduced to:
+      \begin{align*}
+        -\frac{1}{2n} \sum_{i=1}^n \log (1 - D(G(z_i))).
+      \end{align*}
+    \end{itemize}
+
+    \item Given enough training data and model capacity, the optimal $D$ is given by:
+    \begin{align*}
+      D^*(x) = \frac{p_{\mathrm{data}}(x)}{p_{\mathrm{data}}(x) + p_{\mathrm{model}}(x)}
+    \end{align*}
+    where $p_{\mathrm{model}}(x) = \Pr(G(z) = x)$.
+
+    \item When we finish training, the value $1/(1-1/D(x))$ gives an estimate of the ratio $p_{\mathrm{data}}(x) / p_{\mathrm{model}}(x)$. This is, in effect, the approximation that GANs make in order not to deal with $p_{\mathrm{model}}$ directly. The estimate is also useful because it enables us to compute a wide variety of divergences and their gradients.
+  \end{itemize}
+
+  \subsubsection{Minimax}
+
+  \begin{itemize}
+    \item We can require the game to be a \emph{zero-sum game}. That is, the discriminator's gain is the generator's loss. In other words:
+    \begin{align*}
+      J^{(G)} = -J^{(D)}.
+    \end{align*}
+
+    \item In this way, the entire game can be summarized with a \textbf{value function}. In our case, this is just the discriminator's pay of:
+    \begin{align*}
+      V(\theta^{(D)}, \theta^{(G)}) 
+      = -J^{(D)}(\theta^{(D)}, \theta^{(G)}).
+    \end{align*}
+
+    \item Finding the optimal parameter for the generator is equivalent to computing:
+    \begin{align*}
+      \theta^{(G)*} = \argmin_{\theta^{(G)}} \max_{\theta^{(D)}} V(\theta^{(D)}, \theta^{(G)}).
+    \end{align*}
+    This is why this game is called the \textbf{minimax game}.
+
+    \item The minimax game enables theoretical analysis, but the loss function does not perform well in practice. 
+
+    The problem is that the discriminator loss function is a cross entropy loss on the correct real/fake class of the sample. The gradient of this function becomes very small when the sample is already classified correctly. Because the generator's cost function is the negative of the discriminator's, there will be no update to the generator if the discriminator has learned to reject the generator's output with high probability.
+  \end{itemize}
+
+  \subsubsection{Heuristic, Non-Saturating Game}
+
+  \begin{itemize}
+    \item To solve the saturating gradient problem of the minimax game, we let the cost of the generator be:
+    \begin{align*}
+      J^{G} = -\frac{1}{2} E_z[\log D(G(z))].
+    \end{align*}
+    $\log D(G(z))$ is proportional to the probability that the discriminator thinks a fake example is real. $-log D(G(z))$ is thus proportional to the probability that the discriminator is "right" on a fake example. In effect, through this cost function, the generator tries to minimize the probability that the discriminator is right.
+
+    \item The advantage of this cost function is that, when the discriminator is very right, the generator can still get non-saturated gradient.    
+  \end{itemize}
+
+  \subsubsection{Maximum Likelihood Game}
+
+  \begin{itemize}
+    \item Using $$J^{(G)} = -\frac{1}{2} E_z [\exp(\sigma^{-1}(D(G(z))))],$$ where $\sigma$ is the logistic sigmoid function, is equivalent to minimizing the KL divergence $D_{KL}(p_{\mathrm{data}}|p_{\mathrm{model}}),$ given that the discriminator is optimal.
+
+    \item Another method for approximating maximum likelihood is given by Nowozin \etal\ \cite{Nowozin:2016}.
+  \end{itemize}
+
+  \subsubsection{Comparison of Cost Functions}
+
+  \begin{itemize}
+    \item The generator receives feedback from the value $D(G(z))$. The cost to the generator is monotonically decreasing in $D(G(z))$. (That is, the more real the discriminator things the fake sample is, the less the cost to the generator.) Different generator cost functions have different derivatives on different parts of the $[0,1]$ domain of $D(G(z))$.
+
+    \item For the minimax and the maximum likelihood games, the loss plateaus near $D(G(z)) = 0$, meaning that the gradient is low when the generator performs poorly. Moreover, near $D(G(z)) = 1$, the gradient's absolute value is high. This is bad when we want to improve the generator when it is wrong.
+
+    \item The non-saturating heuristic is the opposite of the above. It has high gradient near $D(G(z)) = 0$ and low gradient near $D(G(z)) = 1$. The gradient also has lower varience than the other two functions.
+  \end{itemize}
+
+  \subsection{DCGAN}
+
+  \begin{itemize}
+    \item \textbf{Deep convolutional GAN} (DCGAN) is a popular architecture for image-generating GANs \cite{Radford:2015}. It has the following characteristics (taken from the paper):
+    \begin{itemize}
+      \item Replace any pooling layers with strided convolutions (discriminator) and fractional-strided convolutions (generator). That is, use the all convolution network approach \cite{Springenberg:2014}.
+
+      \item Use batch norm in both generator and discriminator; except for the output layer of the generator and the input layer of the discriminator in order to avoid sample oscillation. Two minibatches for the discriminator are normalized separately.
+
+      \item Remove all fully connected layers.
+
+      \item Use RELU activation in generator for all layers except for the output, which uses $\tanh$.
+
+      \item Use LeakyRELU activiation in all discriminator layers.
+
+      \item Train with Adam.
+    \end{itemize}
+
+    \item DCGAN is the first architecture to learn to generate high resolution images in a single shot. It also demonstrates that arithmetic on the latent vector $z$ can be interpreted as arithmetic on semantic attributes of the samples.
+  \end{itemize}
+
+  \section{Tips and Tricks}
+
+  \subsection{Train with Labels}
+
+  \begin{itemize}
+    \item Using labels almost always result in dramatic improvements.
+
+    \item Denton \etal\ built class-conditional GANs that generated better samples than GANs that are free to generate from any class \cite{Denton:2015}.
+
+    \item Salimans \etal\ found that sample quality improved by training the discrimator to recognize specific classes. Here, the class information is not fed to the generator at all. \cite{Salimans:2016}.
+  \end{itemize}
+
+  \subsection{One-Sided Label Smoothing}
+
+  \begin{itemize}
+    \item When the whole GAN works, the discriminator should estimate the ratio $p_{\mathrm{data}}(x)/(p_{\mathrm{data}} + p_{\mathrm{model}})$. However, deep neural networks are prone to producing highly confident outputs that have too extreme probability. This can be a result of having too large of a logit for the correct class. It is thus better to produce more moderate probabilities in order to encourage smaller logits.
+
+    \item One way to do this is \textbf{one-sided label smoothing} \cite{Salimans:2016}: have the discriminator learns to output the probability of $0.9$ instead of $1$ when it is given the \emph{real} examples. (Nothing is changed on the \emph{fake} examples.)
+
+    \item Goodfellow recommends that no smoothing be done to the fake examples \cite{Goodfellow:2016} because it changes the shape of the optimal discriminator function. This will in turn reinforce incorrect behavior in the generator.
+  \end{itemize}
+
+  \subsection{Virtual Batch Normalization}
+
+  \begin{itemize}
+    \item When using batch normalization, different minibatches result in fluctuation of normalizing constants. When minibatches are small, these fluctuations can become large enough that they have more effect on the output than the latent vector $z$.
+
+    \item Salimans \etal\ \cite{Salimans:2016} introduced two techniques to combat the above problem.
+
+    \begin{itemize}
+      \item \textbf{Reference batch normalization} samples a \textbf{reference minibatch} once before training and uses the mean and standard deviation of this minibatch to normalize all other minibatches during training. This can, however, cause the networks to overfit to the reference minibatch.
+
+      \item \textbf{Virtual batch normalization} computes the normalization constants from the union of the reference minibatch and the minibatch currently being processed.
+    \end{itemize}
+  \end{itemize}
+
+  \subsection{Should one balance $G$ and $D$?}
+
+  \begin{itemize}
+    \item Goodfollow believes that the discriminator should be optimal, and there's no need to balance between the generator and the discriminator.
+
+    \item If the discriminator is too confident, this should be solved by one-sided label smoothing rather than dumbing it down.
+
+    \item However, training the discriminator for $k > 1$ iterations for every generator iteration has not been shown to result in clear improvement.
+  \end{itemize}
+
+  \bibliographystyle{plain}
+  \bibliography{gan}  
+\end{document}

@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>Efficient Inference in Fully Connected CRFs with Gaussian Edge Potentials</title>
+
+    <!-- Bootstrap -->
+    <link href="../../../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../../../css/theme.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+      TeX: { equationNumbers: {autoNumber: "AMS"} } 
+    });
+    </script>
+    <script type="text/javascript"
+            src="../../../MathJax/MathJax.js?config=TeX-AMS_HTML-full">
+    </script>
+
+    <script type="text/javascript" src="../../../js/jquery-3.4.1.min.js"></script>    
+    <script type="text/javascript" src="../../../js/bigfoot.min.js"></script>    
+
+    <link rel="stylesheet" type="text/css" href="../../../css/bigfoot-default.css">    
+
+</head>
+<body>
+<div class="container">
+    <span style="visibility: hidden;">
+        \(
+        \def\sc#1{\dosc#1\csod}
+        \def\dosc#1#2\csod{{\rm #1{\small #2}}}
+
+        \newcommand{\dee}{\mathrm{d}}
+        \newcommand{\Dee}{\mathrm{D}}
+        \newcommand{\In}{\mathrm{in}}
+        \newcommand{\Out}{\mathrm{out}}
+        \newcommand{\pdf}{\mathrm{pdf}}
+        \newcommand{\Cov}{\mathrm{Cov}}
+        \newcommand{\Var}{\mathrm{Var}}
+
+        \newcommand{\ve}[1]{\mathbf{#1}}
+        \newcommand{\mrm}[1]{\mathrm{#1}}
+        \newcommand{\etal}{{et~al.}}
+        \newcommand{\sphere}{\mathbb{S}^2}
+        \newcommand{\modeint}{\mathcal{M}}
+        \newcommand{\azimint}{\mathcal{N}}
+        \newcommand{\ra}{\rightarrow}
+        \newcommand{\mcal}[1]{\mathcal{#1}}
+        \newcommand{\X}{\mathcal{X}}
+        \newcommand{\Y}{\mathcal{Y}}
+        \newcommand{\Z}{\mathcal{Z}}
+        \newcommand{\x}{\mathbf{x}}
+        \newcommand{\y}{\mathbf{y}}
+        \newcommand{\z}{\mathbf{z}}
+        \newcommand{\tr}{\mathrm{tr}}
+        \newcommand{\sgn}{\mathrm{sgn}}
+        \newcommand{\diag}{\mathrm{diag}}
+        \newcommand{\Real}{\mathbb{R}}
+        \newcommand{\sseq}{\subseteq}
+        \newcommand{\ov}[1]{\overline{#1}}
+        \DeclareMathOperator*{\argmax}{arg\,max}
+        \DeclareMathOperator*{\argmin}{arg\,min}
+        \)
+    </span>
+
+    <br>
+    <h1>Efficient Inference in Fully Connected CRFs with Gaussian Edge Potential</h1>
+
+    <p>This note is written as I read "Efficient Inference in Fully Connected CRFs with Gaussian Edge Potential" by Krahenbuhl and Koltun <a href="https://arxiv.org/pdf/1210.5644.pdf">[PDF]</a>. My first encounter with this paper was probably in 2011 in which I saw <a href="https://www.linkedin.com/in/seanbell3/">Sean</a> using it in his research work. Recently, I have been reading semantic segmentation papers, and this paper is used by the <a href="https://arxiv.org/abs/1606.00915">DeepLab</a> system as a post-processing step. My segmentation network produces noisy outputs, and I'm in need of a post-processing step too, so the paper seems like a fine candidate. However, before using it as a tool, I want to understand how it works. I have been reading up on <a href="../conditional-random-fields-intro/index.htlm">conditional random fields</a> as a preparation for this.</p>
+
+    <h2>1 &nbsp; Introduction</h2>
+    
+    <ul>
+        <li>The paper adjusts multi-class image segmentation (aka semantic segmentation).</li>
+
+        <li>A popular approach before deep neural network steals the scene is to cast the problem as maxium a posteriori (MAP) inference in a conditional random field (CRF) defined over pixels or image patches.</li>
+
+        <li>A CRF in this context contains unary factors on individual image elements (pixels or patches) and pairwise factors on neighboring elements. This type of CRF cannot model long-range dependencies between pixels well.</li>
+
+        <li>The paper proposes to use a <i>full connected CRF</i> in which pixel has a factor connecting it to every other pixel.</li>
+
+        <li>The main challenge is to come up with efficient algorithms for inference and parameter estimation for such a large CRF.</li>
+
+        <li>The paper shows that, if the pairwise potentials are defined by a linear combination of Gaussian kernel in arbitrary feature spaces, then there is an efficient inference algorithm that takes linear time in the number of pixels.
+        <ul>
+            <li>The paper shows that the mean field approximation for such a CRF can bve computed by Guassian filtering the feature space.</li>
+        </ul>
+        </li>
+    </ul>
+
+    <h2>2 &nbsp; The Fully Conneted CRF Model</h2>
+
+    <ul>
+        <li>Let $\ve{I}$ be a set of variables $\{I_1, I_2, \dotsc, I_N \}$ ranging over the pixels of an image with $N$ pixels where $I_j$ is the color of pixel $j$.</li>
+ 
+        <li>Let $\ve{x}$ be a set of variables ${x_1, x_2, \dotsc, x_N}$, also ranging over the pixels, where each $x_j$ takes values from a set of labels $\mcal{L} = \{ l_1, l_2, \dotsc, l_k \}$. Naturally, $x_j$ is the label of pixel $j$.</li>
+
+        <li>We consider a conditional random field defined as follows:
+        \begin{align*}
+            p(\ve{x}|\ve{I}) = \frac{1}{Z(\ve{I})} \exp(-E(\ve{x}))
+        \end{align*}
+        where
+        \begin{align*}
+            E(\ve{x}) = \sum_{i} \psi_u(x_i) + \sum_{i < j} \psi_p(x_i, x_j).
+        \end{align*}
+        </li>
+
+        <li>The unary potential $\psi_u(x_i)$ (i.e., feature function) is computed independenty for each pixel by a classifier that produces a distribution over the label assignments. (In other words, this can be the negative of the logits outputted by a semantic segmentation network.) In general, this potential is noisy and inconsistent. 
+        </li>
+
+        <li>The pairwise potential $\psi_p(x_i, x_j)$ is of the form
+        \begin{align*}
+            \psi_p(x_i, x_j) = \mu(x_i, x_j) k(\ve{f}_i, \ve{f}_j).
+        \end{align*}
+        Here, $\mu(x_i, x_j)$ is a label compatibility function. The paper starts with the Potts model:
+        \begin{align*}
+            \mu(x_i, x_j) = \begin{cases}
+                0, & x_i = x_j \\
+                1, & x_i \neq x_j
+            \end{cases}.
+        \end{align*}
+        However, it also learns a better function afterwards, and we will cover this later. Next,
+        \begin{align*}
+            k(\ve{f}_i, \ve{f}_j) = \sum_{m=1}^K w^{(m)} k^{(m)}(\ve{f}_i, \ve{f}_j)
+        \end{align*}
+        where $\ve{f}_i$ and $\ve{f}_j$ are feature vectors of $x_i$ and $x_j$ in arbitrary feature spaces, $$k^{(m)}(\ve{f}_i, \ve{f}_j) = \exp
+        \bigg(-\frac{1}{2} (\ve{f}_i - \ve{f}_j)^T \Lambda^{(m)}(\ve{f}_i - \ve{f}_j) \bigg)$$ is a Gaussan kernel, and $w^{(m)}$ is a weight.
+        </li>
+
+        <li>The paper use the following kernel functions
+        \begin{align*}
+            k(\ve{f}_i, \ve{f}_j) = 
+            w^{(1)} \exp\bigg( - \frac{|p_i - p_j|^2}{2\theta^2_\alpha} 
+            + \frac{|I_i - I_j|^2}{2\theta^2_\beta} \bigg) - w^{(2)} \exp\bigg( - \frac{|p_i - p_j|^2}{2\theta^2_\gamma} \bigg).
+        \end{align*}
+        The first term, called the <i>appearance kernel</i>, models the tendency that nearby pixels with similar colors are likely to be in the same class. The second term, called the <i>smoothness kernel</i>, encourages nearby pixels to have the same label, thereby removing small isolated regions.
+        </li>
+    </ul>
+
+    <h2>3 &nbsp; Efficient Inference in Fully Connected CRFs</h2>
+
+    <ul>
+        <li>The inference is based on the mean field approximation. Here, we seek a probability distribution of the form
+        \begin{align*}
+            q(\ve{x}) = \prod_{i=1}^N q_i(x_i)
+        \end{align*}
+        that best approximates $p(\ve{x}|\ve{I})$. Here, each $q_i$ is of type $\mcal{L} \rightarrow [0,1]$.
+        </li>
+
+        <li>With the energy function defined in the last section, the update equation is given by:
+        \begin{align*}
+            q_i(x_i = l) = \frac{1}{Z_i} \exp \bigg( 
+                -\psi_u(l)
+                - \sum_{l'\in\mcal{L}} \mu(l,l') \sum_{m=1}^K w^{(m)} \sum_{j\neq i} k^{(m)}(\ve{f}_i, \ve{f}_j)q_j(l').
+            \bigg)
+        \end{align*}
+        See the derivation in the supplementary material of the paper.
+        </li>
+
+        <li>The optimization algorithm for the mean field approximation is as follows:<br><br>
+        <table>
+            <tr>
+                <td>$\qquad$ Initialize $q_i \gets \exp(-\psi_u(x_i)) / Z_i $</td>
+                <td>$\qquad$</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>$\qquad$ <b>while</b> not converged <b>do</b</td>
+                <td></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>$\qquad\qquad$ $\tilde{q}_i^{(m)}(l) \gets \sum_{j \neq i} k^{(m)}(\ve{f}_i, \ve{f}_j) Q_j(l)$ for all $m$</td>
+                <td>$\qquad$</td>
+                <td align="right"><b>(message passing)</b></td>
+            </tr>
+            <tr>
+                <td>$\qquad\qquad$ $\hat{q}_i(x_i) \gets \sum_{l \in \mcal{L}} \mu(l,l') \sum_m w^{(m)}  \tilde{q}_i^{(m)}(l)$</td>
+                <td>$\qquad$</td>
+                <td align="right"><b>(compatibility transform)</b></td>
+            </tr>
+            <tr>
+                <td>$\qquad\qquad$ $q_i(x_i) \gets \exp(-\psi_u(x_i) - \hat{q}_i(x_i))$</td>
+                <td>$\qquad$</td>
+                <td align="right"><b>(local update)</b></td>
+            </tr>
+            <tr>
+                <td>$\qquad\qquad$ normalize $q_i(x_i)$</td>
+                <td>$\qquad$</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>$\qquad$ <b>end while</b></td>
+                <td>$\qquad$</td>
+                <td></td>
+            </tr>
+        </table>
+        </li>
+
+        <li>The bottleneck of the above algorithm is the message passing step, which is quadratic in the number of pixels.</li>
+
+        <li>To accelerate the message passing step, we first view it as a convolution with a Guassian kernel $G_{\Lambda^{(m)}}$ in the feature space:
+        \begin{align*}
+            \hat{q}_i^{(m)}(l) 
+            &= \sum_{j} k^{m}(\ve{f}_i, \ve{f}_j)q_j(l) - q_i(l)
+            = [G_{\Lambda^{(m)}} \otimes q(l)](\ve{f}_i) - q_i(l)
+            = \overline{q}_i^{(m)}(l) - q_i(l).
+        \end{align*}        
+        </li>
+
+        <li>Gaussian convolution performs a low-pass filtering on $q(l)$ and thus band-limiting it. By the sampling theorem, the result can be reconstructed from a set of samples whose spacing is proportional to the standard deviation of the filter. As a result, we can perform the convolution by downsampling $q(l)$, convolving the result with $G_{\Lambda^(m)}$, and upsampling the result at the feature points.
+        <br>
+        <br>
+        $\qquad$ $q_\downarrow(l) \gets \mathrm{downsample}(q(l))$<br>
+        $\qquad$ $\overline{q}^{(m)}_{\downarrow i}(l) \gets \sum_{j} k^{(m)}(\ve{f}_{\downarrow i}, \ve{f}_{\downarrow j}) q_{\downarrow j}(l)$<br>
+        $\qquad$ $\overline{q}^{(m)}(l) \gets \mathrm{upsample}(\overline{q}^{(m)}_{\downarrow i}(l))$<br>
+        <br>
+        </li>
+
+        <li>The bottleneck of the above process is the convolution in Step 2. To speed it up, we convolve with a truncated Gaussian (all values beyond two standard deviations clamped to 0) instead.</li>
+
+        <li>Since the spacing of the samples is proportonal to the standard deviation, the support of the truncated kernel contains a constant number of points. As a result, the convolution can be approximated by only looking at a constant number of samples. So, approximate message passing can be done in $O(N)$.</li>
+
+        <li>Nevertheless, the number of points is exponential in the number of dimensions $d$ of the feature $\ve{f}_i$'s. To avoid this, the paper uses a data structure called the <a href="https://graphics.stanford.edu/papers/permutohedral/">permutohedral lattice</a> to store the data points and perform calculations. This allows the convolution to be performed in $O(Nd^2)$ time.</li>
+
+        <li>Before using the permutohedral lattice, the features must be transformed so that there are no correlation between the coordinates and that the scales of the coordinates are equal.
+        <ul>
+            <li>This can be done by factoring $\Lambda^{(m)} = UU^T$ with Cholesky factorization, and then compute $\tilde{\ve{f}} = U\ve{f}$.</li>
+        </ul>
+        </li>
+    </ul>
+
+    <hr>
+    <div class="page-header"></div>
+    <p>Last modified: 2021/09/25</p>    
+</div>
+
+<script type="text/javascript">
+$.bigfoot();
+</script>
+
+</body>
+</html>
+

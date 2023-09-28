@@ -1,0 +1,555 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+\usepackage{verbatim}
+\usepackage{hyperref}
+\usepackage{algorithm}
+\usepackage{clrscode3e}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\Dee}{\mathrm{D}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\Var}{\mathrm{Var}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\ves}[1]{\boldsymbol{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+\newcommand{\ov}[1]{\overline{#1}}
+\newcommand{\N}{\mathcal{N}}
+\newcommand{\data}{\mathrm{data}}
+\newcommand{\SNR}{\mathrm{SNR}}
+
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+\title{Pseudo Numerical Methods for Diffusion Models on Manifold}
+\author{Pramook Khungurn}
+
+\begin{document}
+\maketitle
+
+This note was written as I read the paper ``Pseudo Numerical Methods for Diffusion Models on Manifolds'' by Liu \etal~\cite{Liu:2022}.
+
+\section{Introduction}
+
+\begin{itemize}
+  \item This paper is often abbreviated as ``PNMD,'' and the algorithm it proposes is called ``PLMS.'' The algorithm is one of the well-knonw solvers tailed to diffusion models. It is distributed with AUTOMATIC1111's Stable Diffusion UI.
+  
+  \item The objective of the paper is to develop a fast algorithm for sampling a diffusion model.
+\end{itemize}
+
+\section{Background}
+
+\subsection{DDIM Sampler}
+
+\begin{itemize}
+  \item In this note, we follow the original DDPM formulation Ho \etal~\cite{Ho:2020}.
+
+  \item The forward and backward process is divided into multiple time steps. A time step is denoted by $t \in \{0, 1, \dotsc, T\}$.
+  
+  \item The noised sample at time step $t$ is denoted by $\ve{x}_t$. So, $\ve{x}_0$ is the denoised sample from the data distribution, and $\ve{x}_T$ should be distributed like $\mcal{N}(\ve{0},I)$.
+  
+  \item The forward process is controlled by the parameters $\{ \beta_t \}_{t=1}^T$ and is given by:
+  \begin{align*}
+    \ve{x}_{t} \sim \mcal{N}(\sqrt{1 - \beta_t} \ve{x}_{t-1}, \beta_t I)
+  \end{align*}
+  for $t = 1, 2, \dotsc, T$. We can then deduce that
+  \begin{align*}
+    \ve{x}_t \sim \mcal{N}(\sqrt{\ov{\alpha}_t}\ve{x}_0, (1 - \ov{\alpha}_t) I)
+  \end{align*}
+  where $\alpha_t = 1 - \beta_t$, and $\ov{\alpha}_t = \prod_{u=1}^t \alpha_u$.
+
+  \item According to Ho \etal~\cite{Ho:2020}, the backward process can be formulated as:
+  \begin{align*}
+    p(\ve{x}_{t-1}|\ve{x}_t, \ve{x}_0) = \mcal{N}(\ve{x}_{t-1}; \widetilde{\ves{\mu}}(\ve{x}_t, \ve{x}_0), \widetilde{\beta}_t I)
+  \end{align*}
+  where
+  \begin{align} \label{eqn:ddim-backward-process}
+    \widetilde{\ves{\mu}}(\ve{x}_t, \ve{x}_0) 
+    &= \frac{\beta_t \sqrt{\ov{\alpha}_{t-1}}}{1 - \ov{\alpha}_t} \ve{x}_0 + \frac{\sqrt{\alpha_t}(1 - \ov{\alpha}_{t-1})}{1 - \ov{\alpha}_t} \ve{x}_t, \\
+    \widetilde{\beta}_t &= \beta_t \frac{1 - \ov{\alpha}_{t-1}}{1 - \ov{\alpha}_t}.
+  \end{align}
+
+  \item Song \etal\ later showed that the equation above is a special case of the following more general equation:
+  \begin{align*}
+    p(\ve{x}_{t-1}|\ve{x}_t,\ve{x}_0) = \mcal{N}\bigg( \ve{x}_{t-1} ; \sqrt{\ov{\alpha}_{t-1}}\ve{x}_0 + \sqrt{1 - \ov{\alpha}_{t-1} - \sigma_t^2}\bigg( \frac{\ve{x}_t - \sqrt{\ov{\alpha}_t}\ve{x}_0}{\sqrt{1 - \ov{\alpha}_t}} \bigg), \sigma_t^2 I \bigg)
+  \end{align*}
+  for any $0 \leq \sigma_t < \sqrt{1 - \ov{\alpha}_t}$ \cite{Song:DDIM:2020}. When $\sigma_t = 0$, the backward process becomes deterministic once $\ve{x}_T$ has been sampled according to $\mcal{N}(\sqrt{\ov{\alpha}_T} \ve{x}_0, (1 - \ov{\alpha}_T) I)$.
+
+  \item In a diffusion model, we either train a denoising model $\ve{x}_{\ves{\theta}}(\ve{x}_t, t)$ that predicts $\ve{x}_0$ from $\ve{x}_t$, or we train the noise model $\ves{\xi}_{\ves{\theta}}(\ve{x}_t, t)$ that predicts the Gaussian noise $\ves{\xi} \sim \mcal{N}(\ve{0},I)$ that was used to construct $\ve{x}_t = \sqrt{\ov{\alpha}_t} \ve{x}_0 + (1 - \ov{\alpha}_t) \ves{\xi}$. The models are related to each other via the following equation:
+  \begin{align} \label{eqn:noise-and-denoised}
+    \ves{\xi}_{\ves{\theta}}(\ve{x}_t, t) = \frac{\ve{x}_t - \sqrt{\ov{\alpha}_t}\ve{x}_{\ves{\theta}}(\ve{x}_t, t)}{\sqrt{1 - \ov{\alpha}_t}}.
+  \end{align}
+
+  \item The DDIM sampler uses \eqref{eqn:ddim-backward-process} along with the assumption that $\sigma_t = 0$. The update equation is given by:
+  \begin{align}
+    \ve{x}_{t-1} 
+    &= \sqrt{\ov{\alpha}_{t-1}}\ve{x}_{\ves{\theta}}(\ve{x}_t, t) + \sqrt{1 - \ov{\alpha}_{t-1}} \bigg( \frac{\ve{x}_t - \sqrt{\ov{\alpha}_t}\ve{x}_{\ves{\theta}}(\ve{x}_t, t)}{\sqrt{1 - \ov{\alpha}_t}} \bigg) \notag \\
+    &= \frac{\sqrt{1-\ov{\alpha}_{t-1}}}{\sqrt{1-\ov{\alpha}_t}} \ve{x}_t  
+    + \bigg( \frac{\sqrt{1-\ov{\alpha}_{t}}\sqrt{\ov{\alpha}_{t-1}} - \sqrt{1-\ov{\alpha}_{t-1}}\sqrt{\ov{\alpha}_t} }{\sqrt{1-\ov{\alpha}_t}} \bigg) \ve{x}_{\ves{\theta}}(\ve{x}_t, t) \notag \\
+    &= \frac{\sqrt{1-\ov{\alpha}_{t-1}}}{\sqrt{1-\ov{\alpha}_t}} \ve{x}_t  
+    + \bigg(  \frac{ (1-\ov{\alpha}_{t})\ov{\alpha}_{t-1} - (1-\ov{\alpha}_{t-1})\ov{\alpha}_t }{\sqrt{1-\ov{\alpha}_t}(\sqrt{1-\ov{\alpha}_{t}}\sqrt{\ov{\alpha}_{t-1}} + \sqrt{1-\ov{\alpha}_{t-1}}\sqrt{\ov{\alpha}_t}) } \bigg) \ve{x}_{\ves{\theta}}(\ve{x}_t, t) \notag \\
+    &= \frac{\sqrt{1-\ov{\alpha}_{t-1}}}{\sqrt{1-\ov{\alpha}_t}} \ve{x}_t  
+    + \bigg(  \frac{ \ov{\alpha}_{t-1} - \ov{\alpha}_t }{\sqrt{1-\ov{\alpha}_t}(\sqrt{1-\ov{\alpha}_{t}}\sqrt{\ov{\alpha}_{t-1}} + \sqrt{1-\ov{\alpha}_{t-1}}\sqrt{\ov{\alpha}_t}) } \bigg) \ve{x}_{\ves{\theta}}(\ve{x}_t, t), \label{eqn:ddim-update-equation-denoised}
+  \end{align}
+  or, equivalently,
+  \begin{align} 
+    \ve{x}_{t-1} 
+    &= \sqrt{\ov{\alpha}_{t-1}} \bigg( \frac{\ve{x}_t - \sqrt{1 - \ov{\alpha}_t} \ves{\xi}_{\ves{\theta}}(\ve{x}_t, t) }{\sqrt{\ov{\alpha}_t}} \bigg) + \sqrt{1 - \ov{\alpha}_{t-1}} \ves{\xi}_{\ves{\theta}}(\ve{x}_t, t) \notag \\
+    &= \frac{\sqrt{\ov{\alpha}_{t-1}}}{\sqrt{\ov{\alpha}_t}} \ve{x}_t 
+    + \bigg(  \frac{\sqrt{1 - \ov{\alpha}_{t-1}}\sqrt{\ov{\alpha}_t} - \sqrt{\ov{\alpha}_{t-1}} \sqrt{1 - \ov{\alpha}_t} }{\sqrt{\ov{\alpha}_t}}  \bigg) \ves{\xi}_{\ves{\theta}}(\ve{x}_t, t) \notag\\
+    &= \frac{\sqrt{\ov{\alpha}_{t-1}}}{\sqrt{\ov{\alpha}_t}} \ve{x}_t 
+    + \bigg(  \frac{ (1 - \ov{\alpha}_{t-1})\ov{\alpha}_t - \ov{\alpha}_{t-1} (1 - \ov{\alpha}_t) }{\sqrt{\ov{\alpha}_t}(\sqrt{1 - \ov{\alpha}_{t-1}}\sqrt{\ov{\alpha}_t} + \sqrt{\ov{\alpha}_{t-1}} \sqrt{1 - \ov{\alpha}_t} )}   \bigg) \ves{\xi}_{\ves{\theta}}(\ve{x}_t, t) \notag \\
+    &= \frac{\sqrt{\ov{\alpha}_{t-1}}}{\sqrt{\ov{\alpha}_t}} \ve{x}_t 
+    + \bigg(  \frac{ \ov{\alpha}_t - \ov{\alpha}_{t-1} }{\sqrt{\ov{\alpha}_t}(\sqrt{1 - \ov{\alpha}_{t-1}}\sqrt{\ov{\alpha}_t} + \sqrt{\ov{\alpha}_{t-1}} \sqrt{1 - \ov{\alpha}_t} )}   \bigg) \ves{\xi}_{\ves{\theta}}(\ve{x}_t, t) \label{eqn:ddim-update-equation-noise}
+  \end{align}
+\end{itemize}
+
+\subsection{ODEs for DDIM Sampling}
+
+\begin{itemize}
+  \item We start by turning the DDIM update equation \eqref{eqn:ddim-update-equation-noise} into an ODE. Subtracting $\ve{x}_t$ from both sides of the equation, we have
+  \begin{align*}
+    \ve{x}_{t-1} - \ve{x}_t
+    &= \frac{\sqrt{\ov{\alpha}_{t-1}} - \sqrt{\ov{\alpha}_t}}{\sqrt{\ov{\alpha}_t}} \ve{x}_t     
+    + \bigg(  \frac{ \ov{\alpha}_t - \ov{\alpha}_{t-1} }{\sqrt{\ov{\alpha}_t}(\sqrt{1 - \ov{\alpha}_{t-1}}\sqrt{\ov{\alpha}_t} + \sqrt{\ov{\alpha}_{t-1}} \sqrt{1 - \ov{\alpha}_t} )}   \bigg) \ves{\xi}_{\ves{\theta}}(\ve{x}_t, t) \\
+    &= \frac{\ov{\alpha}_{t-1} - \ov{\alpha}_t}{\sqrt{\ov{\alpha}_t}(\sqrt{\ov{\alpha}_{t-1}} + \sqrt{\ov{\alpha}_t}) } \ve{x}_t
+    + \bigg(  \frac{ \ov{\alpha}_t - \ov{\alpha}_{t-1} }{\sqrt{\ov{\alpha}_t}(\sqrt{1 - \ov{\alpha}_{t-1}}\sqrt{\ov{\alpha}_t} + \sqrt{\ov{\alpha}_{t-1}} \sqrt{1 - \ov{\alpha}_t} )}   \bigg) \ves{\xi}_{\ves{\theta}}(\ve{x}_t, t) \\
+    &= (\ov{\alpha}_{t-1} - \ov{\alpha}_t) \bigg( \frac{\ve{x}_t}{\sqrt{\ov{\alpha}_t}(\sqrt{\ov{\alpha}_{t-1}} + \sqrt{\ov{\alpha}_t}) } - \frac{\ves{\xi}_{\ves{\theta}}(\ve{x}_t,t)}{\sqrt{\ov{\alpha}_t}(\sqrt{1 - \ov{\alpha}_{t-1}}\sqrt{\ov{\alpha}_t} + \sqrt{\ov{\alpha}_{t-1}} \sqrt{1 - \ov{\alpha}_t} )} \bigg).
+  \end{align*}
+  Now, we replace $t - 1$ with $t - \delta$:
+  \begin{align*}
+    \ve{x}_{t-\delta} - \ve{x}_t &= 
+    (\ov{\alpha}_{t-\delta} - \ov{\alpha}_t) \bigg( \frac{\ve{x}_t}{\sqrt{\ov{\alpha}_t}(\sqrt{\ov{\alpha}_{t-\delta}} + \sqrt{\ov{\alpha}_t}) } - \frac{\ves{\xi}_{\ves{\theta}}(\ve{x}_t,t)}{\sqrt{\ov{\alpha}_t}(\sqrt{1 - \ov{\alpha}_{t-\delta}}\sqrt{\ov{\alpha}_t} + \sqrt{\ov{\alpha}_{t-\delta}} \sqrt{1 - \ov{\alpha}_t} )} \bigg).
+  \end{align*}
+  Dividing both sides by $\delta$ and taking the limit as $\delta \rightarrow 0$, we have
+  \begin{align}
+    \lim_{\delta \rightarrow 0} \frac{\ve{x}_{t-\delta} - \ve{x}_t}{\delta}
+    &= \lim_{\delta \rightarrow 0} \frac{\ov{\alpha}_{t-\delta} - \ov{\alpha}_t}{\delta} \bigg( \frac{\ve{x}_t}{\sqrt{\ov{\alpha}_t}(\sqrt{\ov{\alpha}_{t-\delta}} + \sqrt{\ov{\alpha}_t}) } - \frac{\ves{\xi}_{\ves{\theta}}(\ve{x}_t,t)}{\sqrt{\ov{\alpha}_t}(\sqrt{1 - \ov{\alpha}_{t-\delta}}\sqrt{\ov{\alpha}_t} + \sqrt{\ov{\alpha}_{t-\delta}} \sqrt{1 - \ov{\alpha}_t} )} \bigg) \notag \\
+    -\frac{\dee \ve{x}_t}{\dee t} &= -\ov{\alpha}_t' \bigg( \frac{\ve{x}_t}{2\ov{\alpha}_t} - \frac{\ves{\xi}_{\ves{\theta}}(\ve{x}_t,t)}{2\ov{\alpha}_t \sqrt{1 - \ov{\alpha}_t}} \bigg) \notag \\
+    \frac{\dee \ve{x}_t}{\dee t} &= \frac{\ov{\alpha}_t'}{2 \ov{\alpha}_t} \bigg( \ve{x}_t - \frac{\ves{\xi}_{\ves{\theta}}(\ve{x}_t,t)}{\sqrt{1 - \ov{\alpha}_t}} \bigg) \label{eqn:ddim-ode-noise}.
+  \end{align}
+
+  \item Using \eqref{eqn:noise-and-denoised}, we have an equivalent ODE:
+  \begin{align} \label{eqn:ddim-ode-denoised}
+    \frac{\dee \ve{x}_t}{\dee t} &= \frac{\ov{\alpha}_t'}{2 (1- \ov{\alpha}_t)} \bigg( \frac{\ve{x}_{\ves{\theta}}(\ve{x}_t,t)}{\sqrt{\ov{\alpha}_t}} - \ve{x}_t \bigg).
+  \end{align}
+
+  \item Note that the above equation can also be derived by staring with \eqref{eqn:ddim-update-equation-denoised}.
+  \begin{align*}
+    &\ve{x}_{t-1} - \ve{x}_t \\
+    &= \frac{\sqrt{1-\ov{\alpha}_{t-1}} - \sqrt{1-\ov{\alpha}_t}}{\sqrt{1-\ov{\alpha}_t}} \ve{x}_t  
+    + \bigg(  \frac{ \ov{\alpha}_{t-1} - \ov{\alpha}_t }{\sqrt{1-\ov{\alpha}_t}(\sqrt{1-\ov{\alpha}_{t}}\sqrt{\ov{\alpha}_{t-1}} + \sqrt{1-\ov{\alpha}_{t-1}}\sqrt{\ov{\alpha}_t}) } \bigg) \ve{x}_{\ves{\theta}}(\ve{x}_t, t) \\
+    &= \frac{ \ov{\alpha}_t - \ov{\alpha}_{t-1} }{\sqrt{1-\ov{\alpha}_t}(\sqrt{1-\ov{\alpha}_{t-1}} + \sqrt{1-\ov{\alpha}_t})} \ve{x}_t  
+    + \bigg(  \frac{ \ov{\alpha}_{t-1} - \ov{\alpha}_t }{\sqrt{1-\ov{\alpha}_t}(\sqrt{1-\ov{\alpha}_{t}}\sqrt{\ov{\alpha}_{t-1}} + \sqrt{1-\ov{\alpha}_{t-1}}\sqrt{\ov{\alpha}_t}) } \bigg) \ve{x}_{\ves{\theta}}(\ve{x}_t, t) \\
+    &= (\ov{\alpha}_{t-1}-\ov{\alpha}_t ) \bigg( 
+      -\frac{ \ve{x}_t   }{\sqrt{1-\ov{\alpha}_t}(\sqrt{1-\ov{\alpha}_{t-1}} + \sqrt{1-\ov{\alpha}_t})} 
+      + \frac{  \ve{x}_{\ves{\theta}}(\ve{x}_t, t) }{\sqrt{1-\ov{\alpha}_t}(\sqrt{1-\ov{\alpha}_{t}}\sqrt{\ov{\alpha}_{t-1}} + \sqrt{1-\ov{\alpha}_{t-1}}\sqrt{\ov{\alpha}_t}) } 
+    \bigg) \\
+    &= (\ov{\alpha}_{t-1}-\ov{\alpha}_t ) \bigg( 
+      \frac{  \ve{x}_{\ves{\theta}}(\ve{x}_t, t) }{\sqrt{1-\ov{\alpha}_t}(\sqrt{1-\ov{\alpha}_{t}}\sqrt{\ov{\alpha}_{t-1}} + \sqrt{1-\ov{\alpha}_{t-1}}\sqrt{\ov{\alpha}_t}) } 
+      -\frac{ \ve{x}_t   }{\sqrt{1-\ov{\alpha}_t}(\sqrt{1-\ov{\alpha}_{t-1}} + \sqrt{1-\ov{\alpha}_t})} 
+    \bigg).
+  \end{align*}
+  This becomes
+  \begin{align*}
+    \ve{x}_{t-\delta} - \ve{x}_t 
+    &= (\ov{\alpha}_{t-\delta}-\ov{\alpha}_t ) \bigg( 
+      \frac{  \ve{x}_{\ves{\theta}}(\ve{x}_t, t) }{\sqrt{1-\ov{\alpha}_t}(\sqrt{1-\ov{\alpha}_{t}}\sqrt{\ov{\alpha}_{t-\delta}} + \sqrt{1-\ov{\alpha}_{t-\delta}}\sqrt{\ov{\alpha}_t}) } 
+      -\frac{ \ve{x}_t   }{\sqrt{1-\ov{\alpha}_t}(\sqrt{1-\ov{\alpha}_{t-\delta}} + \sqrt{1-\ov{\alpha}_t})} 
+    \bigg),
+  \end{align*}
+  which ultimately yields
+  \begin{align*}
+    \frac{\dee \ve{x}_t}{\dee t} &= \frac{\ov{\alpha}_t'}{2 (1- \ov{\alpha}_t)} \bigg( \frac{\ve{x}_{\ves{\theta}}(\ve{x}_t,t)}{\sqrt{\ov{\alpha}_t}} - \ve{x}_t \bigg).
+  \end{align*}
+\end{itemize}
+
+\subsection{Simpler ODEs for DDIM Sampling} \label{sec:simpler-odes}
+
+\begin{itemize}
+  \item Teng gave in his paper a simpler formulation of the ODE for DDIM sampling \cite{Wizadwongsa:2023}.
+  
+  \item Starting from \eqref{eqn:ddim-update-equation-denoised}, we have that
+  \begin{align*}
+    \ve{x}_{t-1} 
+    &= \sqrt{\ov{\alpha}_{t-1}} \bigg( \frac{\ve{x}_t - \sqrt{1 - \ov{\alpha}_t} \ves{\xi}_{\ves{\theta}}(\ve{x}_t, t) }{\sqrt{\ov{\alpha}_t}} \bigg) + \sqrt{1 - \ov{\alpha}_{t-1}} \ves{\xi}_{\ves{\theta}}(\ve{x}_t, t) \\
+    \frac{\ve{x}_{t-1}}{\sqrt{\ov{\alpha}_{t-1}}} 
+    &= \frac{\ve{x}_t}{\sqrt{\ov{\alpha}_t}} + \bigg( \frac{\sqrt{1 - \ov{\alpha}_{t-1}}}{\sqrt{\ov{\alpha}_{t-1}}} - \frac{\sqrt{1 - \ov{\alpha}_{t}}}{\sqrt{\ov{\alpha}_{t}}} \bigg) \ves{\xi}_{\ves{\theta}}(\ve{x}_t, t) \\
+    \frac{\ve{x}_{t}}{\sqrt{\ov{\alpha}_{t}}} - \frac{\ve{x}_{t-1}}{\sqrt{\ov{\alpha}_{t-1}}}  
+    &= \bigg( \frac{\sqrt{1 - \ov{\alpha}_{t}}}{\sqrt{\ov{\alpha}_{t}}} - \frac{\sqrt{1 - \ov{\alpha}_{t-1}}}{\sqrt{\ov{\alpha}_{t-1}}} \bigg) \ves{\xi}_{\ves{\theta}}(\ve{x}_t, t).
+  \end{align*}
+  Replacing $t - 1$ with $t - \delta$, we have
+  \begin{align*}
+    \frac{\ve{x}_{t}}{\sqrt{\ov{\alpha}_{t}}} - \frac{\ve{x}_{t-\delta}}{\sqrt{\ov{\alpha}_{t-\delta}}}  
+    &= \bigg( \frac{\sqrt{1 - \ov{\alpha}_{t}}}{\sqrt{\ov{\alpha}_{t}}} - \frac{\sqrt{1 - \ov{\alpha}_{t-\delta}}}{\sqrt{\ov{\alpha}_{t-\delta}}} \bigg) \ves{\xi}_{\ves{\theta}}(\ve{x}_t, t).
+  \end{align*}
+  Defining $\ov{\ve{x}}_t := \ve{x}_t / \sqrt{\ov{\alpha}_t}$ and $\gamma_t := \sqrt{1-\ov{\alpha}_t}/\sqrt{\ov{\alpha}_t}$, we have that
+  \begin{align} \label{eqn:ddim-difference-equation-noise}
+    \ov{\ve{x}}_t - \ov{\ve{x}}_{t-\delta} &= (\gamma_t - \gamma_{t-\delta}) \ves{\xi}_{\ves{\theta}}(\ve{x}_t, t).
+  \end{align}
+  In other words,
+  \begin{align*}
+    \frac{\ov{\ve{x}}_t - \ov{\ve{x}}_{t-\delta}}{\gamma_t - \gamma_{t-\delta}} &=  \ves{\xi}_{\ves{\theta}}(\ve{x}_t, t).
+  \end{align*}
+  Taking the limit as $\delta \rightarrow 0$, we have that
+  \begin{align} \label{eqn:simpler-ddim-ode-noise}
+    \frac{\dee \ov{\ve{x}}_t}{\dee \gamma_t} = \ves{\xi}_{\ves{\theta}}(\ve{x}_t, t)
+  \end{align}
+
+  \item Alternatively, we can start from \eqref{eqn:ddim-update-equation-denoised}.
+  \begin{align*}
+    \ve{x}_{t-1} 
+    &= \sqrt{\ov{\alpha}_{t-1}}\ve{x}_{\ves{\theta}}(\ve{x}_t, t) + \sqrt{1 - \ov{\alpha}_{t-1}} \bigg( \frac{\ve{x}_t - \sqrt{\ov{\alpha}_t}\ve{x}_{\ves{\theta}}(\ve{x}_t, t)}{\sqrt{1 - \ov{\alpha}_t}} \bigg) \\
+    \frac{\ve{x}_{t-1}}{\sqrt{1 - \ov{\alpha}_{t-1}}} 
+    &= \frac{\ve{x}_{t}}{\sqrt{1 - \ov{\alpha}_{t}}} + \bigg( \frac{\sqrt{\ov{\alpha}_{t-1}}}{\sqrt{1 - \ov{\alpha}_{t-1}}} - \frac{\sqrt{\ov{\alpha}_t}}{\sqrt{1 - \ov{\alpha}_t}} \bigg) \ve{x}_{\ves{\theta}}(\ve{x}_t, t) \\
+    \frac{\ve{x}_{t}}{\sqrt{1 - \ov{\alpha}_{t}}} - \frac{\ve{x}_{t-1}}{\sqrt{1 - \ov{\alpha}_{t-1}}} 
+    &= \bigg( \frac{\sqrt{\ov{\alpha}_{t}}}{\sqrt{1 - \ov{\alpha}_{t}}} - \frac{\sqrt{\ov{\alpha}_{t-1}}}{\sqrt{1 - \ov{\alpha}_{t-1}}} \bigg) \ve{x}_{\ves{\theta}}(\ve{x}_t, t).
+  \end{align*}
+  Again, replacing $t-1$ with $t-\delta$, we have 
+  \begin{align*}
+    \frac{\ve{x}_{t}}{\sqrt{1 - \ov{\alpha}_{t}}} - \frac{\ve{x}_{t-\delta}}{\sqrt{1 - \ov{\alpha}_{t-\delta}}} 
+    &= \bigg( \frac{\sqrt{\ov{\alpha}_{t}}}{\sqrt{1 - \ov{\alpha}_{t}}} - \frac{\sqrt{\ov{\alpha}_{t-\delta}}}{\sqrt{1 - \ov{\alpha}_{t-\delta}}} \bigg) \ve{x}_{\ves{\theta}}(\ve{x}_t, t).
+  \end{align*}
+  Define $\widetilde{\ve{x}}_t := \ve{x}_t / \sqrt{1-\ov{\alpha}_t}$ and $\omega_t = \sqrt{\ov{\alpha}_t}/\sqrt{1 - \ov{\alpha}_t} = \gamma_t^{-1}$. We have that the above equation can be rewritten as
+  \begin{align} \label{eqn:ddim-difference-equation-denoised}
+    \widetilde{\ve{x}}_t - \widetilde{\ve{x}}_{t-\delta} = (\omega_t - \omega_{t-\delta}) \ve{x}_{\ves{\theta}}(\ve{x}_t, t).
+  \end{align}
+  Finally, taking the limit as $\delta \rightarrow 0$, we have
+  \begin{align} \label{eqn:simpler-ddim-ode-denoised}
+    \frac{\dee \widetilde{\ve{x}}_t}{\dee \omega_t} = \ve{x}_{\ves{\theta}}(\ve{x}_t, t).
+  \end{align}  
+\end{itemize}
+
+\subsection{Numerical Methods} \label{sec:numerical-methods}
+
+\begin{itemize}
+  \item A numerical method in this context is a way to numerically solve the initial value problem:
+  \begin{align*}
+    \frac{\dee \ve{y}}{\dee s} &= \ve{f}(\ve{y}, s) \\
+    \ve{y}(0) &= \ve{y}_0
+  \end{align*}  
+  where $\ve{f}$ is an arbitrary function and $\ve{y}_0$ is a given value. By ``numerically solving'' the initial value problem, we mean to compute $\ve{y}(S)$ for any $S > 0$.
+
+  \item In a typical setting, we would divide the interval $[0,S]$ into $K$ equal subintervals. We let $\Delta s = S/K$. Numerical methods will compute $\ve{y}_{1}$, $\ve{y}_{2}$, $\ve{y}_{3}$, $\dotsc$, $\ve{y}_{K}$ that are supposed to approximate $\ve{y}(\Delta s)$, $\ve{y}(2\Delta s)$, $\ve{y}(3\Delta s)$, $\dotsc$, $\ve{y}(K \Delta s)$, respectively. A numerical method generally gives how to compute $\ve{y}_{k+1}$ from $\ve{y}_{k}$, $\ve{y}_{k}$, or any other terms that come before it.
+  
+  \item Here are some famous numerical methods. For brevity, let us $s_k$ denote $k \Delta s$.
+  \begin{itemize}
+    \item Euler method.
+    \begin{align*}
+      \ve{y}_{k+1} = \ve{y}_k + \Delta s\, \ve{f}(\ve{y}_k, s_k).
+    \end{align*}
+
+    \item Heun's method.
+    \begin{align*}
+      \ve{f}_1 &= \ve{f}(\ve{y}_k, s_k), \\
+      \ve{f}_2 &= \ve{f}(\ve{y}_k + \Delta s\ve{f}_1, s_{k+1}), \\
+      \ve{y}_{k+1} &= \ve{y}_k + \Delta s \bigg( \frac{\ve{f}_1 + \ve{f}_2}{2} \bigg).
+    \end{align*}    
+
+    \item Runge--Kutta method. The following is the 4th order version of the method.
+    \begin{align*}
+      \ve{f}_1 &= \ve{f}(\ve{y}_k, s_k), \\
+      \ve{f}_2 &= \ve{f}\bigg(\ve{y}_k + \frac{\Delta s}{2}\ve{f}_1, s_{k+1/2} \bigg), \\
+      \ve{f}_3 &= \ve{f}\bigg(\ve{y}_k + \frac{\Delta s}{2}\ve{f}_2, s_{k+1/2} \bigg), \\
+      \ve{f}_4 &= \ve{f}(\ve{y}_k + \Delta s \ve{f}_3, s_{k+1}), \\
+      \ve{y}_{k+1} &= \ve{y}_k + \Delta s \bigg( \frac{\ve{f}_1 + 2\ve{f}_2 + 2\ve{f}_3 + \ve{f}_4}{6} \bigg).
+    \end{align*}
+
+    \item Linear multi-step method. Each of this is a collection of numerical methods. The $i$th method in the collection is referred to as the ``$i$th-order'' method. For these methods, we define
+    \begin{align*}
+      \ve{f}_k = \ve{f}(\ve{s}_k, s_k).
+    \end{align*}
+    Now, $\ve{y}_{k+1}$ would be defined in terms of $\ve{y}_k$ and $\ve{f}_k$, $\ve{f}_{k-1}$, and so on. One well-known linear multi-step method is the Adams--Bashforth method.
+    \begin{itemize}
+      \item The first-order method is the Euler method. 
+      \begin{align*}
+        \ve{y}_{k+1} = \ve{y}_k + \Delta s \ve{f}_k.
+      \end{align*}
+      \item The 2nd-order method is given by:
+      \begin{align*}
+        \ve{y}_{k+1} = \ve{y}_k + \Delta s \bigg( \frac{3 \ve{f}_k - \ve{f}_{k-1}}{2} \bigg).
+      \end{align*}
+      \item The 3rd-order method is given by
+      \begin{align*}
+        \ve{y}_{k+1} = \ve{y}_k + \Delta s \bigg( \frac{23 \ve{f}_k - 16\ve{f}_{k-1} + 5\ve{f}_{k-2}}{12} \bigg).
+      \end{align*}
+      \item The 4th-order method is given by
+      \begin{align*}
+        \ve{y}_{k+1} = \ve{y}_k + \Delta s \bigg( \frac{55 \ve{f}_k - 59\ve{f}_{k-1} + 37\ve{f}_{k-2} -9 \ve{f}_{k-3}}{24} \bigg).
+      \end{align*}
+    \end{itemize}
+  \end{itemize}
+\end{itemize}
+
+\section{Method}
+
+\subsection{Problems with Conventional Numerical Methods}
+
+\begin{itemize}
+  \item Once we have an ODE like \eqref{eqn:ddim-ode-noise} or \eqref{eqn:ddim-ode-denoised}, we can apply numerical methods discussed previously. 
+  
+  \item However, there are difficulties in applying numerical methods to \eqref{eqn:ddim-ode-noise} and \eqref{eqn:ddim-ode-denoised}.
+  \begin{itemize}
+    \item Both ODEs require the term $\ov{\alpha}_t'$. Nevertheless, $t$ is discrete in case of the original DDPM of Ho \etal~\cite{Ho:2020}, and so how are we supposed to find the derivative of a discrete function to begin with? We can do something about it by trying to make $\ov{\alpha}_t$ a continuous function, so this is just a nuisance.
+    
+    \item The RHSs of the ODEs blow up near $t=0$ and $t=T$. 
+  \end{itemize}
+
+  \item On the other hand, the ODEs of Section~\ref{sec:simpler-odes}, which are \eqref{eqn:simpler-ddim-ode-noise} and \eqref{eqn:simpler-ddim-ode-denoised}, do not have any of the above problems. There are no derivate terms. Moreover, the RHSs do not blow up. 
+  
+  \item The problem with these equations is that the derivatives on the LHSs are with respect to $\gamma_t$ and $\omega_t$, not $t$. So, the numerical methods cannot be applied directly. However, we will see immediately in the next section how to circumvent this problem.
+
+  \item Theoretical problems aside, Salimans and Ho observed that using higher-order numerical methods on \eqref{eqn:ddim-ode-noise} or \eqref{eqn:ddim-ode-denoised} can introduce noise when the number of steps are small \cite{Salimans:2022}.
+  
+  \item The paper suggests that the above noise problem is due to the fact that diffusion models are typically trained to denoise $\ve{x}_t$ of the form $\sqrt{\ov{\alpha}_t}\ve{x}_0 + \sqrt{1 - \ov{\alpha}_t} \ves{\xi}$ where $\ves{\xi}$ is a univariate Gaussian noise. So, there is a ``manifold'' where the noised samples belong. If the trajectory of a numerical method strays too far away from this manifold, then the results would be off. The thesis is that, if we use the update rule based on \eqref{eqn:ddim-ode-noise} or \eqref{eqn:ddim-ode-denoised}, it becomes easy for the trajectory to veer off course.  
+\end{itemize}
+
+\subsection{Pseudo Numerical Methods}
+
+\begin{itemize}  
+  \item The paper observes that the numerical methods in Section~\ref{sec:numerical-methods} can be divided into two steps. 
+  \begin{itemize}
+    \item {\bf Gradient step.} This involves evaluating the function $\ve{f}$ at several points and then combining the values somehow to compute and estimate of $\dee\ve{y} / \dee s$.
+    \item {\bf Transfer step.} This involves taking the gradient from the previous step and update the variable $\ve{y}$.
+  \end{itemize}
+
+  \item Let us take the 2nd-order Adams--Bashforth method
+  \begin{align*}
+    \ve{y}_{k+1} = \ve{y}_k + \Delta s \bigg( \frac{3 \ve{f}_k - \ve{f}_{k-1}}{2} \bigg)
+  \end{align*}
+  as an example. Its gradient stepn is give by
+  \begin{align*}
+    \ov{\ve{f}} = \frac{3 \ve{f}_k - \ve{f}_{k-1}}{2},
+  \end{align*}
+  and its transfer step is given by
+  \begin{align} \label{eqn:transfer-step}
+    \ve{y}_{k+1} = \ve{y}_k + \Delta s\, \ov{\ve{f}}.
+  \end{align}
+  Note that the equation of the transfer step above is the same for all numerical methods in Section~\ref{sec:numerical-methods}.
+
+  \item There's nothing wrong with the gradient step, but the transfer step \eqref{eqn:transfer-step} only works when the timesteps are of the form $s_k = k \Delta s$, which is a linear function of $k$. However, for ODEs like \eqref{eqn:simpler-ddim-ode-noise} and \eqref{eqn:simpler-ddim-ode-noise}, the timesteps are $\gamma_t = \sqrt{1 - \ov{\alpha}_t}/\sqrt{\ov{\alpha}_t}$ and $\omega_t = \sqrt{\ov{\alpha}_t} / \sqrt{1 - \ov{\alpha}_t}$, which are not linear functions of $t$.
+  
+  \item To make the transfer step works for \eqref{eqn:simpler-ddim-ode-noise} and \eqref{eqn:simpler-ddim-ode-denoised}, we rewrite 
+  \begin{align*}
+    \ve{y}_{k+1} = \ve{y}_k + (s_{k+1} - s_k) \ov{\ve{f}}.
+  \end{align*}
+  Note that this equation is very similar to \eqref{eqn:ddim-difference-equation-noise} and \eqref{eqn:ddim-difference-equation-denoised}, which we reproduce (in rewritten forms) below:
+  \begin{align*}
+    \ov{\ve{x}}_{t-\delta} &= \ov{\ve{x}}_{t} + (\gamma_{t - \delta} - \gamma_{t}) \ves{\xi}_{\ves{\theta}}(\ve{x}_t, t), \\
+    \widetilde{\ve{x}}_{t-\delta} &= \widetilde{\ve{x}}_{t} + (\omega_{t - \delta} - \omega_{t}) \ve{x}_{\ves{\theta}}(\ve{x}_t, t).
+  \end{align*}
+  So, the transfer steps for \eqref{eqn:simpler-ddim-ode-noise} and \eqref{eqn:simpler-ddim-ode-denoised} of the form
+  \begin{align*}
+    \ov{\ve{x}}_{t-\delta} &= \ov{\ve{x}}_{t} + (\gamma_{t - \delta} - \gamma_{t}) \widehat{\ves{\xi}}, \\
+    \widetilde{\ve{x}}_{t-\delta} &= \widetilde{\ve{x}}_{t} + (\omega_{t - \delta} - \omega_{t}) \widehat{\ves{x}}
+  \end{align*}
+  where $\widehat{\ves{\xi}}$ is some linear combination of values obtained by evaluating $\ves{\xi}_{\ves{\theta}}$ at several points, and $\widehat{\ves{x}}$ is also some linear combination of values obtained by evaluating $\ve{x}_{\ves{\theta}}$ at several points.
+
+  \item Before we go ahead, let us take stock. What does the transfer step like
+  \begin{align*}
+    \ov{\ve{x}}_{t-\delta} &= \ov{\ve{x}}_{t} + (\gamma_{t - \delta} - \gamma_{t}) \widehat{\ves{\xi}}
+  \end{align*}
+  actually mean? Does it mean that we have to compute in terms of $\ov{\ve{x}}_{t} = \ve{x}_t / \sqrt{\ov{\alpha}_t}$ of $\ve{x}_t$? If so, this would not be very nice because this value would blow up near $t = 0$. The good news is that we can still do everything in terms of $\ve{x}_t$ because the above equation is just another form of the DDIM update rule \eqref{eqn:ddim-update-equation-noise}. In other words, after rearranging, it becomes:
+  \begin{align*}
+    \ve{x}_{t-\delta}  = \sqrt{\ov{\alpha}_{t-\delta}} \bigg( \frac{\ve{x}_t - \widehat{\ves{\xi}} \sqrt{1-\ov{\alpha}_t}  }{\sqrt{\ov{\alpha}_t}} \bigg) +  \widehat{\ves{\xi}} \sqrt{1 - \ov{\alpha}_{t-\delta}}.
+  \end{align*}
+  For convenience, let us define
+  \begin{align*}
+    \ves{\phi}_{\ves{\xi}}(\ve{x}_t, \widehat{\ves{\xi}}, t, s) := \sqrt{\ov{\alpha}_{s}} \bigg( \frac{\ve{x}_t - \widehat{\ves{\xi}} \sqrt{1-\ov{\alpha}_t}  }{\sqrt{\ov{\alpha}_t}} \bigg) +  \widehat{\ves{\xi}} \sqrt{1 - \ov{\alpha}_{s}}.
+  \end{align*}
+  So, we may write the transfer step as:
+  \begin{align*}
+    \ve{x}_{t-\delta}  = \ves{\phi}_{\ves{\xi}}(\ve{x}_t, \widehat{\ves{\xi}}, t, t-\delta).
+  \end{align*}
+
+  \item Similarly, the transfer step
+  \begin{align*}
+    \widetilde{\ve{x}}_{t-\delta} &= \widetilde{\ve{x}}_{t} + (\omega_{t - \delta} - \omega_{t}) \widehat{\ves{x}}
+  \end{align*}
+  is equivalent to
+  \begin{align*}
+    \ve{x}_{t-\delta} &= \ves{\phi}_{\ve{x}}(\ve{x}_t, \widehat{\ve{x}}, t, s)
+  \end{align*}
+  where 
+  \begin{align*}
+    \ves{\phi}_{\ve{x}}(\ve{x}_t, \widehat{\ve{x}}, t, s) := \sqrt{\ov{\alpha}_s} \widehat{\ve{x}} + \sqrt{1 - \ov{\alpha}_s} \bigg( \frac{\ve{x}_t - \sqrt{\ov{\alpha}_t} \widehat{\ve{x}}}{\sqrt{1 - \ov{\alpha}_t}} \bigg).
+  \end{align*}
+
+  \item Because the transfer steps above are not the same as the transfer step of conventional numerical methods, the paper calls methods that use them ``pseudo numerical.'' 
+  \begin{itemize}
+    \item However, I think this nomenclature is not really necessary. The formulation in Section~\ref{sec:simpler-odes} tells us that these methods are just conventional numerical methods applied to different ODEs.
+  \end{itemize}
+  
+  \item Armed with the new transfer steps, we can turn any numerical methods in Section~\ref{sec:numerical-methods} pseudo numerical.
+  \begin{itemize}
+    \item The pseudo numerical Euler method is just the DDIM sampling method.
+    \begin{align*}
+      \widehat{\ves{\xi}} &= \ves{\xi}_{\ves{\theta}}(\ve{x}_t, t), \\
+      \ve{x}_{t-1} &= \ves{\phi}_{\ves{\xi}}(\ve{x}_t, \widehat{\ves{\xi}}, t, t-1) 
+    \end{align*}
+
+    \item Pseudo Huen's method.
+    \begin{align*}
+      \widehat{\ves{\xi}}_1 &= \ves{\xi}_{\ves{\theta}}(\ve{x}_t, t) \\
+      \widehat{\ve{x}}_1 &= \ves{\phi}_{\ves{\xi}}(\ve{x}_t, \widehat{\ves{\xi}}_1, t, t-1) \\
+      \widehat{\ves{\xi}}_2 &= \ves{\xi}_{\ves{\theta}}(\widehat{\ve{x}}_1, t-1) \\
+      \widehat{\ves{\xi}} &= \frac{\widehat{\ves{\xi}}_1  + \widehat{\ves{\xi}}_2}{2} \\
+      \ve{x}_{t-1} &= \ves{\phi}_{\ves{\xi}}(\ve{x}_t, \widehat{\ves{\xi}}, t, t-1) 
+    \end{align*}
+
+    \item Pseudo Runge-Kutta method (PRK).
+    \begin{align*}
+      \widehat{\ves{\xi}}_1 &= \ves{\xi}_{\ves{\theta}}(\ve{x}_t, t) \\
+      \widehat{\ve{x}}_1 &= \ves{\phi}_{\ves{\xi}}(\ve{x}_t, \widehat{\ves{\xi}}_1, t, t-0.5) \\
+      \widehat{\ves{\xi}}_2 &= \ves{\xi}_{\ves{\theta}}(\widehat{\ve{x}}_1, t - 0.5) \\
+      \widehat{\ve{x}}_2 &= \ves{\phi}_{\ves{\xi}}(\ve{x}_t, \widehat{\ves{\xi}}_2, t, t-0.5) \\
+      \widehat{\ves{\xi}}_3 &= \ves{\xi}_{\ves{\theta}}(\widehat{\ve{x}}_2, t-0.5) \\
+      \widehat{\ve{x}}_3 &= \ves{\phi}_{\ves{\xi}}(\ve{x}_t, \widehat{\ves{\xi}}_3, t, t-1) \\      
+      \widehat{\ves{\xi}}_4 &= \ves{\xi}_{\ves{\theta}}(\widehat{\ve{x}}_3, t-1) \\
+      \widehat{\ves{\xi}} &= \frac{\widehat{\ves{\xi}}_1  + 2 \widehat{\ves{\xi}}_2 + 2 \widehat{\ves{\xi}}_3 + \widehat{\ves{\xi}}_4}{6} \\
+      \ve{x}_{t-1} &= \ves{\phi}_{\ves{\xi}}(\ve{x}_t, \widehat{\ves{\xi}}, t, t-1) 
+    \end{align*}
+
+    \item Pseudo linear multi-step method (PLMS). Let $\widehat{\ves{\xi}}_t = \ves{\xi}_{\ves{\theta}}(\ve{x}_t, t)$.
+    \begin{itemize}
+      \item Second order (PLMS2).
+      \begin{align*}
+        \widehat{\ves{\xi}} &= \frac{3 \widehat{\ves{\xi}}_{t} - \widehat{\ves{\xi}}_{t+1}}{2} \\
+        \ve{x}_{t-1} &= \ves{\phi}_{\ves{\xi}}(\ve{x}_t, \widehat{\ves{\xi}}, t, t-1) 
+      \end{align*}
+      \item Third order (PLMS3).
+      \begin{align*}
+        \widehat{\ves{\xi}} &= \frac{23 \widehat{\ves{\xi}}_{t} - 16\widehat{\ves{\xi}}_{t+1} + 5\widehat{\ves{\xi}}_{t+2}}{12} \\
+        \ve{x}_{t-1} &= \ves{\phi}_{\ves{\xi}}(\ve{x}_t, \widehat{\ves{\xi}}, t, t-1) 
+      \end{align*}
+      \item Fourth order (PLMS4).
+      \begin{align*}
+        \widehat{\ves{\xi}} &= \frac{55 \widehat{\ves{\xi}}_{t} - 59\widehat{\ves{\xi}}_{t+1} + 37\widehat{\ves{\xi}}_{t+2} - 9 \widehat{\ves{\xi}}_{t+3}}{24} \\
+        \ve{x}_{t-1} &= \ves{\phi}_{\ves{\xi}}(\ve{x}_t, \widehat{\ves{\xi}}, t, t-1) 
+      \end{align*}
+    \end{itemize}
+  \end{itemize}
+\end{itemize}
+
+\subsection{Putting It All Together}
+
+\begin{itemize}
+  \item The methods we covered in the last section are ways to generate $\ve{x}_{t-1}$ from $\ve{x}_t$, $\ve{x}_{t+1}$, and so on. However, a complete sampling algorithm must generate $\ve{x}_0$ from scratch.
+  
+  \item The paper's main contribution is a sampling algorithm where most of the sampling steps is PLMS4. However, PLMS4 can be used to compute $\ve{x}_{t-1}$ only when $\widehat{\ves{\xi}}_t$, $\widehat{\ves{\xi}}_{t+1}$, $\widehat{\ves{\xi}}_{t+2}$, and $\widehat{\ves{\xi}}_{t+3}$ have been computed. As a result, we cannot use it to compute $\ve{x}_{T-1}$, $\ve{x}_{T-2}$, and $\ve{x}_{T-3}$. A sampling algorithm thus must specify how to compute these values.
+  
+  \item There are two implementations of the sampling algorithm using PLMS.
+  \begin{itemize}
+    \item The one proposed by Liu \etal\ in the paper. It uses pseudo Runge--Kutta to compute $\ve{x}_{T-1}$, $\ve{x}_{T-2}$, and $\ve{x}_{T-3}$.
+    \item The one documented in Teng's paper \cite{Wizadwongsa:2023}. It uses PLMS methods of lower orders to compute $\ve{x}_{T-1}$, $\ve{x}_{T-2}$, and $\ve{x}_{T-3}$.
+  \end{itemize}
+
+  \item Let's start with Teng's implementation because it's the easier both to understand and to implement.
+  \begin{itemize}
+    \item[] Sample $\ve{x}_T \sim \mcal{N}(\ve{0},I)$.
+    \item[] {\bf for} $t \leftarrow T, T-1, \dotsc, 1$ {\bf do}
+    \begin{itemize}
+      \item[] $\widehat{\ves{\xi}}_t \leftarrow \ves{\xi}_{\ves{\theta}}(\ve{x}_t, t)$
+      \item[] {\bf if} $t = T$ {\bf then}
+      \begin{itemize}
+        \item[] $\widehat{\ves{\xi}} \leftarrow \widehat{\ves{\xi}}_t$
+      \end{itemize}
+      \item[] {\bf else if} $t = T-1$ {\bf then}
+      \begin{itemize}
+        \item[] $\widehat{\ves{\xi}} \leftarrow \frac{1}{2} (3\widehat{\ves{\xi}}_t - \widehat{\ves{\xi}}_{t+1})$
+      \end{itemize}
+      \item[] {\bf else if} $t = T-2$ {\bf then}
+      \begin{itemize}
+        \item[] $\widehat{\ves{\xi}} \leftarrow \frac{1}{12} (23\widehat{\ves{\xi}}_t - 16\widehat{\ves{\xi}}_{t+1} + 5\widehat{\ves{\xi}}_{t+2})$
+      \end{itemize}
+      \item[] {\bf else}
+      \begin{itemize}
+        \item[] $\widehat{\ves{\xi}} \leftarrow \frac{1}{24} (55\widehat{\ves{\xi}}_t - 59\widehat{\ves{\xi}}_{t+1} + 37\widehat{\ves{\xi}}_{t+2} -9\widehat{\ves{\xi}}_{t+3})$
+      \end{itemize}
+      \item[] {\bf end if}
+      \item[] $\ve{x}_{t-1} \leftarrow \ves{\phi}_{\ves{\xi}}(\ve{x}_t, \widehat{\ves{\xi}}, t, t-1)$
+    \end{itemize}
+    \item[] {\bf end for}
+    \item[] {\bf return} $\ve{x}_0$.
+  \end{itemize}
+
+  \item Liu \etal's implementation requires PRK as a subroutine.
+  \begin{itemize}
+    \item[] $\textsc{Prk}(\ve{x}, t, s)$
+    \item[] {\bf begin}
+    \begin{itemize}
+      \item[] $\widehat{\ves{\xi}}_1 \leftarrow \ves{\xi}_{\ves{\theta}}(\ve{x}, t)$
+      \item[] $\widehat{\ve{x}}_1 \leftarrow \ves{\phi}_{\ves{\xi}}(\ve{x}, \widehat{\ves{\xi}}_1, t, (t+s)/2)$
+      \item[] $\widehat{\ves{\xi}}_2 \leftarrow \ves{\xi}_{\ves{\theta}}(\widehat{\ve{x}}_1, (t+s)/2)$
+      \item[] $\widehat{\ve{x}}_2 \leftarrow \ves{\phi}_{\ves{\xi}}(\ve{x}, \widehat{\ves{\xi}}_2, t, (t+s)/2)$
+      \item[] $\widehat{\ves{\xi}}_3 \leftarrow \ves{\xi}_{\ves{\theta}}(\widehat{\ve{x}}_2, (t+s)/2)$
+      \item[] $\widehat{\ve{x}}_3 \leftarrow \ves{\phi}_{\ves{\xi}}(\ve{x}, \widehat{\ves{\xi}}_3, t, s)$
+      \item[] $\widehat{\ves{\xi}}_4 \leftarrow \ves{\xi}_{\ves{\theta}}(\widehat{\ve{x}}_3, s)$
+      \item[] $\widehat{\ves{\xi}} \leftarrow \frac{1}{6}(\widehat{\ves{\xi}}_1 + 2\widehat{\ves{\xi}}_2 + 2 \widehat{\ves{\xi}}_3 + \widehat{\ves{\xi}}_4)$
+      \item[] $\widehat{\ve{x}} \leftarrow \ves{\phi}_{\ves{\xi}}(\ve{x}, \widehat{\ves{\xi}}, t, s)$
+      \item[] {\bf return} $\widehat{\ve{x}}$, $\widehat{\ves{\xi}}$
+    \end{itemize}
+    \item[] {\bf end}
+  \end{itemize}
+
+  \item Liu \etal's implementation is as follows.
+  \begin{itemize}
+    \item[] Sample $\ve{x}_T \sim \mcal{N}(\ve{0},I)$.
+    \item[] {\bf for} $t \leftarrow T, T-1, \dotsc, 1$ {\bf do}
+    \begin{itemize}      
+      \item[] {\bf if} $t \in \{T, T-1, T-2\}$ {\bf then}
+      \begin{itemize}
+        \item[] $\ve{x}_{t-1}, \widehat{\ves{\xi}}_t \leftarrow \textsc{Prk}(\ve{x}_t, t, t-1)$
+      \end{itemize}
+      \item[] {\bf else}
+      \begin{itemize}
+        \item[] $\widehat{\ves{\xi}}_t \leftarrow \ves{\xi}_{\ves{\theta}}(\ve{x}_t, t)$
+        \item[] $\widehat{\ves{\xi}} \leftarrow \frac{1}{24} (55\widehat{\ves{\xi}}_t - 59\widehat{\ves{\xi}}_{t+1} + 37\widehat{\ves{\xi}}_{t+2} -9\widehat{\ves{\xi}}_{t+3})$
+        \item[] $\ve{x}_{t-1} \leftarrow \ves{\phi}_{\ves{\xi}}(\ve{x}_t, \widehat{\ves{\xi}}, t, t-1)$
+      \end{itemize}
+      \item[] {\bf end if}      
+    \end{itemize}
+    \item[] {\bf end for}
+    \item[] {\bf return} $\ve{x}_0$.
+  \end{itemize}
+
+  \item Liu \etal's implementation might not be as versatile as one might hope. The thing is that it requires evaluating $\ves{\xi}_{\ves{\theta}}$ at $t = T-1/2$, $T-3/2$, and $T-5/2$. The results might not be accurate on models that are trained on discrete times.
+\end{itemize}
+
+\bibliographystyle{alpha}
+\bibliography{ddpm-plms}  
+\end{document}

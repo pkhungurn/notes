@@ -1,0 +1,482 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{epstopdf}
+\usepackage{enumerate}
+\usepackage{verse}
+
+\newtheorem{lemma}{Lemma}[section]
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{claim}[lemma]{Claim}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+\newcommand{\Ei}{\mathrm{Ei}}
+\newcommand{\Tri}{\mathbf{tri}}
+\newcommand{\Th}{\mathbf{th}}
+\newcommand{\V}{\mathbf{V}}
+\newcommand{\Const}{\mathbf{const}}
+\newcommand{\exit}{\mathrm{exit}}
+\newcommand{\solve}{\mathrm{solve}}
+
+\newcommand{\IF}{\mathbf{if}}
+\newcommand{\FI}{\mathbf{fi}}
+\newcommand{\THEN}{\mathbf{then}}
+\newcommand{\ELSE}{\mathbf{else}}
+\newcommand{\WHILE}{\mathbf{while}}
+\newcommand{\DO}{\mathbf{do}}
+\newcommand{\OD}{\mathbf{od}}
+\newcommand{\PROC}{\mathbf{proc}}
+\newcommand{\END}{\mathbf{end}}
+\newcommand{\CALL}{\mathbf{call}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+
+\title{Implementing the Marschner's Hair Scattering Model}
+\author{Pramook Khungurn}
+
+\begin{document}
+	\maketitle
+
+  The Marshner's hair scattering model \cite{Marschner:2003} 
+  is a complex piece of 
+  mathematical modeling that has a lot of details.
+  This document attempts to iron out all the components of 
+  the model, so that the reader can easily implement it
+  in a program.
+  
+  \section{Azimuthal Scattering}
+  
+  \subsection{Bravais Index of Refraction}
+  
+  \begin{itemize}
+    \item The {\bf Bravais index of refraction} determines the
+      effective index of refraction when refraction in
+      3D is projected on the normal plane of the hair fiber.
+      
+    \item Let $\eta$ be the index of refraction of the hair
+      material. Suppose that the light strikes the hair at 
+      incoming direction, which makes an angle
+      $\theta_d$ with the normal plane.
+      Then, the Bravias index of refraction 
+      is given by:
+      \begin{align*}
+        \eta' = \frac{\sqrt{\eta^2 - \sin^2 \theta_d}}{\cos \theta_d}
+      \end{align*}
+      
+    \item When computing Fresnel reflectance, we need another
+      index of refraction, which we shall call the 
+      {\bf anti-Bravais index of refraction}. It is given by:
+      \begin{align*}
+        \eta'' = \frac{\eta \cos \theta_d}{\sqrt{1 - \eta^{-2} \sin^2 \theta_d}}
+      \end{align*}
+    
+    \item Using the two indices, the Fresnel reflectance, resulting
+      from light coming in at angle $\gamma_i$ (made with the normal)
+      and refracted to the angle $\gamma_t$ (again, made with the 
+      normal), is given by
+      \begin{align*} 
+        F = \frac{1}{2}(F_p^2 + F_s^2)      
+      \end{align*}
+      where
+      \begin{align*}
+        F_p &= \frac{\eta'' \cos \gamma_i - \cos \gamma_t}{\eta'' \cos \gamma_i + \cos \gamma_t}, \mbox{ and}\\
+        F_s &= \frac{\cos \gamma_i - \eta' \cos \gamma_t}{\cos \gamma_i + \eta' \cos \gamma_t}.
+      \end{align*}
+  \end{itemize}
+  
+  \subsection{Height Parameterization, Transmitted Angle, 
+    and Exit Angles}
+    
+  \begin{itemize}
+    \item Marschner models light arriving at a hair fiber's cross
+      section as being distributed through the ``height'' of the
+      cross section. The height is denoted by the variable $h$,
+      and it has value ranging from $-1$ to $1$.
+      
+    \item The angle $\gamma_i$ that the light's direction make
+      with the normal is given by:
+      $$\gamma_i = \sin^{-1}(h).$$
+      
+    \item The transmitted angle $\gamma_t$ that the light direction
+      make with the normal is given by:
+      $$\gamma_t = \sin^{-1}(h / \eta').$$
+      This is derived from Snell's law:
+      \begin{align*}
+        \sin \gamma_i = \eta' \sin \gamma_t.
+      \end{align*}
+      
+    \item Given the scattering mode $p = 0, 1, 2, \ldots$
+      ($p = 0$ is the R mode, $p = 1$ is the TT mode,
+      and $p = 2$ is the TRT mode) and height $h$, 
+      the azimuthal angle that the light particle exits 
+      the hair fiber is given by:
+      \begin{align*}
+        \phi_\exit(\theta_d, p, h) 
+        &= 2\gamma_i - 2p\gamma_t + p\pi\\
+        &= 2\sin^{-1}(h) - 2p\sin^{-1}(h/\eta') + p\pi.
+      \end{align*}
+      We put $\theta_d$ in the function because $\eta'$
+      depends on $\theta_d$.
+      
+      \item The model requires us to compute the derivative
+        of the exit angle with respect to $h$. The derivatives
+        for $p = 0$, $1$, and $2$ are given below:
+        \begin{align*}
+          \frac{\dee \phi_\exit(\theta_d, 0,h)}{\dee h}
+          &= \frac{2}{\sqrt{1-h^2}},\\
+          \frac{\dee \phi_\exit(\theta_d, 1,h)}{\dee h}
+          &= \frac{2}{\sqrt{1-h^2}} - \frac{2}{\eta' \sqrt{1-(h/\eta')^2}},\\
+          \frac{\dee \phi_\exit(\theta_d, 2,h)}{\dee h}
+          &= \frac{2}{\sqrt{1-h^2}} - \frac{4}{\eta' \sqrt{1-(h/\eta')^2}}.\\
+        \end{align*}
+  \end{itemize}
+  
+  \subsection{Azimuthal Scattering Function}
+  
+  \begin{itemize}
+    \item The azimuthal scattering function is given in 
+      terms of the longitudinal angle difference 
+      $\theta_d = |\theta_i - \theta_r|/2$,
+      the azimuthal difference $\phi_d = \phi_r - \phi_i$:
+      $$N(\theta_d, \phi_d).$$
+      It is the sum of the azimuthal scattering functions
+      of different modes:
+      \begin{align*}
+        N(\theta_d, \phi_d) = 
+          N_0(\theta_d, \phi_d) + N_1(\theta_d, \phi_d) + N_2(\theta_d, \phi_d).
+      \end{align*}
+  \end{itemize}
+  
+  \subsection{Approximation for R and TT Mode}
+  
+  \begin{itemize}    
+    \item For $p = 0$ and $p = 1$, the azimuthal scattering
+      function is found using the following procedure.
+      Given $\phi_i$ and $\phi_r$, we find $h$ such that
+      $\phi_\exit(\theta_d, p, h) = \phi_d.$ Let us 
+      call this $h_\solve(\theta_d, p, \phi_d)$.
+      
+    \item For $p = 0$, we have that
+      \begin{align*}
+        h_\solve(\theta_d, 0, \phi)d) 
+        = \sin \bigg( \frac{\phi_d}{2} \bigg).
+      \end{align*}
+      
+    \item For other $p$, we have to solve the equation:
+      \begin{align*}
+        \phi_d
+        &= 2 \sin^{-1}(h) - 2p\sin^{-1}(h/\eta') + p\pi\\
+        &= 2 \gamma_i - 2p\gamma_t + p\pi.
+      \end{align*}
+      Marschner makes the following approximation:
+      \begin{align*}
+        \gamma_t = \frac{3\sin^{-1}(1/\eta')}{\pi} \gamma_i
+          - \frac{4\sin^{-1}(1/\eta')}{\pi^3} \gamma_i^3.
+      \end{align*}
+      The equation then becomes:
+      \begin{align*}
+        \phi_d
+        &= 2\gamma_i 
+        - \frac{6 p\sin^{-1}(1/\eta')}{\pi} \gamma_i 
+        + \frac{8 p\sin^{-1}(1/\eta')}{\pi^3} \gamma_i^3 + p\pi\\
+        &= \frac{8 p \sin^{-1}(1/\eta')}{\pi^3} \gamma_i^3
+        + \bigg( 2 - \frac{6 p\sin^{-1}(1/\eta')}{\pi} \bigg) \gamma_i
+        + p\pi
+      \end{align*}
+      which we solve for the root.
+      
+    \item Once we have $h_\solve(\theta_d, p, \phi_d)$,
+      we have that the azimuthal scattering function is given by
+      \begin{align*}
+        N_p(\theta_d, \phi_d) =
+          A(\theta_d, p, h_\solve(\theta_d, p, \phi_d))
+          \bigg| 2 \frac{\dee}{\dee h } 
+            \phi_\exit(\theta_d, p, h_\solve(\theta_d, p, \phi_d) ) \bigg|^{-1}.
+      \end{align*}
+      
+    \item The $A(\theta_d, p, h)$ function gives the attenuation
+      due to absorption by the material of the hair. It is given
+      by
+      \begin{align*}
+        A(\theta_d, p, h) = \begin{cases}
+          F(\eta', \eta'', \gamma_i), & \mbox{if }p = 0\\
+          (1-F(\eta', \eta'', \gamma_i))^2 F( \frac{1}{\eta'}, \frac{1}{\eta''}, \gamma_t )^{p-1} ( \exp(2\sigma_a \cos \gamma_t ))^p, 
+          & \mbox{if }p > 0
+        \end{cases}
+      \end{align*}
+      where
+      \begin{itemize}
+        \item $\sigma_a$ is the absorption coefficient of
+          the hair material,
+        \item $F(\eta', \eta'', \gamma_i)$ is the Fresnel 
+          reflectance:
+          \begin{align*}
+            F(\eta', \eta'', \gamma_i) = 
+            \frac{1}{2} \bigg( \frac{\eta'' \cos \gamma_i - \cos \gamma_t}{\eta'' \cos \gamma_i + \cos \gamma_t} \bigg)^2
+            + \frac{1}{2} \bigg( \frac{\cos \gamma_i - \eta' \cos \gamma_t}{\cos \gamma_i + \eta' \cos \gamma_t}  \bigg)^2.
+          \end{align*}          
+        \item $F(1/\eta', 1/\eta'', \gamma_t)$ is the ``anti''-Fresnel reflectance:
+          \begin{align*}
+            F\bigg( \frac{1}{\eta'}, \frac{1}{\eta''}, 
+            \gamma_t \bigg) 
+            &= 
+            \frac{1}{2} \bigg( \frac{ \frac{1}{\eta''} \cos \gamma_t - \cos \gamma_i}{\frac{1}{\eta''} \cos \gamma_t + \cos \gamma_i} \bigg)^2
+            + \frac{1}{2} \bigg( \frac{\cos \gamma_t - \frac{1}{\eta'} \cos \gamma_i}{\cos \gamma_t + \frac{1}{\eta'} \cos \gamma_i}  \bigg)^2\\
+            &= 
+            \frac{1}{2} \bigg( \frac{ \cos \gamma_t - \eta'' \cos \gamma_i}{ \cos \gamma_t + \eta'' \cos \gamma_i} \bigg)^2
+            + \frac{1}{2} \bigg( \frac{\eta' \cos \gamma_t - \cos \gamma_i}{\eta' \cos \gamma_t + \cos \gamma_i}  \bigg)^2\\
+            &= F(\eta', \eta'', \gamma_i).
+          \end{align*}
+      \end{itemize}
+            
+    \item Note that, although we don't use this formula for $p = 2$,
+      it is a component of the TRT approximation which is described
+      in the next section.
+      
+  \end{itemize}
+  
+  \subsection{Approximation for TRT Mode}
+  
+  \begin{itemize}
+    \item The TRT generates two caustics at 
+      \begin{align*}
+        h_c = \sqrt{ \frac{4 - \eta'^2}{3} }
+      \end{align*}
+      and at $-h_c$. 
+      Therefore, if $\eta' \geq 2$, there will be no caustics.
+      
+    \item The Marschner model differentiates between the following
+      two cases:
+      \begin{itemize}
+        \item If $\eta' < 2$, it tries to generate blurred 
+          caustics at $\phi_c$ and $-\phi_c$
+          
+        \item If $\eta' \geq 2$, it tries to generate a caustic
+          at $\phi_c = 0$ and fade it out smoothly.
+      \end{itemize}
+  \end{itemize}
+  
+  \subsubsection{Approximation for $\eta' < 2$ Case}
+  
+  \begin{itemize}
+    \item First of all, we cannot evaluate $N_2(\theta_d, \phi_d)$ directly. Because, if $\phi_d = \pm \phi_c$, then $N_2(\theta_d, \phi_d)$ is undefined.
+    
+    \item Instead, in case $\phi_d = \pm \phi_c$, the Marschner
+      model replaces $N_p(\theta_d, \phi_d)$ by the sum of
+      two Gaussians:
+      \begin{align}
+        k_G A(\theta_d, 2, h_c) \Delta h (g(\phi_d; \phi_c, w_c) +
+        g(\phi_d; -\phi_c, w_c)).
+        \label{caustic-value}
+      \end{align}
+      The variables in the above equations are:
+      \begin{itemize}
+        \item $k_G$ is the caustic lobes scaling factor. Its value
+          has range $0.5$ to $5$.
+        \item $w_c$ is the width of the caustic lobe. It has
+          value typically from $10^\circ$ to $25^\circ$.
+        \item $g(x;\mu,\sigma)$ is the Gaussian distribution:
+          \begin{align*}
+            g(x;\mu,\sigma) = \frac{1}{\sigma \sqrt{2\pi}}
+            \exp\bigg(-\frac{1}{2}\bigg( \frac{x-\mu}{\sigma} \bigg)^2 \bigg).
+          \end{align*}
+        \item $h_c$ is the $h$ value that corresponds to the
+          position of the caustics: $h_c = h_\solve(\theta_d, 2, \phi_c).$
+        \item $\Delta h$ is the estimate the width 
+          of the interval of $h$ that maps 
+          within $w_c$ of $\phi_c$:
+      \begin{align}
+        \Delta h = \min \bigg\{ \Delta h_M, 
+        2 \sqrt{2w_c \Big| \frac{\dee^2 }{\dee h^2} \phi_\exit(\theta_d, 2, h_c) \Big|^{-1}  } \bigg\}
+        \label{delta-h}
+      \end{align}
+      where $\Delta h_M$ is the maximum width of the $h$-interval,
+      which is a parameter that the user has to set manually.
+      \end{itemize}      
+    \item To evaluate the above interval width, we need to evaluate
+      the second derivative of the $\phi_\exit$ function,
+      which is given below:
+      \begin{align*}
+        \frac{\dee \phi_\exit(\theta_d, 2, h) }{\dee h^2}
+        &= \frac{\dee}{\dee h} \bigg\{ \frac{2}{\sqrt{1-h^2}} - \frac{4}{\eta' \sqrt{1-(h/\eta')^2}} \bigg\}\\
+        &= 2 \frac{\dee}{\dee h}\bigg\{ \frac{1}{\sqrt{1 - h^2}} \bigg\}
+        - \frac{4}{\eta'} \frac{\dee}{\dee h}\bigg\{ 
+          \frac{1}{\sqrt{1 - (h/\eta')^2}}\bigg\}\\
+        &= 2 \bigg( -\frac{1}{2} (1 - h^2)^{-3/2} (-2h) \bigg)
+          - \frac{4}{\eta'} \bigg( -\frac{1}{2} (1 - (h/\eta')^2)^{-3/2} \bigg( - \frac{2h}{\eta'^2} \bigg) \bigg)\\
+        &= \frac{2h}{(1-h^2)^{3/2}} - \frac{4h}{\eta'^3 (1 - (h/\eta')^2)^{3/2}}.
+      \end{align*}
+      
+    \item In case, $\phi_d \neq \pm \phi_c$, the Marschner model
+      attempts to interpolate smoothly between the value
+      in \eqref{caustic-value} and $N_2(\theta_d, \phi_d)$.
+      This is done by setting the azimuthal scattering function to:
+      \begin{align*}
+        N_2(\theta_d, \phi_d) \bigg(1 - \frac{g(\phi_d;\phi_c, w_c)}{g(\phi_c; \phi_c, w_c)}\bigg) \bigg( 1 - \frac{g(\phi_d;-\phi_c,w_c)}{g(-\phi_c;\phi_c,w_c)} \bigg) + 
+        k_G A(\theta_d, 2, h_c) \Delta h (g(\phi_d; \phi_c, w_c) +
+        g(\phi_d; -\phi_c, w_c)).
+      \end{align*}
+      The intuition is that, when $\phi_d$ is near $\pm \phi_c$,
+      the contribution of \eqref{caustic-value} should be
+      very strong. Otherwise, the constribution of 
+      $N_2(\theta_d, \phi_d)$ should be very strong.
+  \end{itemize}
+  
+  \subsubsection{Approximation for $\eta' \geq 2$ Case}
+  
+  \begin{itemize}
+    \item The value should be $N_2(\theta_d, \phi_d)$.
+      
+    \item However, the caustic lobes given in \eqref{caustic-value}
+    are present and fully used in the values $\eta' = 2-\varepsilon$.
+    So, we should not use $N_2(\theta_d, \phi_d)$, but we should 
+    face out the caustics as $\eta'$ increases.
+    
+    \item The Marschner model introduces an interpolation parameter
+      $t$, which is $1$ if $\eta' < 2$, and $0$ if $\eta' > 2 + \Delta \eta'$:
+      \begin{align*}
+        t = \mathrm{smoothstep}(2, 2+\Delta \eta', \eta').
+      \end{align*}
+      Here, $\Delta \eta'$ is a parameter that the user sets.
+      Its value is from $0.2$ to $0.4$. The $\mathrm{smoothstep}(a,b,x)$ is $1$ if $x < a$, and $0$ if $x > b$,
+      and smooth between.
+      
+    \item The value of the azimuthal scattering function is given by:
+    \begin{align*}
+        N_2(\theta_d, \phi_d) \bigg(1 - t\frac{g(\phi_d;\phi_c, w_c)}{g(\phi_c; \phi_c, w_c)}\bigg) \bigg( 1 - t\frac{g(\phi_d;-\phi_c,w_c)}{g(-\phi_c;\phi_c,w_c)} \bigg) + 
+        t k_G A(\theta_d, 2, h_c) \Delta h (g(\phi_d; \phi_c, w_c) +
+        g(\phi_d; -\phi_c, w_c)).
+      \end{align*}
+    where $\phi_c$ should be set to 0 (because the caustic has
+      merged), and $\Delta h$ should always be set to $\Delta h_M$.
+  \end{itemize}
+  
+  \subsubsection{Pseudocode for the TRT Mode}
+  
+  We reproduce the pseudocode for the TRT mode here for completeness.
+  
+  \begin{verse}
+    $\mathbf{function}\ N_{TRT}(\eta, \theta_d, \phi_d; w_c, k_G, \Delta \eta', \Delta h_M)$\\
+    \quad $\eta' \gets \sqrt{\eta - \sin^2 \theta_d}/\cos \theta_d $\\
+    \quad $\IF\ \eta' < 2\ \THEN$ \\
+    \quad \quad Compute $h_c$, $\phi_c$ using $\eta'$.\\
+    \quad \quad Compute $\Delta h$ using \eqref{delta-h}.\\
+    \quad \quad $t \gets 1$\\
+    \quad $\ELSE$\\
+    \quad \quad $\phi_c \gets 0$\\
+    \quad \quad $\Delta h \gets \Delta h_M$\\
+    \quad \quad $t \gets \mathrm{smoothstep}(2, 2+\Delta\eta', \eta')$\\
+    \quad $\FI$\\
+    \quad $L \gets N_2(\theta_d, \phi_d)$\\
+    \quad $L \gets L \cdot (1 - t g(\phi_d; \phi_c, w_c) / g(\phi_c;\phi_c, w_c)) (1 - t g(\phi_d; -\phi_c, w_c) g(-\phi_c; -\phi_c, w_c))$\\
+    \quad $L \gets L + t k_G A(\theta_d, 2, h_c) \Delta h (g(\phi_d; \phi_c, w_c) + g(\phi_d; -\phi_c, w_c))$\\
+    \quad $\mathbf{return}\ L$\\
+    $\mathbf{end}$\\
+  \end{verse}
+
+  \subsubsection{Approximation for Eccentricity}
+  
+  \begin{itemize}
+    \item The paper claims that the TRT caustics is affected
+      by the slightest deviation in the eccentricity. 
+      
+    \item The Marschner model simulates the effect of eccentricity
+      to the TRT mode by changing the index of refraction.
+      
+    \item Let $a$ be the cross section's eccentricity.
+      The model computes the index of refraction $\eta^*(\phi_h)$
+      to be fed to the procedure $N_{TRT}$ as follows:
+      \begin{align*}
+        \eta^*(\phi_h) = \frac{1}{2}((\eta^*_1 + \eta^*_2) 
+          + \cos(2\phi_h)(\eta^*_1 - \eta^*_2))
+      \end{align*}
+      where
+      \begin{itemize}
+        \item $\phi_h = (\phi_i + \phi_r)/2$ is the \emph{azimuthal half angle}.
+        \item $\eta^*_1$ and $\eta^*_2$ are given by:
+        \begin{align*}
+          \eta^*_1 &= 2(\eta-1)a^2 - \eta +2,\mbox{ and}\\
+          \eta^*_2 &= 2(\eta-1)a^{-2} - \eta + 2.
+        \end{align*}
+      \end{itemize}
+  \end{itemize}
+  
+  \section{Longitudinal Scattering Function}
+  
+  \begin{itemize}
+    \item The longitudinal scattering functions of the
+      Marschner models are very simple: they are Gaussians
+      of the half azimuthal angle 
+      $\theta_h = (\theta_i + \theta_r)/2$:
+      \begin{align*}
+        M_R(\theta_h) &= g(\theta_h; -\alpha_R, \beta_R)\\
+        M_{TT}(\theta_h) &= g(\theta_h; -\alpha_{TT}, \beta_{TT})\\
+        M_{TRT}(\theta_h) &= g(\theta_h; -\alpha_{TRT}, \beta_{TRT})
+      \end{align*}
+      where
+      \begin{itemize}
+        \item $\alpha_R$ is the shift of the R mode's 
+          reflection peak,
+        \item $\beta_R$ is the width of 
+          the R mode's scattering lobe,
+        \item $\alpha_{TT} = \alpha_R / 2$,
+        \item $\beta_{TT} = \beta_R/2$,
+        \item $\alpha_{TRT} = 3\alpha_R/2$, and
+        \item $\beta_{TRT} = 2\beta_R$.
+      \end{itemize}
+  \end{itemize}
+  
+  \section{The Whole Scattering Model}
+  
+  The whole scattering model is given by the following equation:
+  \begin{align*}
+    S(\theta_i, \phi_i, \theta_r, \phi_r)
+    &= M_R(\theta_h) N_0(\theta_d, \phi_d) / \cos^2 \theta_d\\
+    &\phantom{{}={}}+ M_{TT}(\theta_h) N_1(\theta_d, \phi_d) / \cos^2 \theta_d\\
+    &\phantom{{}={}} 
+    + M_{TRT}(\theta_h) N_{TRT}(\eta^*(\phi_i), \theta_d, \phi_d) / \cos^2\theta_d  
+  \end{align*}
+  
+  \section{Solving Cubic Equation}
+  
+  \begin{itemize}
+    \item Computing $h_\solve(\theta_d, p, \phi_d)$ requires us to
+      solve a cubic equation of the form $x^3 + Ax + B = 0$. 
+      We reproduce the method to solve it here for completeness.
+      
+    \item We would like to find two numbers $s$ and $t$ such that
+      \begin{align*}
+        3uv &= A,\mbox{ and}\\
+        u^3 - v^3 &= -B.
+      \end{align*}
+      If we find such a number, we have that
+      $x = u - v$ is a solution to the equation. This is because
+      \begin{align*}
+        (u-v)^3 + 3uv(u-v) + v^3 - u^3 = 0.
+      \end{align*}
+      
+    \item To find $u$ and $v$, we note that $u = A/3v$, and we have
+      that
+      \begin{align*}
+        \bigg( \frac{A}{3v} \bigg)^3 - v^3 &= -B\\
+        \frac{A^3}{27v^3} - v^3 &= -B\\
+        A^3 - 27v^6 &= -27Bv^3\\
+        -27 v^6 + 27 B v^3 + A^3 &= 0
+      \end{align*}
+      which is a quadratic equation of $v^3$. So, we solve for $v^3$,
+      and then $u$, and then x.
+      
+  \end{itemize}
+  
+\bibliographystyle{plain}
+\bibliography{marschner-model}	
+
+\end{document}

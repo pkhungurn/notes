@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>Towards Faster and Stabilized GAN Training for High-Fidelity Few-Shot Image Systhesis</title>
+
+    <!-- Bootstrap -->
+    <link href="../../../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../../../css/theme.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+      TeX: { equationNumbers: {autoNumber: "AMS"} } 
+    });
+    </script>
+    <script type="text/javascript"
+            src="../../../MathJax/MathJax.js?config=TeX-AMS_HTML-full">
+    </script>
+
+    <script type="text/javascript" src="../../../js/jquery-3.4.1.min.js"></script>    
+    <script type="text/javascript" src="../../../js/bigfoot.min.js"></script>    
+
+    <link rel="stylesheet" type="text/css" href="../../../css/bigfoot-default.css">    
+
+</head>
+<body>
+<div class="container">
+    <span style="visibility: hidden;">
+        \(
+        \def\sc#1{\dosc#1\csod}
+        \def\dosc#1#2\csod{{\rm #1{\small #2}}}
+
+        \newcommand{\dee}{\mathrm{d}}
+        \newcommand{\Dee}{\mathrm{D}}
+        \newcommand{\In}{\mathrm{in}}
+        \newcommand{\Out}{\mathrm{out}}
+        \newcommand{\pdf}{\mathrm{pdf}}
+        \newcommand{\Cov}{\mathrm{Cov}}
+        \newcommand{\Var}{\mathrm{Var}}
+
+        \newcommand{\ve}[1]{\mathbf{#1}}
+        \newcommand{\mrm}[1]{\mathrm{#1}}
+        \newcommand{\etal}{{et~al.}}
+        \newcommand{\sphere}{\mathbb{S}^2}
+        \newcommand{\modeint}{\mathcal{M}}
+        \newcommand{\azimint}{\mathcal{N}}
+        \newcommand{\ra}{\rightarrow}
+        \newcommand{\mcal}[1]{\mathcal{#1}}
+        \newcommand{\X}{\mathcal{X}}
+        \newcommand{\Y}{\mathcal{Y}}
+        \newcommand{\Z}{\mathcal{Z}}
+        \newcommand{\x}{\mathbf{x}}
+        \newcommand{\y}{\mathbf{y}}
+        \newcommand{\z}{\mathbf{z}}
+        \newcommand{\tr}{\mathrm{tr}}
+        \newcommand{\sgn}{\mathrm{sgn}}
+        \newcommand{\diag}{\mathrm{diag}}
+        \newcommand{\Real}{\mathbb{R}}
+        \newcommand{\sseq}{\subseteq}
+        \newcommand{\ov}[1]{\overline{#1}}
+        \DeclareMathOperator*{\argmax}{arg\,max}
+        \DeclareMathOperator*{\argmin}{arg\,min}
+        \)
+    </span>
+
+    <br>
+    <h1>Towards Faster and Stabilized GAN Training for High-Fidelity Few-Shot Image Systhesis</h1>
+    <hr>
+
+    <p>
+        This note is a written as I read <a href="https://arxiv.org/pdf/2101.04775.pdf">"Towards Faster and Stabilized GAN Training for High-Fidelity Few-Shot Image Systhesis"</a> by Liu et al., which is a paper accepted to ICLR 2021. The code for the paper is available at <a href="https://github.com/odegeasslbc/FastGAN-pytorch">https://github.com/odegeasslbc/FastGAN-pytorch</a>.
+    </p>
+
+    <p>
+        The selling point of this paper is that it can train a GAN to generate $1024 \times 1024$ images from several hundred images in a few hours with a single GTX 2080.
+    </p>
+    
+
+    <h2>1 &nbsp; Introduction</h2>
+
+    <ul>
+        <li>In real-life scenarios, availble samples to train a GAN can be minimal.
+        <ul>
+            <li>Medial images of a rare disease.</li>
+            <li>A particular celebrity's portraits.</li>
+            <li>A specific artist's artworks.</li>
+        </ul>
+        </li>
+
+        <li>Transfer learning with a pretrained model might help, but there's no gaurantee of finding a compatible pre-training dataset. Moreover, fine-tuning often leads to worse performance.</li>
+
+        <li>Computational cost of training GAN models such as StyleGAN2 and BigGAN is very high, especially at $1024 \times 1024$ resolution.</li>
+
+        <li>The paper proposes a way to train GANs from a few examples (< 100 images) at low computational cost.
+        <ul>
+            <li>Need a generator that learns fast and a discrimimator that always provide useful signals.</li>
+        </ul>
+        </li>
+
+        <li><b>Contributions:</b>
+        <ul>
+            <li>A new Skip-Layer channel-wise Excitation (SLE) module.
+            <ul>
+                <li>Leverages low-scale activations to revise channel responses on high-scale feature maps.</li>
+
+                <li>Allows robust gradient flow throught the model weights, leading to faster training.</li>
+
+                <li>Leads to automated learning of style/content disentaglement like StyleGAN2.</li>
+            </ul>
+            </li>
+
+            <li>A self-supervised discriminator.
+            <ul>
+                <li>Trained as a feature encoder with an extract decoder.</li>
+
+                <li>Forced to learn a more descriptive feature map that covers more regions from the input image, yielding more comprehensive signals to train the generator.</li>
+
+                <li>Training the discriminator as an auto-encoder works the best.</li>
+            </ul>
+            </li>            
+        </ul>
+        </li>
+    </ul>
+
+    <h2>2 &nbsp; Method</h2>
+
+    <h3>2.1 &nbsp; Skip-Layer Channel-Wise Excitation Module</h3>
+
+    <ul>
+        <li>To generate high resolution images, the generator $G$ needs to become deeper.</li>
+
+        <li>A deeper model needs a long training time due to:
+        <ul>
+            <li>Increased number of parameters.</li>
+            <li>Weaker gradient flow.</li>
+        </ul>
+        </li>
+
+        <li>ResNet employs skip connections to strenthen the gradient flows between layers.
+        <ul>
+            <li>However, a ResNet block increases computational cost.</li>
+        </ul>
+        </li>
+
+        <li>The Skip-Layer channel-wise Excitation (SLE) module is derived from a ResNet block. There are two aspects that are new:
+        <ol>
+            <li>Channel-wise multiplication instead of addition.</li>
+
+            <li>Skip connections are used between resolutions.
+            <ul>
+                <li>Previous works, including ResNet, only use skip connections within the same resolutions.</li>
+            </ul>
+            </li>
+        </ol>
+        </li>
+
+        <li>Formally, the SLE module is given by:
+        \begin{align*}
+            \ve{y} = \mathcal{F}(\ve{x}_{\mathrm{low}},  \mathbf{W}) \otimes \ve{x}_{\mathrm{high}}.
+        \end{align*}
+        where
+        <ul>
+            <li>$\ve{y}$ is the output feature tensor.</li>
+            <li>$\ve{x}_{\mathrm{low}}$ and $\ve{x}_{\mathrm{high}}$ are input feature tensors at different resolutions.
+            <ul>
+                <li>$\ve{x}_{\mathrm{low}}$ is of size $c_{\mathrm{low}} \times s_{\mathrm{low}} \times s_{\mathrm{low}}$</li>
+                <li>$\ve{x}_{\mathrm{high}}$ is of size $c_{\mathrm{high}} \times s_{\mathrm{high}} \times s_{\mathrm{high}}$</li>
+            </ul>
+            </li>
+            <li>$\ve{W}$ is the weights of the SLE module, which is to be learned.</li>
+            <li>The function $\mathcal{F}$ is defined as follows:
+            <table class="table table-bordered">
+                <tr>
+                    <td><b>Step</b></td>
+                    <td><b>Output size</b></td>
+                </tr>
+                <tr>
+                    <td>$\ve{x}_0 = \mathrm{AdaptiveAveragePooling}(\ve{x}_{\mathrm{low}})$
+                    <a href="https://pytorch.org/docs/stable/generated/torch.nn.AdaptiveAvgPool2d.html"><br>[Link to the function in PyTorch.]</a>
+                    </td>
+                    <td>$c_{\mathrm{low}} \times 4 \times 4$</td>                    
+                </tr>
+                <tr>
+                    <td>$\ve{x}_1 = \mathrm{Conv}(\ve{x}_0)$<br>
+                    (kernel size = 4, stride = 1, padding = 0)
+                    </td>
+                    <td>$c_{\mathrm{low}} \times 1 \times 1$</td>
+                </tr>
+                <tr>
+                    <td>$\ve{x}_2 = \mathrm{LeakyReLU}(\ve{x}_1)$
+                    </td>
+                    <td>$c_{\mathrm{low}} \times 1 \times 1$</td>
+                </tr>
+                <tr>
+                    <td>$\mathcal{F} = \mathrm{Conv}(\ve{x}_2)$<br>
+                    (kernel size = 1, stride = 1, padding = 0)</td>
+                    <td>$c_{\mathrm{high}} \times 1 \times 1$</td>
+                </tr>
+            </table>            
+            </li>
+            <li>The operator $\otimes$ is the element-wise multiplication operator with the usual broadcasting semantics.
+            <ul>
+                <li>Note that $\mathcal{F}(\ve{x}_{\mathrm{low}}, \mathbf{W})$ would be broadcasted to $c_{\mathrm{high}} \times s_{\mathrm{high}} \times s_{\mathrm{high}}$ before the actual multiplication.</li>
+            </ul>
+            </li>
+        </ul>
+        </li>
+
+        <li>SLE resembles the Squeeze-and-Excitation (SE) module proposed by Hu et al. <a href="https://arxiv.org/abs/1709.01507">[2018]</a>.
+        <ul>
+            <li>SE operates within one feature tensor as a self-gating module.</li>
+
+            <li>SLE are used between feature tensors of different resolutions.</li>
+        </ul>
+        </li>
+
+        <li>Channel-wise multiplication is similar to instance normalization <a href="https://arxiv.org/abs/1607.08022">[Ulyanov et al. 2016]</a>, which is used in style transfer.</li>
+
+        <li>The paper observes that channel-wise scaling is more likely to alter style rather than content.
+        <ul>
+            <li>Replacing $\ve{x}_{\mathrm{low}}$ with one from another sample leads to an image with content unchanged by style from the other sample.</li>
+        </ul>
+        </li>
+    </ul>
+
+    <h3>2.2 &nbsp; Generator Architecture</h3>
+
+    <ul>
+        <li>Let's start with the generator without any skip connetions.
+
+        <table class="table table-bordered">
+            <tr>
+                <td><b>Step</b></td>
+                <td><b>Output Size</b></td>            
+            </tr>
+            <tr>
+                <td>$\ve{z}$ = latent code</td>
+                <td>$256 \times 1 \times 1$</td>
+            </tr>
+            <tr>
+                <td>$\ve{y}_4 = \mathrm{InitialBlock}(\ve{z}, 1024)$</td>
+                <td>$1024 \times 4 \times 4$</td>
+            </tr>
+            <tr>
+                <td>$\ve{y}_8 = \mathrm{UpBlock}(\ve{y}_4, 512)$</td>
+                <td>$512 \times 8 \times 8$</td>
+            </tr>
+            <tr>
+                <td>$\ve{y}_{16} = \mathrm{UpBlock}(\ve{y}_8, 256)$</td>
+                <td>$256 \times 16 \times 16$</td>
+            </tr>
+            <tr>
+                <td>$\ve{y}_{32} = \mathrm{UpBlock}(\ve{y}_{16}, 128)$</td>
+                <td>$128 \times 32 \times 32$</td>
+            </tr>
+            <tr>
+                <td>$\ve{y}_{64} = \mathrm{UpBlock}(\ve{y}_{64}, 128)$</td>
+                <td>$128 \times 64 \times 64$</td>
+            </tr>
+            <tr>
+                <td>$\ve{y}_{128} = \mathrm{UpBlock}(\ve{y}_{64}, 64)$</td>
+                <td>$64 \times 128 \times 128$</td>            </tr>
+            <tr>
+                <td>$\ve{y}_{256} = \mathrm{UpBlock}(\ve{y}_{128}, 32)$</td>
+                <td>$32 \times 256 \times 256$</td>
+            </tr>
+            <tr>
+                <td>$\ve{y}_{512} = \mathrm{UpBlock}(\ve{y}_{256}, 16)$</td>
+                <td>$16 \times 512 \times 512$</td>
+            </tr>
+            <tr>
+                <td>$\ve{y}_{1024} = \mathrm{UpBlock}(\ve{y}_{512}, 8)$</td>
+                <td>$8 \times 1024 \times 1024$</td>
+            </tr>
+            <tr>
+                <td>$\ve{y} = \mathrm{Tanh}(\mathrm{Conv}(\ve{y}_{1024}))$<br>
+                (kernel size = 1, stride = 1, padding = 0)</td>
+                <td>$3 \times 1024 \times 1024$</td>
+            </tr>
+        </table>
+        </li>   
+
+        <li>$\mathrm{InitialBlock}(\ve{z}, c_{\mathrm{out}})$ turns the given latent code $\ve{z}$ into a $4 \times 4$ image with $c_{\mathrm{out}}$ channels.
+        <table class="table table-bordered">
+            <tr>
+                <td><b>Step</b></td>
+                <td><b>Output Size</b></td>
+            </tr>
+            <tr>
+                <td>$\ve{z}$ = input</td>
+                <td>$c_{\mathrm{in}} \times 1 \times 1$</td>
+            </tr>
+            <tr>
+                <td>$\ve{y}_0 = \mathrm{ConvTranspose}(\ve{z})$<br>
+                (kernel size = 4, stride = 1, padding = 0)</td>
+                <td>$(2c_{\mathrm{out}}) \times 4 \times 4$</td>
+            </tr>
+            <tr>
+                <td>$\ve{y}_2 = \mathrm{BatchNorm}(\mathrm{y}_1)$</td>
+                <td>$(2c_{\mathrm{out}}) \times 4 \times 4$</td>
+            </tr>
+            <tr>
+                <td>$\ve{y} = \mathrm{GLU}(\mathrm{y}_2)$</td>
+                <td>$c_{\mathrm{out}} \times 4 \times 4$</td>
+            </tr>
+        </table>
+        where
+        \begin{align*}
+            \mathrm{GLU}(\ve{x}) = \mathrm{x}[0:c_{\mathrm{out}},:,:] \otimes \mathrm{Sigmoid}(\ve{x}[c_{\mathrm{out}}:2c_{\mathrm{out}},:,:])
+        \end{align*}
+        </li>
+
+        <li>$\mathrm{UpBlock}(\ve{x}, \ve{c}_{\mathrm{out}})$ upsamples $\ve{x}$ to two times its spatial size and make the channel count to be $\ve{c}_{\mathrm{cout}}$.
+        <table class="table table-bordered">
+            <tr>
+                <td><b>Step</b></td>
+                <td><b>Output Size</b></td>
+            </tr>
+            <tr>
+                <td>$\ve{x}$ = input</td>
+                <td>$c_{\mathrm{in}} \times s \times s$</td>
+            </tr>
+            <tr>
+                <td>$\ve{y}_0 = \mathrm{NearestNeighborUpsample}(\ve{x})$</td>
+                <td>$c_{\mathrm{in}} \times (2s) \times (2s)$</td>                
+            </tr>
+            <tr>
+                <td>$\ve{y}_1 = \mathrm{Conv}(\ve{y}_0)$<br>
+                (kernel size = 3, stride = 1, padding = 1)
+                </td>
+                <td>$(2c_{\mathrm{out}}) \times (2s) \times (2s)$</td>
+            </tr>
+            <tr>
+                <td>$\ve{y}_2 = \mathrm{BatchNorm}(\ve{y}_1)$</td>
+                <td>$(2c_{\mathrm{out}}) \times (2s) \times (2s)$</td>
+            </tr>
+            <tr>
+                <td>$\ve{y} = \mathrm{GLU}(\ve{y}_2)$</td>
+                <td>$c_{\mathrm{out}} \times (2s) \times (2s)$</td>
+            </tr>
+        </table>
+        </li>
+
+        <li>The paper now adds skip connections with SLE modules.
+        <ul>
+            <li>$\ve{y}_{128}$ gets modified by $\ve{y}_{8}$</li>
+            <li>$\ve{y}_{256}$ gets modified by $\ve{y}_{16}$</li>
+            <li>$\ve{y}_{512}$ gets modified by $\ve{y}_{32}$</li>
+        </ul>
+        The network becomes as follows:
+        <table class="table table-bordered">
+            <tr>
+                <td><b>Step</b></td>
+                <td><b>Output Size</b></td>            
+            </tr>
+            <tr>
+                <td>$\ve{z}$ = latent code</td>
+                <td>$256 \times 1 \times 1$</td>
+            </tr>
+            <tr>
+                <td>$\ve{y}_4 = \mathrm{InitialBlock}(\ve{z}, 1024)$</td>
+                <td>$1024 \times 4 \times 4$</td>
+            </tr>
+            <tr>
+                <td>$\ve{y}_8 = \mathrm{UpBlock}(\ve{y}_4, 512)$</td>
+                <td>$512 \times 8 \times 8$</td>
+            </tr>
+            <tr>
+                <td>$\ve{y}_{16} = \mathrm{UpBlock}(\ve{y}_8, 256)$</td>
+                <td>$256 \times 16 \times 16$</td>
+            </tr>
+            <tr>
+                <td>$\ve{y}_{32} = \mathrm{UpBlock}(\ve{y}_{16}, 128)$</td>
+                <td>$128 \times 32 \times 32$</td>
+            </tr>
+            <tr>
+                <td>$\ve{y}_{64} = \mathrm{UpBlock}(\ve{y}_{64}, 128)$</td>
+                <td>$128 \times 64 \times 64$</td>
+            </tr>
+            <tr>
+                <td bgcolor="#ffdddd">$\ve{y}_{128} = \mathrm{SLE}\Big(\ve{y}_8, \mathrm{UpBlock}(\ve{y}_{64}, 64) \Big)$</td>
+                <td>$64 \times 128 \times 128$</td>
+            </tr>
+            <tr>
+                <td bgcolor="#ffdddd">$\ve{y}_{256} = \mathrm{SLE}\Big(\ve{y}_{16}, \mathrm{UpBlock}(\ve{y}_{128}, 32)\Big)$</td>
+                <td>$32 \times 256 \times 256$</td>
+            </tr>
+            <tr>
+                <td bgcolor="#ffdddd">$\ve{y}_{512} = \mathrm{SLE}\Big(\ve{y}_{32}, \mathrm{UpBlock}(\ve{y}_{256}, 16)\Big)$</td>
+                <td>$16 \times 512 \times 512$</td>
+            </tr>
+            <tr>
+                <td>$\ve{y}_{1024} = \mathrm{UpBlock}(\ve{y}_{512}, 8)$</td>
+                <td>$8 \times 1024 \times 1024$</td>
+            </tr>
+            <tr>
+                <td>$\ve{y} = \mathrm{Tanh}(\mathrm{Conv}_{1 \times 1}(\ve{y}_{1024}))$</td>
+                <td>$3 \times 1024 \times 1024$</td>
+            </tr>
+        </table>
+        Here, $\mathrm{SLE}(\ve{x}_{\mathrm{low}}, \mathrm{x}_{\mathrm{high}})$ is the skip-layer channel-wise excitation module defined in Section 2.1.
+        </li>
+    </ul>
+
+    <h3>2.3 Self-Supervised Discriminator</h3>
+
+    <ul>
+        <li>The discriminator $D$ is treated as an encoder and is trained with a number of decoders to form an auto-encoder.
+        <ul>
+            <li>This forces the discriminator to extract useful features that can be used to reconstruct the original image.</li>            
+        </ul>
+        </li>
+
+        <li>The most confusing part is that the algorithm that the paper describes does not agree with what the code does. I'm going to describe what the code does instead.</li>
+
+        <li>The discriminator is quite complicated.
+        <ul>
+            <li><b>Inputs:</b>
+            <ul>
+                <li>A $1024 \times 1024$ RGB image.</li>
+                <li>If the image is a real image, a designation of which quadrant of the image to reconstruct. The quadrant is picked randomly by the training process.</li>
+            </ul>
+            </li>
+            <li><b>Outputs:</b>
+            <ul>
+                <li>A $50$-element vector of reality scores.</li>
+
+                <li>When the input is a real image, it produces 3 reconstructions:
+                <ul>
+                    <li>Two $128 \times 128$ reconstructions of the scaled down version of the $1024 \times 1024$ input image.
+                    <ul>
+                        <li>One created from processing the $1024 \times 1024$ input image directly.</li>
+
+                        <li>Another created from processing the $1024 \times 1024$ image, scaled down to $128 \times 128$.</li>
+                    </ul>
+                    </li>
+
+                    <li>A $128 \times 128$ reconstruction of a scaled down version of the designated quadrant of the $1024 \times 1024$ image.</li>
+                </ul>
+                </li>
+            </ul>
+            </li>
+        </ul>
+        </li>
+
+        <li>To produce the $50$-element vector of reality scores. The discriminator uses two pathways, each produces $25$ elements.
+        <ul>
+            <li>The <i>big</i> pathway processes the $1024 \times 1024$ input image directly. It has skip-layer connections.</li>
+
+            <li>The <i>small</i> pathway processes the $1024 \times 1024$ input image scaled down to $128 \times 128$. It does not have skip connections.</li>
+        </ul>
+        </li>
+
+        <li>Let's look at the small pathway first because it is easier to describe.
+        <table class="table table-bordered">
+            <tr>
+                <td><b>Step</b></td>
+                <td><b>Output Size</b></td>
+            </tr>
+            <tr>
+                <td>$\ve{x}$ = input</td>
+                <td>$3 \times 1024 \times 1024$</td>
+            </tr>
+            <tr>
+                <td>$\ve{x}' = \mathrm{DownSample}(\ve{x})$</td>
+                <td>$3 \times 128 \times 128$</td>
+            </tr>
+            <tr>
+                <td>
+                    $\ve{a}_{64} = \mathrm{LeakyReLU}(\mathrm{Conv}(\ve{x}'))$<br>
+                    (kernel size = 4, stride = 2, padding = 1)
+                </td>
+                <td>$32 \times 64 \times 64$</td>
+            </tr>
+            <tr>
+                <td>
+                    $\ve{a}_{32} = \mathrm{SmallDownBlock}(\ve{a}_{64})$
+                </td>
+                <td>$64 \times 32 \times 32$</td>
+            </tr>
+            <tr>
+                <td>
+                    $\ve{a}_{16} = \mathrm{SmallDownBlock}(\ve{a}_{32})$
+                </td>
+                <td>$128 \times 16 \times 16$</td>
+            </tr>
+            <tr>
+                <td>
+                    $\ve{a}_{8} = \mathrm{SmallDownBlock}(\ve{a}_{16})$
+                </td>
+                <td>$256 \times 8 \times 8$</td>
+            </tr>
+            <tr>
+                <td>
+                    $\ve{a}_5 = \mathrm{Conv}(\ve{a}_{8})$<br>
+                    (kernel size = 4, stride = 1 padding = 0)
+                </td>
+                <td>$1 \times 5 \times 5$</td>
+            </tr>
+            <tr>
+                <td>
+                    $\ve{a} = \mathrm{Flatten}(\ve{a}_5)$<br>                    
+                </td>
+                <td>$25$</td>
+            </tr>
+        </table>
+        The $\mathrm{SmallDownBlock}$ function is as follows:
+        <table class="table table-bordered">
+            <tr>
+                <td><b>Step</b></td>
+                <td><b>Output Size</b></td>
+            </tr>
+            <tr>
+                <td>$\ve{x}$ = input</td>
+                <td>$c \times s \times s$</td>
+            </tr>
+            <tr>
+                <td>
+                    $\ve{y}_0 = \mathrm{Conv}(\ve{x})$<br>
+                    (kernel size = 4, stride = 2, padding = 1)
+                </td>
+                <td>$(2c) \times (s/2) \times (s/s)$</td>
+            </tr>
+            <tr>
+                <td>
+                    $\ve{y}_1 = \mathrm{BatchNorm}(\ve{y}_0)$<br>
+                </td>
+                <td>$(2c) \times (s/2) \times (s/s)$</td>
+            </tr>
+            <tr>
+                <td>
+                    $\ve{y} = \mathrm{LeakyReLU}(\ve{y}_1)$<br>
+                </td>
+                <td>$(2c) \times (s/2) \times (s/s)$</td>
+            </tr>
+        </table>
+        </li>
+
+        <li>Now, for the big pathway
+        <table class="table table-bordered">
+            <tr>
+                <td><b>Step</b></td>
+                <td><b>Output Size</b></td>
+            </tr>
+            <tr>
+                <td>$\ve{x}$ = input</td>
+                <td>$3 \times 1024 \times 1024$</td>
+            </tr>
+            <tr>
+                <td>$\ve{b}_{256} = \mathrm{BigFirstBlock}(\ve{x})$</td>
+                <td>$16 \times 256 \times 256$</td>
+            </tr>
+            <tr>
+                <td>$\ve{b}_{128} = \mathrm{BigDownBlock}(\ve{b}_{256})$</td>
+                <td>$32 \times 128 \times 128$</td>
+            </tr>
+            <tr>
+                <td>$\ve{b}_{64} = \mathrm{BigDownBlock}(\ve{b}_{128})$</td>
+                <td>$64 \times 64 \times 64$</td>
+            </tr>
+            <tr>
+                <td>$\ve{b}_{32} = \mathrm{SLE}\Big(\ve{b}_{256}, \mathrm{BigDownBlock}(\ve{b}_{64})\Big)$</td>
+                <td>$128 \times 32 \times 32$</td>
+            </tr>
+            <tr>
+                <td>$\ve{b}_{16} = \mathrm{SLE}\Big(\ve{b}_{128}, \mathrm{BigDownBlock}(\ve{b}_{32})\Big)$</td>
+                <td>$256 \times 16 \times 16$</td>
+            </tr>
+            <tr>
+                <td>$\ve{b}_{8} = \mathrm{SLE}\Big(\ve{b}_{64}, \mathrm{BigDownBlock}(\ve{b}_{16})\Big)$</td>
+                <td>$512 \times 8 \times 8$</td>
+            </tr>
+            <tr>
+                <td>$\ve{b} = \mathrm{BigLastBlock}(\ve{b}_{8})$</td>
+                <td>$25$</td>
+            </tr>
+        </table>
+        where
+        <ul>
+            <li>$\mathrm{BigFirstBlock}$ is given by:
+            <table class="table table-bordered">
+                <tr>
+                    <td><b>Step</b></td>
+                    <td><b>Output Size</b></td>
+                </tr>
+                <tr>
+                    <td>
+                        $\ve{x}$ = input
+                    </td>
+                    <td>
+                        $3 \times 1024 \times 1024$
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        $\ve{y}_0 = \mathrm{Conv}(\ve{x})$<br>
+                        (kernel size = 4, stride = 2, padding = 1)                        
+                    </td>
+                    <td>
+                        $8 \times 512, 512$
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        $\ve{y}_1 = \mathrm{LeakyReLU}(\ve{y}_0)$
+                    </td>
+                    <td>
+                        $8 \times 512, 512$
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        $\ve{y}_2 = \mathrm{Conv}(\ve{y}_1)$<br>
+                        (kernel size = 4, stride = 2, padding = 1)
+                    </td>
+                    <td>
+                        $16 \times 256, 256$
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        $\ve{y}_3 = \mathrm{BatchNorm}(\ve{y}_2)$
+                    </td>
+                    <td>
+                        $16 \times 256, 256$
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        $\ve{y} = \mathrm{LeakyReLU}(\ve{y}_3)$
+                    </td>
+                    <td>
+                        $16 \times 256, 256$
+                    </td>
+                </tr>
+            </table>
+            </li>
+            <li>$\mathrm{BigDownBlock}$ is given by:
+            <table class="table table-bordered">
+                <tr>
+                    <td><b>Step</b></td>
+                    <td><b>Output Size</b></td>
+                </tr>
+                <tr>
+                    <td>
+                        $\ve{x}$ = input
+                    </td>
+                    <td>
+                        $c \times s \times s$
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        $\ve{g}_0 = \mathrm{LeakyReLU}\Big(\mathrm{BatchNorm}\big(\mathrm{Conv}(\ve{x})\big)\Big)$<br>
+                        (kernel size = 4, stride = 2, padding = 1)
+                    </td>
+                    <td>
+                        $(2c) \times (s/2) \times (s/2)$
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        $\ve{g}_1 = \mathrm{LeakyReLU}\Big(\mathrm{BatchNorm}\big(\mathrm{Conv}(\ve{g}_0)\big)\Big)$<br>
+                        (kernel size = 3, stride = 1, padding = 1)
+                    </td>
+                    <td>
+                        $(2c) \times (s/2) \times (s/2)$
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        $\ve{h}_0 = \mathrm{AveragePool}(\ve{x})$
+                    </td>
+                    <td>
+                        $c \times (s/2) \times (s/2)$
+                    </td>
+                </tr>
+                <tr>
+                    <td>$\ve{h}_1 = \mathrm{LeakyReLU}\Big(\mathrm{BatchNorm}\big(\mathrm{Conv}(\ve{h}_0)\big)\Big)$<br>
+                    (kernel size = 1, stride = 1, padding = 0)
+                    </td>
+                    <td>
+                        $(2c) \times (s/2) \times (s/2)$
+                    </td>
+                </tr>
+                <tr>
+                    <td>$\ve{y} = (\ve{g}_1 + \ve{h}_1) / 2$</td>
+                    <td>
+                        $(2c) \times (s/2) \times (s/2)$
+                    </td>
+                </tr>
+            </table>
+            </li>
+            <li>$\mathrm{BigLastBlock}$ is given by:
+            <table class="table table-bordered">
+                <tr>
+                    <td><b>Step</b></td>
+                    <td><b>Output Size</b></td>
+                </tr>
+                <tr>
+                    <td>$\ve{x}$ = input</td>
+                    <td>$512 \times 8 \times 8$</td>
+                </tr>
+                <tr>
+                    <td>
+                        $\ve{y}_0 = \mathrm{LeakyReLU}\Big(\mathrm{BatchNorm}\big(\mathrm{Conv}(\ve{x})\big)\Big)$<br>
+                        (kernel size = 1, stride = 1 padding = 0)
+                    </td>
+                    <td>
+                        $1024 \times 8 \times 8$
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        $\ve{y}_1 = \mathrm{Conv}(\ve{y}_0)$<br>
+                        (kernel size = 4, stride = 1 padding = 0)
+                    </td>
+                    <td>
+                        $1 \times 5 \times 5$
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        $\ve{y} = \mathrm{Flatten}(\ve{y}_1)$
+                    </td>
+                    <td>
+                        $25$
+                    </td>
+                </tr>
+            </table>
+            </li>
+        </ul>
+        </li>
+
+        <li>
+            To create the three reconstructions, the paper employs three separate instances of decoders, all with the following same architecture:
+            <table class="table table-bordered">
+                <tr>
+                    <td><b>Step</b></td>
+                    <td><b>Output Size</b></td>
+                </tr>
+                <tr>
+                    <td>$\ve{x}$ = input</td>
+                    <td>$c \times 8 \times 8$</td>
+                </tr>
+                <tr>
+                    <td>
+                        $\ve{y}_0 = \mathrm{UpBlock}(\ve{x}, 256)$
+                    </td>
+                    <td>
+                        $256 \times 16 \times 16$
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        $\ve{y}_1 = \mathrm{UpBlock}(\ve{y}_0, 128)$
+                    </td>
+                    <td>
+                        $128 \times 32 \times 32$
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        $\ve{y}_2 = \mathrm{UpBlock}(\ve{y}_1, 128)$
+                    </td>
+                    <td>
+                        $128 \times 64 \times 64$
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        $\ve{y}_3 = \mathrm{UpBlock}(\ve{y}_2, 64)$
+                    </td>
+                    <td>
+                        $64 \times 128 \times 128$
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        $\ve{y}_4 = \mathrm{Conv}(\ve{y}_3)$<br>
+                        (kernel size = 3, stride = 1, padding = 1)
+                    </td>
+                    <td>
+                        $3 \times 128 \times 128$
+                    </td>
+                </tr>
+                <tr>
+                    <td>$\ve{y} = \mathrm{Tanh}(\ve{y_4})$</td>
+                    <td>
+                        $3 \times 128 \times 128$
+                    </td>
+                </tr>
+            </table>
+            Let us denote the three decoders by $\mathrm{Decoder}_0$, $\mathrm{Decoder}_1$, and $\mathrm{Decoder}_2$.
+        </li>
+        
+        <li>
+            The three reconstructs are created as follows:
+            <ul>
+                <li>The reconstruction that is computed directly the $1024 \times 1024$ input image is computed as:
+                \begin{align*}
+                    \tilde{\ve{x}}_0 &= \mathrm{Decoder}_0(\ve{b}_8)
+                \end{align*}
+                where $\ve{b}_8$ is taken from the big pathway.
+                </li>
+
+                <li>The reconstruction that is computed from the scaled down version of the input image is computed as:
+                \begin{align*}
+                    \tilde{\ve{x}}_1 &= \mathrm{Decoder}_1(\ve{a}_8)
+                \end{align*}
+                where $\ve{a}_8$ is taken from the small pathway.
+                </li>
+
+                <li>The reconstruction of the designated quadrant of the input image is computed as:
+                \begin{align*}
+                    \tilde{\ve{x}}_2 &= \mathrm{Decoder}_2\big(\mathrm{Quadrant}(\ve{b}_8)\big)
+                \end{align*}
+                where $\mathrm{Quadrant}(\ve{b}_8)$ is the designated quadrant of $\ve{b}_8$.
+                </li>
+            </ul>
+        </li>
+
+        <li>
+            To measure the quality of reconstruction between two images, the paper uses the LPIPS metric constructed from a VGG network:
+            \begin{align*}
+                \mathcal{L}_{\mathrm{recon}}(\ve{x})
+                &= \mathcal{L}_{\mathrm{LPIPS}}(\mathrm{DownScale}(\ve{x}), \tilde{\ve{x}}_0) \\
+                &\quad + \mathcal{L}_{\mathrm{LPIPS}}(\mathrm{DownScale}(\ve{x}), \tilde{\ve{x}}_1)\\
+                &\quad + \mathcal{L}_{\mathrm{LPIPS}}(\mathrm{DownScale}(\mathrm{Quadrant}(\ve{x})), \tilde{\ve{x}}_2).
+            \end{align*}
+            There's a lot of details on this. Look at the code.
+        </li>
+
+        <li>
+            The paper uses the hinge version of the adversarial loss to train the GAN <a href="https://arxiv.org/abs/1705.02894">[Lim and Ye 2017]</a>:
+            \begin{align*}
+            \mathcal{L}_D
+            &= E_{\ve{x} \sim p_{\mathrm{real}}}[ \max(0, 1 - D(\ve{x}))] - E_{\ve{z} \sim \mathcal{N}(0,1)} [\min(0, -1 - D(G(\ve{z})))] + E_{\ve{x} \sim p_{\mathrm{real}}}[\mathcal{L}_{\mathrm{recon}}(\ve{x})] \\
+            \mathcal{L}_G &= -E_{\ve{z} \sim \mathcal{N}(0,1)}[D(G(\ve{z}))] 
+            \end{align*}
+        </li>
+
+        <li>Here are the discrepancies between the paper and the code.
+        <ul>
+            <li>The paper (Figure 4, in particular) says that there are two decoders, but the code has three.</li>
+
+            <li>The paper does not mention the small pathway. Figure 4 only contains the big pathway.</li>
+
+            <li>The big pathway in Figure 4 does not show any skip-layer connections.</li>
+
+            <li>The paper says that it randomly crops the original image to get a $128 \times 128$ image. It also crops $\ve{b}_8$ by $\frac{1}{8}$ of its height and width and feeds the result to the decoder to reconstruct a $128 \times 128$ image. However, this does not make sense because this would produce a $2 \times 2$ tensor, which cannot be converted to a $128 \times 128$ image with 4 $\mathrm{UpBlock}$s. The code, instead, works a random quadrant of the input image and uses a random quadrant of $\ve{b}_8$ to regenerate the scaled down version of the quadrant.
+            <ul>
+                <li>The paper claims that the use of random crops of $\ve{b}_8$ would allow the discriminator to learn about detailed textures, but this does not seem to be true because the quadrants are scaled down by a factor of $4$.</li>
+            </ul>
+            </li>
+        </ul>
+        </li>
+    </ul>
+
+    <hr>
+    <div class="page-header"></div>
+    <p>Last modified: 2021/08/07</p>    
+</div>
+
+<script type="text/javascript">
+$.bigfoot();
+</script>
+
+</body>
+</html>
+

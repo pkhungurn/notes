@@ -1,0 +1,970 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+\usepackage{verbatim}
+\usepackage{hyperref}
+\usepackage{algpseudocode}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\def\sc#1{\dosc#1\csod}
+\def\dosc#1#2\csod{{\rm #1{\small #2}}}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\Dee}{\mathrm{D}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\Var}{\mathrm{Var}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\ves}[1]{\boldsymbol{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+\newcommand{\ov}[1]{\overline{#1}}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+\title{A Primer on Discrete Time Markov Chains}
+\author{Pramook Khungurn}
+
+\begin{document}
+\maketitle
+
+This is a primer on discrete-time Markov chains. The materials are taken from a number of sources \cite{Haggstrom:2002,Lee:2012a,Lee:2012b,Kennedy:2016,Tolver:2016}. To keep the note relatively short, later sections will contain fewer and fewer proofs. This means that the treatment is the most thorough in the finite state space case and becomes more cursory as the state space becomes more complex.
+
+\section{Finite State Spaces}
+
+\subsection{Basic Definitions and Properties}
+
+\begin{itemize}
+  \item \begin{definition}
+    A (discrete-time) {\bf stochastic process} is a sequence of random variables $(X_0, X_1, \dotsc)$.
+  \end{definition}
+
+  \item In this section, we are interested in stochastic processes on a finite state space $S = \{s_1, s_2, \dotsc, s_k\}$. In other words, $X_i \in S$ for all $i$.
+  
+  \item \begin{definition}
+    We say that a stochastic process is {\bf memoryless} if, for all $t \geq 1$, the probability distribution of $X_t$ depends only on the value of $X_{t-1}$ and not any other past random variables. In other words,
+    \begin{align*}
+        \Pr(X_t = s_j | X_0 = s_{i_0}, X_1 = s_{i_1}, \dotsc, X_{t-2} = s_{i_{t-1}}, X_{t-1} = s_i)
+        = \Pr(X_t = s_j | X_{t-1} = s_i).
+    \end{align*}
+  \end{definition}
+
+  \item \begin{definition}
+    A {\bf Markov chain} is a memoryless stochastic process.
+  \end{definition}
+
+  \item \begin{proposition}[Chapman--Kolmogorov equation]
+    For any $t \geq 0$, $a,b \geq 1$, and any $i$ and $j$, we have that
+    \begin{align*}
+        \Pr(X_{t+a+b}=s_j|X_t=s_i)
+        = \sum_{\ell=1}^k \Pr(X_{t+a+b}=s_j|X_{t+a}=s_\ell) \Pr(X_{t+a}=s_\ell|X_{t}=s_i).
+    \end{align*}
+    (It basically says that, in order to get from $s_i$ at time $t$ to $s_j$ at time $t+a+b$, we must pass through an intermediate state $s_\ell$ at time $t+a$.)
+  \end{proposition}
+
+  \item \begin{definition}
+    A Markov chain is said to be {\bf time homogenous} if the transition probabilities does not depend on time. In other words,
+    \begin{align*}
+        \Pr(X_t = s_j | X_{t-1} = s_i) = \Pr(X_{t'} = s_j | X_{t'-1} = s_i)
+    \end{align*}
+    for any $t$, $t'$, $i$ and $j$.
+  \end{definition}
+
+  \item We are only interested in time homogenous Markov chains in this note. So, when we mention a Marko chain, it is always time homogenous.
+  
+  \item \begin{definition}
+    For a time-homogenous Markov chain, its {\bf transition matrix} $P \in \Real^{k \times k}$ is the matrix whose entries are given by:
+    \begin{align*}
+        P_{ij} = \Pr(X_t = s_j | X_{t-1} = s_i)
+    \end{align*}
+    for any $t \geq 1$.
+  \end{definition}
+
+  \item The transition matrix has the following properties.
+  \begin{enumerate}
+    \item Its entries are non-negative.
+    \item Entries in each row add up to 1. In other words,
+    $\sum_{j=1}^k P_{ij} = 1$
+    for all $i$.
+  \end{enumerate}
+
+  \item For a time-homogeneous Markov chain, the Chapman--Kolmogorov equation can be rewritten as simply $P^{a+b} = P^a P^b$.
+  
+  \item We can represent the distribution of $X^t$ by a row vector $\ves{\mu}^{(t)}$ with
+  \begin{align*}
+      \ves{\mu}^{(t)} 
+      &= (\mu^{(t)}_1, \mu^{(t)}_2, \dotsc, \mu^{(t)}_k) 
+      = \Big( \Pr(X_t = s_1), \Pr(X_t = s_2), \dotsc, \Pr(X_t = s_k) \Big).
+  \end{align*}
+
+  \item \begin{proposition}
+    We have that
+    \begin{align*}
+      \ves{\mu}^{(t)} = \ves{\mu}^{(0)} P^t.
+    \end{align*}
+    for all $t \geq 0$.
+  \end{proposition}  
+\end{itemize}
+
+\subsection{Asymptotic Behavior}
+
+\begin{itemize}
+  \item We are now interested in determining the long term behavior of a Markov chain. In other words, as $t \rightarrow \infty$, what does $\ves{\mu}^{(t)}$ look like? Does it converge to anything? If so, under what conditions?
+  
+  \item The conclusion is this: if the Markov chain is ``irreducible'' and ``aperiodic,'' there is a unique ``stationary distribution'' that $\ves{\mu}^{(t)}$ converges to as $t \rightarrow \infty$ no matter what $\ves{\mu}^{(0)}$ is. We will discuss what the quoted terms mean in this section.
+\end{itemize}
+
+\subsubsection{Irreducibility}
+
+\begin{itemize}
+  \item \begin{definition}
+    We say that a state $s_i$ {\bf communicates} with another state $s_j$ if there is a positive probability that we can reach $s_j$ starting from $s_i$. In other words, there exists an $a$ such that
+    \begin{align*}
+        \Pr(X_{t+a} = s_j|X_t=s_i) > 0
+    \end{align*}
+    for all $t \geq 0$. (Notice that the choice of $t$ is irrelevant here because a Markov chain is memoryless and time homogeneous.) We write $s_i \rightarrow s_j$ to denote the fact that $s_i$ communicates with $s_j$.
+  \end{definition}
+
+  \item \begin{definition}
+    If $s_i \rightarrow s_j$ and $s_j \rightarrow s_i$, we say that $s_i$ and $s_j$ {\bf intercommunicates}, and we denote this fact by $s_i \leftrightarrow s_j$. Moreover, the relation ``intercommunicates with'' between states is an equivalence relation. So, it partitions $\mathcal{S}$ into equivalence classes which are called {\bf communication classes}.
+  \end{definition}
+
+  \item \begin{definition}
+    A Markov chain is said to be {\bf irreducible} if for all $s_i, s_j \in S$, we have that $s_i \leftrightarrow s_j$. (In other words, it has only one communication class.) Otherwise, we say that the Markov chain is {\bf reducible}.
+  \end{definition}
+
+  \item Given a Markov chain, we can construct its {\bf transition graph}. This is a directed graph where (1) $S$ is the vertex set, and (2) there is a directed edge from $s_i$ to $s_j$ if $P_{ij} > 0$. We often assign the weight of $P_{ij}$ to such an edge.
+  
+  \item \begin{proposition}
+    We have that $s_i \rightarrow s_j$ if and only if there is a directed path from $s_i$ to $s_j$ in the transition graph.
+  \end{proposition}
+
+  \item \begin{corollary}
+    Communication classes are strongly connected components\footnote{\url{https://en.wikipedia.org/wiki/Strongly_connected_component}} in the transition graph. (That is, there is a directed path betweeen every pair of states in a communication class.) A Markov chain is irreducible if and only if the entire transition graph is strongly connected.
+  \end{corollary}
+\end{itemize}
+
+\subsubsection{Aperiodity}
+
+\begin{itemize}
+  \item For any countable set $\{a_1, a_2, \dotsc \}$ of positive integers, we use $\mrm{gcd}\{ a_1, a_2, \dotsc \}$ to denote the greatest common divisor of $a_1, a_2, \dotsc$.
+  
+  \item \begin{definition}
+    For $s_i \in S$, the {\bf period} $d(s_i)$ is defined as:
+    \begin{align*}
+        d(s_i) = \mrm{gcd} \{ n \geq 1 : (P^n)[i,i] > 0 \}.
+    \end{align*}
+    In other words, it is the greatest common divisor of the number of steps where it is a positive probability to return to $s_i$ after starting from $s_i$.
+  \end{definition}
+
+  \item \begin{theorem}
+    All states in a communication class has the same period.
+  \end{theorem}
+
+  \begin{proof}
+    For any $i$, let
+    \begin{align*}
+        D_i = \{ n \geq 1 : \mbox{there is a loop starting from $s_i$ to $s_i$} \}.
+    \end{align*}
+    We have that $d(s_i) = \mrm{gcd}(D_i).$
+    
+    Let $s_i$ and $s_j$ be in the same communication class. Choose $k, l \in \mathbb{N}$ such that $(P^k)[i,j] > 0$ and $(P^l)[j,i] > 0$. Let $m = k + l$. We have that $m \in D_i$ and $m \in D_j$. Now, for any $n \in D_i$, we have that there is a loop of length $n+m$ from $s_j$ to $s_j$, and so $n+m \in D_j$. As a result, by the definition of $d(s_j)$, we have that $d(s_j) | m$ and $d(s_j) | (n+m)$, so it must be the case that $d(s_j) | n$. We have now shown that $d(s_j)$ divides all the numbers of $D_i$, so $d(s_j) \leq d(s_i)$ because $d(s_i)$ is the greatest number dividing all numbers in $D_i$. By swapping $i$ and $j$ in the argument we just used, we can show that $d(s_i) \leq d(s_j)$ as well. So, we can conclude that $d(s_i) = d(s_j)$.
+  \end{proof}
+
+  \item \begin{definition}
+    A state $s_i$ is said to be {\bf aperiodic} if $d(s_i) = 1$. A Markov chain is said to be {\bf aperiodic} if all of its states are aperiodic. Otherwise, it is said to be {\bf periodic}.
+  \end{definition}
+
+  \item \begin{theorem} \label{theorem:aperiodic-return-prob}
+    For an aperiodic Markov chain, there exists an $N < \infty$ such that $(P^n)[i,i] > 0$ for all $i \in \{1, 2, \dotsc, k\}$ and $n \geq N$.
+  \end{theorem}
+
+  \item The proof of the above theorem uses the following result from number theory.
+  
+  \item \begin{lemma} \label{lemma:asymptotic-integer-cover}
+    Let $A = \{ a_1, a_2, \dotsc \}$ be a countable set of positive integers with the following properties:
+    \begin{enumerate}
+      \item $\mrm{gcd}(A) = \mrm{gcd}\{ a_1, a_2, \dotsc \} = 1$.
+      \item For any $x,y \in A$, we have that $x+y \in A$ as well.
+    \end{enumerate}        
+    Then, there is an integer $N$ such that, if $n \geq N$, then $n \in A$.
+  \end{lemma}
+
+  \begin{proof}
+    Let us assume WLOG that $a_1 < a_2 < a_3 < \dotsb$. Define $g_i$ to be $\gcd\{ a_1, a_2, \dotsc, a_i \}$. We have that $a_1 = g_1 \geq g_2 \geq g_3 \geq \dotsb \geq 1$. Because $1 = \mrm{gcd}(A) = \min\{g_1, g_2, \dotsc \}$, there must be an $m$ such that $g_m = 1$ because $\{g_1, g_2, \dotsc \}$ is a non-empty set of positive integers so it must contain the minimal element according to the well-ordering principle.\footnote{\url{https://en.wikipedia.org/wiki/Well-ordering_principle}}
+
+    Because $\mrm{gcd}\{a_1, a_2, \dotsc, a_m\} = 1$, we can find $c_1, c_2, \dotsc, c_m \in \mathbb{Z}$, some of which may not be positive, such that
+    \begin{align*}
+        c_1 a_1 + c_2 a_2 + \dotsb + c_m a_m = 1.
+    \end{align*}
+    Now, we pick
+    \begin{align*}
+        N := a_1 \sum_{i=1}^m |c_i| a_i.
+    \end{align*}        
+    We will now show that $n \in A$ for any $n \geq N$. To do this, we will first show that $N$, $N+1$, $N+2$, $\dotsc$, $N+a_1-1$ are all members of $A$. So, let's consider $N+r$ where $0 \leq r < a_1$. We have that
+    \begin{align*}
+        N + r 
+        &= a_1 \sum_{i=1}^m |c_i| a_i + r\bigg( \sum_{i=1}^m c_i a_i \bigg) 
+        = \sum_{i=1}^m (a_1|c_i| + rc_i) a_i.
+    \end{align*}
+    Note that
+    \begin{align*}
+    a_1 |c_i| + r c_i \geq a_1 |c_i| - r |c_i| = (a_1 - r) |c_i| \geq |c_i| \geq 0.
+    \end{align*}
+    As a result, $N+r \in A$ because it can be written as a linear combination of $a_1$, $a_2$, $\dotsc$, $a_m$ with non-negative coefficients. 
+
+    Lastly, we have that, for any $n \geq N + a_1$, we can find $c \geq 1$ and $0 \leq r < a_1$ such that $n = N + r + ca_1$. Because $N + r \in A$ and $ca_1 \in A$, we have that $n \in A$ as well.
+  \end{proof}
+
+  \item \begin{proof}[Proof of Theorem~\ref{theorem:aperiodic-return-prob}] Define $A_i = \{ n \geq 1: (P^n)[i,i] > 0 \}$. Because $s_i$ is aperiodic, we have that $\gcd(A_i) = 1$. Now, let $x,y \in A_i$. By the Chapman--Kolmogorov equation, we have that,
+    \begin{align*}
+        (P^{x+y})[i,i] = \sum_{j=1}^k (P^x)[i,j] (P^y)[j,i] \geq (P^x)[i,i] (P^y)[i,i] > 0,
+    \end{align*}
+    so $x + y \in A_i$ as well. Applying Lemma~\ref{lemma:asymptotic-integer-cover} to $A_i$, we have that there exists $N_i$ such that $(P^n)[i,i] > 0$ for all $n \geq N_i$. We can now pick $N = \max\{ N_1, N_2, \dotsc, N_k \}$.
+  \end{proof}
+
+  \item \begin{corollary} \label{corollary:apriodic-irreducible-hitting-prob}
+    For an irreducible and aperiodic Markov chain, there exists an integer $M < \infty$ such that $(P^n)[i,j] > 0$ for all $i,j \in \{1,\dotsc,k\}$ and $n \geq M$.
+  \end{corollary}
+\end{itemize}
+
+\subsubsection{Hitting Time}
+
+\begin{itemize}
+  \item \begin{definition}
+    The {\bf hitting time} $T_{i}$ is the random variable
+    \begin{align*}
+        T_{i} = \min\{t \geq 1 : X_t = s_i \}.
+    \end{align*}        
+    That is, it is the first time that we reach $s_i$. Also, define 
+    \begin{align*}
+        T_{i,j} = \min\{ t \geq 1 : X_t = s_j | X_0 = s_i \}
+    \end{align*}
+    to be the first time we reach $s_i$ after starting from $s_j$.
+    We say that $T_i = \infty$ if we never reach $s_i$, and $T_{i,j} = \infty$ if we never reach $s_j$ from $s_i$.
+  \end{definition}
+
+  \item Note that, if $i \neq i'$, we have that $T_{i,j}$ and $T_{i',j}$ are defined on different probability spaces. So, they should not be mixed.
+  
+  \item \begin{definition}
+    The {\bf mean hitting time} $\tau_{i,j}$ is the expected value of the hitting time $T_{i,j}$:
+    \begin{align*}
+        \tau_{i,j} = E[T_{i,j}] = E[T_j | X_0 = x_i ].
+    \end{align*}
+  \end{definition}
+
+  \item \begin{lemma} \label{lemma:tau-is-finite}
+    For any irreducible and aperiodic Markov chain with finite state space, we have that $P(T_{i,j} < \infty) = 1$ for any two states $s_i$ and $s_j$. Moreover, $\tau_{i,j} = E[T_{i,j}] < \infty.$
+  \end{lemma}
+
+  \begin{proof}
+    By Corollary~\ref{corollary:apriodic-irreducible-hitting-prob}, there exists an integer $M$ such that all the entries of the matrix $P^M$ are strictly positive. Let $\alpha > 0$ be the minimum entry in the matrix $P^M$. So, for any two states $s_i$ and $s_j$, we have that
+    \begin{align*}
+        \Pr(T_{i,j} > M) \leq \Pr(X_M \neq s_j) \leq 1 - \alpha.
+    \end{align*}
+    Now, for any value of $X_M$, there is a probability of at least $\alpha$ that $X_{2M} = s_j$. Thus, for any event $A$ that only concerns outcomes up to $X_M$, we have that
+    \begin{align*}
+        \Pr(T_{i,j} > 2M | T_{i,j} > M)
+        &\leq \Pr(X_{2M} \neq s_j | T_{i,j} > M) \\
+        &= 1 - \Pr(X_{2M} = s_j | T_{i,j} > M) \\
+        &= 1 - \sum_{s_\ell} \Pr(X_{2M} = s_j|X_M=s_\ell) \Pr(X_M = s_\ell| T_{i,j} > M) \\
+        &\leq 1 - \sum_{s_\ell} \alpha \Pr(X_M = s_\ell| T_{i,j} > M) \\
+        &= 1 - \alpha. 
+    \end{align*}
+    So,
+    \begin{align*}
+        \Pr(T_{i,j} > 2M) 
+        &= \Pr(T_{i,j} > M)\Pr(T_{i,j} > 2M|T_{i,j}>M) 
+        \leq (1 - \alpha)^2.
+    \end{align*}
+    Repeating the argument, we can conclude that
+    \begin{align*}
+        \Pr(T_{i,j} > \ell M) = (1 - \alpha)^\ell.
+    \end{align*}
+    As a result, $\lim_{\ell \rightarrow \infty} \Pr(T_{i,j} > \ell M) = 0$, and $\Pr(T_{i,j} < \infty) = 1$.
+
+
+    Next, we have that
+    \begin{align*}
+        \tau_{i,j} &= E[T_{i,j}] = \sum_{n=1}^\infty \Pr(T_{i,j} \geq n) = \sum_{n=0}^\infty P(T_{i,j} > n) \\
+        &= \sum_{\ell = 0}^\infty \sum_{n = \ell M}^{(\ell+1)M-1} \Pr(T_{i,j} > n) \\
+        &\leq \sum_{\ell = 0}^\infty \sum_{n = \ell M}^{(\ell+1)M-1} \Pr(T_{i,j} > \ell M) 
+        = M \sum_{\ell = 0}^\infty \Pr(T_{i,j} > \ell M) \\
+        &\leq M \sum_{\ell = 0}^\infty (1-\alpha)^\ell = \frac{M}{\alpha} < \infty
+    \end{align*}
+    as required.
+  \end{proof}
+\end{itemize}
+
+\subsubsection{Stationary Distribution}
+
+\begin{itemize}
+  \item \begin{definition}
+    A distribution, represented by the row vector $\ves{\pi}$, is said to be a {\bf stationary distribution} of a Markov chan if $$\ves{\pi} P = \ves{\pi}.$$
+  \end{definition}
+
+  \item \begin{theorem} \label{theorem:stationary-distribution-existence-finite}
+    For an irreducible and aperiodic Markov chain over a finite state space, there exists a stionary distribution.
+  \end{theorem}
+
+  \begin{proof}
+    Assume that the Markov chain always starts at state $s_1$. Because the Markov chain is irreducible, we have that it will return to $s_1$ eventually according to Theorem 1.2.8, and the number of steps taken is $T_{1,1}$ according to the terminology of the last section. Once it returns to $s_1$, it is like starting over from scratch again and the cycle repeats. (So, it will return to $s_1$ an infinity number of times.)
+
+    The trick is to look in each cycle of departing from $s_1$ and returning to it. For each state $s_i$, we can count the number of times $R_i$ the process spends the state. The expected value of the ratio $R_i/T_{1,1}$ should remain unchanged if we apply one more transition step, and this will give us the stationary distribution.
+
+    More formally, define the random variable $R_i$ to be the number of times the Markov chain hits state $s_i$ before it returns to $s_1$ for the first time. Symbolically, $$R_i = \#\{ t : X_t = s_i \wedge t < T_{1,1} \}.$$ We have that
+    \begin{align*}
+        R_i = \sum_{t=0}^\infty I(X_t = s_i \wedge t < T_{1,1})
+    \end{align*}
+    where $I(\cdot)$ is the indicator function. Also,
+    \begin{align*}
+        \rho_i = E[R_i] = \sum_{t=0}^\infty \Pr(X_t = s_i \wedge t < T_{1,1}).
+    \end{align*}
+    Note that
+    \begin{align*}
+        \sum_{i=1}^k \rho_i 
+        &= \sum_{i=1}^k \sum_{t=0}^\infty \Pr(X_t = s_i \wedge t < T_{1,1}) \\
+        &= \sum_{t=0}^\infty \sum_{i=1}^k \Pr(X_t = s_i \wedge t < T_{1,1}) \\
+        &= \sum_{t=0}^\infty \Pr(X_t = s_i \wedge t < T_{1,1}) \\
+        &= E[T_{1,1}]\\
+        &= \tau_{1,1}.
+    \end{align*}
+    By Lemma~\ref{lemma:tau-is-finite}, we have that $\tau_{1,1}$ is finite. Hence, we can define
+    \begin{align*}
+        \ves{\pi} = (\pi_1, \pi_2, \dotsc, \pi_k) = \bigg( \frac{\rho_1}{\tau_{1,1}}, \frac{\rho_2}{\tau_{1,1}}, \dotsc, \frac{\rho_k}{\tau_{1,1}} \bigg).
+    \end{align*}
+    It remains to show that $\ves{\pi}P = \ves{\pi}$. To do so, we have to show that
+    \begin{align*}
+        \pi_j = \sum_{i=1}^k \pi_i P_{ij}
+    \end{align*}
+    for all $j$. There are two cases. First, when $j \neq 1$, we have that
+    \begin{align*}
+        \pi_j 
+        &= \frac{\rho_j}{\tau_{1,1}} \\
+        &= \frac{1}{\tau_{1,1}} \sum_{t=0}^\infty \Pr(X_t = s_j \wedge t < T_{1,1}) \\
+        &= \frac{1}{\tau_{1,1}} \sum_{t=1}^\infty \Pr(X_t = s_j \wedge t < T_{1,1}) \\
+        &= \frac{1}{\tau_{1,1}} \sum_{t=1}^\infty \Pr(X_t = s_j \wedge t-1 < T_{1,1})
+        \\
+        &= \frac{1}{\tau_{1,1}} \sum_{t=1}^\infty \sum_{i=1}^k \Pr(X_t = s_j \wedge X_{t-1} = s_i \wedge t-1 < T_{1,1}) \\
+        &= \frac{1}{\tau_{1,1}} \sum_{t=1}^\infty \sum_{i=1}^k \Pr(X_t = s_j \wedge X_{t-1} = s_i \wedge t-1 < T_{1,1}) \\
+        &= \frac{1}{\tau_{1,1}} \sum_{t=1}^\infty \sum_{i=1}^k \Pr(X_{t-1} = s_i \wedge t-1 < T_{1,1}) \Pr(X_t = s_j | X_{t-1} = s_i) \\
+        &= \frac{1}{\tau_{1,1}} \sum_{t=1}^\infty \sum_{i=1}^k \Pr(X_{t-1} = s_i \wedge t-1 < T_{1,1})  P_{ij} \\
+        &= \frac{1}{\tau_{1,1}} \sum_{i=1}^k \bigg( \sum_{t=1}^\infty \Pr(X_{t-1} = s_i \wedge t-1 < T_{1,1}) \bigg)  P_{ij} \\
+        &= \frac{1}{\tau_{1,1}} \sum_{i=0}^k \bigg( \sum_{t=0}^\infty \Pr(X_t = s_i \wedge t < T_{1,1}) \bigg)  P_{ij} \\
+        &= \frac{1}{\tau_{1,1}} \sum_{i=0}^k \rho_i P_{ij} 
+        =  \sum_{i=0}^k \frac{\rho_i}{\tau_{1,1}} P_{ij} 
+        =  \sum_{i=0}^k \pi_i P_{ij}.
+    \end{align*}
+    Next, when $j = 1$, we have that $\rho_1 = 1$.
+    \begin{align*}
+        \rho_1 
+        &= 1 = \Pr(T_{1,1} < \infty) = \sum_{t=1}^\infty \Pr(T_{1,1} = t) \\
+        &= \sum_{t=1}^\infty \sum_{i=1}^k \Pr(X_{t-1} = s_i \wedge T_{1,1} = t) \\
+        &= \sum_{t=1}^\infty \sum_{i=1}^k \Pr(X_{t-1} = s_i \wedge t-1 < T_{1,1}) \Pr(X_t = s_1 | X_{t-1} = s_i) \\
+        &= \sum_{t=1}^\infty \sum_{i=0}^k \Pr(X_{t-1} = s_i \wedge t-1 < T_{1,1}) P_{i1} \\
+        &= \sum_{i=1}^k \bigg( \sum_{t=1}^\infty \Pr(X_{t-1} = s_i \wedge t-1 < T_{1,1}) \bigg) P_{i1} \\
+        &= \sum_{i=1}^k \bigg( \sum_{t=0}^\infty \Pr(X_t = s_i \wedge t < T_{1,1}) \bigg) P_{i1} \\
+        &= \sum_{i=1}^k \rho_i P_{i1}.
+    \end{align*}
+    As a result, $$\pi_1 = \frac{\rho_1}{\tau_{1,1}} = \frac{1}{\tau_{1,1}}\sum_{i=1}^k \frac{\rho_i}{\tau_{1,1}} P_{i1} = \sum_{i=1}^k \pi_i P_{i1}$$ as required.
+  \end{proof}
+
+  \item We will now show that $\ves{\mu}^{(t)}$ converges to the stationary distribution $\ves{\pi}$ as $t \rightarrow \infty$ regardless of what $\ves{\mu}^{(0)}$ is. To do this, we need a notion of how two distributions would converge to each other.
+  
+  \item \begin{definition} \label{definition:finite-total-variation-distance}
+    Given two row vectors $\ve{a} = (a_1, \dotsc, a_k)$ and $\ve{b} = (b_1, \dotsc, b_k)$, the {\bf total variation distance} between $\ve{a}$ and $\ve{b}$ is given by:
+    \begin{align*}
+        d_{\mrm{TV}}(\ve{a},\ve{b}) = \frac{1}{2} \sum_{i=1}^k | a_i - b_i |.
+    \end{align*}
+  \end{definition}
+
+  \item It follows that, if $d_{\mrm{TV}}(\ve{a}, \ve{b}) = 0$, then $\ve{a} = \ve{b}$.
+  
+  \item \begin{definition}
+    A sequence of probability distributions $\ves{\nu}^{(0)}$, $\ves{\nu}^{(1)}$, $\dotsc$ is said to {\bf converge to a distribution $\ves{\nu}$ in total variation} if $$\lim_{t \rightarrow \infty} d_{\mrm{TV}}(\ves{\nu}^{(t)}, \ves{\nu}) = 0.$$ We denote this by $\ves{\nu}^{(t)} \xrightarrow{\mrm{TV}} \ves{\nu}$.
+  \end{definition}
+
+  \item Before we prove the convergence theorem for Markov chains, we need to introduce the notion of a {\bf simulation} of a Markov chain. This is just basically how you would like a computer program to do it. More precisely:
+  \begin{itemize}
+    \item We have a source of randomness that gives us an infinite sequence of random variables $(\xi_0, \xi_1, \dotsc)$ where $\xi_i$ is i.i.d. sampled uniformly from the interval $[0,1]$.
+    
+    \item We have a function $\psi: [0,1] \rightarrow S$ that maps $\xi_0$ to the initial state $X_0$. In other words, we start the simulation with:
+    \begin{align*}
+        X_0 \gets \psi(\xi_0).
+    \end{align*}
+    Here, we require that $\Pr(X_0 = s_i)$ be equal to $\mu_i^{(0)}$ for our choice of $\ves{\mu}^{(0)}$.
+
+    \item Next, we have another function $\phi: S \times [0,1] \rightarrow S$ that maps $(X_{t-1}, \xi_t)$ to $X_t$ in such a way that agrees with the transition matrix $P$. In other words, having sampled $X_{t-1}$, we compute $X_t$ as follows:
+    \begin{align*}
+        X_{t} \gets \phi(X_{t-1}, \xi_t)
+    \end{align*}
+  \end{itemize}
+  In this way, the Markov chain can be viewed as a function that turns $(\xi_0, \xi_1, \dotsc)$ to $(X_0, X_1, \dotsc)$.
+
+  \item \begin{theorem}
+    Consider a irreducible, aperiodic Markov chain on a finite state space with whose stationary distribution is denoted by $\ves{\pi}$. Starting from an arbitrary distribution $\ves{\mu}^{(0)}$, we have that
+        $$ \ves{\mu}^{(t)} \xrightarrow{\mrm{TV}} \ves{\pi}.$$
+  \end{theorem}
+
+  \begin{proof}
+    Consider two simulations of the Markov chain using two sequences of random numbers $(\xi_0, \dotsc)$ and $(\xi'_0, \dotsc)$ where all random numbers are independent of any other numbers. Let us say that the simulations result in two outcomes $(X_0, X_1, \dotsc)$ and $(X'_0, X'_1, \dotsc)$, respectively.
+
+    For the first outcome $(X_0, X_1, \dotsc)$, we pick the initial function $\psi$ such that $$\Pr(X_0 = s_i) = \Pr(\psi(\xi_0) = s_i) = \mu^{(0)}_i.$$ For the second outcome, we pick the initial function $\psi'$ so that
+    $$\Pr(X'_0 = s_i) = \Pr(\psi'(\xi'_0) = s_i) = \pi_i.$$ 
+    Note that the transition function $\phi$ and $\phi'$ for the two outcomes are exactly the same, so we will just denote them with $\phi$. We also have that, if we denote the distribution $X'_t$ with $\ves{\pi}^{(t)}$, we have that $\ves{\pi}^{(t)} = \ves{\pi}$ for all $t \geq 0$ because $\ves{\pi}$ is the stationary distribution.
+
+    We will show that the two simulation will ``meet'' with probability 1. More precisely, define the random variable $T$ to the first meeting time:
+    \begin{align*}
+        T = \min\{ t : X_t = X'_t \}.
+    \end{align*}
+    We will show that $\Pr(T < \infty) = 1$.
+
+    Because our Markov chain is irreducible and periodic, there exists a positive integer $M$ such that $(P^M)[i,j] > 0$ for $i$ and $j$. Let $\alpha$ be the smallest entry if $P^M$. We have that $\alpha > 0$. We have that
+    \begin{align*}
+        \Pr(T \leq M)
+        &\geq \Pr(X_M = X'_M) \\
+        &\geq \Pr(X_M = s_1 \wedge X'_M = s_1) \\
+        &= \Pr(X_M = s_1)\Pr(X'_M = s_1) \\
+        &= \bigg( \sum_{i=1}^k P(X_0 = s_i \wedge X_M = s_1) \bigg) \bigg( \sum_{i=1}^k P(X'_0 = s_i \wedge X'_M = s_1) \bigg) \\
+        &= \bigg( \sum_{i=1}^k P(X_0 = s_i)\Pr(X_M = s_1| X_0 = s_i) \bigg) \bigg( \sum_{i=1}^k P(X'_0 = s_i) \Pr(X'_M = s_1|X'_0 = s_i) \bigg) \\
+        &= \bigg( \sum_{i=1}^k P(X_0 = s_i) \alpha \bigg) \bigg( \sum_{i=1}^k P(X'_0 = s_i) \alpha \bigg) \\
+        &= \alpha^2.
+    \end{align*}
+    As a result,
+    \begin{align*}
+        \Pr(T > M) \leq 1 - \alpha^2.
+    \end{align*}
+    Using the same argument that we used to derive a lower bound for $\Pr(T \leq M)$, we can show that 
+    \begin{align*}
+        \Pr(X_{2M} = X'_{2M} | T > M) \geq \alpha^2,
+    \end{align*}
+    and, as a result,
+    \begin{align*}
+        \Pr(X_{2M} \neq X'_{2M} | T > M) \leq 1 - \alpha^2.
+    \end{align*}
+    So,
+    \begin{align*}
+        \Pr(T > 2M) 
+        &= P(T > M) P(T > 2M | T > M) \\
+        &\leq P(T > M) \Pr(X_{2M} \neq X'_{2M} | T > M) \\
+        &= (1 - \alpha^2)^2.
+    \end{align*}
+    Repeating the argument, we can conclude that
+    \begin{align*}
+        \Pr(T > \ell M) \leq (1 - \alpha^2)^\ell,
+    \end{align*}
+    and so
+    \begin{align*}
+        \lim_{\ell \rightarrow \infty} \Pr(T > \ell M) = 0.
+    \end{align*}
+    In other words, $\Pr(T < \infty) = 1$.
+
+    We now construct a new outcome $(X''_0, X''_1, \dotsc)$ such that
+    \begin{align*}
+        X''_t = \begin{cases}
+            X_t, &\mbox{if } t < T \\
+            X'_t, &\mbox{if } t \geq T
+        \end{cases}.
+    \end{align*}
+    Note that the outcome can be easily generated from the following algorithm:
+    \begin{algorithmic}
+      \State $X_0 \gets \psi(\xi_0)$
+      \State $X'_0 \gets \psi'(\xi'_0)$
+      \State $\mrm{flag} \gets X_0 = X'_0$
+      \For{$t \gets 0, 1, \dotsc$}
+        \If{$\mrm{flag}$}
+          \State $X''_t \gets X'_t$
+        \Else 
+          \State $X''_t \gets X_t$
+        \EndIf
+        \State $X_{t+1} \gets \phi(X_t, \xi_t)$
+        \State $X'_{t+1} \gets \phi(X_t, \xi'_t)$
+        \State $\mrm{flag} \gets \mrm{flag} \wedge (X_t = X'_t)$
+      \EndFor
+    \end{algorithmic}
+  \end{proof}
+  We observe that the outcome $(X''_0, X''_1, \dotsc)$ is a Markov chain whose transition probabilities are given by the transition matrix $P$.
+
+
+  Next, we have that $X''_0$ has distribution $\ves{\mu}^{(0)}$. So, for any $t \geq 0$, $X''_t$ has distribution $\ves{\mu}^{(t)}$. For any $i$, we have that
+  \begin{align*}
+      \mu_i^{(t)} - \pi_i 
+      = \Pr(X''_t = s_i) - \Pr(X'_t = s_i) 
+      \leq \Pr(X''_t = s_i \wedge X'_t \neq s_i) 
+      \leq \Pr(X''_t \neq X'_t) 
+      = \Pr(T > t).
+  \end{align*}
+  Using the same argument, we can also say that $\pi_i - \mu_i^{(t)} \leq \Pr(T > t)$, and so $|\pi_i - \mu_i^{(t)}| \leq \Pr(T > t)$. Hence, $\lim_{t \rightarrow \infty} |\pi_i - \mu_i^{(t)}| = \lim_{t \rightarrow \infty} \Pr(T > t) =  0$, and we can finally conclude that
+  \begin{align*}
+      \lim_{t \rightarrow \infty} d_{\mrm{TV}}(\ves{\mu}^{(t)}, \ves{\pi})
+      = \lim_{t \rightarrow \infty} \sum_{i=1}^k |\pi_i - \mu_i^{(t)}| 
+      = \sum_{i=1}^k \lim_{t \rightarrow \infty} |\pi_i - \mu_i^{(t)}| 
+      = 0
+  \end{align*}
+  as desired.
+
+  \item \begin{theorem}
+    The stationary distribution of an irreducible, aperiodic Markov chain on a finite state space is unique.
+  \end{theorem}
+
+  \begin{proof}
+    Suppose there are two stationary distributions $\ves{\pi}$ and $\ves{\pi}'$. We can start a Markov chain simulation with $X_0$ being distributed according to $\ves{\mu}^{(0)} = \ves{\pi}'$. By the last theorem, we have that
+    \begin{align*}
+        0 
+        = \lim_{t \rightarrow \infty} d_{\mrm{TV}}(\ves{\mu}^{(t)}, \ves{\pi})
+        = \lim_{t \rightarrow \infty} d_{\mrm{TV}}(\ves{\pi}', \ves{\pi})
+        = d_{\mrm{TV}}(\ves{\pi}', \ves{\pi}),
+    \end{align*}        
+    which means that $\ves{\pi}' = \ves{\pi}$.
+  \end{proof}
+
+  \item The theorem above gives an alternative expression for the stationary distribution:
+  \begin{align*}
+      \ves{\pi} = \bigg( \frac{1}{\tau_{1,1}}, \frac{1}{\tau_{2,2}}, \dotsc, \frac{1}{\tau_{k,k}} \bigg)
+  \end{align*}
+  This is because, in the proof of Theorem~\ref{theorem:stationary-distribution-existence-finite}, we can use any state $s_i$ instead of $s_1$ to define the stationary probability. So, we have that
+  \begin{align*}
+      \pi_i = \frac{\#\{t: X_t = s_i \wedge t < T_{i,i}| X_0 = s_i\}}{\tau_{i,i}} = \frac{1}{\tau_{i,i}}.
+  \end{align*}
+
+  \item When $\ves{\mu}^{(t)}$ converges (i.e., close enough to the stationary distribution), we say that the Markov chain is in {\bf equilibrium}.
+\end{itemize}
+
+\subsection{Reversibility}
+
+\begin{itemize}
+  \item \begin{definition}
+    Consider a Markov chain with finite state space $S = \{ s_1, \dotsc, s_k \}$ and transition matrix $P$. A probability distribution $\ves{\pi}$ is {\bf reversible} for the chain if, for all $i,j$, we have that
+    \begin{align}
+        \pi_i P_{i,j} = \pi_j P_{j,i}. \label{detailed-balance}
+    \end{align}
+    A Markov chain is reversible if it has a reversible distribution.
+  \end{definition}
+
+  \item The condition in Equation \eqref{detailed-balance} is called {\bf detailed balance}. The LHS can be interpreted as the probabilty mass going from $s_i$ to $s_j$, and the RHS is the probability mass going in the opposite direction. This suggests a strong form of equilibrium.
+  
+  \item \begin{theorem} \label{theorem:reversible-distribution-is-stationary}
+    If a Markov chain with finite state space has a reversible distribution, then the distribution is also stationary. 
+  \end{theorem}
+
+  \begin{proof}
+    Let $\ves{\pi}$ be a reversible distribution for the chain. We have that
+    \begin{align*}
+        \pi_j = \pi_j \sum_{i=1}^k P_{j,i} = \sum_{i=1}^k \pi_j P_{j,i} = \sum_{i=1}^k \pi_i P_{i,j}
+    \end{align*}
+    for all $j$. This implies that $\ves{\pi}$ is stationary. 
+  \end{proof}
+
+  \item When a reversible Markov chain reaches equilibrium, it looks exactly the same whether time runs forward or backward.
+  
+  \item Reversible Markov chains show up a lot in the context of Markov chain Monte Carlo (MCMC) algorithms. This is why it is important to mention.
+\end{itemize}
+
+\section{Countably Infinite State Spaces}
+
+\begin{itemize}
+  \item We are now concerned with a state space $S = \{ s_1, s_2, \dotsc \}$ which is countable but infinite.
+  
+  \item The Chapman--Kolmogorov equation is pretty much the same:
+  \begin{align*}
+      \Pr(X_{t+a+b}=s_j|X_t=s_i)
+      = \sum_{\ell=1}^\infty \Pr(X_{t+a+b}=s_j|X_{t+a}=s_\ell) \Pr(X_{t+a}=s_\ell|X_{t}=s_i).
+  \end{align*}
+
+  \item Obviously, the transition matrix $P$ is now infinite.
+  
+  \item The detailed balance condition is still the same in the countably infinite state space. So, Theorem~\ref{theorem:reversible-distribution-is-stationary} holds in thsi case too.
+\end{itemize}
+
+\subsection{Recurrence and Transience}
+
+\begin{itemize}
+  \item The definition for the hitting time $T_i$ is the same:
+  \begin{align*}
+      T_i = \mrm{min} \{ t > 0 : X_t = s_i\}.
+  \end{align*}
+
+  \item However, properties of states with regards to the hitting times are more complicated in the countably infinite case. We need to classify states in new ways.
+  
+  \item \begin{definition}
+    A state $s_i \in S$ is said to be {\bf recurrent} if
+    \begin{align*}
+        \Pr(T_{i,i} < \infty) = \Pr(T_i < \infty | X_0 = s_i) = 1.
+    \end{align*}
+    Otherwise, the state is said to be {\bf transient}. We say a Markov chain is recurrent if all of its states are recurrent.
+  \end{definition}
+
+  \item \begin{theorem}[Criterion for recurrence \#1] For a Markov chain on a countably infinite state space, a state $s_i$ is recurrent if and only if
+  \begin{align*}
+      \sum_{i=t}^\infty (P^t)[i,i] = \infty.
+  \end{align*}  
+  \end{theorem}
+
+  \item \begin{theorem}
+    All states in a communication class are either all recurrent or all transient.
+  \end{theorem}
+
+  \item When the state space is finite, Lemma~\ref{lemma:tau-is-finite} implies that all states of an irreducible and aperiodic Markov chain are recurrent. However, this is not true for the countably infinite case: we can see from the last theorem that all states can be transient.
+  
+  \item Let $N_i$ denote the total number of visits to state $s_i$ after starting the Markov chain at $s_i$:
+  \begin{align*}
+      N_i = \sum_{t=1}^\infty I(X_t = s_i | X_0 = s_i).
+  \end{align*}
+
+  \item \begin{theorem}
+    If $s_i$ is a recurrent state, then
+    \begin{align*}
+        Pr(N_i = \infty) = 1.
+    \end{align*}
+    In other words, a Markov chain will return to a recurrent state infinitely many times with probability 1 if it ever reaches that state. On the other hand, if $s_i$ is transient, we have that
+    \begin{align*}
+        P(N_i = k) = (1-q)^k q
+    \end{align*}
+    for all $k \in \mathbb{N} \cup \{0\}$. Here, $q = P(T_i = \infty | X_0 = s_i)$ is the probability that the Markov chain never returns to $s_i$.
+  \end{theorem}
+
+  \item \begin{theorem}[Criterion for recurrence \#2] Let $s_i$ be an arbitrary state in an irreducible Markov chain with transition matrix $P$. Consider the system of equations
+    \begin{align*}
+        \alpha_j = \sum_{k \neq i} \alpha_k P_{j,k}
+    \end{align*}
+    for all $j \neq i$. The Markov chain is recurrent if and only if the only bounded solution of the above system of equations is $\alpha_j = 0$ for all $j \neq i$.
+  \end{theorem}  
+\end{itemize}
+
+\subsection{Stationary Distribution}
+
+\begin{itemize}
+  \item \begin{theorem}
+    For an irreducible, recurrent, and aperiodic Markov chain with countably infinite states, it holds that
+    \begin{align*}
+        \lim_{t \rightarrow \infty} P(X_t = s_i) = \frac{1}{E[T_i|X_0 = s_i]} = \frac{1}{\tau_{i,i}}
+    \end{align*}
+    for any initial distribution of $X_0$. If $\tau_{i,i} = \infty$, then the limit on the right side is defined to be 0.
+  \end{theorem}
+
+  \item The above theorem highlights a difference between the finite and countably infinite case.
+  \begin{itemize}
+    \item In the finite case, by Lemma~\ref{lemma:tau-is-finite}, we have that $\tau_{i,i}$ is finite for any irreducible and aperiodic Markov chain. (Note that we do not need recurrence because it is implied by irreducibility and aperiodicy in the finite case.) As a result, the asymptotic probability of $s_i$ is non-zero.
+    
+    \item On the other hand, when the state space is infinite, it might be the case that $\tau_{i,i}$ is infinite even though $\Pr(T_i < \infty | X_0 = s_i) = 1$. As a result, the asymptotic probability of $s_i$ might be zero.
+  \end{itemize}
+
+  \item \begin{definition}
+    A recurrent state $s_i$ is said to be {\bf positive recurrent} if the mean return time $\tau_{i,i}$ is finite. Otherwise, it is said to be {\bf null recurrent}. We say that a Markov chain is positive recurrent (or null recurrent) if all states are positive recurrent (or null recurrent, respectively).
+  \end{definition}
+
+  \item \begin{proposition}
+    All states in the same recurrent communication class are either all positive recurrent or all null recurrent.
+  \end{proposition}
+
+  \item \begin{proposition}
+    A non-negative vector $\ves{\nu}$ that satisfies
+    \begin{align*}
+        \nu_j = \sum_{i=1}^\infty \nu_i P_{i,j}
+    \end{align*}
+    for all $j$ is called an {\bf invariant measure} or a {\bf stationary measure}.
+  \end{proposition}
+
+  \item Note that, if $\ves{\nu}$ is an invariant measure, then $c \ves{\nu}$ is also an invariant measure for any positive real number $c$.
+  
+  \item If an invariant measure $\ves{\nu}$ has an additional property that $\sum_{i} \nu_i = 1$, it becomes a stationary distribution.
+  
+  \item An invariant measure $\ves{\nu}$ can be normalized to a stationary distribution only if $\sum_{i} \nu_i$ is finite.
+  
+  \item \begin{theorem} \label{theorem:stationary-distribution-existence-countably-infinite}
+    For an irreducible, recurrent, aperiodic Markov chain with countably infinite state space, there is a unique (up to multiplication) invariant measure $\ves{\nu}$ given by
+    \begin{align*}
+        \nu_j = E\bigg[ \sum_{t=0}^\infty I(X_t = s_j \wedge t < T_{i,i})\ \bigg|\ X_0 = s_i \bigg]
+    \end{align*}
+    for any arbitrary state $s_i \in S$. The invariant measure can be normalized to a stationary distribution if and only if $\tau_{i,i}$ is finite; that is, if the Markov chain is positive recurrent.
+  \end{theorem}
+
+  \item Note the difference difference between the finite case (Theorem~\ref{theorem:stationary-distribution-existence-finite}) and the countably infinite case (Theorem~\ref{theorem:stationary-distribution-existence-countably-infinite}).
+  \begin{itemize}
+    \item For the finite case, positive recurrence is a consequence of irreducibility and aperiodicity. So, any invariant measure is always normalizable, and we always have an stationary distribution.
+    \item However, positive recurrence is not automatically gauranteed, and it is required for the Markov chain to have a stationary distribution.
+  \end{itemize}
+
+  \item To discuss convergence, we need the total variation distance, which remains pretty much the same for the countably infinite state space:
+  \begin{align*}
+      d_{\mrm{TV}}(\ve{a},\ve{b}) = \frac{1}{2} \sum_{i=1}^\infty |a_i - b_i|.
+  \end{align*}
+  
+  \item \begin{theorem}
+    Consider an irreducible, aperiodic, and positive recurrent Markov chain on a countably infinite state space. Starting from any distribution $\ves{\mu}^{(0)}$, we have that $$ \ves{\mu}^{(t)} \xrightarrow{\mrm{TV}} \ves{\pi}$$ where $\ves{\pi}$ is the unique stationary distribution
+    \begin{align*}
+        \ves{\pi} = \bigg( \frac{1}{\tau_{1,1}}, \frac{1}{\tau_{2,2}}, \dotsc \bigg).
+    \end{align*}
+  \end{theorem}
+
+  \item The following theorem is useful for computing functions on the states.
+  
+  \begin{theorem}
+    Consider an irreducible, aperiodic, and positive recurrent Markov chain on a countably infinite state space with stationary distribution $\ves{\pi}$. Let $f: \mathcal{S} \rightarrow \Real$ be a function on the state space such that $$\sum_{i=1}^\infty |f(s_i)| \pi_i < \infty.$$ Then, for any initial distribution,
+    \begin{align*}
+        \Pr \bigg( \lim_{T \rightarrow \infty} \frac{1}{T} \sum_{t=0}^{T_1} f(X_t) = \sum_{i}^\infty f(s_i) \pi_i \bigg) = 1.
+    \end{align*}
+  \end{theorem}
+\end{itemize}
+
+\section{Continuous State Spaces}
+
+\subsection{Basic Notions}
+
+\begin{itemize}
+  \item For continuous state spaces, the transition matrix is replaced by the transition ``kernel.''
+  
+  \begin{definition}
+    Let $S$ be a continuous state space, and $\mcal{S}$ be a $\sigma$-algebra on $S$. A {\bf transition kernel} $K$ is a function from $S \times \mcal{S}$ to $[0,1]$ such that
+    \begin{enumerate}
+      \item For all $x \in S$, the function $K(x,\cdot)$ is a probability measure on the measurable space $(S, \mcal{S})$.
+      \item For all $A \in \mcal{S}$, the function $K(\cdot, A)$ is a measurable function on $S$.
+    \end{enumerate}
+  \end{definition}
+
+  \item Suppose that, for all $s \in S$, the measure $K(s,\cdot)$ is absolutely continuous with respect to a $\sigma$-finite measure $\mu$. The Random--Nikodym theorem tells us that there exists a non-negative function $k(x,y)$ such that
+  \begin{align}
+    K(x,A) = \int_A k(x,y)\, \dee \mu(y) \label{eqn:transition-function}
+  \end{align}
+  for all $A \in \mcal{S}$. In this case, we refer to $k(x,y)$ as the {\bf transition function}.
+
+  \item The integral of $f$ with respect to a measure $\mu$ on $A$ can be denoted in several ways.
+  \begin{align*}
+    \int_A f\, \dee\mu
+    = \int_A f(x)\, \dee\mu
+    = \int_A f(x)\, \dee\mu(x)
+    = \int_A f(x)\mu(\dee x).
+  \end{align*}  
+  Hence, \eqref{eqn:transition-function} may be rewritten as:
+  \begin{align*}
+    K(x,A) = \int_A k(x,y)\, \mu(\dee y)
+  \end{align*}
+
+  \item The transition function must satisfy
+  \begin{align*}
+    \int_S k(x,y)\, \mu(\dee y) = 1
+  \end{align*}
+  for all $x \in S$.
+
+  \item \begin{definition}
+    Let $K$ be a transition kernel on the state space $(S, \mcal{S})$. Let $\mu$ be a probability measure on $(S, \mcal{S})$. A sequence of random variables $X_0$, $X_1$, $X_2$, $\dotsc$, is a {\bf Markov chain transition kernel $K$ and initial distribution $\mu$} if, for all $k = 0, 1, 2, \dotsc$,
+    \begin{align*}
+      P(X_{k+1} \in A | X_0, X_1, \dotsc, X_k) = P(X_{k+1} \in A | X_k) = \int_A K(X_k, x)\, \dee x
+    \end{align*}
+    and the distribution of $X_0$ is $\mu$.
+  \end{definition}
+
+  \item To save space, we abbreviate $\int_A K(X_k, x)\, \dee x$ as $\int_A K(X_k, \dee x)$.
+  
+  \item Examples.
+  \begin{itemize}
+    \item {\bf (Random walk)} Let $(\xi_n)$ be an i.i.d. sequence of random variables. Let $$X_n = \sum_{i=1}^n \xi_n.$$ We have that $X_{n+1} = X_n + \xi_{n+1}$. The kernel is given by
+    \begin{align*}
+      K(x,A) = \mu_{\xi}(\{ y - x : y \in A \})
+    \end{align*}
+    where $\mu_{\xi}(\cdot)$ is the probability measure of the values of the $\xi_k$'s.
+
+    \item {\bf (AR(1))} Again, let $(\xi_n)$ be an i.i.d. sequence of random variables. Let $\theta$ be a real constant. Define
+    \begin{align*}
+      X_{n+1} = \theta X_{n} + \xi_{n+1}.
+    \end{align*}
+    The transition kernel is
+    \begin{align*}
+      K(x, A) = \mu_{\xi}(\{ y - \theta x : y \in A \}).
+    \end{align*}
+  \end{itemize}
+
+  \item Let $K^n(\cdot,\cdot): S \times \mcal{S} \rightarrow [0,1]$ be defined by
+  \begin{align*}
+    K^n(x, A) = \Pr(X_n \in A | X_0 = x).
+  \end{align*}
+  It is called the {\bf $n$-step transition kernel}.  
+
+  \item \begin{proposition}[Kolmogorov--Chapman equation]
+    Let $m,n$ be positive integers and $A \in \mcal{S}$. Then,
+    \begin{align*}
+      K^{m+n}(x, A) = \int_S K^n(y, A) K^m(x, dy)
+    \end{align*}
+    for $x \in S$ and $A \in \mcal{S}$.
+  \end{proposition}
+
+  \item Let $A_0, A_2, \dotsc, A_n \in \mcal{S}$. We have that
+  \begin{align*}
+    \Pr(X_0 \in A_0, X_1 \in A_1, \dotsc, X_n \in A_n)
+    = \bigg( \int_{A_0} \mu(\dee x_0) \bigg) \bigg( \int_{A_1} K(x_0, \dee x_1) \bigg) \dotsb \bigg( \int_{A_n} K(x_{n-1}, dx_n) \bigg).
+  \end{align*}
+
+  \item \begin{theorem}[Weak Markov property]
+    Then, for any initial distribution and any positive integer $k$,
+    \begin{align*}
+      E[h(X_{k+1}, X_{k+2}, \dotsc)|X_0 = x_0, X_1 = x_1, \dotsc, X_k = x_k]  = E[h(X_1, X_2, \dotsc) | X_0 = x_k].
+    \end{align*}
+    for any function $h$ such that the expectation exists.
+  \end{theorem}
+\end{itemize}
+
+\subsection{Asymptotic Behavior}
+
+To discuss asymptotic behavior, we need to discuss terms like irreducibility, recurrence, aperiodicity, and convergence. These notions are quite different from their counterparts in the discrete cases.
+
+\subsubsection{Irreducibility}
+
+\begin{itemize}
+  \item \begin{definition}
+    Let $\psi$ be a non-zero $\sigma$-finite measure on $(S, \mcal{S})$. A Markov chain is $\psi$-irreducible if, for every $A \in \mcal{S}$ with $\psi(A) > 0$ and every $x \in S$, there exists a positive integer $n$ such that $K^n(x, A) > 0$.
+  \end{definition}
+
+  \item By the above definition, it doesn't matter if a set of measure zero is unreachable. The definition does not care about sets of measure zero.
+  
+\end{itemize}
+
+\subsubsection{Recurrence}
+
+\begin{itemize}
+  \item \begin{definition}
+    Let $A \in \mcal{S}$. The {\bf hitting time} $T_A$ is the time the chain first enters $A$.
+    \begin{align*}
+      T_A = \inf \{ n\geq 1 : X_n \in A \}.
+    \end{align*}
+  \end{definition}
+
+  \item \begin{definition}
+    Let $A \in \mcal{S}$. Define $N_A$ to be the number of times the chain visits $A$.
+    \begin{align*}
+      N_A = \sum_{n=1}^\infty I(X_n \in A).
+    \end{align*}
+  \end{definition}
+
+  \item \begin{definition}
+    A Markov chain is {\bf recurrent} if the following conditions hold.
+    \begin{enumerate}
+      \item[(a)] There exists a non-zero $\sigma$-finite measure $\psi$ where the chain is $\psi$-irreducible.
+      \item[(b)] For all $A \in \mcal{S}$ with $\psi(A) > 0$, we have that $E[N_A | X_0 = x] = \infty$ for all $x \in A$.
+    \end{enumerate}
+  \end{definition}
+
+  \item The above definition, however, has pathological cases. This is because we can have $E[N_A|X_0 = x] = \infty$ when $0 < \Pr(N_A = \infty | X_0 = x) < 1$.
+  
+  \item \begin{definition}
+    A Markov chain is {\bf Harris recurrent} if the following conditions hold.
+    \begin{enumerate}
+      \item[(a)] There exists a non-zero $\sigma$-finite measure $\psi$ where the chain is $\psi$-irreducible.
+      \item[(b)] For all $A \in \mcal{S}$ with $\psi(A) > 0$, we have that $\Pr(T_A < \infty|X_0 = x) = 1$ for all $x \in A$.
+    \end{enumerate}    
+  \end{definition}
+
+  \item \begin{definition}
+    A $\sigma$-finite measure $\pi$ is {\bf invariant} for a Markov chain with transition kernel $K$ if
+    \begin{align*}
+      \pi(A) = \int_S K(x,A)\, \pi(\dee x)
+    \end{align*}
+    for all $A \in \mcal{S}$. If there is an invariant measure which is a probability measure, then we say that the Markov chain is {\bf positive recurrent}.
+  \end{definition}
+
+  \item \begin{theorem}
+    Every recurrent Markov chain has an invariant $\sigma$-finite measure. It is unique up to a multiplicative constant.
+  \end{theorem}
+
+  \item \begin{proposition}
+    If a Markov chain is positive recurrent, then it is recurrent.
+  \end{proposition}
+
+  \item A recurrent chain that is not positive recurrent is called {\bf null recurrent}.
+\end{itemize}
+  
+\subsubsection{Aperiodicity}
+
+\begin{itemize}
+  \item \begin{definition}
+    A Markov chain is said to be {\bf periodic} if there exists a sequence of non-empty disjoint measurable sets $A_1$, $A_2$, $\dotsc$, $A_n$ with $n \geq 2$ such that
+    \begin{enumerate}
+      \item[(a)] $K(x, A_{j+1}) = 1$ for all $x \in A_j$ and $j = 1, 2, \dotsc, n-1$, and
+      \item[(b)] $K(x, A_1) = 1$ for all $x \in A_n$.
+    \end{enumerate}
+    If a Markov chain is not periodic, it is said to be {\bf aperiodic}
+  \end{definition}
+
+  \item \begin{proposition}
+    Consider a Markov chain with transition function $k(\cdot, \cdot)$. If $k(x, \cdot)$ is positive in a neighborhood of $x$ for all $x \in S$, then the Markov chain is a periodic.
+  \end{proposition}
+
+  This is true because the chain can remain in that neighborhood for an arbitrary number of times before visiting other areas.
+\end{itemize}
+
+\subsubsection{Total Variation Distance}
+
+\begin{itemize}
+  \item \begin{definition}
+    The {\bf total variation distance} between two probabiliy measures $\mu$ and $\nu$ on measurable space $(S,\mcal{S})$ is given by:
+    \begin{align*}
+      d_{\mrm{TV}}(\mu,\nu) = \sup_{A \in \mcal{S}} |\mu(A) - \nu(A)|.
+    \end{align*}
+  \end{definition}
+  
+  \item We note that this definition is equivalent to Definition~\ref{definition:finite-total-variation-distance}.
+\end{itemize}
+
+\subsubsection{Convergence Theorems}
+
+\begin{itemize}
+  \item \begin{theorem}
+    Consider a Markov chain with transition kernel $K$. If the chain is $\psi$-irreducible, aperiodic, and has an invariant probability measure (i.e., a stationary distribution) $\pi$, then
+    \begin{align*}
+      \lim_{n \rightarrow \infty} d_{\mrm{TV}}(K^n(x, \cdot), \pi(\cdot)) = 0
+    \end{align*}
+    for $\pi$-almost every $x \in S$ regardless of the initial distribution of $X_0$. Moreover, if the chain is Harris recurrent, then the convergence holds for all $x \in S$.
+  \end{theorem}  
+\end{itemize}
+
+\subsection{Reversibility}
+
+\begin{itemize}
+  \item \begin{definition}
+    Consider a Markov chain with transition function $k$. The chain satisfies {\bf detailed balance} if there is a non-negative function $p: S \rightarrow \Real$ such that
+    \begin{align*}
+      p(y)k(y,x) = p(x)k(x,y)
+    \end{align*}
+    for all $x,y \in S$.
+  \end{definition}
+
+  \item \begin{proposition}
+    Consider a Markov chain that satisfies detailed balance through a function $p$.
+    If $p$ is integrable with respect to some measure $\mu$ on $(S,\mcal{S})$, then its integral $\pi(A) = \int_A p\, \dee\mu$ is an invariant measure.
+  \end{proposition}
+\end{itemize}
+
+\bibliographystyle{apalike}
+\bibliography{discrete-time-markov-chains-primer}  
+\end{document}

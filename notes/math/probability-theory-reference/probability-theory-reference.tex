@@ -1,0 +1,2966 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+\usepackage{verbatim}
+\usepackage{hyperref}
+\usepackage{bbm}
+\usepackage[all]{xy}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\numberwithin{lemma}{section}
+
+\def\sc#1{\dosc#1\csod}
+\def\dosc#1#2\csod{{\rm #1{\small #2}}}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\Var}{\mathrm{Var}}
+\newcommand{\Stdev}{\mathrm{Stdev}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\ves}[1]{\boldsymbol{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\Nat}{\mathbb{N}}
+\newcommand{\sseq}{\subseteq}
+\newcommand{\ov}[1]{\overline{#1}}
+\newcommand{\one}{\mathbbm{1}}
+
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+\title{A Pocket Reference to Probability and Measure Theory}
+\author{Pramook Khungurn}
+
+\begin{document}
+\maketitle
+
+Materials are from \cite{Bartle:1995}, \cite{Jacod:2004}, \cite{Williams:1991}, and \cite{Schilling:2017}. Most mathematical statements are stated without proofs. (It's a reference, not a textbook!)
+
+\section{Topology}
+
+\begin{itemize}
+  \item \begin{definition}[topology]
+    A collection $\mcal{S}$ of subsets of $S$ is called a {\bf topology on $S$} if it satisfies the following conditions.
+    \begin{enumerate}
+      \item $\emptyset \in \mcal{S}$.
+      \item It is closed under arbitrary union: if $\{ S_\alpha : \alpha \in A \}$ is an arbitrary collection of sets, then $\bigcup_{\alpha \in A} S_\alpha \in \mcal{S}$.
+      \item It is closed under finite union: if $A, B \in \mcal{S}$, then $A \cap B \in \mcal{S}$.
+    \end{enumerate}
+    A member of a topology is called an {\bf open set}.
+  \end{definition}
+
+  \item \begin{definition}[topological space]
+    A {\bf topological space} is a tuple $(S, \mcal{S})$ where $S$ is a set and $\mcal{S}$ is a topology on $S$.
+  \end{definition}
+  When it is clear what the topology on $S$ is, we simply say that $S$ is a ``topological space.''
+\end{itemize}
+
+\section{Topology of the $\Real$ and $\Real^d$}
+
+\begin{itemize}
+  \item \begin{definition}[open subset of $\Real$]
+    A subset $A \subseteq \Real$ is called {\bf open} if, for every point $a \in A$, there exists a real number $\varepsilon(a) > 0$ such that $(a-\varepsilon(a), a+\varepsilon(a)) \subseteq A$.
+  \end{definition}
+
+  \item \begin{proposition}[charaterization of open subsets of $\Real$]
+    Any open subset of $\Real$ is a countable union of disjoint open intervals.
+  \end{proposition}
+  The proof relies on the fact that $\mathbb{Q}$ is dense in $\Real$. 
+
+  \item \begin{proposition}
+    The collection of open subsets of $\Real$ is a topology on $\Real$.
+  \end{proposition}
+
+  \item \begin{definition}[rectangle in $\Real^d$]
+    A {\bf (closed) rectangle in $\Real^d$} is the set of the form
+    \begin{align*}
+      [a_1, b_1] \times [a_2, b_2] \times \dotsb \times [a_d, b_d]
+    \end{align*}
+    where $-\infty < a_i < b_i < \infty$ for $i = 1, 2, \dotsc, d$. 
+    The {\bf interior} of the rectangle is the set
+    \begin{align*}
+      (a_1, b_1) \times (a_2, b_2) \times \dotsb \times (a_d, b_d).
+    \end{align*}
+  \end{definition}
+
+  \item \begin{definition}[open subset of $\Real^d$]
+    A subset $A \subseteq \Real^d$ is said to be {\bf open} if, for any point $\ve{a} \in A$, there a rectangle $R$ such that $\ve{a} \in R$ and the interior of $R$ is contained inside $A$.
+  \end{definition}
+
+  \item \begin{definition}[almost disjoint]
+    A collection of rectangles are {\bf almost disjoint} if the interiors of the rectangles are disjoint.
+  \end{definition}
+
+  \item \begin{proposition}[characterization of open subsets of $\Real^d$]
+    Any open subset of $\Real^d$ is a countable union of almost disjoint rectangles.
+  \end{proposition}
+
+  \item \begin{proposition}
+    The collection of open subsets of $\Real^d$ is a topology on $\Real^d$.
+  \end{proposition}
+\end{itemize}
+
+\section{Extended Real Number System}
+
+\begin{itemize}
+  \item It is convenient to work with the {\bf extended real number system} $\overline{\Real} = \Real \cup \{-\infty, \infty\}$.
+ 
+  \item We sometimes call $\overline{\Real}$ the {\bf extended real line}.
+  
+  \item For any $x \in \Real$, we have that $-\infty < x < \infty$.
+      
+  \item The arithematic operations between the infiniites and real numbers are as follows:
+  \begin{align*}
+      (\pm \infty) + (\pm \infty) = x + (\pm \infty) = (\pm \infty) + x &= \pm \infty \\
+      (\pm \infty) (\pm \infty) &= +\infty \\
+      (\pm \infty) (\mp \infty) &= -\infty \\        
+      (\pm \infty) x = x (\pm \infty) &= \begin{cases}
+          \pm \infty, & \mbox{if } x > 0, \\
+          0, &\mbox{if } x = 0, \\
+          \mp \infty, & \mbox{if } x < 0
+      \end{cases}        
+  \end{align*}
+  for any (finite) real number $x$.  
+  \item Note that we do not define $(\pm \infty) - (\pm \infty)$. We also do not define quotients when the denominators are $\pm \infty$.  
+
+  \item We deal with supermums and infemums in the following ways.
+  \begin{itemize}
+    \item If $A \neq \emptyset$, $A \subseteq \Real$, and $A$ has no upper bound, then $\sup A = \infty$.
+    \item If $B \neq \emptyset$, $B \subseteq \Real$, and $B$ has no lower bound, then $\inf B = -\infty$.
+    \item $\sup \emptyset = -\infty$.
+    \item $\inf \emptyset = \infty$. 
+  \end{itemize}
+  In this way, all subsets of $\overline{\Real}$ have supremums and infemums in $\overline{\Real}$.
+\end{itemize}
+
+\section{Topology of $\overline{\Real}$}
+
+\begin{itemize}
+  \item \begin{definition}[open subset of $\overline{\Real}$]
+    A subset $A \subseteq \overline{\Real}$ is said to be {\bf open} if, for all $a \in A$, a has a neighborhood $N(a) \subseteq A$ such that $a \in N(a)$. What a neighborhood is depends on what $a$ is.
+    \begin{itemize}
+      \item If $a \in \Real$, then $N(a)$ must be an interval $(a - \varepsilon, a+\varepsilon)$ with  $\varepsilon > 0$.
+      \item If $a = \infty$, then $N(a)$ must be a set of the form $\{ x \in \overline{\Real} : x > b \} = (b, \infty]$ for some $b \in \Real$.
+      \item If $a = -\infty$, then $N(a)$ must be a set of the form $\{ x \in \overline{\Real} : x < b \} = [-\infty, b)$ for some $b \in \Real$.
+    \end{itemize}
+  \end{definition}
+
+  \item \begin{proposition}[open intervals in $\overline{\Real}$]
+    An open interval in $\overline{\Real}$ has one of the following forms: $$(a,b), (-\infty, b), [-\infty,b), (a,\infty), (a,\infty], (-\infty, \infty), [-\infty, \infty), (-\infty, \infty], [\infty, \infty]$$
+    for any $a, b \in \Real$ such that $a < b$.
+  \end{proposition}
+
+  \item \begin{proposition}[characterization of open subsets of $\overline{\Real}$]
+    Any open subset of $\overline{\Real}$ is a countable union of disjoint open intervals in $\overline{\Real}$.
+  \end{proposition}
+
+  \item \begin{proposition}
+    The collection of open subsets of $\overline{\Real}$ is a topology on $\overline{\Real}$.
+  \end{proposition}
+\end{itemize}
+
+\section{$\sigma$-Algebras}
+
+\begin{itemize}
+  \item In this section, let $S$ be a set. 
+  
+  \item The power set of $S$ is denoted by $2^S$.
+  
+  \item \begin{definition}[algebra] \label{def:algebra}
+    A collection of sets $\mcal{S} \subseteq 2^S$ is called an {\bf algebra on $S$} if it satisfies the following properties.
+    \begin{enumerate}
+      \item $\emptyset, S \in \mcal{S}$.
+      \item It is closed under complementation: if $A \in \mcal{S}$, then $A^c = S-A \subseteq \mcal{S}.$
+      \item It is closed under finite unions: if $A, B \in \mcal{S}$, then $A \cup B \in \mcal{S}$.
+    \end{enumerate}
+  \end{definition}
+
+  \item It should be clear that if $\mcal{S}$ is also closed under finite intersections. This is because of De Morgan's law: $A \cap B = (A^c \cup B^c)^c$.
+
+  \item \begin{definition}[$\sigma$-algebra]
+    A collection of sets $\mcal{S} \subseteq 2^S$ is called a {\bf $\sigma$-algebra on $S$} if it satisifies the following properties.
+    \begin{enumerate}
+      \item $\emptyset, S \in \mcal{S}$.
+      \item It is closed under complementation: if $A \in \mcal{S}$, then $A^c = S-A \subseteq \mcal{S}.$
+      \item It is closed under countable unions: if $\{A_n : n \in \Nat \}$ is a countable collection of sets in $\mcal{S}$, then $\bigcup_{n=1}^\infty A_n \in \mcal{S}$.
+    \end{enumerate}
+    An element of a $\sigma$-algebra $\mcal{S}$ is called a {\bf $\mcal{S}$-measurable set} or simply a {\bf measurable set} when the context is clear.
+  \end{definition}
+
+  \item Let $\mcal{S}$ be a $\sigma$-algebra on $S$. One can easily show that, if $\{A_n : n \in \Nat \}$ be a countable collection of sets in $\mcal{S}$, then $\bigcap_{n=1}^\infty A_n \in \mcal{S}$ as well. So, a $\sigma$-algebra is also closed under finite intersection.
+  
+  \item A $\sigma$-algebra is an algebra, but an algebra is not necessarily a $\sigma$-algebra.
+
+  \item \begin{definition}[measurable space]
+    A {\bf measurable space} is a tuple $(S,\mcal{S})$ where $S$ is a set, and $\mcal{S}$ is $\sigma$-algebra on $S$.  
+  \end{definition}
+
+  \item \begin{proposition}[intersection of $\sigma$-algebras]
+    Let $\{ \mcal{S}_\alpha : \alpha \in A \}$ be a collection of $\sigma$-algebra on $S$. Then, $\bigcap_{\alpha \in A} \mcal{S}_\alpha$ is also a $\sigma$-algebra on $S$.
+  \end{proposition}
+
+  \begin{itemize}
+    \item  Note that there is no restriction on the collection $\{ \mcal{S}_\alpha : \alpha \in A \}$. It can be finite, countable, or even uncountable. 
+  \end{itemize}
+
+  \item \begin{definition}[generated $\sigma$-algebra]
+    Let $\mcal{A}$ be a non-empty collection of subsets of $S$. The {\bf $\sigma$-algebra generated by $\mcal{A}$}, denoted by $\sigma(\mcal{A})$ is the smallest $\sigma$-algebra that contains $\mcal{A}$. In other words,
+    \begin{align*}
+      \sigma(\mcal{A}) = \bigcap\Big\{\tilde{\mcal{A}} \subseteq 2^S : \mcal{A} \subseteq \tilde{\mcal{A}} \mbox{ and $\tilde{\mcal{A}}$ is a $\sigma$-algebra}\Big\}.
+    \end{align*}
+  \end{definition}
+
+  \item \begin{definition}[Borel $\sigma$-algebra]
+    Let $S$ be a topological space. The {\bf Borel $\sigma$-algebra on $S$}, denoted by $\mcal{B}(S)$, is the $\sigma$-algebra generated by the canonical topology (i.e., the collection of open sets) on $S$. An element of $\mcal{B}(S)$ is called a {\bf Borel set}.
+  \end{definition}
+
+  \item \begin{proposition} The following statements are true.
+  \begin{enumerate}
+    \item The Borel $\sigma$-algebra $\mcal{B}(\Real)$ is generated by the collection of open intervals in $\Real$.
+    \item The Borel $\sigma$-algebra $\mcal{B}(\Real^d)$ is generated by the collection of rectangles in $\Real^d$.
+    \item The Borel $\sigma$-algebra $\mcal{B}(\overline{\Real})$ is generated by the collection of open intervals in $\overline{\Real}$.
+  \end{enumerate} 
+  \end{proposition}
+\end{itemize}
+
+\section{Sequences of Sets and Their Limits}
+
+\begin{itemize}
+  \item In this section, we are concerned with the sequence $\{A_n : n \in \Nat \}$ of sets.
+  
+  \item \begin{definition}[monotonically increasing sequence of sets]
+    We write $A_n \uparrow A$ if
+    \begin{itemize}
+      \item $A_n \subseteq A_{n+1}$ for all $n \in \Nat$, and
+      \item $\bigcup_{n=1}^\infty A_n = A$.
+    \end{itemize}
+  \end{definition}
+
+  \item \begin{definition}[monotoically decreasing sequence of sets]
+    We write $A_n \downarrow A$ if
+    \begin{itemize}
+      \item $A_n \supseteq A_{n+1}$ for all $n \in \Nat$, and
+      \item $\bigcap_{n=1}^\infty A_n = A$.
+    \end{itemize} 
+  \end{definition}
+
+  \item Let $(S, \mcal{S})$ be a measurable space. If $A_n \in \mcal{S}$ for all $n$, then it follows that
+  \begin{align*}
+    A_n \uparrow A &\implies A \in \mcal{S}, \\
+    A_n \downarrow A &\implies A \in \mcal{S}.
+  \end{align*}
+
+  \item \begin{definition}[limit supremum and limit infemum] Define
+    \begin{align*}
+      \limsup_{n \rightarrow \infty} A_n &= \bigcap_{n=1}^\infty \bigcup_{m=n}^\infty A_m, \\
+      \liminf_{n \rightarrow \infty} A_n &= \bigcup_{n=1}^\infty \bigcap_{m=n}^\infty A_m.
+    \end{align*}
+  \end{definition}
+
+  \item \begin{proposition}[limit supremum = infinitely often]
+    \begin{align*}
+      \liminf_{n \rightarrow \infty} A_n
+      &= \{ a : \mbox{for every $m \in \Nat$, there exists $n(a,m) \geq m$ such that $a \in A_{n(a,m)}$} \} \\
+      &= \{ a : a \in A_n \mbox{ for infinitely many $n$} \}.
+    \end{align*}
+  \end{proposition}
+
+  \item \begin{proposition}[limit infemum = eventually]
+    \begin{align*}
+      \liminf_{n \rightarrow \infty} A_n
+      &= \{ a : \mbox{there exists $m(a) \in \Nat$ such that $a \in A_{m}$ for all $m \geq m(a)$}\} \\
+      &= \{ a : \mbox{$a \in A_m$ for all large $m$'s}\}.
+    \end{align*}
+  \end{proposition}
+
+  \item Again, for a measureable space $(S, \mcal{S})$, if $A_n \in \mcal{S}$ for all $n$, we have that
+  \begin{align*}
+    \limsup_{n \rightarrow \infty} A_n = A &\implies A \in \mcal{S}, \\
+    \liminf_{n \rightarrow \infty} A_n = A &\implies A \in \mcal{S}.
+  \end{align*}
+
+  \item \begin{definition}[indicator function]
+    Let $A$ be a set. The {\bf indicator function} $\mathbbm{1}_A$ is given by
+    \begin{align*}
+      \mathbbm{1}_A(x) = \begin{cases}
+        1, & x \in A, \\
+        0, & x \not\in A.
+      \end{cases}
+    \end{align*}
+  \end{definition}
+
+  \item \begin{definition}[limit of sequence of sets]
+    For a sequence of sets $\{ A_n : n \in \Nat \}$ such that each $A_n \subseteq S$, we write
+    $$\lim_{n \rightarrow \infty} A_n = A$$
+    or simply
+    $$A_n \rightarrow A$$
+    if
+    $$\lim_{n \rightarrow \infty} \mathbbm{1}_{A_n}(x) = \mathbbm{1}_{A}(x)$$
+    for all $x \in S$.
+  \end{definition}
+
+  \item \begin{proposition}[limit, lim sup, and lim inf]
+    If $A_n \rightarrow A$, then $$A = \limsup_{n\rightarrow \infty} A_n = \liminf_{n \rightarrow \infty} A_n.$$
+  \end{proposition}
+  \item The last proposition implies that, for a measurable space $(S, \mcal{S})$ such that $A_n \in \mcal{S}$ for all $n$, it holds that
+  \begin{align*}
+    A_n \rightarrow A \implies A \in \mcal{S}.
+  \end{align*}
+\end{itemize}
+
+
+\section{Measures}
+
+\begin{itemize}
+  \item 
+  \begin{definition}[measure]
+    Let $\mcal{S}$ be a $\sigma$-algebra on $S$. A {\bf measure} is a function $\mu: \mcal{S} \rightarrow [0, \infty]$ with the following properties.
+    \begin{enumerate}
+      \item $\mu(\emptyset) = 0$.
+      \item $\mu$ is countably additive: for any sequence $\{E_n : n \in \Nat \}$ of disjoint measurable sets, it holds that
+      \begin{align*}
+        \mu\bigg( \bigcup_{n=1}^\infty E_n \bigg) = \sum_{n=1}^\infty \mu(E_n).
+      \end{align*}
+    \end{enumerate}
+  \end{definition}
+  
+  \item \begin{proposition}[properties of measures]
+    Let $\mu$ be a measure defined on a $\sigma$-algebra $\mcal{S}$. 
+    \begin{itemize}
+      \item[(a)] $\mu(\emptyset) = 0$.
+      
+      \item[(b)] If $E, F \in \mcal{S}$ and $E \subseteq F$, then $\mu(E) \leq \mu(F)$. If $\mu(E) < \infty$, then $\mu(F - E) = \mu(F) - \mu(E)$.
+    \end{itemize}
+    Moreover, let $\{ E_n : n \in \Nat \}$ be a sequence of sets such that $E_n \in \mcal{S}$ for all $n$.
+    \begin{itemize}
+      \item[(c)] If $E_n \uparrow E$, then $\lim_{n \rightarrow \infty} \mu(E_n) = \mu(E)$
+      
+      \item[(d)] If $E_n \downarrow E$ and $\mu(E_1) < \infty$, then $\lim_{n \rightarrow \infty} \mu(E_n) = \mu(E)$.
+    \end{itemize}
+  \end{proposition}
+
+  \item \begin{definition}[limit supremum and limit infemum]
+    Let $\{ a_n : n \in \Nat \}$ be sequence of real numbers. Then,
+    \begin{align*}
+      \limsup_{n \rightarrow \infty} a_n &= \inf_{n \in \Nat} \sup_{m \geq n} a_m, \\
+      \liminf_{n \rightarrow \infty} a_n &= \sup_{n \in \Nat} \inf_{m \geq n} a_m.
+    \end{align*}
+  \end{definition}
+
+  \item \begin{theorem}[Fatou's lemma for sets]
+    $$\mu \bigg( \liminf_{n \rightarrow \infty } E_n \bigg) \leq \liminf_{n \rightarrow \infty} \mu(E_n).$$
+  \end{theorem}
+
+  \item \begin{definition}[finite measure]
+    If $\mu(E) < \infty$ for all $E \in \mcal{S}$, we say that $\mu$ is {\bf finite}.
+  \end{definition}
+
+  \item \begin{theorem}[reverse Fatou lemma]
+    Let $\mu$ be a finite measure. For a sequence of measurable sets $\{ E_n : n \in \Nat \}$, we have that
+    \begin{align*}
+      \mu\bigg(\limsup_{n \rightarrow \infty} E_n\bigg) \geq \limsup_{n \rightarrow \infty} \mu(E_n).
+    \end{align*}
+  \end{theorem}
+  We emphasize that this also works for finite measures.
+
+  \item \begin{corollary}
+  Let $\mu$ be a finite measure. Let $\{ E_n : n \in \Nat \}$ be a sequence of measurable sets such that  $E_n \rightarrow E$. Then, $$\lim_{n \rightarrow \infty} \mu(E_n) = \mu(E).$$
+  \end{corollary}
+  Again, this only works for finite measures.
+  
+  \item \begin{definition}[probability measure] 
+    A {\bf probability measure} is a finite measure with $\mu(S) = 1$.
+  \end{definition}
+
+  \item \begin{definition}[measure space] 
+    A {\bf measure space} is a triple $(S, \mcal{S}, \mu)$ where $S$ is a non-empty set, $\mcal{S}$ is a $\sigma$-algebra on $S$, and $\mu$ is a measure on $\mcal{S}$.
+  \end{definition}
+
+  \item \begin{definition}[probability space]
+    A {\bf probability space} is a triple $(\Omega, \mcal{E}, P)$ where $\Omega$ is a non-empty set, $\mcal{E}$ is a $\sigma$-algebra on $\Omega$, and $P$ is a probability measure on $\Sigma$. We often call $\Omega$ the {\bf sample space}. An element of $\mcal{E}$ is called an {\bf event}. If $E$ is an event, $P(E)$ is referred to as the {\bf probability} of $E$.
+  \end{definition}
+\end{itemize}
+
+\section{Measure Zero}
+
+\begin{itemize}
+  \item \begin{definition}[measure zero, null set, and almost everywhere]
+    In a measure space $(S, \mcal{S}, \mu)$, a set $N \in \mcal{S}$ is set to be of {\bf measure zero} or a {\bf null set} if $\mu(N) = 0$. A property that holds on $N^c$ is said to hold {\bf $\mu$-almost everywhere}. In the context where $\mu$ is clear, we says that a property holds just {\bf almost everywhere}.
+  \end{definition}
+
+  \item \begin{definition}[completeness]
+    A measure space $(S, \mcal{S}, \mu)$ is said to be {\bf complete} if every subset of a set of measure zero is also measurable.
+  \end{definition}
+
+  \item \begin{definition}[completion]
+    Let $(S, \mcal{S}, \mu)$ be a measure space. The {\bf $\mu$-completion} of $(S,\mcal{S},\mu)$ is the tuple $(S, \overline{S}, \overline{\mu})$ where
+    \begin{align*}
+      \overline{S} &= \{ A \cup M : A \in \mcal{S}, M \subseteq N \mbox{ where } N \in \mcal{S} \mbox{ and } \mu(N) = 0 \}, \mbox{ and }\  
+      \overline{\mu}(A \cup M) = \mu(A).
+    \end{align*}
+  \end{definition}
+
+  \item \begin{theorem}
+    The $\mu$-completion $(S, \overline{S}, \overline{\mu})$ of $(S, \mcal{S}, \mu)$ is a complete measure space.
+  \end{theorem}
+
+  \item In a probability space $(\Omega, \mcal{E}, P)$, if $N$ is a null set and $E = N^c$, then we have that $P(E) = 1$.
+
+  \item \begin{definition}[almost surely]
+    A property that is true on a event $E$ such that $P(E) = 1$ is said to be true {\bf almost surely} or {\bf with probability 1}.
+  \end{definition}
+
+  \item \begin{proposition}
+    If $E_n \in \mcal{E}$ and $P(E_n) = 1$ for all $n$, then $P(\bigcap_{n=1}^\infty E_n) = 1$.
+  \end{proposition}
+
+  \item \begin{theorem}[first Borel--Cantelli lemma]
+    Let $\{ E_n : n \in \Nat \}$ be a sequence of events such that $\sum_{n = 1}^\infty P(E_n) < \infty$. Then,
+    \begin{align*}
+      P\bigg( \limsup_{n \rightarrow \infty} E_n \bigg) = 0. 
+    \end{align*}
+  \end{theorem}
+\end{itemize}
+
+\section{Conditional Probability and Independence} \label{sec:conditional-prob}
+
+\begin{itemize}
+  \item In this section, we work with a probability space $(\Omega, \mcal{E}, P)$.
+  
+  \item \begin{definition}[independence]
+    Two events $E$ and $F$ are {\bf independent} if $P(E \cap F) = P(E) P(F)$. A collection of events $\{ E_\alpha : \alpha \in A \}$ is an {\bf independent collection} if, for every finite subset $B$ of $A$, we have that
+    \begin{align*}
+      P \bigg( \bigcap_{\beta \in B} E_\beta \bigg) = \prod_{\beta \in B} P(E_\beta).
+    \end{align*} 
+  \end{definition}
+
+  \item \begin{proposition}
+    If $E$ and $F$ are independent, so are 
+    \begin{enumerate}
+      \item $E$ and $F^c$, 
+      \item $E^c$ and $F$, and 
+      \item$E^c$ and $F^c$.
+    \end{enumerate}
+  \end{proposition}
+
+  \item \begin{definition}[conditional probability]
+    Let $E$ and $F$ be events such that $P(F) > 0$. The {\bf condition probability of $E$ given $F$} is $$P(E|F) = \frac{P(E \cap F)}{P(F)}.$$
+  \end{definition}
+
+  \item \begin{proposition}
+    Suppose that $P(F) > 0$.
+    \begin{itemize}
+      \item $E$ and $F$ are independent if and only if $P(E|F) = P(E)$.
+      \item The mapping $E \mapsto P(E|F)$ defines a new probability measure on $\mcal{E}$. 
+    \end{itemize}
+  \end{proposition}
+
+  \item \begin{proposition}
+    If $E_1, E_2, \dotsc, E_n \in \mcal{E}$ and $P(E_1 \cap E_2 \cap \dotsb \cap E_n) > 0$, then
+    \begin{align*}
+      P(E_1 \cap E_2 \cap \dotsb \cap E_n) = P(E_1) P(E_2 | E_1) P(E_3 | E_1 \cap E_2) \dotsm P(E_n | E_1 \cap E_2 \cap \dotsb \cap E_{n-1}).
+    \end{align*}
+  \end{proposition}
+
+  \item \begin{definition}[partition]
+    A collection of events $\{ E_\alpha : \alpha \in A \}$ is called a {\bf partition} of $\Omega$ if 
+    \begin{enumerate}
+      \item the events are pairwise disjoint, and 
+      \item $\bigcup_{\alpha \in A} E_\alpha = \Omega$.
+    \end{enumerate}  
+  \end{definition}
+
+  \item \begin{proposition}[partition equation]
+    Let $\{ E_n \}$ be a finite or countable partition of $\Omega$. Then, if $E \in \mcal{E}$, then
+    \begin{align*}
+      P(E) = \sum_{n} P(E|E_n) P(E_n).
+    \end{align*}
+  \end{proposition}
+
+  \item \begin{theorem}[Bayes']
+    Let $\{ E_n \}$ be a finite or countable partition of $\Omega$. Let $E$ be an event such that $P(E) > 0$. Then, for any $n$,
+    \begin{align*}
+      P(E_n | E) = \frac{P(E | E_n) P(E_n)}{\sum_{m} P(E|E_m)P(E_m)}.
+    \end{align*}
+  \end{theorem}
+\end{itemize}
+
+\section{Probabilities on a Finite or Countable Space}
+
+\begin{itemize}
+  \item Now, we assume that $\Omega$ is finite or countable.
+  
+  \item In this case, $2^\Omega$ is a $\sigma$-algebra. So, we naturally take $\mcal{E} = 2^\Omega$.
+  
+  \item \begin{definition}[atom]
+    An {\bf atom} is a set $\{ \omega \}$ where $\omega \in \Omega$. We denote the probability of an atom $P(\{ \omega\})$ by $p_\omega$ or $P(\omega)$. 
+  \end{definition}
+
+  \item A probability on a finite or countable set $\Omega$ is characterized by its values on the atoms.
+  \begin{theorem}
+    Let $\{ p_\omega : \omega \in \Omega \}$ be a collection of real numbers indexed by members of $\Omega$. Then, there exists a unique probability measure $P$ such that $P(\{ \omega \}) = p_\omega$ if and only if (1) $p_\omega \geq 0$ for all $\omega$, and (2) $\sum_{\omega \in \Omega} p_\omega = 1$. In particular, we have that
+    \begin{align*}
+      P(E) = \sum_{\omega \in E} p_\omega.
+    \end{align*}
+    for any $E \in \mcal{E}$.  
+  \end{theorem}
+
+  \item \begin{definition}[uniform probability measure]
+    A probability measure $P$ on a finite set $\Omega$ is called {\bf uniform} if $p_\omega = P(\{ \omega \})$ does not depend on $\omega$.
+  \end{definition}
+
+  \item With a uniform probability measure, we have that
+  \begin{align*}
+    P(\{ \omega \}) = \frac{1}{\#(\Omega)}.
+  \end{align*}
+  Moreover,
+  \begin{align*}
+    P(E) = \frac{\#(E)}{\#(\Omega)}.
+  \end{align*}
+\end{itemize}
+
+\section{Random Variables on a Countable Space}
+
+\begin{itemize}
+  \item Again, we assume that $\Omega$ is countable and $\mcal{E} = 2^\Omega$.
+
+  \item \begin{definition}[random variable, countable case]
+    A {\bf random variable} is a function $\Omega \rightarrow T$ where $T$ is a set.
+  \end{definition}
+
+  \item We typically denote a random variable by uppercase letters such as $X$, $Y$, and $Z$.
+  
+  \item \begin{definition}[image]
+    The {\bf image} of $X$ is the set $X(\Omega) = \{ X(\omega) : \omega \in \Omega \}$.
+  \end{definition}
+  
+  \item Because $\Omega$ is countable, the image $X(\Omega)$ is either finite or countably infinite even if $T$ is uncountable.
+  
+  \item \begin{definition}[preimage]
+    Let $A \subseteq T$. The {\bf preimage of $A$ under $X$} is the set $$X^{-1}(A) = \{ \omega : X(\omega) \in A \}.$$
+  \end{definition}
+
+  \item \begin{definition}[distribution of a random variable]
+    The {\bf distribution of $X$} is the function $P_X: 2^{X(\Omega)} \rightarrow [0,1]$ defined by
+    \begin{align*}
+      P_X(A) = P(X^{-1}(A))
+    \end{align*}
+    for all $A \subseteq X(\Omega)$.
+  \end{definition}
+  
+  \item We sometimes write $P_X(A)$ as $P(X \in A)$.
+  
+  \item \begin{theorem}
+    Let $X$ be a random variable. Then, $P_X$ is a probability measure on $2^{X(\Omega)}$. It is completely determined by the collection of numbers $\{ p_{X,x} : x \in X(\Omega )\}$ where
+    \begin{align*}
+      p_{X,x} = P(X = x) = \sum_{\{ \omega: X(\omega) = x \}} P(\omega).
+    \end{align*}
+    Moreover,
+    \begin{align*}
+      P_X(A) = \sum_{a \in A} P(X = a).
+    \end{align*}
+  \end{theorem}
+\end{itemize}
+
+\section{Expectations on a Countable Space}
+
+\begin{itemize}
+  \item \begin{definition}[expectation]
+    Let $X$ be a real-valued random variable on a countable space $\Omega$. (In other words, $X: \Omega \rightarrow \Real$.) The expectation of $X$, denoted by $E[X]$, is defined to be
+    \begin{align*}
+      E[X] = \sum_{\omega \in \Omega} X(\omega) P(\omega),
+    \end{align*}
+    provided that the sum make sense: that is, when the sum evaluates to the same value even after exchanging the order of the terms. This happens when $\Omega$ is finite or when the sum is absolutely convergent: $\sum_{\omega \in \Omega} |X(\omega)| P(\omega) < \infty$. 
+  \end{definition}
+
+  \item \begin{proposition}[linearity of expectation]
+    The operator $E$ is linear. In other words, if $X$ and $Y$ be real-valued random variables on a countable space, then we have that 
+    \begin{itemize}
+      \item $E[cX] = cE[X]$ for any $c \in \Real$, and
+      \item $E[X+Y] = E[X] + E[Y]$.
+    \end{itemize}
+  \end{proposition}
+
+  \item \begin{proposition}
+    Let $X$ and $Y$ be real-valued random variables on a countable space $\Omega$. If (1) $X(\omega) \leq Y(\omega)$ for all $\omega \in \Omega$ and (2) $E[X]$ and $E[Y]$ are finite, then $E[X] \leq E[Y]$.
+  \end{proposition}
+
+  \item \begin{theorem}[law of the unconcious statistician, aka LOTUS] \label{thm:lotus-v1}
+    Let $g: \Real \rightarrow \Real$ be an arbitrary function and $X$ be a real-valued random variable on a countable space $\Omega$. Then,
+    \begin{align*}
+      E[g(X)] = \sum_{\omega \in \Omega} g(X(\omega))P(\omega) = \sum_{x \in X(\Omega)} g(x) P(X = x). 
+    \end{align*}
+  \end{theorem}
+
+  \item LOTUS implies that $$E[X] = \sum_{x \in X(\Omega)} x P(X = x).$$
+
+  \item \begin{proposition}
+    If $X = \mathbbm{1}_A$ is the indicator function of an event $A$, then $E[X] = P(A)$. 
+  \end{proposition}
+  
+  \item \begin{theorem} \label{thm:pre-markov}
+    Let $h: \Real \rightarrow [0,\infty]$ be a non-negative function. Let $X$ be a real-valued random variable. Then,
+    \begin{align*}
+      P(\{ \omega: h(X(\omega)) \geq a \}) \leq \frac{E[h(X)]}{a}
+    \end{align*}
+    for all $a > 0$.
+  \end{theorem}
+
+  \item \begin{corollary}[Markov's inequality]
+    \begin{align*}
+      P(|X| \geq a) \leq \frac{E[|X|]}{a}
+    \end{align*}
+    for all $a > 0$.
+  \end{corollary}
+
+  \item \begin{definition}[the space $\mcal{L}^1$]
+    The space of real-valued random variables which have finite expectations is called $\mcal{L}^1$.
+  \end{definition}
+
+  \item By linearity of expectation, we have that $\mcal{L}^1$ is a vector space.
+
+  \item \begin{proposition}
+    If $E[X^2] < \infty$, then so is $E[|X|]$ and $E[X]$. In other words, $X^2 \in \mcal{L}^1 \implies X \in \mcal{L}^1.$ 
+  \end{proposition}
+  
+  \item \begin{definition}[variance]
+    Let $X$ be a random variable such that $E[X^2] \in \mcal{L}^1$. The {\bf variance of $X$}, denoted by $\Var(X)$, is defined to be
+    \begin{align*}
+      \Var(X) = E[(X - E[X])^2].
+    \end{align*}
+  \end{definition}
+
+  \item We can show that $\Var(X) = E[X^2] - (E[X])^2$.
+
+  \item \begin{definition}[standard deviation]
+    The {\bf standard deviation of $X$}, denoted by $\Stdev(X)$, is defined to be the non-negative square root of $\Var(X)$.
+  \end{definition}
+
+  \item A more common notation for the standard deviation is $\sigma(X)$. However, we will use this notation for the $\sigma$-algebra generated by $X$ (Definition~\ref{def:sigma-algebra-rand-var}) in this note.
+
+  \item \begin{theorem}[Chebyshev's inequality]
+    If $X^2 \in \mcal{L}^1$, then we have that, for all $a > 0$,
+    \begin{align*}
+      P(|X| \geq a) &\leq \frac{E[X^2]}{a^2}, \\
+      P(|X - E[X]| \geq a) &\leq \frac{\Var(X)}{a^2}.
+    \end{align*}
+  \end{theorem}
+\end{itemize}
+
+\section{Construction of Measures on Uncountable Space}
+
+\begin{itemize}
+  \item In this section, we assume that the set $S$ is uncountable.
+  
+  \item Given a $\sigma$-algebra $\mcal{S}$ on $S$, it is very hard to define a measure on $\mcal{S}$ from scratch.
+  
+  \item Instead, we follow the following strategy.
+  \begin{itemize}
+    \item Come up with a collection of sets $\mcal{S}_0$ on $S$ such that $\mcal{S} \subseteq \sigma(\mcal{S}_0)$.
+    \item Show that $S_0$ is a structure called a ``semi-ring.''
+    \item Define a measure-like function $\mu$ on $\mcal{S}_0$.
+    \begin{itemize}
+      \item Since $\mcal{S}_0$ is not a $\sigma$-algebra, we call $\mu$ a ``pre-measure'' instead of a measure.
+    \end{itemize}
+    \item ``Extend'' $\mu$ to another function $\mu^*$ so that $\mu^*$ also works on sets in $\sigma(\mcal{S}_0) - \mcal{S}_0$.
+    \begin{itemize}
+      \item Actually, we identify a collection $\mcal{S}_0^*$ of sets on which $\mu^*$ are defined. 
+      \item The sets in the collection are called ``$\mu^*$-measureable sets.''
+      \item We then show that $\sigma(\mcal{S}_0) \subseteq \mcal{S}_0^*$.
+    \end{itemize}
+    \item Show that $\mu^*$ is an object called an ``outer measure''.
+    \item Apply ``Carath\'{e}odory extension theorem.''
+    \begin{itemize}
+      \item It states that, if $\mu^*$ is an outer measure defined on a collection of $\mu^*$-measurable sets $\mcal{S}^*_0$, then
+      (1) $\mcal{S}_0^*$ is a $\sigma$-algebra, and 
+      (2) $\mu^*$ is a measure on $\mcal{S}_0^*$. 
+    \end{itemize}
+    \item $\mu^*$ is the measure on $\mcal{S}$ that we sought.
+  \end{itemize}
+
+  \item \begin{definition}[semi-ring]
+    Let $S$ be a set. A collection of sets $\mcal{S}_0$ of subsets $S$ is called a {\bf semi-ring on $S$} if it satisfies the following properties.
+    \begin{itemize}
+      \item[(a)] $\emptyset \in \mcal{S}_0$.
+      \item[(b)] If $A, B \in \mcal{S}_0$, then $A \cap B \in \mcal{S}_0$ as well.
+      \item[(c)] For any $A, B \in \mcal{S}_0$, there exists a finite collection of disjoint sets $C_1, C_2, \dotsc, C_n \in \mcal{S}_0$ such that $A - B = \cup_{i=1}^n C_i$.
+    \end{itemize} 
+  \end{definition}
+
+  \item An algebra (Definition~\ref{def:algebra}) is always a semi-ring. This is because an algebra is closed under finite intersection. Moreover, it is also closed under set difference because $A - B = A \cup B^c$, and so property (c) is automatically satisfied.
+
+  \item \begin{definition}[pre-measure]
+    Let $\mcal{S}_0$ a collection of subsets of $S$. A {\bf pre-measure on $\mcal{S}_0$} is a function $\mu: \mcal{S}_0 \rightarrow [0,\infty]$ that satisfies the following properties.
+    \begin{enumerate}
+      \item $\mu(\emptyset) = 0$.
+      \item It is countably additive. That is, for any sequence $\{ E_n \in \mcal{S}_0 : n \in \Nat \}$ of disjoint sets such that $\bigcup_{n=1}^\infty E_n \in \mcal{S}_0$, we have that
+      \begin{align*}
+        \mu\bigg( \bigcup_{n=1}^\infty E_n \bigg) = \sum_{n=1}^\infty \mu(E_n).
+      \end{align*} 
+    \end{enumerate}
+  \end{definition}
+  Note that a pre-measure has all the properties that a measure has with the exception that $\mcal{S}_0$ is not a $\sigma$-algebra. (This is why we have to say that $\bigcup_{n=1}^\infty E_n \in \mcal{S}_0$.)
+
+  \item \begin{definition}[extension]
+    Let $\mcal{S}_0$ be a semi-ring on $S$ and $\mu$ be a pre-measure on $\mcal{S}$. The {\bf extension of $\mu$} is the function $\mu^*: 2^S \rightarrow [0,\infty]$ such that
+    \begin{align*}
+      \mu^*(E) = \inf \bigg\{ \sum_{n=1}^\infty \mu(E_n) : \{ E_n \}_{n \in \Nat} \mbox{ is a sequence of sets in $\mcal{S}_0$ such that } E \subseteq \bigcup_{n=1}^\infty E_n \bigg\}
+    \end{align*}
+    if $E$ can be covered by a countable number of sets in $\mcal{S}_0$. Otherwise, we set $\mu^*(E) = \infty$.
+  \end{definition}
+
+  \item We note that $\mu^*$ is defined on all $E \in \sigma(\mcal{S}_0)$. This is because $\mcal{S}_0$ is an algebra, so $S \in \mcal{S}_0$. Hence, for every $E \subseteq S$, there is at least one cover: the one that uses $S$.
+  
+  \item \begin{definition}[outer measure]
+    Let $S$ be a set. An {\bf outer measure on $S$} is a function $\mu^*: 2^S \rightarrow [0,\infty]$ that satisfies the following properties.
+    \begin{enumerate}
+      \item $\mu^*(\emptyset) = 0$.
+      \item If $E \subseteq F \subseteq S$, then $\mu^*(E) \leq \mu^*(F)$.
+      \item $\mu^*$ is countably subadditive. That is, if ${E_n : n \Nat}$ is a countable collection of subsets of $S$, then
+      \begin{align*}
+        \mu^*\bigg( \bigcup_{n=1}^\infty E_n \bigg) \leq \sum_{n=1}^\infty \mu^*(E_n).
+      \end{align*}
+    \end{enumerate}
+  \end{definition}
+
+  \item \begin{theorem}[outer measure from pre-measure]
+    Let $\mcal{S}_0$ be semi-ring on $S$. Let $\mu_0$ be a pre-measure on $\mcal{S}_0$. Let $\mu^*$ be the extension of $\mu$. Then, $\mu^*$ is an outer measure on S.
+  \end{theorem}
+
+  \item \begin{definition}[$\mu^*$-measurable]
+    Let $\mu^*$ be an outer measure on $S$. A subset $E$ of $S$ is said to be {\bf $\mu^*$-measurable} if
+    \begin{align*}
+      \mu^*(A) = \mu^*(A \cap E) + \mu^*(A \cap E^c)
+    \end{align*}
+    for every subset $A$ of $S$.
+  \end{definition}
+
+  \item A $\mu^*$-measurable set $E$ splits any set $A$ into pieces whose outer measures add up to the outer measure of $A$. In other words, a set is $\mu^*$-measurable if it splits other sets in a ``nice'' way.
+    
+  \item \begin{theorem}[Carath\'{e}dory extension theorem]
+    Let $\mcal{S}_0$ be a semi-ring on $S$, $\mu$ be a pre-measure on $\mcal{S}_0$, and $\mu^*$ be the extension of $\mu$. Then, the collection of $\mu^*$-measurable sets is a $\sigma$-algebra that contains $\sigma(\mcal{S}_0)$, and $\mu^*$ is a measure on this collection.
+  \end{theorem}
+
+  \item \begin{proposition}[completeness of extension]
+    The $\mu^*$ measure constructed with the Carath\'{e}odory extension theorem is complete.
+  \end{proposition}
+\end{itemize}
+
+\section{Uniqueness of Measure}
+
+\begin{itemize}
+  \item \begin{definition}[$\sigma$-finite measure]
+    Let $\mcal{S}$ be a $\sigma$-algebra on $S$, and $\mu$ be a measure on $\mcal{S}$. If there exists a sequence $\{E_n : n \in \Nat \}$ of sets in $\mcal{S}$ with $\bigcup_{n=1}^\infty E_n = S$ and such that $\mu(E_n) < \infty$ for all $n$, then we say that $\mu$ is {\bf $\sigma$-finite}.
+  \end{definition}
+
+  \item We can define a {\bf $\sigma$-finite pre-measure} in a similar way: just take $\mcal{S}$ to be an arbitrary collection of sets instead of an algebra.
+
+  \item \begin{definition}[Hahn extension theorem]
+    Let $\mcal{S}_0$ be a semi-ring on $S$ and $\mu$ is a pre-measure on $\mcal{S}_0$. If $\mu$ is $\sigma$-finite, then he extension $\mu^*$ of $\mu$ is the unique measure $\sigma(\mcal{S}_0)$ such that $\mu^*(E) = \mu(E)$ for all $E \in \mcal{S}_0$.
+  \end{definition}
+
+  \item When the measure is finite, however, we can show that the measure is unique with much less machinery.
+  
+  \item \begin{definition}[$\pi$-system]
+    Let $S$ be a set. A collection $\mcal{S}$ of subsets of $S$ is called a {\bf $\pi$-system} if it closed under finite intersection: if $A, B \in \mcal{S}$, then $A \cap B \in \mcal{S}$.
+  \end{definition}
+
+  \item It should be clear that a semi-ring is a $\pi$-system.
+  
+  \item \begin{theorem}[uniqueness of finite measure]
+    Let $\mcal{S}$ be a $\pi$-system on $S$ that contains $S$. Let $\mu_1$ and $\mu_2$ be two finite measures on $\sigma(\mcal{S})$ such that $\mu_1(E) = \mu_2(E)$ for all $E \in \mcal{S}$. Then, it is true that $\mu_1(E) = \mu_2(E)$ for all $E \in \sigma(\mcal{S})$ too.
+  \end{theorem}
+\end{itemize}
+
+\section{Lebesgue Measures}
+
+\begin{itemize}
+  \item In this section, we constrruct a measure on $\Real$ and another one on $\Real^d$.
+  
+  \item \begin{definition} \label{def:collection-of-intervals}
+    Let $\mcal{F}$ be a collection of subsets of $\Real$ that contains all intervals of the forms $$(a,b], (-\infty, b], (a,\infty), \mbox{ and } (-\infty, \infty)$$ and all their finite unions.
+  \end{definition}
+
+  \item \begin{proposition}
+    $\mcal{F}$ is an algebra (and so a semi-ring) on $\Real$.
+  \end{proposition}
+
+  \item \begin{proposition}
+    $\mcal{B}(\Real) \subseteq \sigma(\mcal{F}) $.
+  \end{proposition}
+
+  \item \begin{definition}
+    Define the {\bf length function} $\ell$ to be a function $\mcal{F}$ to $[0,\infty]$ with the following properties.
+    \begin{itemize}
+      \item $\ell((a,b]) = b-a$.
+      \item $\ell((-\infty,b]) = \ell((a,\infty)) = \ell((-\infty,\infty)) = \infty$.
+      \item For $E = E_1 \cup E_2 \cup \dotsb$ where each $E_i$ is an interval of the four forms listed in $\mcal{F}$'s definition and any two $E_i$ and $E_j$ are disjoint, we have that
+      \begin{align*}
+        \ell(E) = \sum_{i=1}^\infty \ell(E_i).
+      \end{align*} 
+    \end{itemize}
+  \end{definition}
+
+  \item \begin{proposition}
+    $\ell$ is a $\sigma$-finite pre-measure on $\mcal{F}$.
+  \end{proposition}
+
+  \item \begin{definition} \label{def:lebesgue-measure-1d}
+    The {\bf Lebesgue measure on $\Real$} is the extension $\ell^*$ of $\ell$.
+  \end{definition}
+  
+  \item Using previous results, the Lebesgue measure $\ell^*$ the unique measure on $\mathcal{B}(\Real)$ that agrees with the natural notion of length of intervals. 
+  
+  \item The construction above can be extended to $\Real^d$.
+  
+  \item \begin{definition}
+    Let $\mcal{F}^d_* = \{ \mcal{I}_1 \times \mcal{I}_2 \times \dotsb \times \mcal{I}_d : \mcal{I}_k \mbox{ is one of the four forms in Definition~\ref{def:collection-of-intervals}}\}$. Let $\mcal{F}^d$ be the smallest set that contains $\mcal{F}_*^d$ and all their finite unions.
+  \end{definition}
+  
+  \item \begin{proposition}
+    $\mcal{F}^d$ is an algebra (and so a semi-ring) on $\Real^d$, and $\mcal{B}(\Real^d) \subseteq \sigma(\mcal{F}^d)$.
+  \end{proposition}
+
+  \item \begin{definition}
+    The {\bf volume function v} is a function from $\mcal{F}^d$ to $[0,\infty]$ with the following properties.
+    \begin{itemize}
+      \item If $\mcal{I}_1 \times \mcal{I}_2 \times \dotsb \times \mcal{I}_d \in \mcal{F}^d_*$, then
+      \begin{align*}
+        v(\mcal{I}_1 \times \mcal{I}_2 \times \dotsb \times \mcal{I}_d) = \ell(\mcal{I}_1) \ell(\mcal{I}_2) \dotsm \ell(\mcal{I}_d).
+      \end{align*}
+      \item If $\mcal{R} = \bigcup_{i=1}^\infty \mcal{R}_i$ where each $\mcal{R}_i$ is an element of $\mcal{F}^d_*$ and any two $\mcal{R}_i$ and $\mcal{R}_j$ are disjoint, then
+      \begin{align*}
+        v(\mcal{R}) = \sum_{i=1}^\infty v(\mcal{R}_i).
+      \end{align*}
+    \end{itemize}
+  \end{definition}
+
+  \item \begin{proposition}
+    $v$ is a $\sigma$-finite pre-measure on $\mcal{F}^d$.
+  \end{proposition}
+
+  \item \begin{definition} \label{def:lebesgue-measure}
+    The {\bf Lebesgue measure on $\Real^d$} is the extension $v^*$ of $v$.
+  \end{definition}
+
+  \item \begin{proposition}
+    The Lebesgue measure, when restricted to the Borel $\sigma$-algebra $\mcal{B}([0,1])$, is a probability measure.
+  \end{proposition}
+\end{itemize}
+
+\section{Probability Measures on $\Real$}
+
+\begin{itemize}
+  \item We just saw that there's a probability measure on $\mcal{B}([0,1])$. In this section, we will constructor probability measures on $\mcal{B}(\Real)$. 
+    
+  \item \begin{definition}[CDF] \label{def:cdf}
+    A function $F: \Real \rightarrow [0,1]$ is called a {\bf cumulative distribution function (CDF)} if it satisfies the following properties.
+    \begin{enumerate}
+      \item $F$ is non-decreasing.
+      \item $F$ is right continuous. This means that $\lim_{y \rightarrow x^+} F(y) = F(x)$ for all $x \in \Real$.
+      \item $\lim_{x \rightarrow -\infty} F(x) = 0$ and $\lim_{x \rightarrow \infty} F(x) = 1$.
+    \end{enumerate}
+  \end{definition}
+
+  \item We note that such a function exists, and we will list a number of them at the end of this section.
+
+  \item \begin{definition}
+    Let $\mcal{F}$ be defined as in Definition~\ref{def:collection-of-intervals}. Let $F$ be a cumulative distribution function. Define $P_0: \mcal{F} \rightarrow [0,1]$ so that the following properties are satisifed.
+    \begin{enumerate}
+      \item $P_0((a,b]) = F(b) - F(a)$.
+      \item $P_0((-\infty,b]) = F(b)$.
+      \item $P_0((a,\infty)) = 1 - F(a)$.
+      \item $P_0((-\infty,\infty)) = 1$.
+      \item Let $E_1$, $E_2$, $\dotsc$ be disjoint intervals where each $E_i$ is of one of the forms in Definition~\ref{def:collection-of-intervals}, then $P(\bigcup_{i=1}^\infty E_i) = \sum_{i=1}^\infty P(E_i).$ 
+    \end{enumerate}
+  \end{definition}
+
+  \item \begin{theorem}[existence of probability distribution on $\Real$]
+    $P_0$ is a finite pre-measure on $\mcal{F}$. As result, its extension $P$ to $\mcal{B}(\Real)$ is a unique probability measure on $\mcal{B}(\Real)$ such that $P(E) = P_0(E)$ for all $E \in \mcal{F}$.
+  \end{theorem}
+
+  \item \begin{definition}[CDF of a probability measure]
+    Let $P$ be a probability measure on $\mcal{B}(\Real)$. The {\bf cumulative distribution function (CDF) of $P$} is the function $F: \Real \rightarrow [0,1]$ such the $$F(x) = P((-\infty,x])$$ for all $x \in \Real$.  
+  \end{definition}
+
+  \item \begin{proposition}
+    The CDF of a probability measure $P$ is a CDF. That is, it satisfies all the properties in Definition~\ref{def:cdf}. 
+  \end{proposition}
+
+  \item This means that a function is a CDF if and only if it is a CDF of a probability distribution.
+
+  \item \begin{proposition}
+    A probability measure on $\mcal{B}(\Real)$ is completely characterized by its CDF. More precisely, let $P$ and $Q$ be two probability measures on $\mcal{B}(\Real)$. Let $F_P$ and $F_Q$ be the CDFs of $P$ and $Q$, respectively. Then, $F_P = F_Q \implies P = Q$.
+  \end{proposition}
+
+  \item \begin{proposition}
+    Let $P$ be a probability measure on $\mcal{B}(\Real)$ and let $F$ be its CDF. Let $$F(x^-) = \lim_{u \rightarrow x^-} F(u).$$
+    Then, we have that, for any $x < y$,
+    \begin{align*}
+      P((x,y]) &= F(y) - F(x) \\
+      P([x,y]) &= F(y) - F(x^-) \\
+      P((x,y)) &= F(y^-) - F(x) \\
+      P([x,y)) &= F(y^-) - F(x^-) \\
+      P(\{ x \}) &= F(x) - F(x^-).
+    \end{align*}
+    As a result, $P(\{x\}) = 0$ if and only if $F$ is continuous at $x$.
+  \end{proposition}
+
+  \item \begin{definition}[PDF]
+    A function $f: \Real \rightarrow \Real$ that is non-negative and $\int_{-\infty}^\infty f(x)\, \dee x = 1$ is called a {\bf probability density function (PDF)}.\footnote{For now, it suffice to say that the function in Riemann integrable. However, this also apply to Lebesgue integrable functions, which we have not defined yet.} 
+  \end{definition}
+
+  \item Given a PDF $f$, it follows that $\int_{-\infty}^x f(u)\, \dee u$ is a CDF. So, a PDF gives rise to a probability measure on $\mcal{B}(\Real)$, and it makes sense to talk about the PDF of a probability measure.
+\end{itemize}
+
+\subsection{Examples of Probabilty Measures on $\Real$}
+\begin{itemize}
+    
+    \item The {\bf step function}
+    \begin{align*}
+      F(x) = \begin{cases}
+        1, & x \geq a \\
+        0, & x < a
+      \end{cases}
+    \end{align*}
+    is a CDF. The associated probability measure
+    \begin{align*}
+      P(E) = \begin{cases}
+        1, & a \in E \\
+        0, & a \not\in E
+      \end{cases}
+    \end{align*}
+    is called the {\bf Dirac measure}. The PDF of this measure is the Dirac delta function $\delta(x-a)$.
+
+    \item The function
+    \begin{align*}
+      f(x) = \begin{cases}
+        \frac{1}{b-a}, & a \leq x \leq b, \\
+        0, & \mbox{otherwise}
+      \end{cases}
+    \end{align*} 
+    is a PDF called the {\bf uniform distribution on $[a,b]$}.
+    
+    \item Given $\beta > 0$, the function
+    \begin{align*}
+      f(x) = \begin{cases}
+        \beta e^{-\beta x}, & x \geq 0 \\
+        0, & x < 0
+      \end{cases}
+    \end{align*}
+    is a PDF called the {\bf exponential distribution with parameter $\beta$}.
+
+    \item Given $\mu \in \Real$ and $\sigma > 0$, the function
+    \begin{align*}
+      f(x) = \frac{1}{\sqrt{2\pi}\sigma} \exp\bigg( \frac{-(x - \mu)^2}{2\sigma^2} \bigg)
+    \end{align*}
+    is a PDF called the {\bf Gaussian distribution with mean $\sigma$ and variance $\sigma^2$}.
+\end{itemize}
+
+\section{Measurable Functions}
+
+\begin{itemize}
+  \item \begin{definition}[preimage]
+    Let $f: S \rightarrow T$ be any function. The {\bf preimage of $f$} is the function $f^{-1}: 2^T \rightarrow 2^S$ defined by
+    \begin{align*}
+      f^{-1}(\mathtt{T}) = \{ s : s \in S, f(s) \in \mathtt{T} \}
+    \end{align*}
+    for any $\mathtt{T} \subseteq T$.
+  \end{definition}
+
+  \item \begin{definition}[measurable function]
+    Let $(S, \mcal{S})$ and $(T, \mcal{T})$ be two measurable spaces. A function $f: S \rightarrow T$ is {\bf $\mcal{S}/\mcal{T}$-measurable} if $f^{-1}(\mathtt{T}) \in \mcal{S}$ for all $\mathtt{T} \in \mcal{T}$.
+  \end{definition}
+  When the context is clear, however, we simply say $f$ is ``$\mcal{S}$-measurable'' or just ``measurable.'' 
+
+  \item If $f$ is $\mcal{S}/\mcal{T}$-measurable, we can summarize it with a diagram as follows:
+  \begin{align*}
+    S \xrightarrow[\phantom{f^{-1}}]{f} T \\
+    \mcal{S} \xleftarrow[]{f^{-1}} \mcal{T}
+  \end{align*}
+
+  \item \begin{proposition}
+    Let $f: S \rightarrow T$ be an arbitrary function. The preimage function $f^{-1}$ preserves all relevant set operations. That is, it holds that:
+    \begin{enumerate}
+      \item $f^{-1}(\mathtt{T}^c) = ( f^{-1}(\mathtt{T}) )^c$, and
+      \item For any countable sequence $\{ \mathtt{T}_n : n \in \Nat \}$ such that $\mathtt{T}_n \in \mcal{T}$ for each $n$, we have that
+      \begin{align*}
+        f^{-1}\bigg( \bigcup_{n=1}^\infty \mathtt{T}_n \bigg) = \bigcup_{n=1}^\infty f^{-1}(\mathtt{T}_n).
+      \end{align*}
+    \end{enumerate}
+  \end{proposition}
+
+  \item \begin{theorem}
+    Let $\mcal{U}$ be a collection of subsets of $T$ such that $\sigma(\mcal{U}) = \mcal{T}$. A function $f: S \rightarrow T$ is a $\mcal{S}/\mcal{T}$-measruable function if and only if $f^{-1}(\mathtt{U}) \in \mcal{S}$ for all $\mathtt{U} \in \mcal{U}$.
+  \end{theorem}
+
+  \item The above theorem tells us that, in order to show that a function $f$ is measurable, it suffices to show that it is ``measurable'' on a collection $\mcal{U}$ which generates $\mcal{T}$.
+  \begin{itemize}
+    \item For example, to show that $f$ is $\mcal{S}/\mcal{B}(\Real)$-measurable, it suffices to show that it is $\mcal{S}/\mcal{F}$-measurable where $\mcal{F}$ is defined as in Definition~\ref{def:collection-of-intervals}.
+  \end{itemize}
+
+  \item \begin{theorem}[composition of measurable functions is measurable]
+    Let $(S,\mcal{S})$, $(T,\mcal{T})$, and $(U, \mcal{U})$ be measurable spaces. Let $f: S \rightarrow T$ be a $\mcal{S}/\mcal{T}$-measurable function and $g: T \rightarrow U$ be a $\mcal{T}/\mcal{U}$-measurable function. Then, the composition $g \circ f$ is a $\mcal{S}/\mcal{U}$-measurable function. 
+  \end{theorem}
+  
+  \item Here's the diagram of the situation in the theorem above.
+  \begin{align*}
+    S \xrightarrow[\phantom{f^{-1}}]{f} T \xrightarrow[\phantom{g^{-1}}]{g} U \\
+    \mcal{S} \xleftarrow[]{f^{-1}} \mcal{T} \xleftarrow[]{g^{-1}} \mcal{U}
+  \end{align*}
+
+  \item \begin{definition}[Borel space]
+    Let $S$ be a set endowed with a topology. The measurable space $(S,\mcal{B}(S))$ is called the {\bf Borel space}.
+  \end{definition}
+
+  \item \begin{definition}[Borel function]
+    Let $(S, \mcal{B}(S))$ and $(T,\mcal{B}(T))$ be two Borel spaces. We call a $\mcal{B}(S)/\mcal{B}(T)$-measurable function an {\bf $S$/$T$-Borel function} or simply a {\bf Borel function}.
+  \end{definition}
+
+  \item \begin{proposition}[continuous functions are Borel]
+    Let $(S, \mcal{B}(S))$ and $(T,\mcal{B}(T))$ be two Borel spaces. 
+    Any continuous function $f: S \rightarrow T$ is Borel.
+  \end{proposition}
+  This comes from the fact that, for any continuous function, the preimage of an open set is open.
+\end{itemize}
+
+\section{Measurable Real-Valued Functions}
+
+\begin{itemize}
+  \item In this section, we shall fix $(T, \mcal{T})$ to be $(\Real, \mcal{B}(\Real))$ or $(\overline{\Real}, \mcal{B}(\overline{\Real}))$. We will indicate the range by saying that the function is ``real-valued'' or ``extended real-valued''.
+
+  \item \begin{proposition}
+    A function $f: \mcal{S} \rightarrow \Real$ is $\mcal{S}$-measurable if and only if, for all $a \in \Real$, the set $f^{-1}((-\infty, a])$ is $\mcal{S}$-measurable. 
+   \end{proposition}
+   Note that the proposition is holds if we replace $(-\infty, a]$ with $(-\infty, a)$, $(a, \infty)$ or $[a, \infty)$. 
+
+  \item Examples of $\mcal{S}$-measurable real-valued functions:
+  \begin{itemize}
+    \item The constant function $f(x) = c$ for some $c \in \Real$.
+    \item The identity function $f: \Real \rightarrow \Real$ where $f(x) = x$. Here, the domain $(S,\mcal{S})$ is also $(\Real, \mcal{B}(\Real))$.
+  \end{itemize}
+
+  \item \begin{proposition}
+    An indicator function $\mathbbm{1}_A$ is $\mcal{S}$-measurable if and only if $A \in \mcal{S}$.
+  \end{proposition}
+
+  \item \begin{proposition}
+    If $f$ and $g$ are $\mcal{S}$-measurable real-valued functions and $c \in \Real$, then 
+    $$ cf, \qquad f^2, \qquad f+g, \qquad fg, \qquad |f|, \qquad 1/f, \qquad \min(f,g), \qquad \max(f,g) $$
+    are also $\mcal{S}$-measurable. For the case of $1/f$, we assume that $f(x) \neq 0$ for all $x \in S$.
+  \end{proposition}
+
+  \item It is convenient to work with extended real-valued function $f: S \rightarrow \overline{\Real}$. This is because, if we have a sequence $\{ f_n : n \in \Nat \}$ where $f_n: S \rightarrow \Real$, we also have that $\lim f_n$, $\limsup f_n$, and $\liminf f_n$ are also functions from $S$ to $\overline{\Real}$ if the limits exist.
+
+  \item \begin{definition} The collection of all extended real-valued $\mcal{S}$-measurable functions is denoted by $M(S,\mcal{S})$. The collection of non-negative functions in $M(S, \mcal{S})$ is denoted by $M^+(S,\mcal{S})$.
+  \end{definition}
+
+  \item \begin{proposition}
+    A function $f: S \rightarrow \overline{\Real}$ is $\mcal{S}$-measurable if and only if $f^{-1}([-\infty, a]) \in \mcal{S}$ for all $a \in \Real$.
+  \end{proposition}
+
+  \item Observe that
+  \begin{align*}
+    \{ \infty \} &= \bigcap_{n=1}^\infty [-\infty, n]^c, \\
+    \{ -\infty \} &= \bigcap_{n=1}^\infty [-\infty, -n].
+  \end{align*}
+  So,
+  \begin{align*}
+    f^{-1}(\{ \infty \}) &= f^{-1}\bigg( \bigcap_{n=1}^\infty [-\infty, n]^c \bigg), = \bigcap_{n=1}^\infty \big( f^{-1}([-\infty, n])\big)^c \\
+    f^{-1}(\{ -\infty \}) &= f^{-1}\bigg( \bigcap_{n=1}^\infty [-\infty, -n]\bigg) = \bigcap_{n=1}^\infty f^{-1}([-\infty, -n]).
+  \end{align*}
+
+  \item \begin{proposition}
+    An extended real-valued function $f: S \rightarrow \overline{\Real}$ is $\mcal{S}$-measurable if and only if the sets $f^{-1}(\{ -\infty \})$ and $f^{-1}(\{ \infty \})$ belong to $\mcal{S}$ and the real-valued function $f_0$ defined by
+    \begin{align*}
+      f_0(x) = \begin{cases}
+        f(x), & f(x) \not\in \{-\infty,\infty\} \\
+        0, & f(x) \in \{-\infty,\infty\}
+      \end{cases}
+    \end{align*}
+    is $\mcal{S}$-measurable.
+  \end{proposition}
+  
+  \item As a consequence of the above proposition, if $f$ and $g$ are measurable extended-real valued functions and $c \in Real$, then
+  \begin{align*}
+    cf, \qquad f^2, \qquad fg, \qquad |f|, \qquad 1/f, \qquad \min(f,g), \qquad \max(f,g)
+  \end{align*}
+  are also measurable with the usual caveat that $f$ should not be $0$ when assessing the measurability of $1/f$.
+
+  \item The measurability of $f+g$ needs greater care because we cannot say anything about it if there is an $x$ where $f(x) = \pm\infty$ and $g(x) = \mp\infty$. Otherwise, $f+g$ is measurable given that $f$ and $g$ are measurable.
+  
+  \item \begin{proposition}
+    Let $\{ f_n : n \in \Nat \}$ be a sequence of functions in $M(S,\mcal{S})$. Then, all of the functions
+    \begin{align*}
+      \underline{f}(x) &= \inf_{n \geq 1} f_n(x),\\
+      \overline{f}(x) &= \sup_{n \geq 1} f_n(x), \\
+      \underline{F}(x) &= \liminf_{n \in \Nat} f_n(x) = \sup_{n \geq 1} \left\{ \inf_{m \geq n} f_m(x) \right\}, \\
+      \overline{F}(x) &= \limsup_{n \in \Nat} f_n(x) = \inf_{n \geq 1} \left\{ \sup_{m \geq n} f_m(x) \right\}.
+    \end{align*}
+    also belong to $M(S,\mcal{S})$. Moreover, if $\{ f_n : n \in \Nat \}$ converges to a function $f$, then $f \in M(S,\mcal{S})$.
+  \end{proposition}
+\end{itemize}
+
+\section{Random Variables on an Uncountable Spaces}
+\begin{itemize}
+  \item \begin{definition}[random variable]
+    Let the domain $(S,\mcal{S})$ be a probability space $(\Omega, \mcal{E})$ endowed with probability measure $P$. An $\mcal{E}$-measurable function $X: \Omega \rightarrow T$ is called a {\bf random variable}. 
+  \end{definition}
+
+  \item Now, the diagram for a random variable $X$ is as follows.
+  \begin{align*}
+    \Omega \xrightarrow[\phantom{X^{-1}}]{X} T \\
+    [0,1] \xleftarrow[\phantom{X^{-1}}]{P} \mcal{E} \xleftarrow[]{X^{-1}} \mcal{T}
+  \end{align*}
+  
+  \item Notational conventions.
+  \begin{itemize}
+    \item We denote a random variable by captical letters such as $X$, $Y$, $Z$. 
+    \item We typically do not write it in functional forms such as $X(\omega)$, $Y(\omega)$, and so on. 
+    \item We write $P(X^{-1}(\mathtt{T}))$ as $P(X \in \mathtt{T})$.
+  \end{itemize}
+
+  \item \begin{definition}[$\sigma$-algebra generated by a random variable] \label{def:sigma-algebra-rand-var}
+    Let $X: \Omega \rightarrow T$ be a random variable. The $\sigma$-algebra generated by $X$, denoted by $\sigma(X)$, is the smallest $\sigma$-algebra such that $X$ is $\sigma(X)$-measurable. In other words,
+    \begin{align*}
+      \sigma(X) = \bigcap \Big\{ \mcal{S} \subseteq 2^\Omega : \mbox{ $\mcal{S}$ is a $\sigma$-algebra and $X$ is $\mcal{S}$-measurable}  \Big\}.
+    \end{align*}
+  \end{definition}
+
+  \item \begin{proposition}
+    Let $X: \Omega \rightarrow T$ be a random variable. Then, $\sigma(X) = \{ X^{-1}(\mathtt{T}) : \mathtt{T} \in \mcal{T} \}$.
+  \end{proposition}
+
+  \item \begin{proposition}[probability distribution measure of a random variable] \label{thm:probability-distribution-measure}
+    Let $X: \Omega \rightarrow T$ be a random variable. The function $P_X: \mcal{T} \rightarrow [0,1]$ given by $P_X(\mathtt{T}) = P(X^{-1}(\mathtt{T})) = P(X \in \mathtt{T})$ for all $\mathtt{T} \in \mcal{T}$ is a probability measure on $\mcal{T}$. It is called the {\bf probability distribution measure of $X$} .
+  \end{proposition}
+
+
+  \item For the rest of the section, we will discussed real-valued random variables. So, the range $(T,\mcal{T})$ is $(\Real, \mcal{B}(\Real))$.
+  
+  \item \begin{definition}[CDF of a random variable]
+    Let $X$ be a real-valued random variable the {\bf cumulative distribution function (CDF) of $X$} is given by $F_X(x) = P(X^{-1}((-\infty, x])) = P(X \leq x)$ for any $x \in \Real$.
+  \end{definition}
+
+  \item \begin{proposition}
+    The CDF of a real-valued random variable $X$ is a CDF in the sense of Definition~\ref{def:cdf}. In other words, the following are true.
+    \begin{itemize}
+      \item $F_X$ is non-decreasing.
+      \item $F_X$ is right continuous.
+      \item $\lim_{x \rightarrow \infty} F_X(x) = 1$.
+      \item $\lim_{x \rightarrow -\infty} F_X(x) = 0$.
+    \end{itemize}  
+  \end{proposition}
+
+  \item \begin{proposition}
+    Let $X$ be a real-valued random variable with CDF $F_X$. Let $$F_X(x^-) = \lim_{u \rightarrow x^-} F_X(u).$$ Then,
+    \begin{align*}
+      P(a < X \leq b) = P(X^{-1}((-a, b])) &= F_X(b) - F_X(a), \\
+      P(a < X < b) = P(X^{-1}((a,b))) &= F_X(b^-) - F_X(a), \\
+      P(a \leq X \leq b) = P(X^{-1}([a,b])) &= F_X(b) - F_X(a^-), \\
+      P(a \leq X < b) = P(X^{-1}([a,b))) &= F_X(b^-) - F_X(a^-), \\
+      P(X = a) = P(X^{-1}(\{a\})) &= F_X(a) - F_X(a^-).
+    \end{align*}
+    So, $P(X = a) = 0$ if and only if $F_X$ is continuous at $a$.
+  \end{proposition}
+\end{itemize}
+
+\section{Lebesgue Integral of Simple Functions}
+
+\begin{itemize}
+  \item In this section, we work with the measure space $(S, \mcal{S}, \mu)$.
+  
+  \item \begin{definition}[simple function]
+    A measurable real-valued function $\varphi$ is {\bf simple} if it attains a finite number of values.
+  \end{definition}
+
+  \item \begin{proposition}[standard representation] A simple function can be written as a linear combination of indicator functions of measurable sets.
+  \begin{align*}
+    \varphi(x) = \sum_{i=1}^n \alpha_i \mathbbm{1}_{A_i}
+  \end{align*}
+  where each $\alpha_i \in \Real$ and $A_i \in \mcal{S}$ for each $i$. There is a unique {\bf standard representation} where the $\alpha_i$'s are distinct, and the $A_i$'s are disjoint from one another.
+  \end{proposition}
+
+  \item \begin{definition}
+    Let $SF^+(S,\mcal{S})$ denote the set of all non-negative simple $\mcal{S}$-measurable function.
+  \end{definition}
+  
+  \item Obviously, $SF^+(S,\mcal{S}) \subseteq M^+(S,\mcal{S})$.
+
+  \item \begin{proposition}
+    Let $f,g \in SF^+(S,\mcal{S})$ and $c \geq 0$. The following properties hold.
+    \begin{enumerate}
+      \item $cf \in SF^+(S,\mcal{S})$.
+      \item $f+g \in SF^+(S,\mcal{S})$.
+      \item $\{ x \in S : f(x) \neq g(x) \} \in \mcal{S}$.
+      \item $\min(f,g), \max(f,g) \in SF^+(S,\mcal{S})$.
+      \item For any $A \in \mcal{S}$, $f \mathbbm{1}_A \in SF^+(S,\mcal{S})$.
+    \end{enumerate}
+  \end{proposition}
+
+  \item \begin{definition}[integral of simple function]
+    Let $\varphi \in SF^+(S,\mcal{S})$. The {\bf (Lebesgue) integral of $\varphi$ with respect to $\mu$} (or simply the integral) is the extended real number
+    \begin{align*}
+      \int \varphi\, \dee\mu = \sum_{i=1}^n \alpha_i \mu(A_i)
+    \end{align*}
+    where the $\alpha_i$'s and the $A_i$'s form the standard representation of $\varphi$. Also, for any $A \in \mcal{S}$, the {\bf integral of $\varphi$ on $A$ with respect to $\mu$} is the extended real number
+    \begin{align*}
+      \int_A \varphi\, \dee\mu = \int \varphi\one_A\, \dee\mu = \sum_{i=1}^n \alpha_i \mu(A_i \cap A).
+    \end{align*}
+  \end{definition}
+
+  \item \begin{proposition}[properties of integrals of simple functions] \label{thm:integral-simple-func-prop}
+    Let $f,g \in SF^+(S)$ and $c \geq 0$. The following properties hold:
+    \begin{enumerate}
+      \item $\int cf\,\dee\mu = c \int f\,\dee\mu$.
+      \item $\int f+g\, \dee\mu = \int f\, \dee\mu + \int g\, \dee\,mu$.
+      \item Let $A = \{ x \in S : f(x) \neq g(x) \}$. If $\mu(A) = 0$, then $\int f\, \dee\mu = \int g\, \dee\mu$.
+      \item If $f \leq g$, then $\int f\, \dee\mu \leq \int g\, \dee\mu$.
+      \item If $A,B \in \mcal{S}$, and $A \subseteq B$, then $\int_A f\,\dee\mu \leq \int_B f\,\dee\mu$.
+      \item Let $A_1, A_2, \dotsc$ be disjoint sets in $\mcal{S}$ such that $\bigcup_{i=1}^\infty A_i = S$. Then, $\int f\, \dee\mu = \sum_{i=1}^\infty \int_{A_i} f\, \dee\mu.$
+      \item The function $\lambda_f: \mcal{S} \rightarrow [0,\infty]$ defined as $\lambda_f(E) = \int_E f\, \dee\mu$ is a measure on $\mcal{S}$.
+    \end{enumerate}
+  \end{proposition}
+
+\end{itemize}
+
+\section{Lebesgue Integral of Non-Negative Functions}
+
+\begin{itemize}
+  \item \begin{proposition}[approximation by non-decreasing simple functions] \label{thm:approx-by-simple-functions}
+    Let $f \in M^+(S, \mcal{S})$. \\
+    There exists a sequence $\{ \varphi_n \in SF^+(S,\mcal{S}) : n \in \mcal{N} \}$ such that
+    \begin{enumerate}
+      \item $\varphi_n \leq \varphi_{n+1} \leq f$ for all $n \in \Nat$, and
+      \item $lim_{n \rightarrow x} \varphi_n(x) = f(x)$ for all $x \in S$.
+    \end{enumerate}
+  \end{proposition}
+  \begin{proof}
+    For each $n \in \Nat$, define $\phi_n: [0,\infty] \rightarrow [0,n]$ as follows: 
+    \begin{align*}
+      \phi_n(y) = \begin{cases}
+        k/2^{n}, & k/2^{n} \leq y < (k+1)/2^n, 0 \leq k/2^n \leq n, k \in \Nat \cup \{0\}\\
+        n, & y > n
+      \end{cases}..
+    \end{align*}
+    In other words, $\phi(y)$ is a discrete approximation of $y$. If $y > n$, then $y$ is too high, so we approximate it with $n$. On the other hand, if $y \leq n$, then 
+    we approximate $y$ with the highest multiple of $1/2^n$ that is not greater than $y$. 
+    
+    It should be clear that $\phi_n(y) \leq \phi_{n+1}(y)$ for all $y \in [0,\infty]$. This is because (1) the range of $\phi_{n+1}$ is larger than $\phi_n$, and (2) the division of the real line into intervals of length $1/2^n$ becomes finer as $n$ increases, so $\phi_{n+1}(y)$ should be a more accurate approximition of $y$ than $\phi_n(y)$.
+
+    Take $\varphi_n = \phi_n \circ f$. The sequence $\{ \varphi_n : n \in \Nat \}$ fits all the bill. 
+  \end{proof}
+
+  \item \begin{definition}[integral of non-negative function]
+    Let $f \in M^+(S,\mcal{S})$. The {\bf (Lebesgue) integral of $f$ with respect to $\mu$} is defined to be
+    \begin{align*}
+      \int f\, \dee\mu = \sup \bigg\{ \int \varphi\, \dee \mu \ \bigg|\  \varphi \in SF^+(S,\mcal{S}) \mbox{ and } \phi \leq f \bigg\}.
+    \end{align*}
+    Also, for any $A \in \mcal{S}$, define the {\bf integral of $f$ on $A$ with respect to $\mu$} to be
+    \begin{align*}
+      \int_A f\, \dee\mu = \int f\one_A\, \dee\mu.
+    \end{align*}
+  \end{definition}
+  In other words, the Lebesgue integral of $f$ is the lowest upper bound of the integral of all simple functions that are not greater than $f$. The bound exists because of Proposition~\ref{thm:approx-by-simple-functions}.
+
+  \item \begin{proposition}
+    Let $f \in M^+(S,\mcal{S})$. If $\int f\, \dee\mu = 0$, then $f = 0$ almost everywhere. (In other words, the set $\{ x\in S : f(x) > 0 \}$ has measure zero. Symbolically, $\mu(\{ x \in S : f(x) > 0\}) = 0$.)
+  \end{proposition}
+
+  \item \begin{theorem}[Monotone Convergence Theorem]
+    Let $\{ f_n : n \in \Nat \}$ be a sequence of functions in $M^+(S,\mcal{S})$ such that $f_n \leq f_{n+1}$ for all $n$ and $\lim_{n 
+    \rightarrow \infty} f_n(x) = f(x)$ for all $x$. Then,
+    \begin{align*}
+      \lim_{n \rightarrow \infty} \int f_n\, \dee\mu = \int f\, \dee\mu.
+    \end{align*}
+  \end{theorem}
+
+  \item \begin{proposition}
+    Let $f,g \in M^+(S,\mcal{S})$. If $f = g$ almost everywhere, then $\int f\, \dee\mu = \int g\, \dee\mu$.
+  \end{proposition}
+
+  \item With the above proposition, the condition of the Monotone Convergence Theorem can be relaxed. 
+  \begin{corollary}[Monotone Convergence Theorem 2.0]
+    Let $\{ f_n : n \in \Nat \}$ be a sequence of functions in $M^+(S,\mcal{S})$ such that $f_n \leq f_{n+1}$ for all $n$ and $\lim_{n 
+    \rightarrow \infty} f_n(x) = f(x)$ almost everywhere. Then,
+    \begin{align*}
+      \lim_{n \rightarrow \infty} \int f_n\, \dee\mu = \int f\, \dee\mu.
+    \end{align*}
+  \end{corollary}
+
+  \item \begin{proposition}[properites of integral of non-negative function] \label{thm:non-negative-integral-prop}
+    Let $f,g \in M^+(S, \mcal{S})$ and $c \geq 0$. The following properties are true.
+    \begin{enumerate}
+      \item $\int cf\, \dee\mu = c \int f\, \dee\mu.$
+      
+      \item $\int f+g\, \dee\mu = \int f\, \dee\mu + \int g\, \dee\mu.$
+
+      \item If $f \leq g$, then $\int f\, \dee\mu \leq \int g\, \dee\mu$.
+      
+      \item If $A,B \in \mcal{S}$, and $A \subseteq B$, then $\int_A f\,\dee\mu \leq \int_B f\,\dee\mu$.
+      
+      \item Let $A_1, A_2, \dotsc$ be disjoint sets in $\mcal{S}$ such that $\bigcup_{i=1}^\infty A_i = S$. Then, $\int f\, \dee\mu = \sum_{i=1}^\infty \int_{A_i} f\, \dee\mu.$
+      
+      \item The function $\lambda_f: \mcal{S} \rightarrow [0,\infty]$ define as $\lambda_f(E) = \int_E f\, \dee\mu$ is a measure on $\mcal{S}$.
+    \end{enumerate}
+  \end{proposition}
+  This proposition is almost the same as Proposition~\ref{thm:integral-simple-func-prop}. The difference is that the functions now belong to $M^+(S,\mcal{S})$ instead of $SF^+(S,\mcal{S})$. Most properties can be proven by applying the Monotone Convergence Theorem to the properties in Proposition~\ref{thm:integral-simple-func-prop}.
+
+  \item \begin{definition}[absolute continuity]
+    Consider two measures $\lambda$ and $\mu$ on $(S,\mcal{S})$. We say that $\lambda$ is {\bf absolutely continuous with respect to} $\mu$ if $\mu(E) = 0$ implies that $\lambda(E) = 0$. If this is the case, we write $\lambda \ll \mu$.
+  \end{definition}
+
+  \item \begin{proposition} 
+    Let $f \in M^+(S,\mcal{S})$. The measure $\lambda_f(E) = \int_E f\,\dee\mu$ is absolutely continuous with respect to $\mu$.  
+  \end{proposition}
+
+  \item \begin{theorem}[Fatou's lemma]
+    For any sequence $\{ f_n : n \in \Nat \}$ of functions in $M^+(S,\mcal{S})$, we have that $$\liminf_{n \rightarrow \infty} f_n \in M^+(S,\mcal{S}),$$ and 
+    \begin{align*}
+      \int \Big( \liminf_{n \rightarrow \infty} f_n \Big)\, \dee\mu \leq \liminf_{n\rightarrow \infty} \int f_n\, \dee\mu.
+    \end{align*}
+  \end{theorem}
+
+  \item \begin{theorem}[reverse Fatou lemma]
+    Let $g \in M^+(S,\mcal{S})$ be a function such that $\int g\, \dee\mu < \infty$.
+    Let $\{ f_n : n \in \Nat \}$ be a sequence of functions in $M^+(S,\mcal{S})$ such that $f_n \leq g$ for all $n$.
+    Then, $$\limsup_{n \rightarrow \infty} f_n \in M^+(S,\mcal{S}),$$ and
+    \begin{align*}
+      \int \Big( \limsup_{n \rightarrow \infty} f_n \Big)\, \dee\mu \geq \limsup_{n\rightarrow \infty} \int f_n\, \dee\mu.
+    \end{align*}
+  \end{theorem}
+\end{itemize}
+
+\section{Lebesgue Integration}
+
+\begin{itemize}
+  \item In this section, we work with measurable extended real-valued functions. Not all of these functions can be integrated, however.
+  
+  \item \begin{definition}[positive and negative parts]
+    Let $f \in M(S,\mcal{S})$. Define
+    \begin{align*}
+      f^+ &= \max(0, f), \\
+      f^- &= \max(0, -f).
+    \end{align*}
+  \end{definition}
+  It follows that $f^+, f^- \in M^+(S,\mcal{S})$, $f = f^+ - f^-$, and $|f| = f^+ + f^-$.
+
+  \item \begin{definition}[integrable function]
+    Let $f \in M(S,\mcal{S})$. We say that $f$ is {\bf (Lebesgue) integrable with respect to $\mu$} if $$\int |f|\, \dee\mu = \int f^+\, \dee\mu + \int f^-\, \dee\mu < \infty.$$ Let $\mcal{L}^1(S, \mcal{S}, \mu)$ denote the set of all integrable functions in $M(S,\mcal{S})$ with respect to $\mu$.
+  \end{definition}
+
+  \item \begin{definition}[Lebesgue integral]
+    Let $f \in \mcal{L}^1(S,\mcal{S},\mu)$. The {\bf (Lebesgue) integral of $f$ with respect to $\mu$} is the real number
+    \begin{align*}
+      \int f\, \dee\mu = \int f^+\,\dee\mu - \int f^-\,\dee\mu.
+    \end{align*}
+    Also, for any $A \in \mcal{S}$, the {\bf (Lebesgue) integral of $f$ on $A$ with respect to $\mu$} is the real number
+    \begin{align*}
+      \int_A f\, \dee\mu = \int_A f^+\,\dee\mu - \int_A f^-\,\dee\mu.
+    \end{align*}
+  \end{definition}
+
+  \item \begin{proposition}[linearity of Lebesgue integral]
+    Let $f,g \in \mcal{L}^1(S, \mcal{S}, \mu)$ and $c \in \Real$. The following properties are true.
+    \begin{enumerate}
+      \item $\int cf\, \dee\mu = c \int f\, \dee\mu.$
+      
+      \item $\int f+g\, \dee\mu = \int f\, \dee\mu + \int g\, \dee\mu.$      
+    \end{enumerate}
+  \end{proposition}
+
+  \item In literature, there are several different equivalent notations for the integral:
+  \begin{align*}
+    \int f\, \dee\mu = \int f(x)\, \dee\mu = \int f(x)\,\dee\mu(x) = \int f(x)\, \mu(\dee x).
+  \end{align*}
+  and 
+  \begin{align*}
+    \int_A f\, \dee\mu = \int_A f(x)\, \dee\mu = \int_A f(x)\,\dee\mu(x) = \int_A f(x)\, \mu(\dee x).
+  \end{align*}
+  Some texts such as \cite{Williams:1991} even propose using 
+  \begin{align*}
+    \mu(f) &\mbox{ to denote } \int f\, \dee\mu\mbox{, and}\\
+    \mu(f;A) &\mbox{ to denote }\int_A f\,\dee\mu.
+  \end{align*}
+  These notations are too terse for my taste, but they give the flavor that the integral is, in a sense, the measure of a function. One may also use
+  \begin{align*}
+    \mu[f] &\mbox{ to denote } \int f\, \dee\mu\mbox{, and}\\
+    \mu_A[f] &\mbox{ to denote }\int_A f\,\dee\mu.
+  \end{align*}
+  These notations emphasize that the fact that integration is a (linear) operator on functions, much like the expection $E[\cdot]$.
+  
+  \item \begin{definition}[charge]
+    Let $(S,\mcal{S})$ be a measurable space. A function $\mu: \mcal{S} \rightarrow \Real$ is said to be a {\bf charge} on $\mcal{S}$ if the following properties are satisfied.
+    \begin{enumerate}
+      \item $\mu(\emptyset) = 0$.
+      \item $\mu$ is countably additive. This is, for a sequence $\{E_n \in \mcal{S}: n \in \Nat\}$ of disjoint sets, it holds that
+      \begin{align*}
+        \mu\bigg( \bigcup_{n=1}^\infty E_n \bigg) = \sum_{n=1}^\infty \mu(E_n).
+      \end{align*}
+    \end{enumerate}
+  \end{definition}
+  The difference between a charge and a measure is that a measure is always non-negative, but a charge can be negative. Moreover, a charge cannot take infinite values.
+
+  \item \begin{proposition} \label{proposition:change-from-integral}
+    If $f \in \mcal{L}^1(S,\mcal{S},\mu)$, then the function $\lambda_f : \mcal{S} \rightarrow \Real$ defined by $ \lambda_f(E) = \int_E f\, \dee\mu $ is a charge. If $f \in M^+(S,\mcal{S})$, then $\lambda_f$ is a measure.
+  \end{proposition}
+
+  \item \begin{theorem}[Dominated Convergence Theorem]
+    Let $\{f_n : n \in \Nat\}$ be a sequence of functions in $M(S,\mcal{S})$ such that the following properties hold.
+    \begin{itemize}
+      \item There exists $f \in M(S,\mcal{S})$ such that $f_n$ convergers to $f$ almost everywhere. In other words, $\lim_{n \rightarrow \infty} f_n(x) = f(x)$ almost everywhere.
+      \item There exists $g \in \mcal{L}^1(S,\mcal{S},\mu)$ such that $f_n$ is dominated by $g$. In other words, $|f_n(x)| \leq g(x)$ for all $x\in S, n \in \Nat$.
+    \end{itemize}
+    Then, the following are true.
+    \begin{enumerate}
+      \item $f_n \in \mcal{L}^1(S,\mcal{S},\mu)$ for all $n$.
+      \item $f \in \mcal{L}^1(S,\mcal{S},\mu)$.
+      \item $f_n$ converges to $f$ in $\mcal{L}^1(S, \mcal{S}, \mu)$, which means that
+      \begin{align*}
+        \lim_{n \rightarrow \infty} \int |f_n - f|\, \dee\mu = 0.
+      \end{align*}
+      \item The integral of $f_n$ converges to the integral of $f$. That is,
+      \begin{align*}
+        \lim_{n \rightarrow \infty} \int f_n\, \dee\mu = \int f\, \dee\mu.
+      \end{align*}
+    \end{enumerate}
+  \end{theorem}
+
+  \item \begin{theorem}[Scheff\'{e}'s lemma]
+    Let $f, f_1, f_2, \dotsc \in \mcal{L}^1(S,\mcal{S},\mu)$. Suppose that $f_n \rightarrow f$ almost everywhere. Then,
+    $\int |f_n - f|\, \dee\mu \rightarrow 0$ if and only if $\int |f_n|\, \dee\mu \rightarrow \int |f|\, \dee\mu$.
+  \end{theorem}
+\end{itemize}
+
+\section{Radon--Nikodym Thoerem}
+
+\begin{itemize}
+  \item From  Proposition~\ref{thm:non-negative-integral-prop}, we can create a measure from a non-negative extended real-valued measurable function by integrating with respect to an existing measure.
+  
+  \item The Radon--Nikodym theorem is the converse of the above property. It indicates when a measure $\lambda$ can be expressed as an integration of a function $f$ with respect to an existing measure $\mu$. Hence, it is useful in deriving probability density functions.
+  
+  \item A necessary and sufficient condition for the theorem to hold is given below.
+  \begin{definition}[absolute continuity]
+    Let $\lambda$ and $\mu$ be measures on $\mcal{S}$. We say that $\lambda$ is {\bf absolutely continuous with respect to} $\mu$ if $\mu(E) = 0$ implies $\lambda(E) = 0$ for all $E \in \mcal{S}$. We write $\lambda \ll \mu$.
+  \end{definition}
+
+  \item \begin{proposition}
+    Let $\lambda$ and $\mu$ be finite measures on $\mcal{S}$. Then, $\lambda \ll \mu$ if and only if, for every $\varepsilon > 0$, there exists a $\delta(\varepsilon) > 0$ such that $\lambda(E) < \varepsilon$ for all $E$ such that $\mu(E) < \delta(\varepsilon)$.
+  \end{proposition}
+
+  \item \begin{theorem}[Radon--Nikodym theorem]
+    Let $\lambda$ and $\mu$ be $\sigma$-finite measures defined on $\mcal{S}$, and suppose that $\lambda$ is absolutely continous with respect to $\mu$. Then, there exists a function $f \in M^+(S,\mcal{S})$ such that 
+    \begin{align*}
+      \lambda(E) = \int_E f\, \dee\mu.
+    \end{align*}
+    Moreover, the function $f$ is uniquely determined $\mu$-almost everywhere. The function is called the {\bf Random--Nikodym derivative} of $\lambda$ with respective to $\mu$, and it is denoted by $$\frac{\dee \lambda}{\dee \mu}.$$
+  \end{theorem}
+\end{itemize}
+
+\section{Random Variables and Their Expectations}
+
+\begin{itemize}
+  \item In this section, the measure space $(S,\mcal{S},\mu)$ becomes the probability space $(\Omega,\mcal{E},P)$.
+ 
+  \item \begin{definition}[PDF of a random variable]
+    Let $X$ be a real-valued random variable. A measurable function $f_X(x): \Real \rightarrow [0, \infty]$ is called the {\bf probability density function (PDF) of $X$} if, for any $B \in \mcal{B}(\Real)$,
+    \begin{align*}
+      P(X \in B) = P_X(B) = \int_B f_X(x)\, \dee x = \int_B f_X(x)\, \ell^*(\dee x) = \int_B f_X\, \dee\ell^* 
+    \end{align*}  
+    where $\ell^*$ is the Lebesgue measure on $\Real$ (Definition~\ref{def:lebesgue-measure-1d}).    
+  \end{definition}
+
+  \item \begin{proposition}
+    If $P_X$ is absolutely continuous with respect to the Lebesgue measure $\ell^*$, then $f_X$ exists and is unique $\ell^*$-almost everywhere. In particular,
+    \begin{align*}
+      f_X = \frac{\dee P_X}{\dee \ell^*}
+    \end{align*}
+    where the RHS is the Radon--Nikodym derivative.
+  \end{proposition}
+
+  \item \begin{proposition}
+    Let $X$ be a real-valued random variable with PDF $f_X$. Then, its CDF, $F_X$, is given by
+    \begin{align*}
+      F_X(x) = P_X((-\infty,x]) = \int_{(-\infty,x]} f_X(u)\, \ell^*(\dee u) = \int_{-\infty}^x f_X(u)\, \dee u.
+    \end{align*}
+    Hence,
+    \begin{align*}
+      f_X = \frac{\dee F_X}{\dee x}.
+    \end{align*}
+  \end{proposition}
+
+  \item \begin{definition}
+    For a random variable $X \in \mcal{L}^1(\Omega,\mcal{E},P)$, define the {\bf expectation of $X$} to be
+    \begin{align*}
+      E[X] = \int X\, \dee P = \int X(\omega)\, P(\dee \omega).
+    \end{align*}
+  \end{definition}
+
+  \item A lot of properties of integrals of random variables carry over to expectations.
+  
+  \item \begin{proposition}[linearity of expectation]
+    Let $X,Y \in \mcal{L}^1(\Omega,\mcal{E},P)$ and $c \in \Real$. Then,
+    \begin{align*}
+      E[cX] &= cE[X], \\
+      E[X+Y] &= E[X] + E[Y].
+    \end{align*}
+  \end{proposition}
+
+  \item \begin{theorem}[convergence theorems for expectation]
+    Let $\{ X_n : n \in \Nat \}$ be a sequence of random variables. Suppose there exists a random variable $X$ such that $X_n \rightarrow X$ almost surely. The following statements hold.
+    \begin{enumerate}
+      \item (Monotone Convergence Theorem) If $0 \leq X_n \leq X_{n+1} \leq X$ for all $n$, then $E[X_n] \rightarrow E[X]$.
+      \item (Fatou's lemma) If $0 \leq X_n$ for all $n$, then $E[X] \leq \liminf_{n \rightarrow \infty} E[X_n]$.
+      \item (Dominated Convergence Theorem) Suppose there is a random variable $Y \in \mcal{L}^1(\Omega,\mcal{E},P)$ such that $|X_n| \leq Y$ for all $n$. Then, $X_n \in \mcal{L}^1(\Omega,\mcal{E},P)$ for all $n$, $X \in \mcal{L}^1(\Omega,\mcal{E},P)$, $E[|X_n - X|] \rightarrow 0$, and $E[X_n] \rightarrow E[X]$.  
+      \item (Scheff\'{e}'s lemma) $E[|X_n - X|] \rightarrow 0 \iff E[|X_n|] \rightarrow E[|X|]$.
+      \item (Bounded Convergence Theorem) Suppose there is constant $K \geq 0$ such that $X_n < K$ for all $n$. Then, $X_n \in \mcal{L}^1(\Omega,\mcal{E},P)$ for all $n$, $X \in \mcal{L}^1(\Omega,\mcal{E},P)$, $E[|X_n - X|] \rightarrow 0$, and $E[X_n] \rightarrow E[X]$.
+    \end{enumerate}
+  \end{theorem}
+  The added Bounded Convergence Theorem is a special case of the Dominated Convergence theorem when applied to expectation. Here, we choose $Y(\omega) = K$ for all $\omega$, which gives $E[Y] = K < \infty$.
+
+  \item \begin{theorem}[LOTUS 2.0]
+    Let $X$ be a real-valued random variable in $(\Omega,\mcal{E}, P)$. Let $g: \Real \rightarrow \Real$ be $\mcal{B}(\Real)$-measurable. Then, the following statements are true.
+    \begin{itemize}
+      \item $g(X) \in \mcal{L}^1(\Omega, \mcal{E}, P) \iff g \in \mcal{L}^1(\Real, \mcal{B}(\Real), P_X)$. 
+      \item If $g \in \mcal{L}^1(\Real, \mcal{B}(\Real), P_X)$, then
+      \begin{align*}
+        E[g(X)] = \int_\Omega g(X)\, \dee P = \int_{\Omega} g(X(\omega))\, P(\dee\omega) = \int_{\Real} g(x)\, P_X(\dee x) = \int_{\Real} g\, \dee P_X.
+      \end{align*}
+    \end{itemize}
+  \end{theorem}
+  The diagram of the situation in in the theorem is as follows.\\
+  \\
+  \centerline{
+    \xymatrix{
+      & \Omega \ar[r]^{X} & \Real \ar[r]^{g} & \Real \\
+      [0,1] & \mcal{E} \ar[l]_{P} & \mcal{B}(\Real) \ar[l]_{X^{-1}} \ar@/^1.5pc/[ll]^{P_X} & \mcal{B}(\Real) \ar[l]_{g^{-1}}
+    }
+  }
+ 
+  \item For the analogue of Theorem~\ref{thm:pre-markov}, we now require that $h(X)$ must be integrable. 
+  \begin{theorem}
+    Let $h: \Real \rightarrow [0, \infty)$ and $X$ be a random variable. If $h(X) \in \mcal{L}^1(\Omega, \mcal{E}, P)$, then, for any $a > 0$,
+    \begin{align*}
+      P(h(X) \geq a) \leq \frac{E[h(X)]}{a}.
+    \end{align*}
+  \end{theorem}
+
+  \item \begin{corollary}[Markov's inequality]
+    If $X \in \mcal{L}^1(\Omega,\mcal{E},P)$, then, for any $a > 0$,
+    \begin{align*}
+      P(|X| \geq a) \leq \frac{E[|X|]}{a}.
+    \end{align*}
+  \end{corollary}
+
+  \item \begin{proposition}
+    If $X \in M^+(\Omega,\mcal{E})$ and $E[X] < \infty$, then $X < \infty$ almost surely.
+  \end{proposition}
+
+  \item \begin{proposition}[results on sums random variables] The following statements are true.
+    \begin{itemize}
+      \item If $\{ X_n : n \in \Nat \}$ be a sequence of random variables in $M^+(\Omega,\mcal{E})$, then
+      \begin{align}
+        E\bigg[ \sum_{n=1}^\infty X_n \bigg] = \sum_{n=1}^\infty E[X_n]. \label{eqn:rv-sum}
+      \end{align}
+
+      \item Let $\{X_n: n \in \Nat\}$ be a sequence of random variables in $\mcal{L}^1(\Omega,\mcal{E},P)$. If $\sum_{n=1}^\infty E[|X_n|] < \infty$, then $Y = \sum_{n=1}^\infty X_n$ converges almost surely. (In other words, $Y$ is finite almost surely.) Moreover, $Y \in \mcal{L}^1(\Omega,\mcal{E},P)$, Equation \eqref{eqn:rv-sum} holds, and $X_n \rightarrow 0$. 
+    \end{itemize}
+  \end{proposition}
+
+  \item \begin{theorem}[the first Borel--Cantelli lemma]
+    Let $\{ E_n : n \in \Nat \}$ be a sequence of events such that $\sum_{n=1}^\infty P(E_n) < \infty$. Take $X_n = \one_{E_n}$. Then,
+    \begin{align*}
+      \sum_{n=1}^\infty \one_{E_n} = \mbox{number of events $E_n$ that occur}
+    \end{align*}
+    is finite almost surely.
+  \end{theorem}
+
+  \item \begin{definition}[convex function]
+    Let $I$ be an open subinterval of $\Real$. A function $f: I \rightarrow \Real$ is called {\bf convex} if, for every $x,y \in I$ and $\alpha \in [0,1]$, it holds that
+    \begin{align*}
+      f((1-\alpha)x + \alpha y) \leq (1-\alpha)f(x) + \alpha f(y).
+    \end{align*}
+    In other words, the curve of $f$ on any interval $[x,y] \subseteq I$ lies below the straight line that connects the point $(x,f(x))$ to the point $(y,f(y))$.
+  \end{definition}
+
+  \item \begin{theorem}[Jensen's inequality]
+    Let $f: I \rightarrow \Real$ be a convex function. Let $X \in \mcal{L}^1(\Omega,\mcal{E},P)$ be a random variable such that $P(X \in I) = 1$, and $f(X) \in \mcal{L}^1(\Omega, \mcal{E}, P)$. Then,
+    \begin{align*}
+      f(E[X]) \leq E[f(X)].
+    \end{align*}
+  \end{theorem}
+\end{itemize}
+
+\section{Lebesgue spaces $L^p$}
+
+\begin{itemize}
+  \item \begin{definition}
+    Let $(S, \mcal{S}, \mu)$ be a measure space. For $1 \leq p < \infty$, define $\mcal{L}^p(S,\mcal{S}, \mu)$ to be the set of functions $f \in M(S,\mcal{S})$ such that $|f|^p$ is integrable. In other words,
+    \begin{align*}
+      \int |f|^p\, \dee\mu = \int (f^+)^p\, \dee\mu + \int |f^-|^p\, \dee\mu < \infty.
+    \end{align*}
+  \end{definition}
+  When the measure space $(S, \mcal{S}, \mu)$ is clear from the context, we will simply write $\mcal{L}^p$ instead of $\mcal{L}^p(S,\mcal{S}, \mu)$.
+
+  \item \begin{definition}[$\mcal{L}^p$-norm]
+    For any $f \in \mcal{L}^p(S,\mcal{S},\mu)$, define the {\bf $\mcal{L}^p$-norm of $f$} to be
+    \begin{align*}
+      \| f \|_p = \bigg( \int |f|^p\, \dee\mu \bigg)^{\frac{1}{p}}
+    \end{align*} 
+  \end{definition}
+
+  \item \begin{proposition}[monotonicity of $\mcal{L}^p$-norm] \label{thm:Lp-norm-monotonicity}
+    Let $1 \leq p \leq q < \infty$. If $f \in \mcal{L}^q$, then $f \in \mcal{L}^p$, and $\| f \|_p \leq \| f \|_q$.
+  \end{proposition}
+
+  \item \begin{proposition}[vector space properties of $\mcal{L}^p$]
+    Let $f, g \in \mcal{L}^p$. The following statements are true.
+    \begin{enumerate}
+      \item For any $c \in \Real$, $cf \in \mcal{L}^p$.
+      \item $f + g \in \mcal{L}^p$.
+    \end{enumerate}
+  \end{proposition}
+
+  \item \begin{proposition}[properties of the $\mcal{L}^p$-norm]
+    Let $f, g \in \mcal{L}^p$. The following statements are true.
+    \begin{itemize}
+      \item[(a)] $\| f \|_p \geq 0$.
+      \item[(b)] If $\| f \|_p = 0$, then $f = 0$ almost everywhere.
+      \item[(c)] $\| cf \|_p = |c| \| f \|_p$ for any $c \in \mcal{R}$.
+      \item[(d)] (Minkowsky's inequality) $\| f + g \|_p \leq \|f\|_p + \|g\|_p$.
+    \end{itemize}
+  \end{proposition}
+
+  \item \begin{theorem}[H\"{o}lder's inequality]
+    Let $p, q > 1$ be such that $1/p + 1/q = 1$. If $f \in \mcal{L}^p$, $g \in \mcal{L}^q$, then $fg \in \mcal{L}^1$ and $\| fg \|_1 \leq \| f \|_p \| g \|_q$. 
+  \end{theorem}
+
+  \item \begin{theorem}[Cauchy--Schwarz inequality] \label{thm:cauchy-schwarz}
+  If $f, g \in \mcal{L}^2(S, \mcal{S}, \mu)$, then $fg \in \mcal{L}^1$, and 
+  \begin{align*}
+    \bigg| \int fg\, \dee\mu \bigg| \leq \int |fg|\, \dee\mu =  \| fg \|_1 \leq \| f \|_2 \| g \|_2.
+  \end{align*} 
+  \end{theorem}
+
+  \item \begin{definition}[normed vector space]
+    A {\bf normed vector space} is a vector space $V$ endowed with a norm function $\| \cdot \| : V \rightarrow [0,\infty]$ such that, for every $\ve{u}, \ve{v} \in V$ and $c \in \Real$, it is true that
+    \begin{itemize}
+      \item[(a)] $\| \ve{u} \| \geq 0$,
+      \item[(b)] $\| \ve{u} \| = 0 \iff \ve{u} = \ve{0}$,
+      \item[(c)] $\| c\ve{u} \| = |c| \| \ve{u} \|$, and
+      \item[(d)] $\| \ve{u} + \ve{v} \| \leq \| \ve{u} \| + \| \ve{v} \|$.
+    \end{itemize}
+  \end{definition}
+
+  \item $\mcal{L}^p$ is a vector space with the zero function $f(x) = 0$ serving as the zero vector. However, it is not a normed vector space because Property (b) is not satisifed. Instead, if $\| f \|_p = 0$, then we can only say that $f = 0$ almost everywhere instead of everywhere.
+  
+  \item To make a normed vector space out of $\mcal{L}^p$, we instead view the set of functions that are equal almost every as a unit.
+  \begin{definition}[equivalent class w.r.t. $\mcal{L}^p$-norm]
+    Let $f \in \mcal{L}^p$. The {\bf equivalent class with respect to $\mcal{L}^p$-norm of $f$} is the set
+    \begin{align*}
+      [f]_p = \{ g \in \mcal{L}^p : f = g \mbox{ almost everywhere}\}.
+    \end{align*}
+  \end{definition}
+
+  \item \begin{proposition}
+    $[f]_p = \{ f + g : g \in [0]_p \}$.
+  \end{proposition}
+
+  \item \begin{definition}[operations on equivelent classes] \label{def:equiv-class-operations}
+    Let $f,g \in \mcal{L}^p$, and $c \in \Real$. Define
+    \begin{align*}
+      c[f]_p &:= \{ c g : g \in [f]_p \}, \\
+      [f]_p + [g]_p &:= \{ f+g : f\in [f]_p + g \in [g]_p \}, \\
+      \| [f]_p \|_p &:= \| f \|_p.
+    \end{align*} 
+  \end{definition}
+  The operations are well defined despite the non-determinism in the definition.
+
+  \item \begin{definition}[Lebesgue space $L^p$]
+    The {\bf Lebesgue space $L^p(S,\mcal{S},\mu)$} is defined to be the set $\{ [f]_p : f \in \mcal{L}^p(S, \mcal{S}, \mu) \}$. 
+  \end{definition}
+  When the measure space is clear from the context, we will write $L^p$ instead of $L^p(S,\mcal{S},\mu)$.
+
+  \item \begin{theorem}[$L^p$ is a normed vector space]
+    The space $L^p$ together with the operations in Definition~\ref{def:equiv-class-operations} is a normed vector space with $[0]_p$ serving as the zero vector.
+  \end{theorem}
+
+  \item \begin{definition}[Cauchy sequence]
+    Let $V$ be a vector space with some norm function $\| \cdot \|$. A {\bf Cauchy sequence in $V$} is a sequence $\{ \ve{u}_n \in V : n \in \Nat \}$ such that
+    \begin{align*}
+      \lim_{n \rightarrow \infty} \sup_{i,j \geq n} \| \ve{u}_i - \ve{u}_j \| = 0.
+    \end{align*} 
+  \end{definition}
+
+  \item \begin{theorem}[Cauchy sequence converged in $\mcal{L}^p$]
+    Let ${f_n \in \mcal{L}^p : n \in \Nat}$ be a Cauchy sequence. Then, there exists a function $f \in \mcal{L}^p$ such that $f_n \rightarrow f$ in $\mcal{L}^p$; that is,
+    \begin{align*}
+      \lim_{n \rightarrow \infty} \| f_n - f \|_p = 0. 
+    \end{align*}
+  \end{theorem}
+
+  \item \begin{definition}[completeness]
+    A normed vector space $V$ is said to be {\bf complete} if every Cauchy sequence in $V$ has a limit in $V$. In other words, if $\{ u_n : n \in \Nat \}$ is a Cauchy sequence in $V$, then there exists $\ve{u} \in V$ such that $\lim_{n \rightarrow \infty} \| \ve{u}_n - \ve{u} \| = 0$.
+  \end{definition}
+  
+  \item \begin{definition}[Banach space]
+    A {Banach space} is a complete normed vector space.
+  \end{definition}
+
+  \item \begin{theorem}[$L^p$ is Banach]
+    The space $L^p$ is complete, and so is a Banach space.
+  \end{theorem}
+\end{itemize}
+
+\section{Variance on an Uncountable Space}
+
+\begin{itemize}
+  \item Let $X \in \mcal{L}^2(\Omega, \mcal{E}, P)$. By the monotonicity of $\mcal{L}^p$-norm (Proposition~\ref{thm:Lp-norm-monotonicity}), we have that
+  \begin{align*}
+    \bigg| E[X] \bigg| = \bigg| \int X\,\dee P \bigg| \leq \int |X|\, \dee P = \| X \|_1 \leq \| X \|_2 < \infty.
+  \end{align*}
+  This means that $E[X]$ is finite. As a result,
+  \begin{align*}
+    E[(X - E[X])^2] = E[X^2] - 2(E[X])^2 + (E[X])^2 = E[X^2] + (E[X])^2 = \| X \|_2^2 + (E[X])^2
+  \end{align*}
+  is also finite. So, $(X - E[X])^2 \in \mcal{L}^2(\Omega, \mcal{E}, P)$ as well.
+
+  \item \begin{definition}[variance and standard deviation] 
+    Let $X \in \mcal{L}^2(\Omega, \mcal{E}, P)$. The {\bf variance of X}, denoted by $\Var(X)$, is defined to be
+    \begin{align*}
+      \Var(X) = \| X - E[X] \|_2^2 =  E[(X - E[X])^2] = E[X^2] - (E[X])^2.
+    \end{align*}
+    The {\bf standard deviation of $X$}, denoted by $\Stdev(X)$, is the non-negative square root of the variance.
+    \begin{align*}
+      \Stdev(X) = \sqrt{\Var(X)} = \| X - E[X] \|_2.
+    \end{align*}
+  \end{definition}
+
+  \item \begin{theorem}[Chebyshev's inequality]
+    Let $X \in \mcal{L}^2(\Omega, \mcal{E}, P)$. We have that, for any $a > 0$,
+    \begin{align*}
+      P(|X| \geq a) &= \frac{E[X^2]}{a^2},
+    \end{align*}
+    so
+    \begin{align*}
+      P(| X - E[X] | \geq a) \leq \frac{\Var(X)}{a^2}.
+    \end{align*}
+  \end{theorem}
+  One can prove the theorem by applying Markov's inequality to the random variable $X^2$ and $(X - E[X])^2$.
+\end{itemize}
+
+\section{Product Measures and Double Integrals}
+
+\begin{itemize}
+  \item In this section, two measurable spaces $(X, \mcal{X}, \mu)$, $(Y, \mcal{Y}, \nu)$, we want to construct a new measure space whose underlying set is $X \times Y$.
+
+  \item The natural candidate for the $\sigma$-algebra to define a measure on is $\mcal{X} \times \mcal{Y}$. The problem, however, is that $\mcal{X} \times \mcal{Y}$ is not a $\sigma$-algebra in general. Still...
+  
+  \begin{proposition}
+    Let $(X,\mcal{X})$ and $(Y,\mcal{Y})$ be measurable spaces. Then, $\mcal{X} \times \mcal{Y}$ is a semi-ring on $X \times Y$.
+  \end{proposition}
+
+  \item As a result, to construct a measure, we must work with $\sigma(\mcal{X} \times \mcal{Y})$ instead. Since this construction is very common, we will give it a special notation.
+  
+  \begin{definition}[product of $\sigma$-algebras]
+    Let $\mcal{X}$ and $\mcal{Y}$ be $\sigma$-algebras. Let $\mcal{X} \otimes \mcal{Y}$ denote the $\sigma$-algebra generated by $\mcal{X} \times \mcal{Y}$.
+    $$ \mcal{X} \otimes \mcal{Y} = \sigma(\mcal{X} \times \mcal{Y}). $$
+  \end{definition}
+
+  \item \begin{definition}[product measure theorem]
+    Let $(X, \mcal{X}, \mu)$ and $(Y, \mcal{Y}, \nu)$ be measure spaces.\\
+    Then, there exists a measure $\rho$ on $\mcal{X} \otimes \mcal{Y}$ such that
+    \begin{align*}
+      \rho(A \times B) = \mu(A) \nu(B)
+    \end{align*}
+    for all $A \in \mcal{X}$ and $B \in \mcal{Y}$. 
+  \end{definition}
+
+  \item When working a $\sigma$-algebra, however, we generally start from a simpler collection of sets that generates that $\sigma$-algebra. The following definitions and statements allows us to conveniently work with the generators in the production measure settings.
+  
+  \begin{definition}[exhausting sequence]
+    Let $X$ be a set and $\mcal{A} \subseteq 2^X$ be a collection of sets. An {\bf exhausting sequence of $X$ in $\mcal{A}$} is a sequence of sets $\{ A_n : n \in \Nat \}$ such that $A_n \uparrow X$. In other words, $A_n \subseteq A_{n+1}$ for all $n$ and $\bigcup_{n=1}^\infty A_n = X$. If there is such a sequence, we say that {\bf $\mcal{A}$ exhausts $X$.}
+  \end{definition}
+  
+  \begin{proposition}
+    Let $X$ and $Y$ be sets. Let $\mcal{A} \subseteq 2^X$ and $\mcal{B} \subseteq 2^Y$ be collections of sets. Let $\mcal{X} = \sigma(\mcal{A})$, and $\mcal{Y} = \sigma(\mcal{B})$. If $\mcal{A}$ exhausts $X$ and $\mcal{B}$ exhausts $Y$, then
+    \begin{align*}
+      \sigma(\mcal{A} \times \mcal{B}) = \sigma(\mcal{X} \times \mcal{Y}) = \mcal{X} \otimes \mcal{Y}.
+    \end{align*}
+  \end{proposition}
+
+  \item When the generators are $\pi$-systems and the measures are $\sigma$-finite, we have that the product measure is unique. 
+  \begin{theorem}[uniqueness of product measure]
+    Let $(X, \mcal{X}, \mu)$ and $(Y, \mcal{Y}, \nu)$ be measure spaces. Let $\mcal{A} \subseteq 2^X$ and $\mcal{B} \subseteq 2^Y$ be such that the following properties hold.
+    \begin{enumerate}
+      \item $\sigma(\mcal{A}) = \mcal{X}$, and $\sigma(\mcal{B}) = \mcal{Y}$.
+      \item $\mcal{A}$ and $\mcal{B}$ are $\pi$-systems.
+      \item There exist exhausting sequences $A_n \uparrow X$ in $\mcal{A}$ and $B_n \uparrow Y$ in $\mcal{B}$ such that $\mu(A_n) < \infty$ and $\nu(B_n) < \infty$ for all $n$.  
+    \end{enumerate}
+    Then, there exists one and at most one measure $\rho$ on $\mcal{X} \otimes \mcal{Y}$ such that $\rho(A \times B) = \mu(A) \nu(B)$ for all $A \in \mcal{A}$ and $B \in \mcal{B}$. Moreover, $\rho$ is also $\sigma$-finite.
+  \end{theorem}
+
+  \item \begin{definition}[product measure space]
+    Let $(X, \mcal{X}, \mu)$ and $(Y, \mcal{Y}, \nu)$ be measure spaces such that $\mu$ and $\nu$ are $\sigma$-finite. The unique measure on $\mcal{X} \otimes \mcal{Y}$ is called the {\bf product of $mu$ and $\nu$} and is denoted by $\mu \times \nu$, and we call $(X \times Y, \mcal{X} \otimes \mcal{Y}, \mu \times \nu)$ a {\bf producte measure space}.
+  \end{definition}
+
+  \item For $d \geq 1$, let $v^d$ denote the Lebesgue meausure on $\Real^d$ (Definition~\ref{def:lebesgue-measure}).
+  
+  \begin{corollary}
+    For any $n > d \geq 1$, we have
+    \begin{align*}
+      (\Real^n, \mcal{B}(\Real^n), v^n) = (\Real^d \times \Real^{n-d}, \mcal{B}(\Real^d) \otimes \mcal{B}(\Real^{n-d}), v^d \times v^{n-d}).
+    \end{align*}
+  \end{corollary}
+
+  \item \begin{definition}[sections of a set]
+    Let $A \subseteq X$. For each $x \in X$, the {\bf $x$-section of $A$} is the set
+    \begin{align*}
+      A_{x,\square} = \{ y \in Y : (x,y) \in A \}.
+    \end{align*}
+    For each $y \in Y$, the {\bf $y$-section of $A$} is the set
+    \begin{align*}
+      A_{\square,y} = \{ x \in X : (x,y) \in A \}.
+    \end{align*}
+  \end{definition}
+
+  \item \begin{definition}[sections of two-argument function]
+    Let $f: X \times Y \rightarrow T$. For each $x \in X$, the $x$-section of $f$ is the function $f_{x,\square} : Y \rightarrow T$ such that
+    \begin{align*}
+      f_{x,\square}(y) = f(x,y).
+    \end{align*}
+    For each $y \in Y$, the $y$-section of $f$ is the function $f_{\square,y}: X \rightarrow T$ such that
+    \begin{align*}
+      f_{\square,y}(x) = f(x,y).
+    \end{align*}
+  \end{definition}
+
+  \item \begin{proposition}[sections are measurable]
+    Let $(X \times Y, \mcal{X} \otimes \mcal{Y})$ be a measurable space. Let $A \in \mcal{X} \otimes \mcal{Y}$. Then,
+    \begin{itemize}
+      \item $A_{x,\square} \in \mcal{Y}$ for all $x \in X$, and
+      \item $A_{\square,y} \in \mcal{X}$ for all $y \in Y$.
+    \end{itemize}
+    Moreover, let $(T, \mcal{T})$ be a measurable space and $f: X\times Y \rightarrow T$ be a $(\mcal{X}\otimes\mcal{T})/\mcal{T}$-measurable function.
+    \begin{itemize}
+      \item $f_{x,\square}$ is $\mcal{Y}/\mcal{T}$-measurable for all $x \in X$, and
+      \item $f_{\square,y}$ is $\mcal{X}/\mcal{T}$-measurable for all $y \in Y$.
+    \end{itemize}
+  \end{proposition}
+
+  \item \begin{proposition}
+    Let $(X, \mcal{X}, \mu)$ and $(Y, \mcal{Y}, \nu)$ be measure spaces with $\mu$ and $\nu$ being $\sigma$-finite. If $A \in \mcal{X} \otimes \mcal{Y}$, the functions defined by
+    \begin{align*}
+      f(x) &= \nu(A_{x,\square}), \\
+      g(y) &= \mu(A_{\square,y})
+    \end{align*}
+    are $\mcal{X}$-measurable and $\mcal{Y}$-measurable, respectively. Moreover, if $\phi = \mu \times \nu$, we have that 
+    \begin{align*}
+      \mu(A) = \int_X f(x)\, \dee\mu(x) = \int_Y g(y)\, \dee\mu(y).
+    \end{align*}
+  \end{proposition}
+
+  \item \begin{theorem}[Tonelli] \label{thm:tonelli}
+    Let $(X, \mcal{X}, \mu)$ and $(Y, \mcal{Y}, \nu)$ be measure spaces with $\mu$ and $\nu$ being $\sigma$-finite. Let $\rho = \mu \times \nu$. Let $f \in M^+(X \times Y, \mcal{X} \otimes \mcal{Y})$. Define
+    \begin{align*}
+      g(x) &= \int_{Y} f_{x,\square}(y)\, \dee \nu(y), \\
+      h(y) &= \int_{X} f_{\square,y}(x)\, \dee \mu(x).
+    \end{align*}
+    Then,
+    \begin{align*}
+      \int_{X \times Y} f\, \dee\rho = \int_X g(x)\, \dee\mu(x) = \int_Y h(y)\, \dee\nu(y).
+    \end{align*}
+  \end{theorem}
+  Tonelli's theorem states that an integral on a product measure space of a non-negative function can be evaluated as a double integral, and the order of the integral can be exchanged.
+
+  \item The notation in Theorem~\ref{thm:tonelli} is a bit opaque. We commonly write the integrals as:
+  \begin{align*}
+    \int_Y f(x,y)\, \dee \mu(y) &:= \int_Y f_{x,\square}(y)\, \dee\nu(y),\\
+    \int_X f(x,y)\, \dee \nu(x) &:= \int_X f_{\square,y}(x)\, \dee\mu(x),\\
+    \int_{X \times Y} f(x,y)\, \dee\rho(x,y)  &:= \int_{X \times Y} f\, \dee\rho.
+  \end{align*} 
+  With the more familiar notation, we have that
+  \begin{align*}
+    \int_{X \times Y} f(x,y)\, \dee\rho(x,y) = \int_X \bigg( \int_Y f(x,y)\, \dee\nu(y) \bigg)\, \dee\mu(x) = \int_Y \bigg( \int_X f(x,y)\, \dee\mu(x) \bigg)\, \dee\nu(y), 
+  \end{align*}
+  or, simply,
+  \begin{align*}
+    \int_{X \times Y} f(x,y)\, \dee\rho(x,y) = \int_X \int_Y f(x,y)\, \dee\nu(y)\dee\mu(x) = \int_Y \int_X f(x,y)\, \dee\mu(x) \dee\nu(y), 
+  \end{align*}
+  or just
+  \begin{align*}
+    \int_{X \times Y} f\, \dee(\mu \times \nu) = \int_X \int_Y f\, \dee\nu\dee\mu = \int_Y \int_X f\, \dee\mu \dee\nu. 
+  \end{align*}
+
+  \item \begin{theorem}[Fubini]
+    Let $(X, \mcal{X}, \mu)$ and $(Y, \mcal{Y}, \nu)$ be measure spaces with $\mu$ and $\nu$ being $\sigma$-finite. Let $f \in M(X \times Y, \mcal{X} \otimes \mcal{Y})$. If at least one of the three integrals,
+    \begin{align*}
+      \int_{X \times Y} |f|\, \dee(\mu \times \nu), \qquad \int_X \int_Y |f|\, \dee\nu\dee\mu,\qquad \int_Y \int_X |f|\, \dee\mu \dee\nu,
+    \end{align*}
+    is finite, then all of them are finite, and $f \in \mcal{L}^1(X \times Y, \mcal{X} \otimes \mcal{Y}, \mu \times \nu).$ Moreover, we have that
+    \begin{enumerate}
+      \item $f_{x,\square} \in \mcal{L}^1(Y,\mcal{Y},\nu)$ for $x$ almost everywhere in $X$ with respect to $\mu$.
+      \item $f_{\square,y} \in \mcal{L}^1(X,\mcal{X},\mu)$ for $y$ almost everywhere in $Y$ with respect to $\nu$. 
+      \item $g(x) = \int_Y f_{x,\square}\, \dee\nu = \int_Y f(x,y)\, \dee\nu(y) \in \mcal{L}^1(X,\mcal{X},\mu)$.
+      \item $h(y) = \int_X f_{\square, y}\, \dee\mu = \int_X f(x,y)\, \dee\mu(x) \in \mcal{L}^1(Y,\mcal{Y},\nu)$.
+      \item Lastly,
+      \begin{align*}
+        \int_{X \times Y} f\, \dee(\mu \times \nu) = \int_X \int_Y f\, \dee\nu\dee\mu = \int_Y \int_X f\, \dee\mu \dee\nu.
+      \end{align*}   
+    \end{enumerate}
+  \end{theorem}
+  Fubini's theorem is a corollary to Tonelli's theorem after applying the latter to a general extended real-valued function. We use it every time we evaluate a double integral by slicing.
+\end{itemize}
+
+\section{Two Random Variables Considered Together}
+
+\begin{itemize}
+  \item \begin{definition}[joint probability distribution measure]
+    Let $X: \Omega \rightarrow U$ and $Y: \Omega \rightarrow V$ be random variables (with associated $\sigma$-algebras $\mcal{U}$ and $\mcal{V}$, respectively). Then, $Z = (X,Y)$ is a random variable that maps $\Omega$ to $\mcal{U} \times \mcal{V}$. The {\bf joint probability distribution measure of $X$ and $Y$} is the function $P_Z: \mcal{U} \otimes \mcal{V} \rightarrow [0,1]$ such that
+    \begin{align*}
+      P_Z(W) = P(Z^{-1}(W)) = P(\{ \omega : (X(\omega), Y(\Omega)) \in W \})
+    \end{align*} 
+    for all $W \in \mcal{U} \times \mcal{V}$. $P_Z$ is a measure on $\mcal{U} \otimes \mcal{V}$. We also denote $P_Z$ with $P_{X,Y}$. 
+  \end{definition}
+ 
+  \item Consider the special case where $X$ and $Y$ are real-valued random variables. That is, $(U,\mcal{U})$ and $(V,\mcal{V})$  are $(\Real \times \Real, \mcal{B}(\Real) \otimes \mcal{B}(\Real)) = (\Real^2, \mcal{B}(\Real^2))$. Because the collection $\mcal{I} =\{(-\infty, x] : x \in Real \}$ is a $\pi$-system that generates $\Real$, we have that $P_Z$ is completely determined by its values on $\mcal{I} \times \mcal{I}$.
+  
+  \item \begin{definition}[joint CDF]
+    Let $X$ and $Y$ be two real-valued random variables. Let $Z = (X,Y)$. The {\bf joint cumulative distribution function of $Z$}, denoted by $fF_Z$ and $F_{X,Y}$, is the function
+    \begin{align*}
+      F_Z(x,y) = F_{X,Y}(x, y) = P(X \leq x \wedge Y \leq y) = P(\{ \omega: X(\omega) \leq x \wedge Y(\omega) \leq y \}).
+    \end{align*} 
+  \end{definition}
+
+  \item \begin{definition}[joint PDF]
+    Let $X$ and $Y$ be two real-valued random variables. A measurable function $f_{X,Y}: \Real^2 \rightarrow [0,\infty]$ is called a {\bf joint probability distribution of $X$ and $Y$} if, for every $W \in \mcal{B}(\Real^2)$, 
+    \begin{align*}
+      P((X,Y) \in W) = \int_W f_{X,Y}(x,y)\, \dee v^2(x,y) 
+    \end{align*}
+    where $v^2$ is the Lebesgue measure in $\Real^2$ (i.e., the area measure).
+  \end{definition}
+
+  \item \begin{proposition}
+    If the joint probability distribution measure $P_{X,Y}$ is absolutely continuous with respect to the area measure $v^2$, then the PDF $f_{X,Y}$ exists and is unique $v^2$-almost everywhere. In particular,
+    \begin{align*}
+      f_{X,Y} = \frac{\dee P_{X,Y}}{\dee v^2}
+    \end{align*}
+    where the RHS is the Radon--Nikodym derivative.
+  \end{proposition}
+
+  \item \begin{proposition}
+    Let $X$ and $Y$ be two real-valued random variables with joint PDF $f_{X,Y}$ and joint CDF $F_{X,Y}$. We have that
+    \begin{align*}
+      F_{X,Y}(x,y) 
+      &= \int_{(-\infty,x] \times (-\infty,y]} f_{X,Y}(u,v)\, \dee v^2(u,v) \\
+      &= \int_{-\infty}^x \int_{-\infty}^y f_{X,Y}(u,v)\, \dee v^1(v)\, \dee v^1(u) \\
+      &= \int_{-\infty}^x \int_{-\infty}^y f_{X,Y}(u,v)\, \dee u\,\dee v.
+    \end{align*}
+    So, we may say that
+    \begin{align*}
+      f_{X,Y} = \frac{\dee F_{X,Y}}{\dee v^2} = \frac{\partial F_{X,Y}}{\partial x \, \partial y}. 
+    \end{align*}
+  \end{proposition}
+\end{itemize}
+
+\section{Independent Random Variables}
+
+\begin{itemize}
+  \item We discussed the notion of independent events in Section~\ref{sec:conditional-prob}. In this section, we focus on formulating independence through the $\sigma$-algebras. This formulation will allow us to more elegantly define independent random variables. 
+    
+  \item \begin{definition}[independent $\sigma$-algebras]
+    Sub $\sigma$-algebras $\mcal{E}_1$, $\mcal{E}_2$, $\mcal{E}_3$, $\dotsc$ are {\bf independent} if, for every set of finite indices $\{i_1, i_2, \dotsc, i_n\} \subset \Nat$, we have that
+    \begin{align*}
+      P(E_{i_1} \cap E_{i_2} \cap \dotsb \cap E_{i_k}) = \prod_{k=1}^n P(E_{i_k})
+    \end{align*}
+    given that $E_{i_k} \in \mcal{E}_{i_k}$ for all $k$.  
+  \end{definition}
+  The definition can be extended to other collections of sets, including algebra, semi-ring, and $\pi$-system.
+
+  \item \begin{proposition}
+    Let $\mcal{E}_1$ and $\mcal{E}_2$ be sub-$\sigma$-algebras such that $\mcal{E}_1 = \sigma(\Pi_1)$ and $\mcal{E}_2 = \sigma(\Pi_2)$ where $\Pi_1$ and $\Pi_2$ are $\pi$-systems. Then, $\mcal{E}_1$ and $\mcal{E}_2$ are independent if and only if $\Pi_1$ and $\Pi_2$ are indepenent.  
+  \end{proposition}
+
+  \item \begin{proposition}[independent events in terms of $\sigma$-algebras]
+    Events $E_1$, $E_2$, $\dotsc$, are {\bf independent} if and only if their generated $\sigma$-algebras, given by
+    \begin{align*}
+      \sigma(E_i) = \sigma(\{ E_i \}) = \{ \emptyset, E, E^c, \Omega \},
+    \end{align*}
+    are indepenent.
+  \end{proposition}
+
+  \item \begin{definition}[independent random variables]
+    Random variables $X_1$, $X_2$, $X_3$, $\dotsc$ are {\bf independent} if their generated $\sigma$-algebras $\sigma(X_1)$, $\sigma(X_2)$, $\sigma(X_3)$, $\dotsc$ are independent.
+  \end{definition}
+  The above definition only requires that the random variables have the same probability space $(\Omega,\mcal{E},P)$ as the domain. The ranges can be different. That is, $X_1$ maps to $(T_1, \mcal{T}_1)$, $X_2$ maps to $(T_2, \mcal{T}_2)$, and so on.
+
+  \item By the above definition, to check if random variables $X: \Omega \rightarrow U$ and $Y: \Omega \rightarrow V$ are independent, we would need to check that $P(X \in A \wedge Y \in B)$ for all $A \in \mcal{U}$ and $B \in \mcal{V}$. This can be cumbersome. However, the following proposition allows us to work with $\pi$-systems that generate $\mcal{U}$ and $\mcal{V}$.
+  
+  \begin{proposition}
+    Let $X: \Omega \rightarrow U$ and $Y: \Omega \rightarrow V$ be random variables (with associated $\sigma$-algebras $\mcal{U}$ and $\mcal{V}$, respectively). The random variables are independent if and only if $$P(X \in A \wedge Y \in B) = P(X \in A)P(Y \in B)$$ for all $A \in \mcal{A}$ and $B \in \mcal{B}$ where $\mcal{A}$ and $\mcal{B}$ are $\pi$-systems such that $\mcal{U} = \sigma(\mcal{A})$ and $\mcal{V} = \sigma(\mcal{B})$.
+  \end{proposition}
+
+  \item As an example, consider two real-valued random variables $X$ and $Y$. We have that $\mcal{U} = \mcal{V} = \mcal{B}(\Real)$. Because the collecction $\{ (-\infty, x] : x \in \Real\}$ is a $\pi$-system that generates $\mcal{B}(\Real)$, it only suffices to check whether
+  \begin{align*}
+    P(X \leq x \wedge P \leq y) = P(X \leq x)P(Y \leq y)
+  \end{align*}
+  for all $x,y \in \Real$ to check if the random variables are independent.
+
+  \item Independent random variables can also be viewed through the lens of joint distributions and product measures.
+  \begin{proposition}
+    Let $X: \Omega \rightarrow X$ and $Y: \Omega \rightarrow Y$ be random variables (with associated $\sigma$-algebras $\mcal{X}$ and $\mcal{Y}$, respectively).
+    The random variables are independent if and only if $P_{X,Y} = P_X \times P_Y$.
+  \end{proposition}
+
+  \item \begin{theorem}[second Borel--Cantelli lemma]
+    If $\{ E_n : n \in \Nat \}$ be a sequence of independent events, then
+    \begin{align*}
+      \sum_{n=1}^\infty P(E_n) = \infty \implies P(\limsup_{n \rightarrow \infty} E_n) = 1.
+    \end{align*}
+  \end{theorem}
+  Note that $\limsup_{n \rightarrow \infty} E_n$ is the set of elements in $\Omega$ that occurs in infinitely many events in the sequence. Hence, if $\sum P(E_n) > \infty$, then ``occurs in infinitely many events'' is a property that is true almost everywhere in $\Omega$.
+
+  \item \begin{definition}[tail $\sigma$-algebra]
+    Let $X_1$, $X_2$, $X_3$, $\dotsc$ be a sequence of random variables. For each $n$, let $\mcal{E}_n = \sigma(X_n)$ be the $\sigma$-algebra generated by $X_n$. The {\bf tail $\sigma$-algebra of the sequence} is defined to be
+    \begin{align*}
+      \mcal{E}_\infty = \bigcap_{n=1}^\infty \sigma\bigg( \bigcup_{m = n}^\infty \mcal{E}_m \bigg).
+    \end{align*}
+  \end{definition}
+  The tail $\sigma$-algebra contains {\bf tail events}. A tail event is an event that do not appear in only a finite number of $\sigma$-algebras in the sequence.
+
+  \item \begin{theorem}[Kolmogorov's zero-one law]
+    Let $X_1$, $X_2$, $X_3$, $\dotsc$ be a sequence of independent random variables. Let $\mcal{E}_\infty$ be the associated tail $\sigma$-algebra. Then, if $E \in \mcal{E}_\infty$, then $P(E) = 0$ or $P(E) = 1$.
+  \end{theorem}
+
+  \item \begin{theorem}
+    Let $X$ and $Y$ be random variables in $\mcal{L}^2(\Omega, \mcal{E}, P)$. Then, if $X$ and $Y$ are independent, then $E[XY] = E[X]E[Y]$.
+  \end{theorem}
+
+  \begin{proof}
+    We include the proof because it is instructive. The strategy is to proceed like how we define Lebesque integral. 
+    
+    (Step 1) First, if $X$ and $Y$ are independent, then their generated $\sigma$-algebras, $\sigma(X)$ and $\sigma(Y)$, are independent. As a result, for any event $A \in \sigma(X)$ and $B \in \sigma(Y)$, we have that $P(A \cap B) = P(A) P(B)$. Now, consider the indicator function $\one_A$ of $A$. We have that $\sigma(\one A) = \sigma(A) \subseteq \sigma(X)$, and the same can be said for $\one_B$. We also have that $\one_A$ is $\sigma(X)$-measurable and is in $\mcal{L}^2(\Omega, \mcal{E},P)$ because $E[\one_A] = P(A)$, which is finite. Again, the same can be said for $\one_B$. Thus,
+    \begin{align*}
+      E[\one_A \one_B] = P(A \cap B) = P(A)P(B) = E[\one_A] E[\one_B].
+    \end{align*} 
+    As a result, we can say that the theorem is true for pairs of indicator functions in $\sigma(X)$ and $\sigma(Y)$.
+
+    (Step 2) Second, by algebraic manipulation, we have that
+    \begin{align*}
+      E[(a_1 X_1 + a_2 X_2)(b_1 Y_1 + b_2 Y_2)] = a_1 b_1 E[X_1 Y_1] + a_1 b_2 E[X_1 Y_2] + a_2 b_1 E[X_2 Y_1] + a_2 b_2 E[X_2 Y_2].
+    \end{align*}
+    If $X_1, X_2 \in \mcal{L}^2(\Omega, \sigma(X), P)$ and $Y_1, Y_2 \in \mcal{L}^2(\Omega,\sigma(Y), P)$, we have that
+    \begin{align*}
+      & E[(a_1 X_1 + a_2 X_2)(b_1 Y_1 + b_2 Y_2)] \\
+      &= a_1 b_1 E[X_1 Y_1] + a_1 b_2 E[X_1 Y_2] + a_2 b_1 E[X_2 Y_1] + a_2 b_2 E[X_2 Y_2] \\
+      &= a_1 b_1 E[X_1] E[Y_1] + a_1 b_2 E[X_1] E[Y_2] + a_2 b_1 E[X_2] E[Y_1] + a_2 b_2 E[X_2] E[Y_2] \\
+      &= (a_1 E[X_1] + a_2 E[X_2])(b_1 E[Y_1] + b_2 E{Y_2}).
+    \end{align*}
+    This means that, if $X_1$, $X_2$ are $\sigma(X)$-measurable with finite variance, it means that their linear combinations would also satisfy the theorem.
+
+    (Step 3) Using Step 1 and Step 2, we have that all pairs of simple functions in $SF^+(\Omega, \sigma(X))$ and $SF^+(\Omega, \sigma(Y))$ satsify the theorem.
+
+    (Step 4) Let $f \in M^+(\Omega, \sigma(X))$ and $g \in M^+(\Omega, \sigma(Y))$ such that $E[f^2] < \infty$ and $E[g^2] < \infty$. We have that $fg \in M^+(\Omega,\Sigma)$ and $E[fg] < \infty$. Using Proposition~\ref{thm:approx-by-simple-functions}, there exists a sequence of non-decreasing simple functions $\{ f_n \in SF^+(\Omega,\sigma(X)): n \in \Nat \}$ and $\{ g_n : SF^+(\omega,\sigma(Y)) : n \in \Nat \}$ such that $f_n \rightarrow f$ and $g_n \rightarrow fg$. We have that $\{ f_n g_n : n \in \Nat \}$ is also a sequence of simple functions such that $f_n g_n \rightarrow g$. It follows from the monotone convergence theorem that
+    \begin{align*}
+      \lim_{n \rightarrow \infty} E[f_n] &= E[f], \\
+      \lim_{n \rightarrow \infty} E[g_n] &= E[g], \\
+      \lim_{n \rightarrow \infty} E[f_n g_n] &= E[f g]. 
+    \end{align*}
+    Because $E[f_n g_n] = E[f_n] E[g_n]$ by Step 3, we may conclude that $E[fg] = E[f]E[g]$ as well. So, the theorem is true for any pair of non-negative functions in $\mcal{L}^2(\Omega, \sigma(X), P)$ and $\mcal{L}^2(\Omega, \sigma(Y), P)$.
+
+    (Step 5) Because we can write $X = X^+ - X^-$ and $Y = Y^+ - Y^-$, we can conclude that $E[XY] = E[X]E[Y]$ using Step 4 and Step 2 together.
+  \end{proof}
+\end{itemize}
+
+\section{Covariance}
+
+\begin{itemize}
+  \item \begin{definition}[covariance]
+    Let $X, Y \in \mcal{L}^2(\Omega, \mcal{E}, P)$. The {\bf covariance of $X$ and $Y$}, denoted by $\Cov(X, Y)$, is defined as:
+    \begin{align*}
+      \Cov(X,Y) = E[(X - E[X])(Y - E[Y])] = E[XY] - E[X]E[Y].
+    \end{align*}
+  \end{definition}
+
+  \item \begin{proposition}
+    If $X, Y \in \mcal{L}^2(\Omega, \mcal{E}, P)$ are independent random variables, then $\Cov(X, Y) = 0$.
+  \end{proposition}
+
+  \item \begin{proposition}
+    Let $X, Y \in \mcal{L}^2(\Omega, \mcal{E}, P)$. We have that
+    \begin{align*}
+      \Var(X+Y) = \Var(X) + \Var(Y) + 2\Cov(X, Y).
+    \end{align*}
+    If $X$ and $Y$ are independent, then
+    \begin{align*}
+      \Var(X + Y) = \Var(X) + \Var(Y).
+    \end{align*}
+  \end{proposition}
+\end{itemize}
+
+\section{$L^2$ and Hilbert Space}
+
+\begin{itemize}
+  \item Among all the Lebesgue spaces, $L^2$ is special because we can define an inner product on it.
+  
+  \item \begin{definition}[inner product on $\mcal{L}^2$]
+    The {\bf inner product} is a function $\langle \cdot, \cdot \rangle : \mcal{L}^2 \times \mcal{L}^2 \rightarrow \Real$ defined by
+    \begin{align*}
+      \langle f, g \rangle = \int fg\, \dee\mu. 
+    \end{align*}
+  \end{definition}
+
+  \item We note that the inner product is always defined. This is because the Cauchy--Schwarz inequality (Theorem~\ref{thm:cauchy-schwarz}) tells us that $| \int fg\, \dee\mu| \leq \| f \|_2 \| g \|_2$. So, it follows that $\int fg\, \dee\mu$ must be finite.
+  
+  \item \begin{proposition}[properties of inner product on $\mcal{L}^2$]
+    Let $f,g,h \in \mcal{L}^2$, and $a,b \in \Real$. The following statements are true.
+    \begin{enumerate}
+      \item (Symmetry) $\langle f, g \rangle = \langle g, f \rangle$.
+      \item (Linearity in the first argument) $\langle af + bg, h \rangle = a\langle f, h \rangle + b\langle g, h \rangle$.
+      \item (Positivity) $\langle f, f \rangle \geq 0$, and $\langle f, f \rangle = 0$ implies $f = 0$ almost everywhere.
+    \end{enumerate}
+  \end{proposition}
+
+  \item \begin{definition}[inner product on $L^2$]
+    Going from $\mcal{L}^2$ to $L^2$, we define the inner product on $L^2$ according to the following equation:
+    \begin{align*}
+      \langle [f]_2, [g]_2 \rangle = \langle f, g \rangle = \int fg\, \dee\mu.
+    \end{align*} 
+  \end{definition}
+  The inner product on $L^2$ is well defined despect the non-determinism in the definition.
+
+  \item Since writing $[f]_2$, $[g]_2$, and so on is quite handful, we shall denote an element of $L^2$ by just $f$, $g$, and so on.
+  
+  \item \begin{proposition}[properties of inner product on $L^2$]
+    Let $f,g,h \in L^2$, and $a,b \in \Real$. The following statements are true.
+    \begin{enumerate}
+      \item (Symmetry) $\langle f, g \rangle = \langle g, f \rangle$.
+      \item (Linearity in the first argument) $\langle af + bg, h \rangle = a\langle f, h \rangle + b\langle g, h \rangle$.
+      \item (Positive definiteness) $\langle f, f \rangle \geq 0$, and $\langle f, f \rangle > 0$ if and only if $f \neq 0$.
+    \end{enumerate}
+  \end{proposition}
+
+  \item \begin{definition}[inner product]
+    Let $V$ be a vector space. A function $\langle \cdot, \cdot \rangle: V \times V \rightarrow \Real$ is called an {\bf inner product} if it satisfies the following conditions for all $\ve{u}, \ve{v}, \ve{w} \in V$ and $a,b \in \Real$.
+    \begin{enumerate}
+      \item (Symmetry) $\langle \ve{u}, \ve{v} \rangle = \langle \ve{v}, \ve{u} \rangle$.
+      \item (Linearity in the first argument) $\langle a\ve{u} + b\ve{v}, \ve{w} \rangle = a\langle \ve{u}, \ve{w} \rangle + b\langle \ve{v}, \ve{w} \rangle.$
+      \item (Positive definiteness) $\langle \ve{u}, \ve{u} \rangle \geq 0$, and $\langle \ve{u}, \ve{u} \rangle > 0$ if and only if $\ve{u} \neq \ve{0}$.
+    \end{enumerate}
+  \end{definition}
+
+  \item \begin{definition}[inner product space]
+    A vector space endowed with an inner product is called an {\bf inner product space}.
+  \end{definition}
+
+  \item \begin{theorem}
+    $L^2$ is an inner product space.
+  \end{theorem}
+
+  \item \begin{theorem}[norm from inner product]
+    An inner product space is also a normed vector space. The norm function $\| \cdot \|: V \rightarrow \Real$ is given by $\| \ve{u} \| = \sqrt{\langle \ve{u}, \ve{u} \rangle}$.
+  \end{theorem}
+
+  \item The norm of $L^2$ is just the $\mcal{L}^2$-norm.
+
+  \item \begin{definition}[Hilbert space]
+    A {\bf Hilbert space} is an inner product space that is also a complete normed vector space.
+  \end{definition}
+
+  \item \begin{theorem}
+    $L^2$ is a Hilbert space.
+  \end{theorem}
+\end{itemize}
+
+\section{Hilbert Space Theory}
+
+\begin{itemize}
+  \item The definitions and statements in this section applies to any Hilbert spaces, so they apply to any (equivalent classes of functions) in $L^2$.
+  
+  \item In this section, we let $H$ be a Hilbert space. We denote members of $H$ with boldfaced lowercase letters such as $\ve{u}$, $\ve{v}$, and $\ve{w}$. The inner product is denoted by $\langle \cdot, \cdot \rangle$, and the induced norm is denoted by $\| \cdot \|$ (no subscription).
+  
+  \item \begin{proposition}[Cauchy--Schwarz indequality]
+    $|\langle \ve{u}, \ve{v} \rangle| \leq \| \ve{u} \| \| \ve{v} \|.$
+  \end{proposition}
+
+  \item \begin{proposition}[triangle inequality]
+    $\| \ve{u} + \ve{v} \| \leq \| \ve{u} \| + \| \ve{v} \|.$
+  \end{proposition}
+
+  \item \begin{proposition}[parallelogram law]
+    $\| \ve{u} + \ve{v} \|^2 + \| \ve{u} - \ve{v} \|^2 = 2\| \ve{u} \|^2 + 2 \| \ve{v} \|^2. $ 
+  \end{proposition}
+
+  \item \begin{proposition}[polarization identity]
+    $4\langle \ve{u}, \ve{v} \rangle = \| \ve{u} + \ve{v} \|^2 + \| \ve{u} - \ve{v} \|^2.$
+  \end{proposition}
+
+  \item \begin{definition}[metric]
+    A metric on a set $M$ is a function $d: M \times M \rightarrow [0,\infty)$ that satisfies the following properties for any $\ve{u}, \ve{v}, \ve{w} \in M$.
+    \begin{enumerate}
+      \item $d(\ve{u}, \ve{v}) = 0$ if and only if $\ve{u} = \ve{v}$.
+      \item $d(\ve{u}, \ve{v}) = d(\ve{v}, \ve{u})$.
+      \item $d(\ve{u}, \ve{v}) \leq d(\ve{u}, \ve{w}) + d(\ve{w}, \ve{v})$.
+    \end{enumerate}
+  \end{definition}
+
+  \item \begin{definition} \label{def:metric}
+    The function $d: H \times H \rightarrow [0,\infty)$ defined by $d(\ve{u},\ve{v}) = \| \ve{u} - \ve{v} \|$ is a metric on $H$.
+  \end{definition}
+
+  \item Once we have a metric, we can define the notation of (1) open ball, (2) open set, (3) limit, (4) limit point, (5) closed set, (6) continuity, etc. that we should be familiar with from point set theory employed.
+  
+  \item \begin{definition}
+    The inner product is a continous function in both of its arguments. In particular, if $\ve{u}_n \rightarrow \ve{u}$ and $\ve{v}_n \rightarrow \ve{v}$ (in terms of the induced distance $d$ in Definition~\ref{def:metric}), then $\langle \ve{u}_n, \ve{v}_n \rangle \rightarrow \langle \ve{u}, \ve{v} \rangle.$
+  \end{definition}
+
+  \item \begin{definition}[perpendicularity]
+    Let $\ve{u}, \ve{v} \in H$ and $W \subset H$. We say that {\bf $\ve{u}$ is perpendicular to $\ve{v}$} if $\langle \ve{u}, \ve{v} \rangle = 0$. We say that {\bf $\ve{u}$ is perpendicular to $W$} if $\ve{u}$ is perpendicular to every $\ve{w} \in W$. Notationally, we write $\ve{u} \perp \ve{v}$, and $\ve{u} \perp W$.
+  \end{definition}
+
+  \item \begin{definition}[Hilbert subspace]
+    Let $G$ be a subset of $H$. We say that {\bf $G$ is a subspace of $H$} if $G$ is a vector space and $G$ is closed (i.e., $G$ contains all of its limit points).
+  \end{definition}
+
+  \item \begin{proposition}[perpendicular subspace]
+    Let $U$ be a non-empty subset of $H$. Let $U^\perp$ denote the set of all elements in $H$ that are perpendicular to $U$. Then, $U^\perp$ is a subspace of $H$. 
+  \end{proposition}
+
+  \item \begin{proposition}[distance from a subspace]
+    Let $\ve{u} \in H$ and $V$ be a non-empty subspace of $H$. Let $d(\ve{u}, V)$ be defined as
+    \begin{align*}
+      d(\ve{u}, V) = \inf \{  d(\ve{u}, \ve{v}) : \ve{v} \in V \}.
+    \end{align*}
+  \end{proposition}
+
+  \item \begin{proposition}[closest point property]
+    Let $\ve{u} \in H$ and $V$ be a non-empty subspace of $H$. Then, there is a unique point $\ve{v}^* \in V$ such that $d(\ve{u},\ve{v}^*) = d(\ve{u}, V)$. We say that $\ve{v}^*$ is the {\bf closest point in $V$ to $\ve{u}$}.   
+  \end{proposition}
+
+  \item \begin{definition}
+    Let $\ve{u} \in H$ and $V$ be a non-empty subspace of $H$. The {\bf projecction of $\ve{u}$ onto $V$} is the closest point in $V$ to $\ve{u}$. The {\bf projection operator}, $\Pi$, maps $\ve{u}$ to the projection of $\ve{u}$ onto $V$. 
+  \end{definition}
+
+  For the reason that should be almost immediately, we write the projection of $\ve{u}$ as $\Pi\ve{u}$.
+
+  \item \begin{proposition}
+    Let $\Pi$ be the projection operator that sends elements of $H$ to a Hilbert subspace $V$. It has the following properties.
+    \begin{enumerate}
+      \item $\Pi$ is linear. For any $\ve{u}$, $\ve{v} \in H$ and $a, b \in \Real$, we have that $\Pi(a \ve{u} + b \ve{v}) = a\Pi\ve{u} + b\Pi\ve{b}$. (In other words, $\Pi$ is like a matrix, so we write it without parentheses.)
+      
+      \item $\langle \Pi \ve{u}, \ve{v} \rangle = \langle \ve{u}, \Pi \ve{v} \rangle$ for all $\ve{u}, \ve{v} \in H$.
+      
+      \item $\Pi$ is idempotent: $\Pi^2 = \Pi$.
+      
+      \item $\Pi\ve{u} = \ve{u}$ for all $\mcal{u} \in V$, and $\Pi\ve{u} = \ve{0}$ for all $\ve{u} \in V^\perp$.
+      
+      \item For every $\ve{u} \in H$, $\ve{u} - \Pi \ve{u}$ is orthogonal to $V$.
+    \end{enumerate}
+  \end{proposition}
+
+  \item \begin{proposition}
+    Let $\Pi$ be a projection operation of $H$ onto a subspace $V$. Then, $\ve{u} = \Pi \ve{u} + (\ve{u} - \Pi \ve{u})$ is the unique representation of $\ve{u}$ as the sum of a vector in $V$ and a vector in $V^\perp$. Moreover, $\ve{u} - \Pi\ve{u}$ is the projection of $\ve{u}$ into $V^{\perp}$.
+  \end{proposition}
+
+  \item \begin{proposition}
+    For any subspace $V$ of $H$, $(V^\perp)^\perp = V$.
+  \end{proposition}
+\end{itemize}
+
+\section{Conditional Expectation}
+
+\begin{itemize}
+  \item \begin{definition}
+    Let $X$ be a random variable that can only take a finitely or countably many infinite values: $X(\omega) \in \{ x_1, x_2, \dotsc \}$ for all $\omega \in \Omega$. Let $Y$ be another random variable. If $P(X = x_j) > 0$, the {\bf conditional expectation of $Y$ given the event $\{ X = x_j\}$} is defined
+    to be
+    \begin{align*}
+      E[Y | X = x_j] = \int Y\, \dee Q
+    \end{align*}
+    where $Q$ is the probability measure defined by $Q(E) = P(Y \in E | X = x_j)$ for all $E \in \mcal{E}$, provided that $Y \in \mcal{L}^1(\Omega, \mcal{E}, Q)$.
+  \end{definition}
+
+  \item \begin{definition}
+    Let $X$ be a random variable that can only take a finite or countably many infinite values: $X(\omega) \in \{ x_1, x_2, \dotsc \}$ for all $\omega \in \Omega$. Let
+    \begin{align*}
+      f(x) = \begin{cases}
+        E[Y|X=x], & P(X = x) > 0 \\
+        \mbox{arbitrary value}, & P(X = x) = 0
+      \end{cases}.
+    \end{align*}
+    Then, the {\bf conditional expectation of $Y$ given $X$} is defined to be
+    \begin{align*}
+      E[Y|X] = f(X).
+    \end{align*}
+    It is defined only if $Y \in \mcal{L}^2(\Omega, \mcal{E}, Q_j)$ where $Q_j$ is the probability measure defined by $Q_j(E) = P(Y \in E | X = x_j)$ for all $j$ such that $P(X = x_j) \neq 0$.
+  \end{definition}
+
+  \item \begin{proposition}
+    Let $X$ and $Y$ be random variables that can only take a finite or countably many infinite values. That is, $X(\omega) \in \{ x_1, x_2, \dotsc \}$ and $Y(\omega) \in \{ y_1, y_2, \dotsc \}$ for all $\omega \in \Omega$. We have that
+    \begin{align*}
+      E[Y|X] = \sum_{i=1}^\infty \sum_{\{ x_j : P(X = x_j) \neq 0 \}} y_i P(Y=y_i | X = x_j),
+    \end{align*}
+    provided that the sum converges absolutely.
+  \end{proposition}
+
+  \item Continuing from the above proposition, we can look at $E[Y|X]$ in a new perspective. First, it is a random variable, so let us denote it with $\hat{Y}$.
+  
+  Consider the sample space $\Omega$. We have that we may think of $\Omega$ as being partitioned into a collection of disjoint sets $\{ X = x_1 \}$, $\{ X = x_2 \}$, and so on. We have that
+  \begin{align*}
+    \int_{\{ X = x_j \}} \hat{Y}\, \dee P
+    &= \bigg( \sum_{i=1}^\infty y_i P(Y = y_i|X=x_j)\bigg) P(X = x_j)\\
+    &= \sum_{i=1}^\infty y_i P(Y = y_i \wedge X = x_j) \\
+    &= \int_{\{ X = x_j \}} Y \, \dee P.
+  \end{align*}
+  
+  Now, consider the $\sigma$-algebra generated by $X$. We have that it contains sets of the form $\{ \omega: X(\omega) \in E \}$ where $E \subseteq \{ x_1, x_2, \dotsc \}$. Hence, such a set is a disjoint union of the $\{ X \in x_j \}$'s. As a result, we have that
+  \begin{align*}
+    \int_E \hat{Y}\, \dee P = \int_E Y \, \dee P.
+  \end{align*}
+  This is the identity we will be using to define conditinal expectation in the general case.
+
+  \item \begin{theorem}[Kolmogorov, 1933] \label{thm:conditional-expectation}
+    Let $X \in \mcal{L}^1(\Omega, \mcal{E}, P)$. Let $\mcal{F}$ be a sub-$\sigma$-algebra of $\mcal{E}$. Then, there exists a random variable $Y$ such that the following properties hold.
+    \begin{enumerate}
+      \item $Y$ is $\mcal{L}^1(\Omega, \mcal{F}, P)$.
+      \item For every set $F \in \mcal{F}$, we have that $\int_F Y\, \dee P = \int_F X\, \dee P$.
+    \end{enumerate}
+    Moreover, if $Y'$ is another random variable with these properties, then $Y' = Y$ almost surely (i.e., $P(Y' = Y) = 1$). A random variable with the above properties is called a version of {\bf the conditional expectation $E[X|\mcal{F}]$ of $X$ given $\mcal{F}$}. We write $Y = E[X|\mcal{F}]$. 
+  \end{theorem} 
+
+  \item One way to prove a special case of the theorem is to use the Radon--Nikodym theorem. If $X$ is a non-negative random variable in $\mcal{L}^1(\Omega, \mcal{E}, P)$, then we can define a measure $Q: \mcal{F} \rightarrow [0,\infty]$ by
+  \begin{align*}
+    Q(F) = \int_F X \, \dee P
+  \end{align*}
+  for all $F \in \mcal{F}$. Because $E[|X|] = \int |X|\, \dee P < \infty$, we have that $Q(F) \leq E[|X|] < \infty$ for all $F$, so it is a finite measure. If we assume further that $Q \ll P$ (i.e., no point masses and other pathologies), then the Radon--Nikodym derivative exists and is unique $P$-almost everywhere. We can now define $Y := \dee Q / \dee P$, and $Y$ would have all the properties that we want.
+
+  \item Note, however, there are proofs of Theorem~\ref{thm:conditional-expectation} that does not require the Radon--Nikodym theorem. They are presented in \cite{Williams:1991} and \cite{Jacod:2004}.
+
+  \item \begin{definition}
+    Let $X, Y \in \mcal{L}^1(\Omega, \mcal{E}, P)$. The {\bf conditional expectation $E[Y|X]$} is defined to be $E[Y|\sigma(X)]$. Also, for $X_1, X_2, \dotsc \in \mcal{L}^1(\Omega, \mcal{E}, P)$, we denote $E[Y|\sigma(X_1, x_2, \dotsc)]$ with $E[Y|X_1,X_2,\dotsc]$.
+  \end{definition}
+
+  \item \begin{definition}
+    Let $X: \Omega \rightarrow \Real^d$ and $Y: \Omega \rightarrow \Real$ be random variables. Then, $Y$ is $\sigma(X)$-measurable if and only if there exists a Borel function $f: \Real^d \rightarrow \Real$ such that $Y = f(X)$.
+  \end{definition}
+
+  \item \begin{corollary}
+    Let $X \in \mcal{L}^2(\Omega, \mcal{E}, P)$, and $\mcal{F}$ be a sub-$\sigma$-algebra of $\mcal{E}$. Then, the conditional expectation $Y = E[X|\mcal{F}]$ is a version of the projection of $X$ onto the Hilbert subspace $L^2(\Omega,\mcal{F},P)$. As a result, $Y$ (or any other function in the same equivalent class) is a $\mcal{F}$-measurable function that minimizes $\| Y - X \|_2$ or, equivalently, $E[(Y - X)^2]$.
+  \end{corollary}
+  
+  \item \begin{corollary}
+    $Y = E[X|\mcal{F}]$ (as an equivalent class) is the unique element in $L^2(\Omega,\mcal{F},P)$ such that
+    \begin{align*}
+      E[XZ] = E[YZ]
+    \end{align*}
+    for all $Z \in L^2(\Omega,\mcal{F},P)$.
+  \end{corollary}
+
+  \item \begin{theorem}[properties of conditional expectation]
+    Let $X \in \mcal{L}^1(\Omega,\mcal{E},P)$. Let $\mcal{F}$ and $\mcal{G}$ be sub-$\sigma$-algebras of $\mcal{E}$. The following properties are true.
+    \begin{enumerate}
+      \item If $X$ is $\mcal{F}$-measurable, then $E[X|\mcal{F}] = X$.
+      \item If $Y$ is any version of $E[X|\mcal{F}]$, then $E[Y] = E[X]$. (In other words, $E[E[X|\mcal{F}]] = E[X]$.)
+      \item (Linearity) Let $X_1$ and $X_2$ be random variables and $a_1, a_2 \in G$. Then, $$E[a_1 X_1 + a_2 X_2 | \mcal{F}] = a_1 E[X_1|\mcal{F}] + a_2 E[X_2|\mcal{F}].$$
+      \item (Positivity) If $X \geq 0$, then $E[X|\mcal{F}] \geq 0$.      
+      \item (Tower property) If $\mcal{G}$ is a sub-$\sigma$-algebra of $\mcal{F}$, then $E[E[X|\mcal{F}]|\mcal{G}] = E[X|\mcal{G}]$.
+      \item (Monotone convergence theorem) If $0 \leq X_n$ for all $n$ and $X_n \uparrow X$, then, $E[X_n|\mcal{F}] \uparrow E[X|\mcal{F}]$.
+      \item (Fatou's lemma) If $X_n \geq 0$, then $E[\liminf_{n \rightarrow} X_n|\mcal{F}] = \liminf_{n \rightarrow \infty} E[X_n|\mcal{F}]$.
+      \item (Dominated convergence theorem) Let $Y \in \mcal{L}^1(\Omega, \mcal{E}, P)$. If $|X_n(\omega) \leq Y(\omega)$ for all $n$ and $X_n \rightarrow X$ almost surely, then $E[X_n|\mcal{F}]   \rightarrow E[X|\mcal{F}]$.
+      \item (Jensen's inequality) If $c: \Real \rightarrow \Real$ is convex and $|c(X)| \in \mcal{L}^1(\Omega,\mcal{E},P)$, then $E[c(X)|\mcal{F}] \geq c(E[X|\mcal{F}])$ almost surely.
+      \item $\| E[X|\mcal{F}] \|_p \leq \| X \|_p$ for all $p \geq 1$.
+      \item If $Y$ is $\mcal{F}$-measurable and bounded, then $E[YX|\mcal{F}] = YE[X|\mcal{F}]$ almost surely.
+      \item If $\mcal{G}$ is independent of $\sigma(\sigma(X),\mcal{F})$, then $E[X|\sigma(\mcal{F},\mcal{G})] = E[X|\mcal{F}]$ almost surely. In particular, if $X$ is independent of $\mcal{F}$, then $E[X|\mcal{F}] = E[X]$.
+    \end{enumerate}
+  \end{theorem}
+
+  \item Let $X$ and $Z$ be random variables with joint PDF $f_{X,Z}(x,z)$. The marginal PDF  of $X$ and $Z$ are given by 
+  \begin{align*}
+    f_X(x) &= \int_{\Real} f_{X,Z}(x,z)\, \dee z, \\
+    f_Z(z) &= \int_{\Real} f_{X,Z}(x,z)\, \dee x.
+  \end{align*}  
+  We can define {\bf elementary conditional pdf $f_{X|Z}$ of $X$ given $Z$} as follow:
+  \begin{align*}
+    f_{X|Z}(x|z) = \begin{cases}
+      f_{X,Z}(x,z) / f_Z(z), & \mbox{if }f_Z(z) \neq 0 \\
+      0, & \mbox{otherwise}
+    \end{cases}.
+  \end{align*}
+  \begin{proposition}
+    Let $h: \Real \rightarrow \Real$ be a Borel function such that
+    \begin{align*}
+      E[|h(X)|] = \int_\Real |h(x)|f_X(x)\, \dee x < \infty.
+    \end{align*}
+    Set
+    \begin{align*}
+      g(z) = \int_\Real h(x)f_{X|Z}(x|z)\, \dee x.
+    \end{align*}
+    Then, $Y = g(Z)$ is a version of the conditional expection of $h(X)$ given $\sigma(Z)$.
+  \end{proposition}
+\end{itemize}
+
+\section{Martingales}
+
+\begin{itemize}
+  \item \begin{definition}[filtration]
+    Let $\mcal{E}$ be a $\sigma$-algebra. A sequence of sub-$\sigma$-algebras $\{ \mcal{E}_n \subseteq \mcal{E} : n \geq 0 \}$ is called a {\bf filtration in $\mcal{E}$} if $\mcal{E}_0 \subseteq \mcal{E}_1 \subseteq \mcal{E}_2 \subseteq \dotsb \subseteq \mcal{E}$. We define
+    \begin{align*}
+      \mcal{E}_\infty = \sigma \bigg( \bigcup_{n=0}^\infty \mcal{E}_n \bigg).
+    \end{align*}
+  \end{definition}
+  Note that $\mcal{E}_\infty \subseteq \mcal{E}$.
+
+  \item Here's a way to think about filtrations. At the start of our random experiment, an element of the sample space $\omega$ is picked according to $P$. The sample $\omega$ determines which events would occur. At each time step, we observe more and more events. Each $\mcal{E}_n$ as representing all observable events up to time $n$. Typically, $\mcal{E}_0 = \{ \emptyset, \Omega \}$, which means that there's no information available at all at the start of our observation.
+
+  \item \begin{definition}[filtered space]
+    A {\bf filtered space} is a quadruple $(\Omega, \mcal{E}, \{ \mcal{E}_n \}_{n \geq 0}, P)$ where $(\Omega, \mcal{E}, P)$ is a probability space and $\{ \mcal{E}_n \}_{n \geq 0}$ is a filteration in $\mcal{E}$.
+  \end{definition}
+
+  \item \begin{definition}[discrete-time stochastic process]
+    A {\bf (discrete-time) stochastic process} is a sequence $\ve{X} = \{ X_n \}_{n \geq 0}$ of random variables. It induces the {\bf natural filtration} $\mcal{E}_n = \sigma(X_0, X_1, \dotsc, X_n)$.
+  \end{definition}
+
+  \item \begin{definition}[adapted process]
+    A stochastic process $\{ X_n \}_{n \geq 0}$ is said to be adapted to a filtration $\{ \mcal{E}_n \}_{n \geq 0}$ if $X_n$ is $\mcal{E}_n$-measurable for all $n \geq 0$.
+  \end{definition} 
+
+  \item Here's one way to think about adapted process. Again, recall that $\omega$ is picked at the start to the random experiment. Then, from time $n = 0, 1, 2, \dotsc$, information about $\omega$ is revealed to us through the value of $X_n$. When the process is adapted to $\{ \mcal{E} \}_{n \geq 0}$, the $\sigma$-algebra $\mcal{E}_n$ is one where all of $X_0$, $X_1$, $\dotsc$, $X_n$ are measurable, so it would allow us to evaluate $P(X_i \in E)$ for any $\mcal{E} \in \mcal{E}$. So, $\mcal{E}_n$ contains all relevant information about $X_0$, $X_1$, $\dotsc$, $X_n$.
+  
+  \item It should be clear that a stochastic process is adapted to its natural filtration.
+  
+  \item \begin{definition}[martingle]
+    A stochastic process $\ve{X}$ is called a {\bf martingle relative to $(\{ \mcal{E}_n\}_{n \geq 0}, P)$} if the followign conditions are satisfied.
+    \begin{enumerate}
+      \item $\ve{X}$ is adapted to $\{ \mcal{E}_n \}_{n \geq 0}$.
+      \item $X_n \in \mcal{L}^1(\Omega,\mcal{E},P)$ for all $n$.
+      \item $E[X_n|\mcal{E}_{n-1}] = X_{n-1}$ almost surely for all $n \geq 1$.
+    \end{enumerate}
+    A {\bf supermartingle} is defined similarly with Condition 3 replaced by ``$E[X_n|\mcal{E}_{n-1}] \leq X_{n-1}$ almost surely.'' A {\bf submatingle} is defined with Condition 3 replaced by ``$E[X_n|\mcal{E}_{n-1}] \geq X_{n-1}$ almost surely.''
+  \end{definition}
+
+  \item The word martingle comes from a gambling context. Let's see an example. We can imagine that we can play a gambling games in rounds. In each round, you flip a coin. If it turns up head, you win \$1. If it turns up tail, you lose \$1. You may say $X_n$ is the money you have won at the end of round $n$. So, $X_0 = 0$. Moreover,
+  \begin{align*}
+    X_n = \begin{cases}
+      X_{n-1} + 1, & \mbox{with probability }p, \\
+      X_{n-1} - 1, & \mbox{with probability }1-p.
+    \end{cases}
+  \end{align*}
+  So,
+  \begin{align*}
+    E[X_n|\mcal{E}_{n-1}] = E[X_n|X_{n-1}] = X_{n-1} + 2p - 1.
+  \end{align*}
+  If $p = 0.5$, then $\ve{X}$ is a martingle. The game is fair because
+  \begin{align*}
+    E[X_n - X_{n-1}|\mcal{E}_{n-1}] = 0.
+  \end{align*}
+  On the other hand, if $p < 0.5$, then $\ve{X}$ is a supermartingale, and the game is stacked against you. If $p > 0.5$, then $\ve{X}$ is a submartingale, and the game is rigged in your favor.
+
+  \item \begin{proposition}
+    If $\ve{X}$ is a martingle relative to $\{ \mcal{E}_n \}_{n \geq 0}$, then $E[X_n | \mcal{E}_m] = X_m$ for all $m \leq n$. The equation changes to $E[X_n|\mcal{E}_m] \leq X_m$ for a supermartingale and $E[X_n|\mcal{E}_m] \geq X_m$ for a submartingale.
+  \end{proposition}
+
+  \item \begin{proposition}
+    If $\ve{X}$ is a martingle, then $E[X_n] = E[X_0]$ for all $n$.
+  \end{proposition}
+  \begin{proof}
+    $E[X_n] = E[E[X_n|\mcal{F}_0]] = E[X_0]$.
+  \end{proof}
+
+  \item \begin{proposition}
+    If $\ve{X}$ is a martingale, and if $f$ is a convex function and $f(X_n) \in \mcal{L}^1(\Omega,\mcal{E},P)$ for each $n$, then $\{ f(X_n) \}_{n \geq 0}$ is a submartingale.
+  \end{proposition}
+  This means that if $\ve{X}$ is a martingale, then $|\ve{X}| = \{ |X_n| \}_{n \geq 0}$ is a submartingale.
+
+  \item \begin{theorem}[Doob decomposition]
+    Let $\ve{X}$ be a submartingale adapted to $\{ \mcal{E}_n \}_{n \geq 0}$. There exists a martingale $\mcal{M}$ and a stochastic process $\ve{A}$ with $A_{n+1} \geq A_n$ almost surely and $A_{n+1}$ being $\mcal{E}_n$ measurable for all $n \geq 0$ such that
+    \begin{align*}
+      X_n = X_0 + M_n + A_n
+    \end{align*}
+    with $M_0 = A_0 = 0$. Moreover, such a decomposition in unique. If $\ve{X}$ is a supermartingale, the decomposition is
+    \begin{align*}
+      X_n = X_0 + M_n - A_n.
+    \end{align*}
+  \end{theorem}  
+
+  \item Let $\{ \mcal{E}_n \}_{n \geq 0}$ be a filtration. Let $Y \in \mcal{L}^1(\Omega,\mcal{E},P)$. Define $X_n = E[Y|\mcal{E}_n]$. We have that
+  \begin{align*}
+    E[X_n|\mcal{E}_{n-1}] = E[E[Y|\mcal{E}_n]|\mcal{E}_{n-1}] = E[Y|\mcal{E}_{n-1}] = X_{n-1}.
+  \end{align*}
+  So, $\ve{X}$ is a martingle. A way to think about this martingle is as follows. With each $\mcal{E}_n$, we get more information about $\omega$. $X_n = E[Y|\mcal{E}_n]$ is the closest random variable to $Y$ given the information we have so far. So, $X_\infty$ is the best approximation to $Y$ given all the information.
+
+  \item \begin{definition}
+    Let $Y \in \mcal{L}^1(\Omega,\mcal{E},P)$. A martingle $\ve{X}$ adapted to $\{ \mcal{E}_n \}_{n \geq 0}$ is said to be {\bf closed by $Y$}  if $X_n = E[Y|\mcal{E}_n]$.
+  \end{definition}
+\end{itemize}
+
+\section{Stopping Times}
+
+\begin{itemize}
+  \item \begin{definition}[stopping time]
+    A map $T: \Omega \rightarrow \{ 0, 1, 2, \dotsc, \infty \}$ is called a {\bf stopping time} if $$\{ T \leq n \} = \{ \omega: T(\omega) \leq n \} \in \mcal{F}_n$$ for all $n \leq \infty$ or, equivalently, if $$ \{ T = n \} = \{ \omega: T(\omega) \leq n \} \in \mcal{F}_n$$
+    for all $n \leq \infty$.
+  \end{definition}
+  Intuitively, with the information up to the $n$-th time step, we have all the information to decide whether $T \leq n$.
+
+  \item For example, let $\ve{X}$ be adapted to $\{ \mcal{E}_n \}_{n \geq 0}$. Let $B \in \mcal{B}(\Real)$. Let $T = \inf \{ n \geq 0: X_n \in B \}$. In other words, $T$ is the first time $X_n$ enters $B$. Obviously, $T$ is a stopping time because we can decide whether $T \leq n$ by the history of $X_0$, $X_1$, $\dotsc$, $X_n$ only.
+  
+  \item \begin{definition}[bounded stopping time]
+    We say that a stopping time $T$ is {\bf bounded} if there exists a constant $c$ such that $P(T \leq c) = 1$.
+  \end{definition}
+
+  \item \begin{definition}
+    If $T$ is a finite stopping time, we denote by $X_T$ the random variable $X_{T(\omega)}(\omega)$. This random variable takes the value $X_n$ whenever $T = n$.
+  \end{definition}
+
+  \item \begin{proposition}
+    Let $T$ be a stopping time bounded by $c$, and let $\ve{X}$ be a martingle. Then, $$E[X_T] = E[X_0].$$
+  \end{proposition}
+
+  \item \begin{definition}[stopping time $\sigma$-algebra]
+    Let $T$ be a stopping time. The {\bf stopping time $\sigma$-algebra $\mcal{E}_T$} is defined to be
+    \begin{align*}
+      \mcal{E}_T = \{ E \in \mcal{E} : E \cap \{ T \leq n \} \in \mcal{E}_n \mbox{ for all } n \}
+    \end{align*}
+  \end{definition}
+
+  \item \begin{proposition}
+    The stopping time $\sigma$-algebra is a $\sigma$-algebra.
+  \end{proposition}
+
+  \item \begin{proposition}
+    Let $S,T$ be stopping times with $S \leq T$. Then, $\mcal{E}_S \subseteq \mcal{E}_T$.
+  \end{proposition}
+
+  \item \begin{proposition}
+    $X_T$ is $\mcal{F}_T$-measurable.
+  \end{proposition}
+
+  \item \begin{theorem}[Doob's optinal sampling theorem]
+    Let $\ve{X}$ be a martingle. Let $S,T$ be stopping times bounded by a constant $c$ with $S \leq T$. Then, $E[X_T|\mcal{E}_S] = X_S$ almost surely.
+  \end{theorem}
+
+  \item \begin{theorem}
+    Let $\ve{X}$ be a stochastic process adapted to $\{ \mcal{E}_n \}_{n \geq 0}$. Suppose $X_n \in \mcal{L}^1(\Omega, \mcal{E}, P)$ for all $n$, and $E[X_T] = E[X_0]$ for all bounded stopping time $T$. Then, $\ve{X}$ is a martingale.
+  \end{theorem}
+
+  \item \begin{theorem}
+    Let $T$ be a stopping time bounded by $c \in \Nat$. Let $\ve{X}$ be a submartingale. Then, $E[X_T] \leq E_c$.
+  \end{theorem}
+  In particular, $E[X_{\min(T,n)}] \leq E[X_n]$.
+\end{itemize}
+
+\section{Martingale Inequalities}
+
+\begin{itemize}  
+  \item We will now discuss various inequalities concerning martintgales. We shall deal with a filtered space $(\Omega, \mcal{E}, \{ \mcal{E}_n \}_{n \geq 0}, P)$. We let $\ve{X} = \{ X_n \}_{n \geq 0}$ be a sequence of random variables adapted to $\{ \mcal{E}_n \}_{n \geq 0}$ that is integrable (i.e., $X_n \in \mcal{L}^1(\Omega, \mcal{E}_n, P)$). Let $X^*_n = \sup_{i\leq n} |X_i|$. We have that $\{ X^*_n \}_{n \geq 0}$ is a non-negative and non-decreasing stochastic process and a submartingale.
+  
+  \item \begin{theorem}[Doob's first martingale inequality]
+    Let $\ve{X}$ be a martingale or a non-negative submartingle. Then
+    \begin{align*}
+      P(X^*_n \geq a) \leq \frac{E[|X_n|]}{a}.
+    \end{align*}
+  \end{theorem}
+
+  \item \begin{theorem}[Doob's $\mcal{L}^p$ martingle inequalities \#1] 
+    Let $\ve{X}$ be a martingale or a non-negative submartingle. Let $1 < p < \infty$. There exists a constant $c$ depending on $p$ such that
+    \begin{align*}
+      E[(X^*_n)^p] \leq c E[|X_n|^p].
+    \end{align*}
+  \end{theorem}
+
+  \item \begin{theorem}[Doob's $\mcal{L}^p$ martingle inequalities \#2] 
+    Let $\ve{X}$ be a martingale or a non-negative submartingle. Let $1 < p < \infty$. There exists a constant $c$ depending on $p$ such that
+    \begin{align*}
+      E[(X^*_n)^p]^{\frac{1}{p}} \leq \frac{p}{p-1} E[|X_n|^p]^{\frac{1}{p}}.
+    \end{align*}
+    Equivalently,
+    \begin{align*}
+      \|X^*_n\|_p \leq \frac{p}{p-1} \| M_n \|_p.
+    \end{align*}
+  \end{theorem}
+
+  \item \begin{definition}[upcrossing]
+    Let $\ve{X}$ be a submartingale. Let $a < b$. The {\bf number of upcrossings of an inteval $[a,b]$} is the nujmber of times a process crosses from below $a$ to above $b$ at a later time.
+  \end{definition}
+
+  \item The number of upcrossing can be defined as follows. We define stopping times $T_0, T_1, \dotsc$ and $S_1, S_2, \dotsc$ recursively. We start with
+  \begin{align*}
+    T_0 = 0.
+  \end{align*}
+  Then,
+  \begin{align*}
+    S_{j+1} &= \min\{ k > T_j : X_k \leq a \}, \\
+    T_{j+1} &= \min\{ k > S_{j-1}: X_k \geq b \}.
+  \end{align*}
+  So,
+  \begin{align*}
+    S_{j+1} &= \mbox{earliest time when $\ve{X}$ first dropped down to $a$ after the $j$th time it goes above $b$}, \\
+    T_{j+1} &= \mbox{earliest time when $\ve{X}$ goes above $b$ after the $(j+1)$th time it drops down to $a$}.
+  \end{align*}
+  We can now define
+  \begin{align*}
+    U_n = \max\{j : T_j \leq n\},
+  \end{align*}
+  and this equals to the number of upcrossings of $[a,b]$ before time $n$.
+
+  \item \begin{theorem}[Doob's upcrossing inquality]
+    Let $\ve{X}$ be a submartingale. Let $a < b$, and let $U_n$ be the number of upcrossings of $[a,b]$ before time $n$. Then,
+    \begin{align*}
+      E[U_n] \leq \frac{1}{b-a} E[\max(X_n - a, 0)].
+    \end{align*}
+  \end{theorem}
+\end{itemize}
+
+\section{Convergence of Random Variables}
+
+\begin{itemize}
+  \item In this section, we deal with a sequence of random variable $\{ X_n \}_{n \in \Nat}$.
+
+  \item \begin{definition}[pointwise convergence]
+    We say that $\{ X_n \}_{n \in \Nat}$ {\bf converges (pointwise)} to a random variable $X$ if
+    \begin{align*}
+      \lim_{n \rightarrow \infty} X_n(\omega) = X(\omega)
+    \end{align*}
+    for all $\omega$. We write ``$X_n \rightarrow X$.''
+  \end{definition}
+  This notion of convergence is often too strong. We introduce three more notions of convergence that are weaker.
+  
+  \item \begin{definition}[almost sure convergence]
+    We say that $\{ X_n \}_{n \in \Nat}$ {\bf converges almost surely} to a random variable $X$ if
+    \begin{align*}
+    P(N) = 0 \qquad \mbox{where} \qquad N = \bigg\{ \omega: \lim_{n \rightarrow \infty} X_n(\omega) \neq X(\omega) \bigg\}.
+    \end{align*}
+    We write ``$X_n \rightarrow X$ almost surely'' or ``$X_n \rightarrow X$ a.s\@.'' or ``$X_n \xrightarrow[]{a.s.} X$.''
+  \end{definition}
+
+  \item \begin{definition}[convergence in $\mcal{L}^p$]
+    Let $1 \leq p < \infty$. We say that $\{ X_n \}_{n \in \Nat}$ {\bf converges in $\mcal{L}^p$} to a random variable $X$ if $X_n, X$ are in $\mcal{L}^p(\Omega, \mcal{E},P)$ and
+    \begin{align*}
+      \lim_{n \rightarrow \infty} E\big[|X_n - X|^p\big] 
+      = \lim_{n \rightarrow \infty} \big(\| X_n - X \|_p\big)^p 
+      = 0.
+    \end{align*}
+    We write ``$X_n \xrightarrow[]{\mcal{L}^p} X$.''
+  \end{definition}
+
+  \item \begin{definition}[convergence in probability]
+    We say that $\{ X_n \}_{n \in \Nat}$ {\bf converges in probability} to a random variable $X$ if, for any $\varepsilon > 0$, we have
+    \begin{align*}
+      \lim_{n \rightarrow \infty} P\big( \{ \omega : |X_n(\omega) - X(\omega)| > \varepsilon \} \big) = 0.
+    \end{align*}
+    Equivalently, for any $\varepsilon > 0$, $\delta > 0$, there exists $N = N(\varepsilon, \delta)$ such that $P(|X_n - X| > \varepsilon) < \delta$ for all $n \geq N$.
+    We write ``$X_n \xrightarrow[]{P} X$.''
+  \end{definition}
+
+  \item \begin{theorem}
+    $X_n \xrightarrow[]{P} X$ if and only if
+    \begin{align*}
+      \lim_{n \rightarrow \infty} E\bigg[ \frac{|X_n - X|}{1 + |X_n - X|} \bigg] = 0.
+    \end{align*}
+  \end{theorem}
+
+  \item Convergence in probability is the weakest notion of convergence that has been introduced so far.
+  \begin{proposition}
+    The following are true.
+    \begin{enumerate}
+      \item $X_n \xrightarrow[]{\mcal{L}^p} X \implies X_n \xrightarrow[]{P} X$.
+      \item $X_n \xrightarrow[]{a.s.} X \implies X_n \xrightarrow[]{P} X$.
+    \end{enumerate}
+  \end{proposition}
+
+  \item \begin{proposition}
+    If $X_n \xrightarrow[]{P} X$, then there exists a subsequence $\{ n_k \}_{k \in \Nat}$ such that $X_{n_k} \rightarrow X$ almost surely.
+  \end{proposition}
+
+  \item \begin{proposition}
+    Let $Y \in \mcal{L}^p(\Omega, \mcal{E},P)$. Let $X_n \xrightarrow[]{P} X$ and $|X_n| \leq Y$ for all $n$. Then, we have that $|X| \in \mcal{L}^p(\Omega, \mcal{E},P)$ and $X_n \xrightarrow[]{\mcal{L}^p} X$.
+  \end{proposition}
+
+  \item \begin{proposition}
+    Let $f$ be a continuous function.
+    \begin{enumerate}
+      \item $X_n \xrightarrow[]{a.s.} X \implies f(X_n) \xrightarrow[]{a.s.} f(X).$
+      \item $X_n \xrightarrow[]{P} X \implies f(X_n) \xrightarrow[]{P} f(X).$
+    \end{enumerate}
+  \end{proposition}
+\end{itemize}
+
+\section{Martingale Convergence Theorems}
+
+\begin{itemize}
+  \item \begin{theorem}[martingale convergence theorem \#1]
+    Let $\{X_n\}_{n \geq 0}$ be a submartingale such that $\sup_{n \geq 0} E[\max(X_n, 0)] < \infty$. Then, $X = \lim_{n \rightarrow \infty} X_n$ exists almost surely. Moreover, $X \in \mcal{L}^1(\Omega,\mcal{E},P)$.
+  \end{theorem}
+  However, it is not true in general that $X_n \xrightarrow[]{\mcal{L}^1} X$.
+
+  \item \begin{corollary}
+    Let $\{X_n\}_{n \geq 0}$ is a non-negative supermartingale or a martingle bounded above or bounded below. Then, $X = \lim_{n \rightarrow \infty} X_n$ exists almost surely. Moreover, $X \in \mcal{L}^1(\Omega,\mcal{E},P)$.
+  \end{corollary}
+
+  \item \begin{definition}[uniformly integrable collection of random variables]
+    A subset $H$ of $L^1$ is said to be {\bf uniformly integrable collection of random variables} if
+    \begin{align*}
+      \lim_{c \rightarrow \infty} \sup_{X \in H} E[\one_{\{ |X| \geq c \}}|X|] = 0.
+    \end{align*}
+  \end{definition}
+
+  \item \begin{proposition}
+    Let $H$ be a class of random variables.
+    \begin{enumerate}
+      \item If $\sup_{X \in H} E[|X|^p] < \infty$ for some $p > 1$, then $H$ is uniformly integrable.
+      \item If there exists a random variable $Y \in \mcal{L}^1(\Omega,\mcal{E},P)$ such that $|X| < Y$ almost surely for all $X \in H$, then $H$ is uniformly integrable. 
+    \end{enumerate}
+  \end{proposition}
+
+  \item \begin{theorem}[martingale convergence theorem \#2]
+    Let $\ve{X}$ be a martingale that is a uniformly integrable collection of random variables. Then, $\lim_{n \rightarrow \infty} X_n = X_\infty$ exists almost surely, $X_\infty \in \mcal{L}^1(\Omega, \mcal{E}, P)$, and $X_n \xrightarrow[]{\mcal{L}^1} X_\infty$. Moreover, $X_n = E[X|\mcal{F}_\infty]$.
+
+    Conversely, let $Y \in \mcal{L}^1(\Omega,\mcal{E},P)$. Consider the martingle $X_n = E[Y|\mcal{E}_n]$ that is closed by $Y$. Then, $\{ X_n \}_{n \geq 0}$ is a uniformly integrable collection of random variables.
+  \end{theorem}
+
+  \item \begin{corollary}
+    Let $\{ \mcal{E}_n \}_{n \geq 0}$ be a filtration. Let $\mcal{E}_\infty = \sigma(\bigcup_{n=0}^\infty \mcal{E}_n)$. If $Y \in \mcal{L}^1(\Omega,\mcal{E}_\infty,P)$, then $E[Y|\mcal{E}_n] \xrightarrow[]{\mcal{L}^1} Y$.
+  \end{corollary}
+
+  \item When we define martingales, the indices of the random variables are non-negative. However, we can also consider non-positive indices.
+
+  \begin{definition}[backwards martingale]
+    Let $\{ \mcal{E}_{-n}\}_{n \geq 0}$ be an increasing sequence of sub-$\sigma$-algebras of $\mcal{E}$. (That is, $\mcal{E}_{-n-1} \subseteq \mcal{E}_{-n}$ for all $n \geq 0$. In other words, a filtration with non-positive indices.) A {\bf backwards martingale} is a sequence $\{ X_{-n} \}_{n \geq 0}$ of random variables such that the following properties are satisfied.
+    \begin{enumerate}
+      \item $X_{-n}$ is $\mcal{E}_{-n}$-measurable for all $n \geq 0$.
+      \item $X_{-n} \in \mcal{L}^1(\Omega,\mcal{E},P)$ for all $n \geq 0$.
+      \item $E[X_{-n}|\mcal{E}_{-n-1}] = X_{-n-1}$ for all $n \geq 0$.
+    \end{enumerate}
+    
+  \end{definition}
+
+  \item \begin{theorem}[backwards martingale convergence theorem]
+    Let $\{ X_{-n}\}_{n \geq 0}$ be a backward martingale adapted to a filtration $\{ \mcal{E}_{-n} \}_{n \geq 0}$. Let $\mcal{E}_{-\infty} = \bigcap_{n=0}^\infty \mcal{E}_{-n}$. Then, the sequence $\{ X_{-n}\}_{n \geq 0}$ converges almost surely and in $\mcal{L}^1$ to a limit $X$ as $n \rightarrow \infty$. This $X$ is a member of $\mcal{L}^1(\Omega, \mcal{E}, P)$.
+  \end{theorem}
+
+  \item \begin{theorem}[strong law of large numbers]
+    Let $\{ X_n : n \in \Nat \}$ be a sequence of i.i.d. random variables in $\mcal{L}^1(\Omega,\mcal{E},P)$. Then,
+    \begin{align*}
+      \frac{X_1 + X_2 + \dotsm + X_n}{n} \xrightarrow[]{a.s.} E[X_1].
+    \end{align*}    
+  \end{theorem}
+\end{itemize}
+
+\section{Weak Convergence}
+
+\begin{itemize}
+  \item The notion of weak convergence deals with convergence of probability measures. When applied to the probabiliy measures induced by random variables, it gives another notion of convergence or random variables. However, the values of the random variable in question is not of any concern at all. As a result, weak convergence is very different from other types of convergence discussed in the last section.
+  
+  \item \begin{definition}[weak convergence]
+    Let $\{ \mu_n \}_{n \geq 0}$ and $\mu$ be probability measures on $(\Real^d, \mcal{B}(\Real^d))$. We say that $\{ \mu_n \}_{n \geq 0}$ {\bf converges weakly to $\mu$} if
+    \begin{align*}
+      \lim_{n \rightarrow \infty} \int f\, \dee\mu_n = \int f\, \dee\mu
+    \end{align*}
+    for each $f: \Real^d \rightarrow \Real$ that is continuous and bounded.
+  \end{definition}
+
+  \item \begin{definition}[convergence in distribution]
+    Let $\{ X_n \}_{n \in \Nat}$ be a sequence of $\Real^d$-valued random variables. We say that $X_n$ {\bf converges in distribution} to $X$ if the distribution measures $\{ P_{X_n} \}_{n \in \Nat}$ converges weakly to $P_X$. In other words,
+    \begin{align*}
+      \lim_{n\rightarrow \infty} E[f(X_n)] = E[f(X)]
+    \end{align*}
+    for all $f:\Real^d \rightarrow \Real$ that is continuous and bounded. We write ``$X_n \xrightarrow[]{\mcal{D}} X.$''
+  \end{definition}
+
+  \item One thing to note is that the limit $X$ might not be in the same probability space as the $X_n$'s. So, convergence in distribution is really different from other notions of convergence.
+  
+  \item However, if the limit is in the same space as the sequence, we can say nice things about it.
+  
+  \begin{proposition}
+    Let $\{ X_n \}_{n \in \Nat}$ and $X$ be random variables defined on a given probability space $(\Omega,\mcal{E},P)$. Then, $$X_n \xrightarrow[]{P} X \implies X_n \xrightarrow[]{\mcal{D}} X.$$
+  \end{proposition}
+
+  \item \begin{proposition}
+    Let $\{ X_n \}_{n \in \Nat}$ and $X$ be random variables defined on a given probability space $(\Omega,\mcal{E},P)$. If $X_n \xrightarrow[]{\mcal{D}} X.$ and $X$ is equal to a constant almost surely, then $X_n \xrightarrow[]{P} X$.
+  \end{proposition}
+
+  \item \begin{proposition}
+    Let $\{ X_n \}_{n \in \Nat}$ be a sequence of real-valued random variables.
+    \begin{enumerate}
+      \item If $X_n \xrightarrow[]{\mcal{D}} X$, then $F_{X_n}(x) \rightarrow F_X(x)$ for all $x$ in the set $D$ of continuity points of $F_X$. That is, $$D = \{ x : F_X(x^-) = F_X(x) \}.$$ We also have that $D$ is a dense subset of $\Real$.
+      
+      \item If $F_{X_n}(x) \rightarrow F_X(x)$ for all $x$ in a dense subset of $\Real$, then $X_n \xrightarrow[]{\mcal{D}} X$.
+    \end{enumerate}
+  \end{proposition}
+
+  \item \begin{proposition}
+    Let $\{ X_n \}_{n \in \Nat}$ and $X$ be $\Real^d$-valued random variables with probability densitie functions $\{f_{X_n} \}_{n \in \Nat}$ and $f_X$, respetively. If $f_n \rightarrow f$ pointwisely, then $X_n \xrightarrow[]{\mcal{D}} X$.
+  \end{proposition}
+
+  \item \begin{proposition}
+    Let $\{ \mu_n \}_{n \in \Nat}$ be a sequence of probability measures on $\mcal{B}(\Real)$. Suppose
+    \begin{align*}
+      \lim_{m \rightarrow \infty} \sup_{n \in \Nat} \mu_n([-m,m]^c) = 0.
+    \end{align*}
+    Then, there exists a subsequence $\{ n_k \}_{k \in \Nat}$ such that $\{ \mu_{n_k} \}_{k \in \Nat}$ converges weakly.
+  \end{proposition}
+
+  \item \begin{definition}[Lipschitz continuity]
+    A function $f: \Real^d \ra \Real$ is said to be {\bf Lipschitz continous} if $| f(\ve{x}) - f(\ve{y}) | \leq k\| \ve{x} - \ve{y} \|$ for some constant $k > 0$ and for all $\ve{x}, \ve{y} \in \Real^d$.
+  \end{definition}
+
+  \item \begin{proposition}
+    Let $\{ X_n \}_{n \in \Nat}$ and $X$ be $\Real^d$-valued random variables. Then, $X_n \xrightarrow[]{\mcal{D}} X$ if and only if $E[g(X_n)] \rightarrow E[g(X)]$ for all bounded Lipschitz continuous function $g: \Real^d \ra \Real$.
+  \end{proposition}
+
+  \item \begin{definition}[uniform continuity]
+    A function $f: \Real^d \ra \Real$ is said to be {\bf uniformly continuous} if, for any $\varepsilon > 0$, there exists a $\delta > 0$ such that, for any $\ve{x}, \ve{y} \in \Real^d$, we have that $\| \ve{x} - \ve{y} \| < \delta \implies | f(\ve{x}) - f(\ve{y}) | < \varepsilon.$
+  \end{definition}
+
+  \item \begin{corollary}
+    Let $\{ X_n \}_{n \in \Nat}$ and $X$ be $\Real^d$-valued random variables. Then, $X_n \xrightarrow[]{\mcal{D}} X$ if and only if $E[g(X_n)] \rightarrow E[g(X)]$ for all bounded uniformly continuous function $g: \Real^d \ra \Real$.
+  \end{corollary}
+  This follows from the fact that any Lipschitz continuous function is also uniformly continuous. 
+
+  \item \begin{theorem}[Slutsky's theorem]
+    Let $X$, $\{ X_n \}_{n \in \Nat}$, and $\{ Y_n \}_{n \in \Nat}$ be $\Real^d$-valued random variables. If $X_n \xrightarrow[]{\mcal{D}} X$ and $\| X_n - Y_n \| \xrightarrow[]{P} 0$, then $Y_n \xrightarrow[]{\mcal{D}} X$.
+  \end{theorem}
+
+  \item \begin{proposition}
+    Let $\{ X_n \}_{n \in \Nat}$ and $X$ be random variables that take at most countably infinitely many values. Then, $X_n \xrightarrow[]{\mcal{D}} X$ if and only if $P(X_n = x) = P(X = x)$ for all possible values $x$ that these varialbles can take. 
+  \end{proposition}
+\end{itemize}
+
+\section{Characteristic Functions}
+
+\begin{itemize}
+  \item \begin{definition}[Fourier transform of a measure]
+    Let $\mu$ be a measure on $\mcal{B}(\Real^d)$. Its {\bf Fourier transform} is a complex-valued function $\hat{\mu}: \Real^d \rightarrow \mathbb{C}$ defined by
+    \begin{align*}
+      \hat\mu(\ves{\xi}) 
+      = \int e^{i(\ves{\xi} \cdot \ve{x})}\, \dee\mu(\ve{x})
+      = \int \cos(\ves{\xi} \cdot \ve{x})\, \dee\mu(\ve{x})
+      + i \int \sin(\ves{\xi} \cdot \ve{x})\, \dee\mu(\ve{x})
+    \end{align*}
+    for any $\ves{\xi} \in \Real^d$.
+  \end{definition}
+
+  \item \begin{definition}[characteristic function]
+    Let $X$ be a $\Real^d$-valued random variable. Its {\bf characteristic function} is the function $\varphi_X: \Real^d \rightarrow \mathbb{C}$ defined by
+    \begin{align*}
+      \varphi_X(\ves{\xi}) = E[e^{i(\ves{\xi} \cdot X)}] = \int e^{i(\ves{\xi} \cdot \ve{x})}\, \dee P_X(\ve{x})
+      = \widehat{P_X}(\ves{\xi})
+    \end{align*}
+    where $P_X$ is the probability distribution measure (Proposition~\ref{thm:probability-distribution-measure}) of $X$.
+  \end{definition}
+
+  \item Why do we study characteristic functions? Well, it can do several things.
+  \begin{enumerate}
+    \item It can be used to compute its random variable's moments: $E[X]$, $E[X^2]$, $E[X^3]$, $\dotsc$
+    \item It can be used to prove the Central Limit Theorem.
+  \end{enumerate}
+
+  \item \begin{proposition}[properties of characteristic functions]
+    Let $X$ be $\Real^d$-valued random variable.
+    \begin{enumerate}
+      \item $\varphi_X(\ve{0}) = 1$.
+      \item $|\varphi_X(\ves{\xi})| \leq 1$ for all $\ves{\xi} \in \Real^d$.
+      \item $\varphi_X$ is a continous function.
+      \item $\varphi_{(-X)}(\ves{\xi}) = \overline{\varphi_X(\ves{\xi})}$ for all $\ves{\xi} \in \Real$.
+      \item $\varphi_{(AX+\ves{b})}(\ves{\xi}) = e^{i(\ve{b}\cdot \ves{\xi})}\varphi_X(A^T\ves{\xi})$ for all $\ves{\xi}, \ves{b} \in \Real^d$ and $A \in \Real^{d\times d}$. 
+    \end{enumerate}
+  \end{proposition}
+
+  \item \begin{theorem}
+    Let $X$ be a real-valued random variable. If $E[|X|^m] < \infty$, for some integer $m geq 1$. Then, the characteristic function $\varphi_X$ has continuous partial derivative up to order $m$, and
+    \begin{align*}
+      \varphi_X^{(m)}(\xi) = i^m E[X^m e^{i\xi X}].
+    \end{align*}
+    As a result,
+    \begin{align*}
+      E[X^m] = \frac{\varphi_X^{(m)}(0)}{i^m}.
+    \end{align*}
+  \end{theorem}
+
+  \item \begin{theorem}[uniqueness theorem]
+    If two real-valued random variables have the same characteristic functions, then they are equal.
+  \end{theorem}
+
+  \item \begin{corollary}
+    Let $X = (X_1, X_2, \dotsc, X_d)$ be a $\Real^d$-valued random variable. Then, the components of $X$ are independent if and only if
+    \begin{align*}
+      \varphi_X(\ves{\xi}) = \prod_{i=1}^n \varphi_{X_i}(\xi_i)
+    \end{align*}
+    for all $\ves{\xi} = (\xi_1, \xi_2, \dotsc, \xi_d) \in \Real^d$.
+  \end{corollary}
+  
+  \item \begin{theorem}
+    Two real-valued random variables $X$ and $Y$ are independent if and only if $$\varphi_{X+Y}(\xi) = \varphi_X(\xi) \varphi_Y(\xi)$$ for all $\xi \in \Real$.
+  \end{theorem}
+
+  \item \begin{theorem}[L\'{e}vy's inversion formula]
+    Let $X$ be a real-valued random variable. Then, for $a < b$,
+    \begin{align*}
+      \lim_{T \rightarrow \infty} \frac{1}{2\pi} \int_{-T}^T \frac{e^{-i\xi a} - e^{-i\xi b}}{i\xi} \phi_X(\xi)\, \dee\xi 
+      &= \frac{1}{2} P_X(\{ a \}) + P_X((a,b)) + P_X(\{ b \}) \\
+      &= \frac{1}{2}\Big( F_X(b) + F_X(b^-) - F_X(a) - F_X(a-) \Big).  
+    \end{align*}
+  \end{theorem}
+
+  \item \begin{theorem}[L\'{e}vy's continuity theorem \#1]
+    Let $\{ \mu_n \}_{n \in \Nat}$ be a sequence of measure on $\mcal{B}(\Real^d)$. Let $\hat{\mu}_n$ denote $\mu_n$'s Fourier transform.
+    \begin{enumerate}
+      \item If $\mu_n$ converges weakly to a probability measure $\mu$, then $\hat{\mu}_n(\ves{\xi})\ra \hat{\mu}(\ves{\xi})$ for all $\ves{\xi} \in \Real^d$ where $\hat{\mu}$ is the Fourier transform of $\mu$.
+      
+      \item Suppose $\hat{\mu}_n(\ves{\xi})$ converges to a function $f(\ves{\xi})$ for all $\ves{\xi} \in \Real^d$, and suppose that $f$ is continuous at $\ve{0}$. Then, there exists a measure $\mu$ on $\mcal{B}(\Real^d)$ such that $f(\ves{\xi}) = \hat{\mu}(\ves{\xi})$ for all $\ves{\xi} \in \Real^d$. Moreover, $\{ \mu_n \}_{n \in \Nat}$ converges weakly to $\mu$.
+    \end{enumerate}    
+  \end{theorem}
+  
+  \item The following is L\'{e}vy's continuity theorem written in the language of ``random variables'' and ``convergence in distribution.''
+  
+  \begin{theorem}[L\'{e}vy's continuity theorem \#2]
+    Let $\{ X_n \}_{n \in \Nat}$ be a sequence of $\Real^d$-valued random variables.
+    \begin{enumerate}
+      \item If there exists a random variable $X$ such that $X_n \xrightarrow[]{\mcal{D}} X$, then $\varphi_{X_n}(\ves{\xi}) \ra \varphi_X(\ves{\xi})$ for all $\ves{\xi} \in \Real^d$.
+      
+      \item Suppose $\varphi_{X_n}$ converges to a function $f(\ves{\xi})$ for all $\ves{\xi} \in \Real^d$, and suppose that $f$ is continuous at $\ve{0}$. Then, there exists a probability measure $Q$ on $\mcal{B}(\Real^d)$ such that $f(\ves{\xi}) = \hat{Q}(\ves{\ves{\xi}})$ for all $\ves{\xi} \in \Real^d$. Morever, $\{ P_{X_n} \}_{n \in \Nat}$ converges weakly to $Q$.
+    \end{enumerate}
+  \end{theorem}
+
+  \item One of the most well-known consequence of L\'{e}vy's continuity theorem is the Central Limit Theorem.
+
+  \begin{theorem}[Central Limit Theorem]
+    Let $\{ X_n : n \in \Nat \}$ be a sequence of i.i.d\@. real-valued random variable such that $E[X_i] = \mu$ and $\Var(X_i) = \sigma^2$ for all $i$ with $0 < \sigma^2 < \infty$. Let 
+    \begin{align*}
+      S_n &= \sum_{i=1}^n X_i, \\
+      Y_n &= \frac{S_n - n\mu}{\sigma \sqrt{n}}.
+    \end{align*}
+    Then, $Y_n$ converges in distribution to the standard Gaussian random variable. In other words, $Y_n \xrightarrow[]{\mcal{D}} Y$ where
+    \begin{align*}
+      f_Y(y) = \mcal{N}(y; 0, 1) = \frac{e^{-y^2/2}}{\sqrt{2\pi}}.
+    \end{align*}
+    Consequently,
+    \begin{align*}
+      \lim_{n \rightarrow \infty} P(Y_n \leq y) = \frac{1}{\sqrt{2\pi}} \int_{-\infty}^y e^{-u^2/2}\, \dee u
+    \end{align*}
+    for any $y \in \Real$.
+  \end{theorem}
+\end{itemize}
+
+\bibliographystyle{apalike}
+\bibliography{probability-theory-reference} 
+\end{document}

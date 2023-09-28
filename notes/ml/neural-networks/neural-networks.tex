@@ -1,0 +1,146 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+
+\newtheorem{lemma}{Lemma}[section]
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{claim}[lemma]{Claim}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+
+\title{Artificial Neural Networks}
+\author{Pramook Khungurn}
+
+\begin{document}
+\maketitle
+
+\section{Neural Network Structures}
+\begin{itemize}
+    \item Neural networks are composed of {\bf nodes} or {\bf units}.
+    \item Nodes are connected by {\bf directed links}. 
+    \item The direct link from Node $i$ to Node $j$ serves to
+        propagate the {\bf activation} $a_i$ from Node $i$ 
+        to Node $j$. The direct link $(i,j)$ also has weight
+        $w_{i,j}$ associated with it.
+    \item Each node has a dummy input $a_0 = 1$ with weight 
+        $w_{0,j}$ associated with it.
+    \item Each Node $j$ computes a weight sum $in_j = \sum_{i=0}^n w_{i,j} a_i$, passes the sum to an {\bf activation function}
+        $g(\cdot)$, and takes the output as the activation
+        of the node:
+        \begin{align*}
+            a_j = g(in_j) = g\bigg( \sum_{i=0}^n w_{i,j} a_i \bigg).
+        \end{align*}        
+    \item If $g$ is a step function, then we call the node
+        a {\bf perceptron}. If $g$ is the logistic function,
+        then the node is a {\bf sigmoid perception}.
+    \item There are two ways to connect nodes together:
+        {\bf feed forward network} or {\bf recurrent network}
+    \item Units can be arranged in {\bf layers}.
+\end{itemize}
+
+\section{Single-Layer Feed-Forward Neural Network}
+
+\begin{itemize}
+    \item In a single-layer network, each perceptron is a
+    network in itself. So, the capability is not different
+    from a collection of linear classifiers.
+    
+    \item Linear classifiers can only classify linearly
+        separable. However, most boolean functions are 
+        not linearly separable.
+        
+    \item The {\bf majority function} is linearly separable,
+        and can be captured effectively by perceptrons.        
+        Decision tree have a hard time capturing it.    
+\end{itemize}
+
+\section{Multi-Layer Feed-Forward Network}
+
+\begin{itemize}
+    \item Boolean functions AND, OR, and NOT can
+        be captured by a single unit. Thus,
+        we can represent any boolean functions
+        by connecting a lot of units together.
+        
+    \item With a single, sufficiently large hidden layer,
+        it is possible to represent any continuous function
+        of the inputs with arbitrary accurachy.
+        
+    \item With two layers, functions that are not continuous
+        can be represented.
+        
+    \item However, with a particular network structure,
+        it is difficult to characterize which functions
+        are representable.
+\end{itemize}
+
+\section{Learning in Multilayer Network}
+
+\begin{itemize}
+    \item We represent the neural network as a vector function
+        $\ve{h}_\ve{w}$ rather than a scalar function $h_\ve{w}$.
+        
+    \item For the $L_2$ loss, for any weight $w$, we have
+        \begin{align*}
+            \frac{\partial}{\partial w} Loss(\ve{w})
+            = \frac{\partial}{\partial w} \|\ve{y} - \ve{h}_\ve{w}(\ve{x})\|^2
+            = \frac{\partial}{\partial w} \sigma_k(y_k - a_k)^2
+            = \sum_k \frac{\partial}{\partial w}(y_k - a_k)^2
+        \end{align*}
+        where the index $k$ ranges over the nodes in 
+        the output layer.
+        
+    \item If there are $m$ outputs, the above equation allows 
+        us to decompose the learning problem into $m$ learning
+        problems, provided that we remember to add up the gradient
+        contributions from each of them when updating the weights.
+        
+    \item To calculate the gradient, we need to 
+        {\bf back-propagate} the error from the output
+        layer to the hidden layers and then the input layer.
+        
+    \item Let $Err_k$ be the $k$th component of the error vector
+        $\ve{y} - \ve{h}_\ve{w}.$ Define the modified error 
+        $\Delta_k = Err_k g'(in_k)$. The weight update rule
+        becomes
+        \begin{align*}
+            w_{j,k} \gets w_{j,k} + \alpha \cdot a_j \cdot \Delta_k
+        \end{align*}
+        
+    \item The modified error $\Delta_j$ can also be defined
+        for node $j$ connecting to the output nodes as follows:
+        \begin{align*}
+            \Delta_j = g'(in_j) \sum_k w_{j,k} \Delta_k.
+        \end{align*}
+        The update rule for weight $w_{i,j}$ is then:
+        \begin{align*}
+            w_{i,j} \gets w_{i,j} + \alpha \cdot a_i \cdot \Delta_{j}.
+        \end{align*}
+    
+    \item The back propagation process can be summarized
+        as follows:
+        \begin{itemize}
+            \item Compute the $\Delta$ values for output units, 
+            using the observed error.
+            \item Staring with output layer, repeat the following
+            for each layer in the network, until the earliest
+            hidden layer is reached:
+            \begin{itemize}
+                \item Propagate the $\Delta$ values back to the
+                    previous layer.
+                \item Update the weights between the two layers.
+            \end{itemize}
+        \end{itemize}
+        
+    \item When try to construct a neural network, there is 
+        no theory telling us what the topology of the network
+        should be. So, we find a good network topology for 
+        a problem by cross-validation.
+        
+\end{itemize}
+
+\end{document}

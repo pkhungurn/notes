@@ -1,0 +1,21 @@
+require 'rubygems'
+require 'rake/clean'
+
+def run(command)
+  puts command
+  system command
+  puts
+end
+
+task :rebuild do
+	run("pdflatex vector-field")
+	run("bibtex vector-field")
+	run("pdflatex vector-field")
+	run("pdflatex vector-field")
+end
+
+task :build do
+	run("pdflatex vector-field")
+end
+
+task :default => [:build]

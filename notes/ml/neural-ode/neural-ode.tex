@@ -1,0 +1,618 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+\usepackage{verbatim}
+\usepackage{hyperref}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\Dee}{\mathrm{D}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\Var}{\mathrm{Var}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\mtt}[1]{\mathtt{#1}}
+\newcommand{\ves}[1]{\boldsymbol{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+\newcommand{\ov}[1]{\overline{#1}}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+\title{Neural Ordinary Differential Equations}
+\author{Pramook Khungurn}
+
+\begin{document}
+\maketitle
+
+This is a note on the paper ``Neural Ordinary Differential Equations'' by Chen \etal \cite{Chen:2018}.
+
+\section{Introduction}
+
+\begin{itemize}
+  \item Many existing neural networks models creates a sequence of hidden states $\ve{h}_0$, $\ve{h}_1$, $\ve{h}_2$, $\dotsc$ $\ve{h}_T$ by adding something to the previous state:
+  \begin{align*}
+    \ve{h}_{t+1} = \ve{h}_t + \ve{f}(\ve{h}_t, t, \ves{\theta})
+  \end{align*}
+  Such models include such as residual networks \cite{He:2015}, recurrent neural networks, and normalizing flows \cite{Rezende:2015,Dinh:2014}.
+
+  \item What if we take the limit as the number of time step goes to infinity? We will have a differential equation:
+  \begin{align*}
+    \frac{\dee\ve{h}(t)}{\dee t} = \ve{f}(\ve{h}(t), t, \ves{\theta}).
+  \end{align*}
+
+  \item To use the network, we simply say that $\ve{h}(0)$ is the input layer, and the output is $\ve{h}(T)$ at some time $T$. The output can be found by solving the initial value problem, and this can be done by any black-box differential equation solver. 
+\end{itemize}
+
+\section{How to train a neural ODE model}
+
+\begin{itemize}
+  \item The problem with the above approach is that it is unclear how to train such a neural ODE model.
+  \begin{itemize}
+    \item The computation of the solution can require a lot of time steps. Differentiating through these time steps to compute the gradient would requires saving a lot of information in memory.
+  \end{itemize}
+
+  \item The good news is that there is a method to compute the gradient using constant memory (i.e., does not depend on the number of time steps). This is called the {\bf adjoint sensitivity method}. It requires, however, an ODE solve, which can be done, again, by any ODE solver.
+\end{itemize}  
+  
+\subsection{Problem Setup}
+
+\begin{itemize}
+  \item Let the hidden state be a vector in $\Real^n$. We typically denote it by $\ve{z}$.
+  
+  \item Let the neural network's parameters be a vector in $\Real^m$, and we typically denote it by $\ves{\theta}$.
+  
+  \item We will work on a state space vector $\ve{r} = (\ve{z}, t, \ves{\theta}) \in \Real^{n+1+m}$.
+  
+  \item We will want to see how $\ve{r}$ evolves through time. We denote the $\ve{r}$ at time $t$ with $\ve{r}_t = (\ve{z}_t, t, \ves{\theta})$. Note that $\ves{\theta}$ does not vary with $t$.
+  
+  \item It also makes sense to talk about the function that sends $t$ to $\ve{r}_t$. We denote this by $\ve{R}: \Real \rightarrow \Real^{n+1+m}$, and we can write
+  \begin{align*}
+    \ve{r}_t = \ve{R}(t) = (\ve{Z}(t), T(t), \ves{\Theta}(t)) = (\ve{z}_t, t, \ves{\theta}).
+  \end{align*}
+  Note that $T$ is the identity function, and $\ves{\Theta}$ is a constant function.
+
+  \item The act of solving the neural ODE is a function that maps $\ve{r}_{t}$ to some $\ve{r}_{t + \Delta t}$ for some $\Delta t \geq 0$. Let us denote this function by $\ve{s}_{\Delta t}^+: \Real^{n+1+m} \rightarrow \Real^{n+1+m}.$ (The letter $\ve{s}$ stands for ``solve.'') We have that
+  \begin{align*}
+    \ve{s}^+_{\Delta t}(\ve{z}_t, t, \ves{\theta})     
+    = (\ve{z}_{t+\Delta}, t, \ves{\theta})
+    = \begin{bmatrix}
+      \ve{z}_{t + \Delta t} \\
+      t + \Delta t \\
+      \ves{\theta}
+    \end{bmatrix}
+    = \begin{bmatrix}
+      \ve{z}_t + \int_{t}^{t+\Delta t} \ve{f}(\ve{z}_u, u, \ves{\theta})\, \dee u \\
+      t + \Delta t \\
+      \ves{\theta}
+    \end{bmatrix}.
+  \end{align*}
+
+  \item The above function runs the ODE for a fixed time internal $\Delta t$. However, we can also talk about running the ODE until a fixed time $t_1$. We denote this by
+  \begin{align*}
+    \ve{s}^+_{\rightarrow t_1}(\ve{z}_t, t, \ves{\theta}) 
+    = \ve{s}^+_{t_1 - t}(\ve{z}_t, t, \ves{\theta})
+    = \begin{bmatrix}
+      \ve{z}_t + \int_{t}^{t_1} \ve{f}(\ve{z}_u, u, \ves{\theta})\, \dee u \\
+      t + \Delta t \\
+      \ves{\theta}
+    \end{bmatrix}.
+  \end{align*}
+
+  \item When optimizing a neural network, we need a loss function. In our case, the loss function is given by $L: \Real^{n+1+m} \rightarrow \Real$ that maps a state vector to a real number. When we write $L(\ve{r}) = L(\ve{z}, t, \ves{\theta})$, it is typical to say that the function only depends on $\ve{z}$, the produced hidden state. So, $$L(\ve{r}) = L(\ve{z},t,\ves{\theta}) = L(\ve{z}).$$ 
+  
+  \item When training a neural ODE, we start with the input state vector $\ve{r}_{t}$. We then solve the ODE to get the state $\ve{r}_{t_1}$. We then evaluate $L(\ve{r}_{t_1})$ to compute the loss. Let $\mcal{L}: \Real^{n+1+m} \rightarrow \Real$ be the function that maps the input state to the final loss. This function is thus given by
+  \begin{align*}
+    \mcal{L}(\ve{z}_t, t, \ves{\theta}) = L(\ve{s}^+_{\rightarrow t_1}(\ve{z}_t, t, \ves{\theta})).
+  \end{align*}
+
+  \item To train the neural network, we need the gradient
+  \begin{align*}
+    \nabla_{\S3} \mcal{L}(\ve{z}_{t_0}, t_0, \ves{\theta})
+  \end{align*}
+  where $t_0$ is the time we designate for the input, typically $0$. Here, we use the notations for multivariable derivatives from \cite{KhungurnDeriv} to avoid confusion. $\nabla_{\S3}\mcal{L}$ denotes the gradient with respect to the third block of arguments of $\mcal{L}$, which is the network parameters $\ves{\theta}$.  
+\end{itemize}
+
+\subsection{Adjoint Sensitivity Method}
+
+\begin{itemize}
+  \item Define the {\bf adjoint} to be the function $\ve{a}: \Real \rightarrow \Real^{1 \times (n+1+m)}$ such that
+  \begin{align*}
+    \ve{a}: t \mapsto \nabla \mcal{L}(\ve{z}_t, t, \ves{\theta}).
+  \end{align*}
+  In other words,
+  \begin{align*}
+    \ve{a}(t) = \mcal{L}(\ve{R}(t)) = L(\ve{s}^+_{\rightarrow t_1}(\ve{R}(t)))
+  \end{align*}
+  or $\ve{a} = \mcal{L} \circ \ve{R} = L \circ s_{\rightarrow t_1}^+ \circ \ve{R}$.
+
+  \item With the adjoint function, our end goal is to evaluate $$\ve{a}_{\S3}(t_0) 
+  = \ve{a}(t_0)[:,\S3] 
+  = \nabla \mcal{L}(\ve{z}_{t_0}, t_0, \ves{\theta})[:, \S3] 
+  = \nabla_{\S3}\mcal{L}(\ve{z}_{t_0}, t_0, \ves{\theta}).$$
+
+  \item The adjoint sensivity method relies on the fact that we can express $\dee\ve{a} / \dee t$ in terms for $\ve{a}$ and $\ve{f}$.
+  \begin{theorem} \label{thm:adjoint-deriv}
+  We have that
+  \begin{align*}
+    \frac{\dee \ve{a}(t)}{\dee t}
+    = -\ve{a}(t)
+    \begin{bmatrix}
+      \nabla_{\S1}\ve{f}(\ve{z}_t, t, \ves{\theta})
+      & \nabla_{\S2}\ve{f}(\ve{z}_t, t, \ves{\theta})
+      & \nabla_{\S3}\ve{f}(\ve{z}_t, t, \ves{\theta}) \\
+      \ve{0} & 0 & \ve{0} \\
+      \ve{0} & \ve{0} & \ve{0}
+    \end{bmatrix}
+  \end{align*}
+  In particular,
+  \begin{align*}
+    \frac{ \dee \ve{a}_{\S 1}(t)}{\dee t} &= -\ve{a}_{\S1}(t) \nabla_{\S1}\ve{f}(\ve{z}_t, t, \ves{\theta}), \\
+    \frac{ \dee \ve{a}_{\S 3}(t)}{\dee t} &= -\ve{a}_{\S1}(t) \nabla_{\S3}\ve{f}(\ve{z}_t, t, \ves{\theta}). \\
+  \end{align*}
+  \end{theorem}
+
+  \begin{proof}
+    We have that 
+    \begin{align*}
+      \frac{\dee \ve{a}(t)}{\dee t} = \lim_{\varepsilon \rightarrow 0} \frac{\ve{a}(t + \varepsilon) + \ve{a}(t)}{\varepsilon}.
+    \end{align*}
+    To prove the theorem, we shall write $\ve{a}(t)$ in terms of $\ve{a}(t+\varepsilon)$.
+
+    Consider the function $\mcal{L}$. We have that, for any $\varepsilon > 0$ such that $t + \varepsilon < t_1$, 
+    \begin{align*}
+      \mcal{L}(\ve{z}_t, t, \ves{\theta}) = \mcal{L}(\ve{z}_{t+\varepsilon}, t+\varepsilon, \ves{\theta}).
+    \end{align*}
+    This is because both $(\ve{z}_t, t, \ves{\theta})$ and $(\ve{z}_{t+\varepsilon}, t+\varepsilon, \ves{\theta})$ are on the trajectory to the final state vector $(\ve{z}_{t_1}, t_1, \ves{\theta})$. So, starting running the ODE from either points would lead to the same result. As a result, we may say that
+    $$\mcal{L} = \mcal{L} \circ \ve{s}^+_\varepsilon$$
+    if $\varepsilon$ is small enough. Applying the chain rule, we have that
+    \begin{align*}
+      \nabla \mcal{L}(\ve{z}_t, t, \ves{\theta})
+      &= \nabla \mcal{L}(\ve{s}^+_\varepsilon(\ve{z}_t, t, \ves{\theta})) \nabla \ve{s}_{\varepsilon}^+(\ve{z}_t, t, \ves{\theta}) \\
+      \nabla \mcal{L}(\ve{z}_t, t, \ves{\theta})
+      &= \nabla \mcal{L}(\ve{z}_{t+\varepsilon}, t+\varepsilon, \ves{\theta}) \nabla \ve{s}_{\varepsilon}^+(\ve{z}_t, t, \ves{\theta}) \\
+      \ve{a}(t) &= \ve{a}(t+\varepsilon) \nabla \ve{s}_{\varepsilon}^+(\ve{z}_t, t, \ves{\theta}).
+    \end{align*}
+    Now,
+    \begin{align*}
+      \ve{s}^+_\varepsilon(\ve{z}_t, t, \ves{\theta})
+      &= \begin{bmatrix}
+        \ve{z}_t + \int_{t}^{t+\varepsilon} \ve{f}(\ve{z}_u, u, \ves{\theta}) \, \dee u \\
+        t + \varepsilon \\
+        \ves{\theta}
+      \end{bmatrix} 
+      = \begin{bmatrix}
+        \ve{z}_t + \varepsilon \ve{f}(\ve{z}_t, t, \ves{\theta}) + O(\varepsilon^2) \\
+        t + \varepsilon \\
+        \ves{\theta}
+      \end{bmatrix} \\
+      &= \begin{bmatrix}
+        \ve{z}_t \\ t \\ \ves{\theta}
+      \end{bmatrix} 
+      + \varepsilon
+      \begin{bmatrix}
+        \ve{f}(\ve{z}_t, t, \ves{\theta}) \\
+        1 \\
+        \ve{0}
+      \end{bmatrix} 
+      + O(\varepsilon^2).      
+    \end{align*}
+    So,
+    \begin{align*}
+      \nabla \ve{s}^+_\varepsilon(\ve{z}_t, t, \ves{\theta})
+      &= I + \varepsilon \begin{bmatrix}
+        \nabla_{\S1}\ve{f}(\ve{z}_t, t, \ves{\theta})
+        & \nabla_{\S2}\ve{f}(\ve{z}_t, t, \ves{\theta})
+        & \nabla_{\S3}\ve{f}(\ve{z}_t, t, \ves{\theta}) \\
+        \ve{0} & 0 & \ve{0} \\
+        \ve{0} & \ve{0} & \ve{0}
+      \end{bmatrix} + O(\varepsilon^2).
+    \end{align*}
+    This gives
+    \begin{align*}
+      \ve{a}(t) 
+      &= \ve{a}(t + \varepsilon) 
+      + \varepsilon \ve{a}(t + \varepsilon) \begin{bmatrix}
+        \nabla_{\S1}\ve{f}(\ve{z}_t, t, \ves{\theta})
+        & \nabla_{\S2}\ve{f}(\ve{z}_t, t, \ves{\theta})
+        & \nabla_{\S3}\ve{f}(\ve{z}_t, t, \ves{\theta}) \\
+        \ve{0} & 0 & \ve{0} \\
+        \ve{0} & \ve{0} & \ve{0}
+      \end{bmatrix} + O(\varepsilon^2),
+    \end{align*}
+    and so
+    \begin{align*}
+      \frac{\ve{a}(t+\varepsilon) - \ve{a}(t)}{\varepsilon} 
+      &= -\ve{a}(t + \varepsilon) \begin{bmatrix}
+        \nabla_{\S1}\ve{f}(\ve{z}_t, t, \ves{\theta})
+        & \nabla_{\S2}\ve{f}(\ve{z}_t, t, \ves{\theta})
+        & \nabla_{\S3}\ve{f}(\ve{z}_t, t, \ves{\theta}) \\
+        \ve{0} & 0 & \ve{0} \\
+        \ve{0} & \ve{0} & \ve{0}
+      \end{bmatrix} + O(\varepsilon).
+    \end{align*}
+    Taking the limit as $\varepsilon \rightarrow 0$, we have that
+    \begin{align*}
+      \frac{\dee \ve{a}(t)}{\dee t}
+      &= -\ve{a}(t) \begin{bmatrix}
+        \nabla_{\S1}\ve{f}(\ve{z}_t, t, \ves{\theta})
+        & \nabla_{\S2}\ve{f}(\ve{z}_t, t, \ves{\theta})
+        & \nabla_{\S3}\ve{f}(\ve{z}_t, t, \ves{\theta}) \\
+        \ve{0} & 0 & \ve{0} \\
+        \ve{0} & \ve{0} & \ve{0}
+      \end{bmatrix}
+    \end{align*}
+    as required.
+  \end{proof}
+  
+  \item In a typical traning process, we start from $\ve{r}_{t_0} = (\ve{z}_{t_0}, t_0, \ves{\theta})$, and we solve the neural SDE forward in time to obtain $\ve{r}_{t_1} = (\ve{z}_{t_1}, t_1, \ves{\theta})$. We assume that we do not save any intermediate information in the forward solving process. Now, we need to compute the gradient $\ve{a}_{\S3}(t_0) = \nabla_{\S3}\mcal{L}(\ve{z}_{t_0}, t_0, \ves{\theta}).$
+    
+  \item The idea is then to start at time $t_1$ and jointly solve the following differential equations backward in time to $t_0$:
+  \begin{align*}
+    \frac{\dee \ve{z}_t}{\dee t} &= \ve{f}(\ve{z}_t, t, \ves{\theta}), \\
+    \frac{\dee \ve{a}_{\S1}(t)}{\dee t} &= -\ve{a}_{\S 1}(t) \nabla_{\S 1}\ve{f}(\ve{z}_t, t, \ves{\theta}), \\
+    \frac{\dee \ve{a}_{\S3}(t)}{\dee t} &= -\ve{a}_{\S 1}(t) \nabla_{\S 3}\ve{f}(\ve{z}_t, t, \ves{\theta}).
+  \end{align*}
+  In other words, we would like to compute the following integrals:
+  \begin{align*}
+    \ve{z}_{t_0} &= \ve{z}_{t_1} + \int_{t_1}^{t_0} \ve{f}(\ve{z}_t, t, \ves{\theta})\, \dee t, \\
+    \ve{a}_{\S1}(t_0) &= \ve{a}_{\S1}(t_1) - \int_{t_1}^{t_0} \ve{a}_{\S 1}(\ve{z}_t, t, \ves{\theta}) \nabla_{\S 1}\ve{f}(\ve{z}_t, t, \ves{\theta})\, \dee t, \\
+    \ve{a}_{\S3}(t_0) &= \ve{a}_{\S3}(t_1) - \int_{t_1}^{t_0} \ve{a}_{\S 1}(\ve{z}_t, t, \ves{\theta}) \nabla_{\S 3}\ve{f}(\ve{z}_t, t, \ves{\theta})\, \dee t.
+  \end{align*}
+  The initial conditions include $\ve{z}_{t_1}$, which we just computed using the forward process. The other initial conditions are:
+  \begin{align*}
+    a_{\S1}(t_1) 
+    &= \nabla_{\S1}\mcal{L}(\ve{z}_{t_1},t_1,\ves{\theta}) = \nabla_{\S1}L(\ve{z}_{t_1},t_1,\ves{\theta}) = \nabla L(\ve{z}_{t_1}), \\
+    a_{\S3}(t_1) 
+    &= \nabla_{\S3}\mcal{L}(\ve{z}_{t_1},t_1,\ves{\theta})
+    = \nabla_{\S3}L(\ve{z}_{t_1},t_1,\ves{\theta}) 
+    = \ve{0}.
+  \end{align*} 
+  The last line follows from the fact that we assumed that $L$ does not depend on $\ves{\theta}$. All of these values are easy to compute.
+
+  \item To solve the ODEs, we can use any black-box ODE solver. The interface for such a solver requires us to provide (1) an initial state vector, and (2) a function that computes the time derivative of the state vector given the time and the state vector. 
+  
+  Here, our state vector would be $\ve{q}^{(t)} \in \Real^{n+n+m}$. It would be divided into three blocks $\ve{q}^{(t)} = (\ve{q}^{(t)}_{\S 1}, \ve{q}^{(t)}_{\S 2}, \ve{q}^{(t)}_{\S 3})$, and the blocks would correspond to $\ve{z}_t$, $\ve{a}_{\S 1}(t)^T$, and $\ve{a}_{\S 3}(t)^T$, respectively. The initial state vector would be
+  \begin{align*}
+    \ve{q}^{(t_1)} = \begin{bmatrix}
+      \ve{z}_{t_1} \\
+      \nabla \big( L(\ve{z}_{t_1}) \big)^T \\
+      \ve{0}
+    \end{bmatrix}.
+  \end{align*}
+  The derivative would be given by
+  \begin{align*}
+    \frac{\dee \ve{q}^{(t)}}{\dee t}
+    &= \begin{bmatrix}
+      \ve{f}(\ve{q}_{\S 1}^{(t)}, t, \ves{\theta}) \\
+      -\big( \ve{q}^{(t)}_{\S 2}\big)^T \nabla_{\S 1}\ve{f}(\ve{q}_{\S 1}^{(t)}, t, \ves{\theta}) \\
+      -\big( \ve{q}^{(t)}_{\S 2} \big)^T \nabla_{\S 3}\ve{f}(\ve{q}_{\S 1}^{(t)}, t, \ves{\theta}) 
+    \end{bmatrix}.
+  \end{align*}
+  Note that both $\big( \ve{q}^{(t)}_{\S 2}\big)^T \nabla_{\S 1}\ve{f}(\ve{q}_{\S 1}^{(t)}, t, \ves{\theta})$ and $\big( \ve{q}^{(t)}_{\S 2} \big)^T \nabla_{\S 3}\ve{f}(\ve{q}_{\S 1}^{(t)}, t, \ves{\theta})$ are both vector-Jacobian products (i.e., they are directional derivatives). They can thus be evaluated efficiently using automatic differentiation at the cost proportational to the evaluation of $\ve{f}(\ve{q}_{\S 1}^{(t)}, t, \ves{\theta})$.
+
+  \item All in all, the adjoint sensitivity method allows us to compute the gradient without backpropagating through the operations of the forward solver. If we use forward-mode automatic differentiation, then the required memory is proportional to the size of the intermediate tensor vectors. There's no dependence on the network's depth at all. Hence, neural ODE is a very memory efficient architecture.
+\end{itemize}
+
+\section{Continuous Normalizing Flows}
+
+\subsection{Introduction to (Discrete) Normalizing Flows}
+
+\begin{itemize}
+  \item {\bf Normalizing flows} refer to a body of techniques for modeling probability distributions that work by transforming a simple probability distribution (such as an isotropic Gaussian) to a more complicated one by compositing multiple simple transformations \cite{Kobyzev:2021}.
+  
+  \item More concretely, we may start with $\ve{z}_0 \sim p(\ve{z}_0)$ where $p(\ve{z}_0)$ is simple. We can now make the probability distribution more complex by applying a bijective function $\ve{g}_1$ to get
+  \begin{align*}
+    \ve{z}_1 = \ve{g}_1(\ve{z}_0).
+  \end{align*}
+  We have that
+  \begin{align*}
+    p(\ve{z}_1) = p(\ve{z}_0) |\det \nabla \ve{g}_1(\ve{z}_0) |^{-1}
+  \end{align*}
+  or
+  \begin{align*}
+    \log p(\ve{z}_1) = \log p(\ve{z}_0) - \log | \det \nabla \ve{g}_1(\ve{z}_0) |.
+  \end{align*}
+
+  \item In most normalizing flow techniques, multiple transformations are used:
+  \begin{align*}
+    \ve{z}_k = (\ve{g}_k \circ \ve{g}_{k-1} \circ \dotsb \circ \ve{g}_2 \circ \ve{g}_1)(\ve{z}_0)
+    = \ve{g}_k(\ve{g}_{k-1}(\dotsm\ve{g}_2(\ve{g}_1(\ve{z}_0)))),
+  \end{align*}
+  which implies
+  \begin{align} \label{eqn:normalizing-flow-log-p}
+    \log p(\ve{z}_k) = \log p(\ve{z_0}) - \sum_{j=1}^k |\det \nabla \ve{g}_j(\ve{z}_{j-1}) |.
+  \end{align}  
+  
+  \item To use normalizing flows for generative modeling, we just approximate the data distribution $p_{\mrm{data}}(\cdot)$ with $p_k(\cdot)$.
+  \begin{itemize}    
+    \item Model parameters can be obtained by maximum likelihood estimation. In other words, given a collection of data points $\{ \ve{z}^{(1)}_k, \ve{z}^{(2)}_k, \dotsc, \ve{z}^{(N)}_k \}$, we maximize
+    \begin{align*}
+      \frac{1}{N}\sum_{i=1}^N \log p(\ve{z}_k^{(i)})
+      &= \frac{1}{N} \log p(\ve{z_0}^{(i)}) - \frac{1}{N} \sum_{i=1}^N \sum_{j=1}^k |\det \nabla \ve{g}_j(\ve{z}^{(i)}_{j-1}) |
+    \end{align*}
+    Here, for each data point $\ve{z}_k^{(i)}$, the hidden states $\ve{z}_{k-1}^{(i)}$, $\ve{z}_{k-1}^{(i)}$, $\dotsc$, $\ve{z}_{0}^{(i)}$ can be obtained by applying the inverse functions $\ve{g}^{-1}_k$, $\ve{g}^{-1}_{k-1}$, $\dotsc$, $\ve{g}^{-1}_1$ in order.
+
+    \item Once the parameters are estimated, we can compute the probability of data point $\ve{p}_k$ by first computing the hidden states $\ve{z}_{k-1}$, $\dotsc$, $\ve{z}_0$ by applying the inverse transformations and then applying \eqref{eqn:normalizing-flow-log-p}.
+    
+    \item Also, we can sample a data point by first sampling $\ve{z}_0 \sim p_0$, which should be simple. We then apply $\ve{g}_1$, $\ve{g}_2$, $\dotsc$, $\ve{g}_k$ in order to obtain $\ve{z}_k$, which would be distributed according to $p_k \approx p_{\mrm{data}}$.    
+  \end{itemize}
+
+  \item In order to make normalizing flows work efficiently, we require transformations $\ve{g}_i$'s that are (1) easy to invert and (2) have Jacobians whose determinants are easy to compute and find gradients of. The survey article \cite{Kobyzev:2021} catalogs such transformations.
+\end{itemize}
+
+\subsection{Continuous Normalizing Flows and Its Distribution}
+\begin{itemize}
+  \item Normalizing flows can be casted into the neural ODE framework if we require that all transformations have the same form
+  \begin{align*}
+    \ve{z}_{t+1} = \ve{g}_{t+1}(\ve{z}_t) = \ve{z}_t + \ve{f}(\ve{z}_t, t, \ves{\theta}).
+  \end{align*}
+  As usual, we take the limit as $t \gets \infty$ to obtain
+  \begin{align*}
+    \frac{\dee \ve{z}(t)}{\dee t} = \ve{f}(\ve{z}, t, \ves{\theta}),
+  \end{align*}
+  which gives us a continuous normalizing flow.
+
+  \item To compute probability and to train our neural ODE model, we need an expression like \eqref{eqn:normalizing-flow-log-p}. This is given by the following theorem.
+  
+  \begin{theorem}[Instantataneous change of variables]
+    Let $\ve{z}_t$ be a finite continuous random variable with probability $p(\ve{z}_t)$ dependent on time. Let $\dee \ve{z}_t / \dee t = \ve{f}(\ve{z}_t, t, \ves{\theta})$ be a differential equation governing the value of $\ve{z}_t$. Assuming that $\ve{f}$ is uninformly Lipschitz continuous in $\ve{z}$ and continuous in $t$. Then,
+    \begin{align*}
+      \frac{\dee \log p(\ve{z}_t)}{\dee t} = -\tr(\nabla_{\S1} \ve{f}(\ve{z}_t, t, \ves{\theta})).
+    \end{align*}
+  \end{theorem}
+
+  \begin{proof}
+    Because we assume that $\ve{f}$ is Lipschitz continuous in $\ve{z}_t$ and continuous in $t$, we have that every initial value problem has a unique solution by Picard's existence theorem. Because we assume that $\ve{z}_t$ is bounded, it implies that $\ve{f}$, $\ve{s}^+_\varepsilon$, and $\nabla_{\S1} \ve{s}^+_\varepsilon$ are all bounded.
+
+    Suppose that $\epsilon$ is small enough that $\ve{s}_{\varepsilon}^+$ is bijective. (It is in the limit as $\varepsilon \rightarrow 0$.) We have that
+    \begin{align*}
+      \ve{z}_{t+\varepsilon}  = \ve{s}_{\varepsilon}^+(\ve{z}_t, t, \ves{\theta})[\S1].
+    \end{align*}
+    So,
+    \begin{align*}
+      \log p(\ve{z}_{t+\varepsilon})  = \log p(\ve{z}_t) - \log |\det \nabla_{\S1} \ve{s}_\varepsilon^+(\ve{z}_t, t, \ves{\theta})|.
+    \end{align*}
+    Hence,
+    \begin{align*}
+      \frac{\dee \log p(\ve{z})}{\dee t}
+      &= \lim_{\varepsilon \rightarrow 0^+} \frac{\log p(\ve{z}_{t+\varepsilon}) - \log p(\ve{z}_t)}{\varepsilon} \\
+      &= \lim_{\varepsilon \rightarrow 0^+} \frac{\log p(\ve{z}_t) - \log |\det \nabla_{\S1} \ve{s}_\varepsilon^+(\ve{z}_t, t, \ves{\theta})| - \log p(\ve{z}_t)}{\varepsilon} \\
+      &= - \lim_{\varepsilon \rightarrow 0^+} \frac{\log |\det \nabla_{\S1} \ve{s}_\varepsilon^+(\ve{z}_t, t, \ves{\theta})|}{\varepsilon}.
+    \end{align*}
+    Applying L'Hospital's rule, we have
+    \begin{align*}
+      \frac{\dee \log p(\ve{z})}{\dee t}
+      &= -\lim_{\varepsilon \rightarrow 0^+} \frac{ \frac{\partial}{\partial \varepsilon} \log |\det \nabla_{\S1} \ve{s}_\varepsilon^+(\ve{z}_t, t, \ves{\theta})|}{ \frac{\partial}{\partial \varepsilon} \varepsilon} \\
+      &= -\lim_{\varepsilon \rightarrow 0^+} \frac{ \frac{\partial}{\partial \varepsilon} |\det \nabla_{\S1} \ve{s}_\varepsilon^+(\ve{z}_t, t, \ves{\theta})|}{ |\det \nabla_{\S1} \ve{s}_\varepsilon^+(\ve{z}_t, t, \ves{\theta})| }
+    \end{align*}
+    As $\varepsilon \rightarrow 0^+$, $\ve{s}_\varepsilon^+(\cdot)$ approachs the identity function. So, $\lim_{\varepsilon \rightarrow 0^+}|\det \nabla_{\S1} \ve{s}_\varepsilon^+(\ve{z}_t, t, \ves{\theta})| = 1 \neq 0.$ As result,
+    \begin{align*}
+      \frac{\dee \log p(\ve{z})}{\dee t} &= - \frac{ \lim_{\varepsilon \rightarrow 0^+} \frac{\partial}{\partial \varepsilon} |\det \nabla_{\S1} \ve{s}_\varepsilon^+(\ve{z}_t, t, \ves{\theta})|}{ \lim_{\varepsilon \rightarrow 0^+} |\det \nabla_{\S1} \ve{s}_\varepsilon^+(\ve{z}_t, t, \ves{\theta})| }
+      = -\lim_{\varepsilon \rightarrow 0^+} \frac{\partial}{\partial \varepsilon} |\det \nabla_{\S1} \ve{s}_\varepsilon^+(\ve{z}_t, t, \ves{\theta})|.
+    \end{align*}
+  Again, we note that, as $\varepsilon \rightarrow 0^+$, $\ve{s}_\varepsilon^+(\cdot)$ approachs the identity function. As a result, it cannot change orientation of the local frame. So, $\det \nabla_{\S1} \ve{s}_\varepsilon^+(\ve{z}_t, t, \ves{\theta})$ must be positive. As a result, we can drop the absolute function and write
+  \begin{align*}
+    \frac{\dee \log p(\ve{z})}{\dee t} 
+    &= -\lim_{\varepsilon \rightarrow 0^+} \frac{\partial}{\partial \varepsilon} \det \nabla_{\S1} \ve{s}_\varepsilon^+(\ve{z}_t, t, \ves{\theta}).
+  \end{align*}
+  Applying Jacobi's formula \cite{JacobisFormula}, we have that
+  \begin{align*}
+    \frac{\dee \log p(\ve{z})}{\dee t} 
+    &= - \lim_{\varepsilon \rightarrow 0^+} 
+    \tr \bigg( \mrm{adj}\big( \nabla_{\S1} \ve{s}_\varepsilon^+(\ve{z}_t, t, \ves{\theta}) \big) \frac{\partial \nabla_{\S1} \ve{s}_\varepsilon^+(\ve{z}_t, t, \ves{\theta}) }{\partial \varepsilon} \bigg) \\
+    &= - \tr \Bigg( 
+      \Big( \lim_{\varepsilon \rightarrow 0^+} \mrm{adj}\big( \nabla_{\S1} \ve{s}_\varepsilon^+(\ve{z}_t, t, \ves{\theta}) \big) \Big)
+      \bigg( \lim_{\varepsilon \rightarrow 0^+} \frac{\partial \nabla_{\S1} \ve{s}_\varepsilon^+(\ve{z}_t, t, \ves{\theta}) }{\partial \varepsilon} \bigg)
+    \Bigg)
+  \end{align*}
+  As $\varepsilon \rightarrow 0^+$, $\ve{s}_\varepsilon^+(\cdot)$ approachs the identity function, and so $\mrm{adj}\big( \nabla_{\S1} \ve{s}_\varepsilon^+(\ve{z}_t, t, \ves{\theta}) \big)$ approaches the identity matrix. Hence, 
+  \begin{align*}
+    \frac{\dee \log p(\ve{z})}{\dee t} 
+    &= - \tr \bigg( 
+      \lim_{\varepsilon \rightarrow 0^+} \frac{\partial \nabla_{\S1} \ve{s}_\varepsilon^+(\ve{z}_t, t, \ves{\theta}) }{\partial \varepsilon} 
+    \bigg) \\
+    &= - \tr \bigg( 
+      \lim_{\varepsilon \rightarrow 0^+} \frac{\partial }{\partial \varepsilon} \frac{\partial}{\partial \ve{z}_t}
+      \Big( 
+        \ve{z}_t + \varepsilon \ve{f}(\ve{z}_t, t, \ves{\theta}) + O(\varepsilon^2)
+      \Big) 
+    \bigg) \\
+    &= - \tr \bigg( 
+      \lim_{\varepsilon \rightarrow 0^+} \frac{\partial }{\partial \varepsilon} 
+      \Big( 
+        I + \varepsilon \frac{\partial}{\partial \ve{z}_t} \ve{f}(\ve{z}_t, t, \ves{\theta}) + O(\varepsilon^2)
+      \Big) 
+    \bigg) \\
+    &= - \tr \bigg( 
+      \lim_{\varepsilon \rightarrow 0^+} 
+      \Big( 
+        \frac{\partial}{\partial \ve{z}_t} \ve{f}(\ve{z}_t, t, \ves{\theta}) + O(\varepsilon)
+      \Big) 
+    \bigg) \\
+    &= - \tr \bigg( 
+        \frac{\partial}{\partial \ve{z}_t} \ve{f}(\ve{z}_t, t, \ves{\theta})
+    \bigg) \\
+    &= - \tr(\nabla_{\S1}  \ve{f}(\ve{z}_t, t, \ves{\theta}) )
+  \end{align*}  
+  as required.
+  \end{proof}
+
+  \item Note that computing $\tr(\nabla_{\S1}  \ve{f}(\ve{z}_t, t, \ves{\theta}) )$ exactly is expensive if we do not restrict the form of $\ve{f}$. The best we can do is to evaluate
+  \begin{align*}
+    \nabla_{\S1} f_1(\ve{z}_t, t, \ves{\theta}), 
+    \quad \nabla_{\S1} f_1(\ve{z}_t, t, \ves{\theta}), 
+    \quad \dotsc, 
+    \quad \nabla_{\S1} f_n(\ve{z}_t, t, \ves{\theta}), 
+  \end{align*}
+  and then add up the right components. This is equivalent to $n$ evaluations of $\ve{f}$ with automatic differentiation.
+
+  \item A follow-up work by pretty the same group of authors proposes an algorithm that can generate an unbiased estimate of $\tr(\nabla_{\S1}  \ve{f}(\ve{z}_t, t, \ves{\theta}) )$ with just one evaluation of $\ve{f}$ with automatic differentiation \cite{Grathwohl:2018}. It uses something called the Hutchinson's trace estimator \cite{Hutchinson:1989}. However, we will not discuss this technique here in this note.  
+\end{itemize}
+
+\subsection{Generative Modeling with Continuous Normalizing Flows}
+
+\begin{itemize}
+  \item We fix $p(\ve{z}_{t_0})$ to be a simple probability distribution such as the isotropic Gaussian. Then, we would approximate $p_{\mrm{data}}$ with $p(\ve{z}_{t_1})$.
+  
+  \item Sampling is easy. We sample a $\ve{z}_{t_0}$ according to $p(\ve{z}_{t_0})$. Then, we compute
+  \begin{align*}
+    \ve{p}_{t_1} = \ve{p}_{t_0} + \int_{t_0}^{t_1} \ve{f}(\ve{z}_t, t, \ves{\theta})\, \dee t
+  \end{align*}
+  with an ODE solver.
+
+  \item Given a data point $\ve{z}_{t_1}$, we can compute its probability by first noting that
+  \begin{align*}
+    \begin{bmatrix}
+      \ve{z}_{t_1} \\
+      \log p(\ve{z}_{t_1})
+    \end{bmatrix}
+    = \begin{bmatrix}
+      \ve{z}_{t_0} \\
+      \log p(\ve{z}_{t_0})
+    \end{bmatrix}
+    + \int_{t_0}^{t_1}
+    \begin{bmatrix}
+      \ve{f}(\ve{z}_t, t, \ves{\theta}) \\
+      -\tr(\nabla_{\S1}\ve{f}(\ve{z}_t, t, \ves{\theta}))
+    \end{bmatrix}\, \dee t.
+  \end{align*}
+  Rearranging, we have that
+  \begin{align*}
+    \begin{bmatrix}
+      \ve{z}_{t_0} \\
+      \log p(\ve{z}_{t_0}) - \log p(\ve{z}_{t_1})
+    \end{bmatrix}
+    = \begin{bmatrix}
+      \ve{z}_{t_1} \\
+      0
+    \end{bmatrix}
+    + \int_{t_1}^{t_0}
+    \begin{bmatrix}
+      \ve{f}(\ve{z}_t, t, \ves{\theta}) \\
+      -\tr(\nabla_{\S1}\ve{f}(\ve{z}_t, t, \ves{\theta}))
+    \end{bmatrix}\, \dee t.
+  \end{align*}
+  Hence, we can solve the reverse-time ODE
+  \begin{align*}
+    \frac{\dee}{\dee t} \begin{bmatrix}
+      \ve{z}_t \\
+      \log p(\ve{z}_t) - \log p(\ve{z}_{t_1})
+    \end{bmatrix}
+    &= \begin{bmatrix}
+      \ve{f}(\ve{z}_t, t, \ves{\theta}) \\
+      -\tr(\nabla_{\S1}\ve{f}(\ve{z}_t, t, \ves{\theta}))
+    \end{bmatrix}
+  \end{align*}
+  from $t_1$ to $t_0$ with the initial value $(\ve{z}_{t_1}, 0)$. With the solution, we can easily compute $\log p(\ve{z}_{t_0})$ and then derive $\log p(\ve{z}_{t_1})$.
+
+  \item Surprisingly, it is easier to find the gradient $\nabla_{\ve{z}_t} \log p(\ve{z}_{t_1})$ and $\nabla_{\ves{\theta}} \log p(\ve{z}_{t_1})$ and than to find $\log p(\ve{z}_{t_1})$. 
+  
+  First, though, let us redefine the probability function so that we can reuse consistent notation. Define the function $p^*$ as \begin{align*}
+    p^*(\ve{z}_t, t, \ves{\theta}) = p(\ve{z}_t).
+  \end{align*}
+  So, we can now write $\nabla_{\S1} \log p^*(\ve{z}_t, t, \ves{\theta})$ and $\nabla_{\S3} \log p^*(\ve{z}_t, t, \ves{\theta})$ instead of $\nabla_{\ve{z}_t} \log p(\ve{z}_{t})$ and $\nabla_{\ves{\theta}} \log p(\ve{z}_{t})$.
+
+  To find $\nabla_{\S1} \log p^*(\ve{z}_{t_1}, t_1, \ves{\theta})$ and $\nabla_{\S3} \log p^*(\ve{z}_{t_1}, t_1, \ves{\theta})$, we do the following. After being given $\ve{z}_{t_1}$, we can solve the neural ODE backward in time to find $\ve{z}_{t_0}$. Because $p(\ve{z}_{t_0})$ is fixed to a simple distribution, it should be simple to compute $p(\ve{z}_0)$ and
+  \begin{align*}
+    \nabla_{\S1}p^*(\ve{z}_{t_0}, t_0, \ves{\theta}) = \nabla p(\ve{z}_{t_0}).
+  \end{align*}
+  So, it is also easy toc compute $\nabla_{\S1} \log p^*(\ve{z}_{t_0}, t_0, \ves{\theta})$ because
+  \begin{align*}
+    \nabla_{\S1} \log p^*(\ve{z}_t, t, \ves{\theta}) 
+    = \frac{\nabla_{\S1} p^*(\ve{z}_t, t, \ves{\theta})}{p^*(\ve{z}_t, t, \ves{\theta})}
+    = \frac{\nabla p(\ve{z}_{t_0})}{p(\ve{z}_{t_0})}.
+  \end{align*}
+
+  Theorem~\ref{thm:adjoint-deriv} gives us the differential equation
+  \begin{align*}
+    \frac{\dee}{\dee t} \begin{bmatrix}
+      \ve{z}_t \\
+      \nabla_{\S1} \log p^*(\ve{z}_t, t, \ves{\theta}) \\
+      \nabla_{\S3} \log p^*(\ve{z}_t, t, \ves{\theta})
+    \end{bmatrix}
+    = \begin{bmatrix}
+      \ve{f}(\ve{z}_t, t, \ves{\theta}) \\
+      \nabla_{\S1} \log p^*(\ve{z}_t, t, \ves{\theta}) \nabla_{\S1} \ve{f}(\ve{z}_t, t, \ves{\theta}) \\
+      \nabla_{\S1} \log p^*(\ve{z}_t, t, \ves{\theta}) \nabla_{\S3} \ve{f}(\ve{z}_t, t, \ves{\theta})
+    \end{bmatrix},
+  \end{align*}  
+  which we can now solve with the initial condition
+  \begin{align*}
+    \begin{bmatrix}
+      \ve{z}_{t_0} \\
+      \nabla p(\ve{z}_{t_0}) / p(\ve{z}_{t_0}) \\
+      \ve{0}
+    \end{bmatrix}
+  \end{align*}
+  from time $t_0$ to $t_1$. The second and the third block of the solution would give us $\nabla_{\S1} \log p^*(\ve{z}_{t_1}, t_1, \ves{\theta})$ and $\nabla_{\S3} \log p^*(\ve{z}_{t_1}, t_1, \ves{\theta})$.
+\end{itemize}
+
+\subsection{Continuous Planar Flows}
+
+\begin{itemize}
+  \item We previously mentioned that it is generally very expensive to evalutate $\tr(\nabla_{\S1} \ve{f}(\ve{z}_t, t, \ves{\theta}))$. This makes it very difficult to compute probabilities of continuous normalizing flow models.
+  
+  \item The paper, however, has to show that continuous normalizing flows has some merit. So it chooses $\ve{f}$ where the trace above is easy to compute and demonstates that it computes probabilities with it.
+  
+  \item The paper thus chooses an analogue of {\bf planar flow}, a transformation that was introduced by Rezende and Mohamed \cite{Rezende:2015}. In particular,
+  \begin{align*}
+    \ve{f}(\ve{z}_t, t, \ves{\theta}) = \ve{u} h(\ve{w}^T \ve{z}_t + b)
+  \end{align*}
+  where $\ves{\theta} = (\ve{u}, \ve{w}, b)$ and $h$ is a nonlinear function. In this case, we have that
+  \begin{align*}
+    \tr(\nabla_{\S1}\ve{f}(\ve{z}_t, t, \ves{\theta}))
+    &= \sum_{i=1}^n \frac{\partial (u_i h(\ve{w}^T\ve{z}_t + b))}{\partial z_{t,i}} \\
+    &= \sum_{i=1}^n u_i h'(\ve{w}^T\ve{z}_t + b) \frac{\ve{w}^T \ve{z}+ b}{\partial z_{z,i}} \\
+    &= \sum_{i=1}^n u_i w_i h'(\ve{w}^T\ve{z}_t + b) \\
+    &= \ve{u}^T \ve{w} h'(\ve{w}^T\ve{z}_t + b).
+  \end{align*}
+
+  \item In the Rezende and Mohamed paper, multiple planar flows are applied in succession. However, in the CNF formulation, there's only one planar flow being applied infinitely many times. So, to simulate the effect of multiple successive planar flows, the paper uses a linear combination of planar flows:
+  \begin{align*}
+    \ve{f}(\ve{z}_t, t, \ves{\theta}) = \sum_{k=1}^K \sigma_k(t) \ve{u}_k h(\ve{w}^T_k \ve{z}_t + b)
+  \end{align*}
+  where each $\sigma_k: \Real \rightarrow [0,1]$ is a neural network. Here, $\sigma_k$ tells how much the the $k$th planar flow is turned of on off at time $t$. This gives
+  \begin{align*}
+    \tr(\nabla_{\S1}\ve{f}(\ve{z}_t, t, \ves{\theta}))
+    = \sum_{i=1}^K \sigma_i(t)\, \tr \Big( \nabla_{\S1}\big( \ve{u}_k h(\ve{w}^T_k \ve{z}_t + b) \big)\Big)
+    = \sum_{i=1}^K \sigma_i(t) \ve{u}_k^T \ve{w}_k h(\ve{w}_k^T \ve{z}_t + b),
+  \end{align*}
+  which is still easy to compute. 
+\end{itemize}
+
+\bibliographystyle{alpha}
+\bibliography{neural-ode}  
+\end{document}

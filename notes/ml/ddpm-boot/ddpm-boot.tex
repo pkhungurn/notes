@@ -1,0 +1,317 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+\usepackage{verbatim}
+\usepackage{hyperref}
+\usepackage{algorithm}
+\usepackage{clrscode3e}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\Dee}{\mathrm{D}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\Var}{\mathrm{Var}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\ves}[1]{\boldsymbol{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+\newcommand{\ov}[1]{\overline{#1}}
+\newcommand{\N}{\mathcal{N}}
+\newcommand{\data}{\mathrm{data}}
+\newcommand{\SNR}{\mathrm{SNR}}
+
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+\title{BOOT: Data-free Distillation of Denoising Diffusion Models with Bootstrapping}
+\author{Pramook Khungurn}
+
+\begin{document}
+\maketitle
+
+This note was written as I read the paper ``BOOT: Data-free Distillation of Denoising Diffusion Models with Bootstrapping'' by Gu \etal~\cite{Gu:2023}.
+
+\section{Introduction}
+
+\begin{itemize}
+  \item It is a known problem that diffusion models are slow compared other generative models such that GANs or VAEs.
+  
+  \item There are techniques that distills diffusion models into models that can generate data in few model evaluation steps. These include:
+  \begin{itemize}
+    \item Straightforward knowledge distillation \cite{Luhman:2021}.
+    \item Progressive distillation \cite{Salimans:2022, Meng:2023}.
+    \item Cosistency models \cite{Song:2023}.
+  \end{itemize}
+
+  \item However, these techniques require either (1) generating a lot of synthetic data with the teacher model or (2) using the training dataset in the process of distillation. 
+  
+  \item The requirements above make it hard to apply for text-condition diffusion models, which currently requires a very large dataset to train.
+  
+  \item The paper proposes BOOT, which can distill diffusion models without needing any data. 
+  
+  \item It is inspired by consistency models \cite{Song:2023}.
+  \begin{itemize}
+    \item The process of sampling a diffusion model can be thought of as tracing a trajectory of a particle moving through a velocity field defined by the probability flow ODE \cite{Song:2021}.
+    
+    \item In the consistency model work, Song \etal\ observes that all points in a specific trajectory form an equivalent class. What we want to do is to find the terminal point from any other points the trajectory.    
+    
+    \item So, a consistency model wants any $\ve{x}_t$ in the same trajectory to map to the same $\ve{x}_0$.
+  \end{itemize}
+
+  \item On the other hand, BOOT predicts all possible $\ve{x}_t$ given the Gaussian noise $\ves{\xi}$ and time $t$.
+  
+  \item The name ``BOOT'' comes from the word ``bootstrapping,'' which is used in the meaning that it becomes easier to predict $\ve{x}_t$ if the model has already learned to predict $\ve{x}_{t'}$ with $t' > t$.
+\end{itemize}
+
+\section{Background}
+
+\subsection{Diffusion Model}
+
+\begin{itemize}
+  \item The paper uses the continuous-time \cite{Song:2021,Karras:2022} and variance-preserving \cite{Salimans:2022} formulation.
+  
+  \item A data point is denoted by $\ve{x} \in \Real^N$.
+  
+  \item The forward process generates a stochastic process $\{ \ve{x}_t : t \in [0,T] \}$ with $\ve{x}_0 = \ve{x} \sim p_{\data}$ governed by the {\bf noise schedule} $\alpha_t$ and $\sigma_t$ with $\alpha_t^2 + \sigma_t^2 = 1$ (because we are using the variance-preserving formulation). The stochastic process has the following properties:
+  \begin{align*}
+    q(\ve{x}_t|\ve{x}) &= \mcal{N}(\ve{x}_t; \alpha_t \ve{x}, \sigma_t^2 I), \\
+    q(\ve{x}_t|\ve{x_s}) &= \mcal{N}(\ve{x}_t; \alpha_{t|s} \ve{x}_s, \sigma_{t|s}^2 I)    
+  \end{align*}
+  where
+  \begin{align*}
+    \alpha_{t|s} &= \frac{\alpha_t}{\alpha_s} \\
+    \sigma_{t|s}^2 &= \sigma_t^2 - \alpha_{t|s}^2 \sigma_s^2
+  \end{align*}
+  for $s < t$.
+
+  \item The quality $\alpha_t^2 / \sigma_t^2$ is called the {\bf signal-to-noise ratio (SNR)}. It decreases monotonically with $t$.
+  
+  \item A diffusion model is denoted by $\ve{f}_{\ves{\phi}}$. In this paper, it predicts the denoised data $\ve{x}$ from $\ve{x}_t$ and $t$. It is trained with the following objective:
+  \begin{align*}
+    \mcal{L}_{\ves{\phi}}^{\mrm{diff}} = E_{\ve{x} \sim p_{\data}, t \sim [0,T], \ve{x}_t \sim q(\ve{x}_t|\ve{x})} \big[w_t \| \ve{f}_{\ves{\phi}}(\ve{x}_t, t) - \ve{x} \|^2\big]
+  \end{align*}
+  where $w_t$ is the weight used to ``balance perceptual quality and diversity.''
+
+  \item Given a diffusion model, a sample can be generated deterministically from a Gaussian noise by using the DDIM sampler \cite{Song:DDIM:2020}, which has the following update rule:
+  \begin{align*}
+    \ve{x}_s = \frac{\sigma_s}{\sigma_t} \ve{x}_t + \bigg( \alpha_s - \alpha_t \frac{\sigma_s}{\sigma_t} \bigg) \ve{f}_{\ves{\phi}}(\ve{x}_t, t)
+  \end{align*}
+  where $s < t$. The process starts with sampling $\ve{x}_T = \ves{\xi} \sim \mcal{N}(\ve{0},I)$, and then we can obtain $\ve{x}_t$ with smaller and smaller $t$ until we reach $t \approx 0$. The catch is that the steps size $\delta = t - s$ must be small enough.
+\end{itemize}
+
+\subsection{Knowledge Distillation}
+
+\begin{itemize}
+  \item The student model is denoted by $\ve{g}_{\ves{\theta}}$. This is used in constrast with the teacher diffusion model $\ve{f}_{\ves{\phi}}$.
+  
+  \item The most straightforward form of distillation is direct distillation where the student model is trained with the following loss function:
+  \begin{align*}
+    \mcal{L}_{\ves{\theta}}^{\mrm{direct}} = E_{\ves{\xi} \sim \mcal{N}(\ve{0},I)} \big[ \| \ve{g}_{\ves{\theta}}(\ves{\xi}) - \texttt{ODE-Solver}(\ve{f}_{\ves{\phi}}, \ves{\xi}, T \rightarrow 0) \|^2  \big]
+  \end{align*}
+  where \texttt{ODE-Solver} is any sampler like the DDIM sampler in the last section.
+
+  \item The drawback of the above approach is that the \texttt{ODE-Solver} needs many steps in order to make the student model generate high quality data. This can make the training process slow.
+  
+  \item However, notice that the approach does not require access to training data at all.
+  
+  \item Other approaches such as progressive distillation \cite{Salimans:2022}, consistency models \cite{Song:2023}, and TRACT \cite{Berthelot:2023} avoid running the full \texttt{ODE-Solver} from $T$ to $0$.
+  
+  \item For the consistency model, the student model is conditioned on time, which means that we want $\ve{g}_{\ves{\theta}}(\ve{x}_t, t)$ to predict $\ve{x}$. The model is trained with the following loss function:
+  \begin{align*}
+    \mcal{L}_{\ves{\theta}}^{\mrm{CM}} = E_{\ve{x} \sim p_{\data}, s,t \sim [0,T], s<t, \ve{x}_t \sim q(\ve{x}_t|\ve{x})} \big[ \| \ve{g}_{\ves{\theta}}(\ves{x}_t, t) - \ve{g}_{\ves{\theta}_\mrm{EMA}}(\ve{x}_s, s) \|^2  \big]
+  \end{align*}
+  where $\ve{x}_s = \texttt{ODE-Solver}(\ve{f}_{\ves{\phi}}, \ve{x}_t, t \rightarrow s)$ and $\ves{\theta}_{\mrm{EMA}}$ is the exponential moving average of the student parameters $\ves{\theta}$.
+
+  \item While training a consistency model does not require executing the \texttt{ODE-Solver} from start to finish, it requires access to the training data.
+\end{itemize}
+
+\section{Method}
+
+\begin{itemize}
+  \item The goal of booth is to train a time-condition model $\ve{g}_{\ves{\theta}}(\ves{\xi}, t)$ that predicts $\ve{x}_t = \texttt{ODE-Solver}(\ve{f}_{\ves{\phi}}, \ves{\theta}, T \rightarrow t)$ when $\ves{\xi} \sim \mcal{N}(\ve{0},I)$.
+  
+  \item We can generate a sample by evaluating $\ve{g}_{\ves{\theta}}(\ves{\xi}, 0)$ after sampling $\ves{\theta} \sim \mcal{N}(\ve{0},I)$.
+  
+  \item Since the model always takes a Gaussian noise as input, there is no need for a dataset during the training process.
+\end{itemize}
+
+\subsection{Signal-ODE}
+
+\begin{itemize}
+  \item Predicting $\ve{x}_t$ is hard because it is a noisy image.
+  
+  \item It is much easier to predict $\ve{y}_t = (\ve{x}_t - \sigma_t \ves{\theta}) / \alpha_t$, which is supposed to represent a predicted denoised image or the ``signal component'' of $\ve{x}_t$.
+  
+  \item Moreover, we know that
+  \begin{align*}
+    \ve{y}_s 
+    &= \frac{\ve{x}_s - \sigma_s \ves{\xi}}{\alpha_s} \\
+    &= \frac{1}{\alpha_s} \ve{x}_s - \frac{\sigma_s}{\alpha_s} \ves{\xi} \\
+    &= \frac{1}{\alpha_s} \bigg[ \frac{\sigma_s}{\sigma_t} \ve{x}_t + \bigg( \alpha_s - \alpha_t \frac{\sigma_s}{\sigma_t} \bigg) \ve{f}_{\ves{\phi}}(\ve{x}_t, t) \bigg] - \frac{\sigma_s}{\alpha_s} \ves{\xi} \\
+    &= \bigg( 1 - \frac{\sigma_s}{\alpha_s} \frac{\alpha_t}{\sigma_t} \bigg) \ve{f}_{\ves{\phi}}(\ve{x}_t, t) 
+    + \frac{\sigma_s}{\alpha_s} \bigg(\frac{\ve{x}_t}{\sigma_t} - \ves{\xi} \bigg) \\
+    &= \bigg( 1 - \frac{\sigma_s}{\alpha_s} \frac{\alpha_t}{\sigma_t} \bigg) \ve{f}_{\ves{\phi}}(\ve{x}_t, t) 
+    + \frac{\sigma_s}{\alpha_s} \bigg(\frac{\ve{x}_t - \sigma_t \ves{\xi} }{\sigma_t} \bigg) \\
+    &= \bigg( 1 - \frac{\sigma_s}{\alpha_s} \frac{\alpha_t}{\sigma_t} \bigg) \ve{f}_{\ves{\phi}}(\ve{x}_t, t) 
+    + \frac{\sigma_s}{\alpha_s} \frac{\alpha_t}{\sigma_t} \bigg(\frac{\ve{x}_t - \sigma_t \ves{\xi} }{\alpha_t} \bigg) \\
+    &= \bigg( 1 - \frac{\sigma_s}{\alpha_s} \frac{\alpha_t}{\sigma_t} \bigg) \ve{f}_{\ves{\phi}}(\ve{x}_t, t) 
+    + \frac{\sigma_s}{\alpha_s} \frac{\alpha_t}{\sigma_t} \ve{y}_t.
+  \end{align*}
+  Define $\lambda_t = -\log (\alpha_t / \sigma_t)$, we have that the above equation can be rewritten as:
+  \begin{align*}
+    \ve{y}_s &= (1 - e^{\lambda_s - \lambda_t}) \ve{f}_{\ves{\phi}}(\ve{x}_t, t)  + e^{\lambda_s - \lambda_t} \ve{y}_t.
+  \end{align*}
+
+  \item The above equation can be turned into an ODE.
+  \begin{align*}
+    \ve{y}_s - \ve{y}_t &= (1 - e^{\lambda_s - \lambda_t}) \ve{f}_{\ves{\phi}}(\ve{x}_t, t)  - (1 - e^{\lambda_s - \lambda_t}) \ve{y}_t \\
+    \ve{y}_s - \ve{y}_t &= (1 - e^{\lambda_s - \lambda_t}) \big[ \ve{f}_{\ves{\phi}}(\ve{x}_t, t)  - \ve{y}_t \big].
+  \end{align*}
+  Dividing both sizes by $s-t$ and taking the limit as $s \rightarrow t^-$, we have that
+  \begin{align*}
+    \lim_{s \rightarrow t^-} \frac{\ve{y}_s - \ve{y}_t}{s - t}
+    &= \bigg( \lim_{s \rightarrow t^-} \frac{1 - e^{\lambda_s - \lambda_t}}{s-t}  \bigg) \big[ \ve{f}_{\ves{\phi}}(\ve{x}_t, t)  - \ve{y}_t \big]  \\
+    \frac{\dee \ve{y}_t}{\dee t}
+    &= \bigg( \lim_{s \rightarrow t^-} \frac{1 - e^{\lambda_s - \lambda_t}}{s-t}  \bigg) \big[ \ve{f}_{\ves{\phi}}(\ve{x}_t, t)  - \ve{y}_t \big].
+  \end{align*}
+  The limit on the RHS is an indeterminate form $0/0$, so we will apply l'H\^{o}pital's rule.
+  \begin{align*}
+    \lim_{s \rightarrow t^-} \frac{1 - e^{\lambda_s - \lambda_t}}{s-t}
+    &= \lim_{s \rightarrow t^-} \frac{ \{1 - e^{\lambda_s - \lambda_t}\}' }{ \{ s-t \}'}
+    = \lim_{s \rightarrow t^-} \frac{-e^{\lambda_s - \lambda_t} \{ \lambda_s - \lambda_t \}' }{1}
+    = \lim_{s \rightarrow t^-} \frac{-e^{\lambda_s - \lambda_t} \lambda_s' }{1} 
+    = -\lambda_t'.
+  \end{align*}
+  As a result,
+  \begin{align*}
+    \frac{\dee \ve{y}_t}{\dee t} &= -\lambda'_t \big[ \ve{f}_{\ves{\phi}}(\ve{x}_t, t)  - \ve{y}_t \big].
+  \end{align*}
+  The above ODE is called the {\bf signal-ODE}. It is supposed to be integrated with the boundary condition $\ve{y}_T = \ves{\xi} \sim \mcal{N}(\ve{0},I)$ with time from $t=T$ to $t = 0$. Once we get $\ve{y}_0$, we can output this as a sampled data because $\ve{y}_0 = \ve{x}_0$.
+\end{itemize}
+
+\subsection{Learning}
+
+\begin{itemize}
+  \item We would like to train a neural network $\ve{y}_{\ves{\theta}}(\ves{\xi},t)$ that approximate $\ve{y}_t$. This network can be trained with the following loss:
+  \begin{align*}
+    \mcal{L}_{\ves{\theta}}^{\mrm{DE}} 
+    = E_{\ves{\xi} \sim \mcal{N}(\ve{0},I), t \sim [0,T]} \bigg[ \bigg\| \frac{\dee \ve{y}_{\ves{\theta}}(\ves{\xi},t)}{\dee t} + \lambda_t' ( \ve{f}_{\ves{\phi}}(\hat{\ve{x}}_t, t)  - \ve{y}_{\ves{\theta}}(\ves{\xi},t) ) \bigg\|^2 \bigg].
+  \end{align*}
+  Here, we use the estimate $\hat{\ve{x}}_t = \alpha_t \ve{y}_{\ves{\theta}}(\ves{\xi},t) + \sigma_t \ves{\xi}. $
+
+  \item While computing the time derivative $\dee \ve{y}_{\ves{\theta}}(\ves{\xi},t) / dee t$ is possible with forward mode differentiation, computing the gradient through the derivative can be expensive. Hence, we can approximate the derivative with the difference equation:
+  \begin{align*}
+    \ve{y}_{\ves{\theta}}(\ves{\xi},s) 
+    &\approx \ve{y}_{\ves{\theta}}(\ves{\xi},t) - (s-t) \lambda_t' ( \ve{f}_{\ves{\phi}}(\hat{\ve{x}}_t, t)  - \ve{y}_{\ves{\theta}}(\ves{\xi},t) ) \\
+    &= \ve{y}_{\ves{\theta}}(\ves{\xi},t) + (t - s) \lambda_t' ( \ve{f}_{\ves{\phi}}(\hat{\ve{x}}_t, t)  - \ve{y}_{\ves{\theta}}(\ves{\xi},t) ) \\
+    &= \ve{y}_{\ves{\theta}}(\ves{\xi},t) + \delta \lambda_t' ( \ve{f}_{\ves{\phi}}(\hat{\ve{x}}_t, t)  - \ve{y}_{\ves{\theta}}(\ves{\xi},t) )
+  \end{align*}
+  where $\delta = t - s$ is the step size.
+
+  \item So, we can train the network with the following loss instead:
+  \begin{align*}
+    \mcal{L}_{\ves{\theta}}^{\mrm{BS}} 
+    = E_{\ves{\xi} \sim \mcal{N}(\ve{0},I), t \sim [\delta,T]} \bigg[ \frac{\tilde{w}_t}{\delta^2} \Big\| \ve{y}_{\ves{\theta}}(\ves{\xi},s) - \texttt{SG}\big[ \ve{y}_{\ves{\theta}}(\ves{\xi},t) + \delta \lambda_t' ( \ve{f}_{\ves{\phi}}(\hat{\ve{x}}_t, t)  - \ve{y}_{\ves{\theta}}(\ves{\xi},t) ) \big] \Big\|^2 \bigg].
+  \end{align*}
+  where $\texttt{SG}[\cdot]$ is the stop-gradient operator, and $\tilde{w}_t$ is a time-dependent weight, which is implicit in how time $t$ is sampled.
+
+  \item A challenge in training $\ve{y}_{\ves{\theta}}$ error accumulation: errors in prediction of $\ve{y}_t$ might propagate to prediction of $\ve{y}_s$ with $s < t$.
+  
+  \item The paper proposes two ways to mitigate error accumulation.
+  \begin{itemize}
+    \item Sample time $t$ uniformly, despite potential slow down in convergence.
+    \item Use higher-order solvers such as Heun's method to compute the expected value of $\ve{y}_{\ves{\theta}}(\ves{\xi},s)$ instead of just using the Euler's method like in $\mcal{L}_{\ves{\theta}}^{\mrm{BS}}$.
+  \end{itemize}
+
+  \item Another problem that must be address is numerical issues caused by the fact that $\lambda'_t$ is unbounded at $t = T$ and $t = 0$.
+  \begin{itemize}
+    \item The student model must be trained in the truncated range $t \in [t_{\min}, t_{\max}]$.
+    \item We must also ensure that the student model behaves in the same way as the teacher model at $t_{\max}$. This is done by minimizing the loss:
+    \begin{align*}
+      \mcal{L}_{\ves{\theta}}^{\mrm{BC}} = E_{\ves{\xi} \sim \mcal{N}(\ve{0},I)} \Big[ \| \ve{f}_{\ves{\phi}}(\ves{\xi},t_{\max}) - \ve{y}_{\ves{\theta}}(\ves{\xi},t_{\max}) \|^2 \Big]
+    \end{align*}
+  \end{itemize}
+
+  \item As a result, the overall training loss for BOOT is $\mcal{L}_{\ves{\theta}} = \mcal{L}_{ves{\theta}}^{\mrm{BS}} + \beta \mcal{L}_{\ves{\theta}}^{\mrm{BC}}$ where $\beta$ is a hyperparameter.
+\end{itemize}
+
+\subsection{Adapting to Guided Diffusion Models}
+
+\begin{itemize}
+  \item Conditional diffusion models $\ve{f}_{\ves{\phi}}(\ve{x}_t, t, \ve{c})$ are often trained to be able to perform classifier-free guidance:
+  \begin{align*}
+    \tilde{\ve{f}}_{\ves{\phi}}(\ve{x}_t, t, \ve{c}) = \ve{f}_{\ves{\phi}}(\ve{x}_t, t, \emptyset) + w\big( \ve{f}_{\ves{\phi}}(\ve{x}_t, t, \ve{c}) - \ve{f}_{\ves{\phi}}(\ve{x}_t, t, \emptyset) \big)
+  \end{align*}
+  where $w$ is the guidance scale, and $\emptyset$ denotes a conditioning input that makes the model unconditional.
+
+  \item It is straightforward to train a (conditional) student model that follows the behavior of a teacher model with classifier free guidance. We can either
+  \begin{itemize}
+    \item Fix the guidance scale $w$ and use $\tilde{\ve{f}}_{\ves{\phi}}(\ve{x}_t, t, \ve{c})$.
+    \item Like Meng \etal~\cite{Meng:2023}, train a student model that also receives $w$ as input. (However, this requires architecture change.)
+  \end{itemize}  
+\end{itemize}
+
+\section{Experiments}
+
+\begin{itemize}
+  \item The authors performed experiments on the following datasets:
+  \begin{itemize}
+    \item FFHQ $64 \times 64$
+    \item Class-conditional ImageNet $64 \times 64$.
+    \item LSUN Bedroom $256 \times 256$.
+  \end{itemize}
+
+  \item For class-conditional ImageNet, the paper evaluates the student model on random guidance scale in the range $w \in [1,5]$.
+  
+  \item The authors also distilled two text-to-image models: DeepFloyd-IF and Stable Diffusion.
+  \begin{itemize}
+    \item Text prompts were obtrained from DiffusionDB \cite{Wang:2023}.
+  \end{itemize}
+
+  \item In most experiments, the student model $\ve{y}_{\theta}$ would have the same architecture as the teacher model $\ve{f}_{\theta}$, and the parameters of the student model would be iniitlized to those of the teacher models.
+  
+  \item The exception to the above practice is when the model must also be conditioned on the guidance scale $w$ (i.e., class-conditonal ImageNet). When this is the case, $w$ is taken into account via ADAIN layers.
+  
+  \item When looking at FID scores on the three datasets, BOOT-distilled models does not perform as well as 50-step DDIM sampler but better than 10-step DDIM sampler.
+  
+  \item Without the boundary condition loss, the student model's outputs are consistently sharp across time steps, indicating mode collapse.
+  
+  \item We may train a BOOT model by progressively decreasing time during training. However, the paper found that this progressive-time scheme leads to more artifacts. The authors surmise that progressive-time training tends to accumulate irreversible errors.
+   
+\end{itemize}
+
+\bibliographystyle{alpha}
+\bibliography{ddpm-boot}  
+\end{document}

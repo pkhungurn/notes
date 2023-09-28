@@ -1,0 +1,226 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{epstopdf}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+
+\newtheorem{lemma}{Lemma}[section]
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\likelihood}{\mathcal{L}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\new}{\mathrm{new}}
+\newcommand{\Arg}{\mathrm{Arg\,}}
+\newcommand{\Log}{\mathrm{Log\,}}
+\newcommand{\RE}{\mathrm{Re\,}}
+\newcommand{\IM}{\mathrm{Im\,}}
+\newcommand{\Res}{\mathrm{Res}}
+\newcommand{\pv}{\mathrm{p.v.}}
+
+\title{Differential Geometry Notes of 01/25/2013}
+\author{Pramook Khungurn}
+
+\begin{document}
+	\maketitle
+
+  \section{Change of Orientation} % (fold)
+  \label{sec:change_of_orientation}
+  
+  \begin{itemize}
+    \item Given a curve $\alpha: (a,b) \ra \mathbb{R}^3$ parameterized by arc length, we can define another curve $\beta:~(-b,-a)~\ra~\mathbb{R}^3$ such that $\beta(s) = \alpha(-s)$ for any $s \ in (-b,-a)$
+
+    $\beta$ has the same trace as $\alpha$, but the points are traced in the opposite direction.
+
+    We say that $\alpha$ and $\beta$ differ by a change of orientation.
+
+    \item If $\alpha$ changes the direction, then the tangent vector also changes direction. This is because, for any $s_0 \in (-b,-a)$
+    \begin{align*}
+      t_\beta(s_0) = \frac{\dee \beta}{\dee s} \bigg|_{s = s_0} = \bigg( \frac{\dee }{\dee s} \alpha(-s) \bigg) \bigg|_{s=s_0}.
+    \end{align*}
+    Let $u = -s$, we have that
+    \begin{align*}
+      t_\beta(s_0) 
+      = \bigg( \frac{\dee }{\dee s} \alpha(-s) \bigg) \bigg|_{s=s_0} = \bigg( \frac{\dee \alpha(u)}{\dee u} \frac{\dee u}{\dee s} \bigg) \bigg|_{s=s_0}
+      = -t_\alpha(u) \bigg|_{s=s_0} = -t_\alpha(-s)\bigg|_{s=s_0} = -t_\alpha(-s_0).
+    \end{align*}
+    So, the tangent at the ``same'' point on $\alpha$ and $\beta$ are anti-parallel.
+
+    \item Now, consider the derivative of the tangent:
+    \begin{align*}
+      \frac{\dee t_\beta}{\dee s} \bigg|_{s = s_0}
+      &= \bigg( \frac{\dee }{\dee s} (-t_\alpha(-s)) \bigg) \bigg|_{s=s_0}
+      = \bigg( -\frac{\dee }{\dee s} (t_\alpha(-s)) \bigg) \bigg|_{s=s_0}
+      = \bigg( -\bigg( \frac{\dee t_\alpha(u)}{\dee u} \frac{\dee u}{\dee s} \bigg) \bigg) \bigg|_{s=s_0}\\
+      &= t'_\alpha(u) \bigg|_{s=s_0} = t'_\alpha(-s_0).
+    \end{align*}
+    This means that the normal of the curve remains the same as well as the curvature.
+
+    \item Because $b(s) = t(s) \wedge n(s)$, we have that the binormal changes direction after a change of direction because the tangent changes direction, but the normal does not. That is,
+    \begin{align*}
+      b_\beta(s) = -b_\alpha(-s).
+    \end{align*}    
+
+    \item Now, consider the derivative of the binormal:
+    \begin{align*}
+      \frac{\dee b_\beta}{\dee s} \bigg|_{s=s_0}
+      = \bigg( \frac{\dee }{\dee s} (-b_\alpha(-s)) \bigg)\bigg|_{s=s_0}
+      = b'_\alpha(-s) \bigg|_{s=s_0}
+      = b'_\alpha(-s_0).
+    \end{align*}
+    As such, the derivative of the binormal remains the same, and so does the torsion.
+  \end{itemize}
+  % section change_of_orientation (end)
+
+  \section{Frenet Formulas} % (fold)
+  \label{sec:frenet_formula}
+  
+  \begin{itemize}
+    \item Let $\alpha : I \ra \mathbb{R}^3$ be a curve parameterized by arc length with no singular points of order 1.
+
+    \item At each point $s$, we can derive three vectors:
+    \begin{itemize}
+      \item the tangent $t(s)$,
+      \item the normal $n(s)$, and
+      \item the binormal $b(s)$.
+    \end{itemize}
+
+    \item We have that
+    \begin{itemize}
+      \item $t'(s) = k(s) n(s)$, and
+      \item $b'(s) = \tau(s) n(s)$.
+    \end{itemize}
+    What can we say about $n'(s)$?
+
+    \item Because $n(s) = b(s) \wedge t(s)$, we have
+    \begin{align*}
+      n'(s)
+      &= b'(s) \wedge t(s) + b(s) \wedge t'(s)
+      = \tau(s) ( n(s) \wedge t(s)) + k(s)(b(s) \wedge n(s))\
+      = -\tau(s) b(s) - k(s) t(s).
+    \end{align*}
+
+    \item The following three equations:
+    \begin{align*}
+      t'(s) &= k(s) n(s),\\
+      n'(s) &= -\tau(s) b(s) - k(s) t(s),\mbox{ and}\\
+      b'(s) &= \tau(s) n(s)
+    \end{align*}
+    are called the {\bf Frenet formulas}. 
+
+    \item The $tb$ plane is called the {\bf rectifying plane}.\\
+    The $nb$ plane is called the {\bf normal plane}.\\
+    The $tn$ plane is called the {\bf osculating plane}.
+
+    \item The line which contains $n(s)$ and passes through $\alpha(s)$ is called the {\bf principal normal}.\\
+    The line which contains $b(s)$ and passes through $\alpha(s)$ is called the {\bf binormal}.
+
+    \item The inverse of the curvature $R(s) = 1/k(s)$ is called the {\bf radius of curvature}.
+  \end{itemize}  
+  % section frenet_formula (end)  
+
+  \section{Fundamental Theorem of the Local Theory of Curves} % (fold)
+  \label{sec:fundamental_theorem_of_the_local_theory_of_curves}
+
+  \begin{itemize}
+    \item We can think of a curve being formed from a line segment by bending (curvature) and twisting (torsion).
+
+    \item It turns out that $k$ and $\tau$ completely describe the local properties of curves.
+
+    \item \begin{theorem}
+      Given differentiable function $k(s) > 0$ and $\tau(s)$ where $s \in I = (a,b)$. There exists a regular parameterized curve $\alpha: I \ra \mathbb{R}^3$ such that
+      \begin{itemize}
+        \item $s$ is the arc length,
+        \item $k(s)$ is the curvature, and 
+        \item $\tau(s)$ is the torsion
+      \end{itemize}
+      of $\alpha$. Morever, any other curve $\bar\alpha$ satisfying the same conditions differs from $\alpha$ by a rigid motion. That is, there exists an orthogonal linear map $\rho : \mathbb{R}^3 \ra \mathbb{R}^3$ with positive determinant and a vector $c$ such that $\bar\alpha(s) = \rho \circ \alpha(s) + c$ for all $s$.
+    \end{theorem}
+
+    \begin{proof}
+      We will only prove uniqueness upto rigid motion.
+
+      First, we state that arc length, curvature, and torsion are invariant under rigid motion.
+
+      Assume that two curves $\alpha$ and $\bar\alpha$ satisfy the property that $k(s) = \bar k(s)$ and $\tau(s) = \bar\tau(s)$. Let $t_0, n_0, b_0$ and $\bar t_0, \bar n_0, \bar n_0$ be the Frenet frame at point $s = s_0 \in I$ of $\alpha$ and $\bar\alpha$, respectively. There's a rigid motion that takes $\bar \alpha(s_0), \bar t_0, \bar n_0, \bar b_0$ to $\alpha(s_0), t_0, n_0, b_0$. After performing this rigid motion, we have that $\alpha(s_0) = \bar\alpha(s_0)$. Moreover, the following Frenet equations hold for all $s$:
+      \begin{align*}
+        t' &= k n & \bar t' &= k \bar n\\
+        n' &= -\tau b - k t & \bar n' &= -\tau \bar b - k \bar t\\
+        b' &= \tau n & \bar b' &= \tau \bar n
+      \end{align*}
+      with $t(s_0) = \bar t(s_0), n(s_0) = \bar n(s_0),$ and $b(s_0) = \bar b(s_0).$
+
+      Consider the function 
+      \begin{align*}
+        E(s) &= |t(s) - \bar t(s)|^2 + | n(s) - \bar n(s) |^2 + | b(s) - \bar b(s) |^2\\
+        &= (t-\bar t) \cdot (t - \bar t) + (n - \bar n) \cdot (n - \bar n) + (b - \bar b) \cdot (b-\bar b).
+      \end{align*}
+      We have that
+      \begin{align*}
+        \frac{\dee}{\dee s} E(s) 
+        &= 2(t' - \bar t')\cdot(t - \bar t) + 2(n' - \bar n')\cdot(n - \bar n) + 2(b' - \bar b')\cdot(b - \bar b)\\
+        &= 2k(n - \bar n)\cdot(t - \bar t) + 2(-kt-\tau b + k\bar t + \tau \bar b) \cdot (n - \bar n) + 2\tau ( n - \bar n) \cdot (b - \bar b)\\
+        &= 2(n - \bar n ) \big[ k(t - \bar t) -k (t - \bar t) - \tau (b - \bar b) + \tau (b - \bar b) \big]\\
+        &= 0.
+      \end{align*}
+      Hence, $E(s)$ is constant. Because $E(s_0) = 0$, we have that $E(s) = 0$ for all $s$. It follows that $t(s) = \bar t(s)$ for all $s$. 
+
+      Now, since $\alpha'(s) = t(s) = \bar t(s) = \bar \alpha'(s)$, we have that $\frac{\dee}{\dee s} (\alpha - \bar\alpha) = \ve{0}$ for all $s$. As such $\alpha(s) = \bar \alpha(s) + a$ for some constant vector $a$. Since $\alpha(s_0) = \bar \alpha(s_0)$, we have that $a = 0$. Thus, $\alpha(s) = \bar \alpha(s)$ for all $s$. It follows that $\alpha$ and $\bar \alpha$ differs by a rigid motion.
+    \end{proof}
+  \end{itemize}  
+  % section fundamental_theorem_of_the_local_theory_of_curves (end)
+
+  \section{Arc Length Parameterization} % (fold)
+  \label{sec:arc_length_parameterization}
+  
+  \begin{itemize}
+    \item Given a regular parameterized curve $\alpha : I \ra \mathbb{R}^3$, it is possible to obtain a curve $\beta : J \ra \mathbb{R}^3$ parameterized by arc length which has the same trace as $\alpha$.
+
+    \item First, let us define the arc length:
+    \begin{align*}
+      s = s(t) = \int_{t_0}^t | \alpha'(t) |\,\dee t
+    \end{align*}
+    where $t, t_0 \in I$.
+
+    \item Because $\dee s/\dee t = |\alpha'(t)| \neq 0$, the function $s = s(t)$ has a differentiable inverse $t = t(s)$ where $s \in s(I) = J$.
+
+    \item Now, we can set $\beta = \alpha \circ t$, which maps $J$ to $\mathbb{R}^3$.
+
+    We have that $\beta(J) = \alpha(I)$ so the curves have the same trace.
+
+    Also, $|\beta'(s)| = | \alpha'(t) \cdot \dee t / \dee s| = 1 = |\alpha'(t)| / |\alpha'(t)| = 1$. So, $\beta$ is parameterized by arc length.  
+  \end{itemize}
+
+  % section arc_length_parameterization (end)
+  
+\end{document}

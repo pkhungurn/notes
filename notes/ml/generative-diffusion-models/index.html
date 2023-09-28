@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>Generative Diffusion Models</title>
+
+    <!-- Bootstrap -->
+    <link href="../../../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../../../css/theme.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+      TeX: { equationNumbers: {autoNumber: "AMS"} } 
+    });
+    </script>
+    <script type="text/javascript"
+            src="../../../MathJax/MathJax.js?config=TeX-AMS_HTML-full">
+    </script>
+
+    <script type="text/javascript" src="../../../js/jquery-3.4.1.min.js"></script>    
+    <script type="text/javascript" src="../../../js/bigfoot.min.js"></script>    
+
+    <link rel="stylesheet" type="text/css" href="../../../css/bigfoot-default.css">    
+
+</head>
+<body>
+<div class="container">
+    <span style="visibility: hidden;">
+        \(
+        \def\sc#1{\dosc#1\csod}
+        \def\dosc#1#2\csod{{\rm #1{\small #2}}}
+
+        \newcommand{\dee}{\mathrm{d}}
+        \newcommand{\Dee}{\mathrm{D}}
+        \newcommand{\In}{\mathrm{in}}
+        \newcommand{\Out}{\mathrm{out}}
+        \newcommand{\pdf}{\mathrm{pdf}}
+        \newcommand{\Cov}{\mathrm{Cov}}
+        \newcommand{\Var}{\mathrm{Var}}
+
+        \newcommand{\ve}[1]{\mathbf{#1}}
+        \newcommand{\mrm}[1]{\mathrm{#1}}
+        \newcommand{\etal}{{et~al.}}
+        \newcommand{\sphere}{\mathbb{S}^2}
+        \newcommand{\modeint}{\mathcal{M}}
+        \newcommand{\azimint}{\mathcal{N}}
+        \newcommand{\ra}{\rightarrow}
+        \newcommand{\mcal}[1]{\mathcal{#1}}
+        \newcommand{\X}{\mathcal{X}}
+        \newcommand{\Y}{\mathcal{Y}}
+        \newcommand{\Z}{\mathcal{Z}}
+        \newcommand{\x}{\mathbf{x}}
+        \newcommand{\y}{\mathbf{y}}
+        \newcommand{\z}{\mathbf{z}}
+        \newcommand{\tr}{\mathrm{tr}}
+        \newcommand{\sgn}{\mathrm{sgn}}
+        \newcommand{\diag}{\mathrm{diag}}
+        \newcommand{\Real}{\mathbb{R}}
+        \newcommand{\sseq}{\subseteq}
+        \newcommand{\ov}[1]{\overline{#1}}
+        \DeclareMathOperator*{\argmax}{arg\,max}
+        \DeclareMathOperator*{\argmin}{arg\,min}
+
+        \newcommand{\data}{\mathrm{data}}
+        \newcommand{\N}{\mathcal{N}}
+        \newcommand{\Hil}{\mathcal{H}}
+        \)
+    </span>
+
+    <br>
+    <h1>Generative Diffusion Models</h1>
+    <hr>
+
+    <p>The paper "Denoising Diffusion Probabilistic Models" by Ho. et al. <a href="https://arxiv.org/pdf/2006.11239.pdf">[LINK]</a> came out in June 2020. It claims to be able to generate images with about the same quality as the progressive GAN while not suffering instability in training. It also seems to use a new technique which I have not seen before, so I became quite interested in it.</p>
+
+    <p>This note is written as I read the paper and also a previous paper from which it took the approach from ("Deep Unsupervised Learning using Nonequilibrium Thermodynamics" by Sohl-Dickstein et al. <a href="https://arxiv.org/abs/1503.03585">[LINK]</a>).</p>
+
+    <h2>Overview</h2>
+
+    <ul>
+        <li>Let $\ve{x} \in \Real^d$ denote a data item. Let us think of it as an image.</li>
+
+        <li>We have a distribution of data items, which we shall denote by $q(\ve{x}^{(0)})$.
+        <ul>
+            <li>We only have empirical samples $\ve{x}^{(0)}_1$, $\ve{x}^{(0)}_2$, $\dotsc$, $\ve{x}^{(0)}_N$ of this distribution.</li>
+            <li>We do not know its mathematical forms.</li>
+        </ul>
+        </li>
+
+        <li>We wish to create a computable distribution $p_\theta(\ve{x}^{(0)})$, parametermized by $\theta$, so that we can use it to:
+        <ul>
+            <li>Given $\ve{x}^{(0)}$, evaluate $p_\theta(\ve{x}^{(0)})$ to see how likely $\ve{x}^{(0)}$ is.</li>
+
+            <li>Sample new data items that look like they come from the data distribution.</li>
+        </ul>
+        </li>
+
+        <li>Given any distribution $q(\ve{x}^{(0)})$, it is quite easy to introduce a finite, multi-step random process with the following properties:
+        <ul>
+            <li>Each step of the process transforms the distribution by adding a little noise.</li>
+            <li>The output of each step depends only on the output of the previous steps; i.e., it is a <b>Markov chain</b>.</li>
+            <li>Each step has a simple mathematical form.</li>
+            <li>At the end of the process, the distribution $q(\ve{x}^{(0)})$ generates to the standard normal distribution $\N(0,I)$ or something very close to it.</li>        
+        </ul>
+        We call this the <b>diffusion process</b> or the <b>forward process</b>. We will talk about the details of this momentarily.
+        </li>
+
+        <li>The forward process should be <b>reversible</b> because each of the steps adds only a little noise to the input.
+        <ul>
+            <li>Denoising can be done by neural networks.</li>
+            <li>If we can revert each step, then we can revert the whole process by chaining the reversion together.</li>
+        </ul>
+        </li>
+
+        <li>Our strategy is to then to make $p_\theta(\ve{x}^0)$ to be a Markov chain that reverts the forward process.
+        <ul>
+            <li>Our new Markov chain has the same number of steps as the forward process.</li>
+            <li>We start with the distribution $\N(0,I)$.</li>
+            <li>Each step of our process would revert the corresponding step of the forward process.</li>
+            <li>In the end, we hope to end up with $p_\theta(\ve{x}^0) \approx q(\ve{x}^0)$.</li>
+        </ul>
+        We call this new process the <b>reverse process</b>.
+        </li>
+    </ul>
+
+    <h2>The Forward Process</h2>
+
+    <ul>
+        <li>Let $T$ be the number of steps in the forward process.
+        <ul>
+            <li>This is a hyperparameter.</li>
+            <li>The Ho et al. paper uses $T = 1000$ in their experiments.</li>
+        </ul>
+        </li>
+
+        <li>The forward process is as follows:
+        <ul>
+            <li>Start with $\ve{x}^{(0)} \sim q(\ve{x}^{(0)})$.</li>
+            <li><b>for</b> $t \gets 1, 2, 3, \dotsc, T$ <b>do</b>
+            <ul>
+                <li>Sample $\ve{x}^{(t)}$ from a conditional probability distribution $q(\ve{x}^{(t)}|\ve{x}^{(t-1)})$.
+                <ul>
+                    <li><b>Note</b>: Hold your horse! We will describe the exact form of $q(\ve{x}^{(t)}|\ve{x}^{(t-1)})$. For now, just know that it is simple.</li>
+                </ul>
+                </li>
+            </ul>
+            </li>            
+        </ul>
+        </li>        
+
+        <li>So, the forward process would generate a sequence of random variables $\ve{x}^{(0)}$, $\ve{x}^{(1)}$, $\ve{x}^{(2)}$, $\dotsc$, $\ve{x}^{(T)}$. For convenience, let us denote this sequence by $\ve{x}^{(0 \dotsm T)}$.</li>
+
+        <li>The probability density of a particular sequence $\ve{x}^{(0 \dotsm T)}$ is given by:
+        \begin{align*}
+            q(\ve{x}^{(0 \dotsm T)}) = q(\ve{x}^{(0)}) \prod_{t=1}^T q(\ve{x}^{(t)}|\ve{x}^{(t-1)}).
+        \end{align*}
+        </li>
+
+        <li>Given $t \in \{1, \dotsc, T\}$, the marginal probability of $\ve{x}^{(t)}$ is given by:
+        \begin{align*}
+            q(\ve{x}^{(t)})             
+            = \int q(\ve{x}^{(0\dotsm t)})\, \dee \ve{x}^{(0\dotsm (t-1))}\
+            = \int \bigg( q(\ve{x}^{(0)}) \prod_{s=1}^t q(\ve{x}^{(s)}|\ve{x}^{(s-1)})\bigg)\, \dee \ve{x}^{(0\dotsm (t-1))}.
+        \end{align*}
+        Here, $\dee \ve{x}^{(a \dotsc b)}$ denotes $\dee\ve{x}^{(a)} \dee\ve{x}^{(a+1)} \dotsm \dee\ve{x}^{(b)}$.
+        </li>
+
+        <li>Now, for the exact form of $q(\ve{x}^{(t)}|\ve{x}^{(t-1)})$.
+        <ul>
+            <li>Let $\beta_1$, $\beta_2$, $\dotsc$, $\beta_T$ be a series of small positive constants such that $\prod_{t=1}^T \beta_t$ is small.</li>
+
+            <li>The $q(\ve{x}^{(t)}|\ve{x}^{(t-1)})$ is a Gaussian:
+            \begin{align*}
+                q(\ve{x}^{(t)}|\ve{x}^{(t-1)}) = \N(\ve{x}^{(t)}; \sqrt{1 - \beta_t} \ve{x}^{(t-1)}, \beta_t I).
+            \end{align*}
+            In other words, it shrinks $\ve{x}^{(t-1)}$ by a factor of $\sqrt{1 - \beta_t}$ and adding noise with zero mean and variance $\beta_t$ in each dimension.
+            </li>
+
+            <li>Since the $\beta_t$ determines the variance of the Gaussian distributions, we call the sequence $\beta_1, \dotsc, \beta_T$ the <b>variance schedule</b>.</li>
+
+            <li>In the Sohl-Dickstein et al. paper, the variance schedule is a learnable parameter.</li>
+
+            <li>In the Ho et al. paper, they use a fixed variance schedule which is a linear progression from $\beta_1 = 10^{-4}$ to $\beta_T = 0.02$.</li>
+        </ul>
+        </li>
+
+        <li>The above forward process makes it easy to compute the conditional probability of $\ve{x}^{(t)}$ given $\ve{x}^{(0)}$.
+
+        <p><b>Proposition 1.</b> Let $\alpha_t = 1-\beta_t$ and $\overline{\alpha}_t = \prod_{s=1}^t \alpha_s$. We have that
+        \begin{align*}
+            q(\ve{x}^{(t)}|\ve{x}^{(0)}) = \N(\ve{x}^{(t)} ; \sqrt{\overline{\alpha}_t}\ve{x}^{(0)}, (1-\overline{\alpha}_t) I).
+        \end{align*}
+        </p>
+
+        <p>The proof is given in the appendix.</p>
+        </li>
+
+        <li>Another property that is easy to derive is the following:
+
+        <p><b>Proposition 2.</b>If $t \geq 2$, then
+        \begin{align*}
+            q(\ve{x}^{(t-1)}|\ve{x}^{(t)}, \ve{x}^{(0)})
+            &= \N(\ve{x}^{(t-1)}; \tilde{\mu}_t(\ve{x}^{(t)},\ve{x}^{(0)}), \tilde{\beta}_t I)            
+        \end{align*}
+        where
+        \begin{align*}
+            \tilde{\mu}_t(\ve{x}^{(t)},\ve{x}^{(0)}) 
+            &= \frac{\beta_{t}  \sqrt{\overline{\alpha}_{t-1}} }{1 - \overline{\alpha}_{t}} \ve{x}^{(0)} 
+            +  \frac{\sqrt{\alpha_{t}} (1-\overline{\alpha}_{t-1})}{1 - \overline{\alpha}_{t}} \ve{x}^{(t)}, \\
+            \tilde{\beta}_t &= \beta_{t} \frac{1-\overline{\alpha}_{t-1}}{1 - \overline{\alpha}_{t}} I.
+        \end{align*}
+        </p>
+
+        <p>Again, the proof is given in the appendix.</p>
+        </li>
+    </ul>
+
+    <h2>The Reverse Process</h2>
+
+    <ul>
+        <li>The reverse process is a Markov chain in the direction opposite to the forward process.
+        <ul>
+            <li>Starts from $p_\theta(\ve{x}^{(T)}) \sim \N(0, I)$.</li>
+            <li><b>for</b> $t \gets T, T-1, \dotsc, 1$ <b>do</b>
+            <ul>
+                <li>Sample $\ve{x}^{(t-1)}$ from the conditional distribution $p_\theta(\ve{x}^{(t-1)}|\ve{x}^{(t)})$.</li>
+            </ul>
+            </li> 
+        </ul>
+        </li>
+
+        <li>Again, hold your horse! You might wonder exactly are $p_\theta(\ve{x}^{(t-1)}|\ve{x}^{(t)})$. Of course, they are neural networks! We will derive how the parameters should be optimized before specifying them. This allows us to have a model that is easy to optimize.</li>
+
+        <li>Let us derive how to optimize for $\theta$. Following MLE, we minimize the negative log-likelihood of $p_\theta(\ve{x}^{(0)})$. Observe that
+        \begin{align*}
+            p_\theta(\ve{x}^{(0)}) 
+            &= \int p_\theta(\ve{x}^{(0\dotsm T) })\, \dee\ve{x}^{(1\dotsm T)} \\
+            &= \int p_\theta(\ve{x}^{(0\dotsm T) }) \frac{q(\ve{x}^{(1\dotsm T)}|\ve{x}^{(0)})}{q(\ve{x}^{(1\dotsm T)}|\ve{x}^{(0)})}\, \dee\ve{x}^{(1\dotsm T)} \\
+            &= \int q(\ve{x}^{(1\dotsm T)}|\ve{x}^{(0)}) \frac{p_\theta(\ve{x}^{(0\dotsm T) })}{q(\ve{x}^{(1\dotsm T)}|\ve{x}^{(0)})}\, \dee\ve{x}^{(1\dotsm T)}\\
+            &= \int q(\ve{x}^{(1\dotsm T)}|\ve{x}^{(0)}) p_\theta(\ve{x}^{(T)}) \frac{\prod_{t=1}^T p_\theta(\ve{x}^{(t-1)}|\ve{x}^{(t)})}{\prod_{t=1}^T q(\ve{x}^{(t)}|\ve{x}^{(t-1)})}\, \dee\ve{x}^{(1\dotsm T)}\\
+            &= \int q(\ve{x}^{(1\dotsm T)}|\ve{x}^{(0)}) p_\theta(\ve{x}^{(T)}) \prod_{t=1}^T \frac{ p_\theta(\ve{x}^{(t-1)}|\ve{x}^{(t)})}{ q(\ve{x}^{(t)}|\ve{x}^{(t-1)})}\, \dee\ve{x}^{(1\dotsm T)}.
+        \end{align*}
+        So, we will minimize
+        \begin{align*}
+            E_{\ve{x}^{(0)} \sim q(\ve{x}^{(0)})} [ -\log p_\theta(\ve{x}^{(0)}) ]
+            &= -\int q(\ve{x}^{(0)}) \log p_\theta(\ve{x}^{(0)})\, \dee \ve{x}^{(0)}\\
+            &= -\int q(\ve{x}^{(0)}) \log \bigg( 
+                \int -q(\ve{x}^{(1\dotsm T)}|\ve{x}^{(0)}) p_\theta(\ve{x}^{(T)}) \prod_{t=1}^T \frac{ p_\theta(\ve{x}^{(t-1)}|\ve{x}^{(t)})}{ q(\ve{x}^{(t)}|\ve{x}^{(t-1)})}\, \dee\ve{x}^{(1\dotsm T)} 
+            \bigg) \, \dee \ve{x}^{(0)}.
+        \end{align*}
+        </li>
+        
+        <li>The above expression is not workable because we have a logarithm of an integral.</li>
+
+        <li>Similar to what is done in variational Bayes method, we deploy Jensen's inquality to find an upper bound.</li>
+
+        <li>Then, we would minimize the lower bound instead of the original negative log-likelihood.</li>
+        
+        <li>More concretely, $\log$ is a concave function. So, by Jensen's inequality:
+        \begin{align*} 
+        \log \bigg( \int q(\ve{x}^{(1\dotsm T)}|\ve{x}^{(0)}) p_\theta(\ve{x}^{(T)}) \prod_{t=1}^T \frac{ p_\theta(\ve{x}^{(t-1)}|\ve{x}^{(t)})}{ q(\ve{x}^{(t)}|\ve{x}^{(t-1)})}\, \dee\ve{x}^{(1\dotsm T)} \bigg)
+        \geq \int q(\ve{x}^{(1\dotsm T)}|\ve{x}^{(0)}) \log \bigg( p_\theta(\ve{x}^{(T)}) \prod_{t=1}^T \frac{ p_\theta(\ve{x}^{(t-1)}|\ve{x}^{(t)})}{ q(\ve{x}^{(t)}|\ve{x}^{(t-1)})} \bigg) \, \dee\ve{x}^{(1\dotsm T)}.
+        \end{align*}
+        Hence,
+        \begin{align*}
+            E_{\ve{x}^{(0)} \sim q(\ve{x}^{(0)})} [ -\log p_\theta(\ve{x}^{(0)}) ]
+            &\leq -\int q(\ve{x}^{(0)}) \bigg[ \int q(\ve{x}^{(1\dotsm T)}|\ve{x}^{(0)}) \log \bigg( p_\theta(\ve{x}^{(T)}) \prod_{t=1}^T \frac{ p_\theta(\ve{x}^{(t-1)}|\ve{x}^{(t)})}{ q(\ve{x}^{(t)}|\ve{x}^{(t-1)})} \bigg)\, \dee\ve{x}^{(1\dotsm T)} \bigg]\, \dee \ve{x}^{(0)} \\
+            &= -\int \int q(\ve{x}^{(0)}) q(\ve{x}^{(1\dotsm T)}|\ve{x}^{(0)}) \log \bigg( p_\theta(\ve{x}^{(T)}) \prod_{t=1}^T \frac{ p_\theta(\ve{x}^{(t-1)}|\ve{x}^{(t)})}{ q(\ve{x}^{(t)}|\ve{x}^{(t-1)})} \bigg)\, \dee\ve{x}^{(1\dotsm T)}\dee \ve{x}^{(0)}  \\
+            &= -\int q(\ve{x}^{(0\dotsm T)}) \log \bigg( p_\theta(\ve{x}^{(T)}) \prod_{t=1}^T \frac{ p_\theta(\ve{x}^{(t-1)}|\ve{x}^{(t)})}{ q(\ve{x}^{(t)}|\ve{x}^{(t-1)})} \bigg)\, \dee\ve{x}^{(0\dotsm T)} \\
+            &= -\int q(\ve{x}^{(0\dotsm T)}) \bigg( \log  p_\theta(\ve{x}^{(T)}) + \sum_{t=1}^T \log \frac{ p_\theta(\ve{x}^{(t-1)}|\ve{x}^{(t)})}{ q(\ve{x}^{(t)}|\ve{x}^{(t-1)})} \bigg)\, \dee\ve{x}^{(0\dotsm T)}.
+        \end{align*}        
+        </li>
+
+        <li>Let us denote the RHS of the above inequality by $L$. We will now simplify $L$.</li>
+
+        <li>We have that:
+        \begin{align*}
+        \log  p_\theta(\ve{x}^{(T)}) + \sum_{t=1}^T \log \frac{ p_\theta(\ve{x}^{(t-1)}|\ve{x}^{(t)})}{ q(\ve{x}^{(t)}|\ve{x}^{(t-1)})}
+        &= \log  p_\theta(\ve{x}^{(T)}) + \log \frac{ p_\theta(\ve{x}^{(0)}|\ve{x}^{(1)})}{ q(\ve{x}^{(1)}|\ve{x}^{(0)})} + \sum_{t=2}^T \log \frac{ p_\theta(\ve{x}^{(t-1)}|\ve{x}^{(t)})}{ q(\ve{x}^{(t)}|\ve{x}^{(t-1)})}.
+        \end{align*}
+        </li>
+
+        <li>Because the forward process is a Markov process, we have that, for $t \geq 2$,
+        \begin{align*}
+            q(\ve{x}^{(t)}|\ve{x}^{(t-1)}) 
+            &= q(\ve{x}^{(t)}|\ve{x}^{(t-1)}, \ve{x}^{(0)}) \\
+            &= \frac{q(\ve{x}^{(t)}, \ve{x}^{(t-1)}, \ve{x}^{(0)})}{ q(\ve{x}^{(t-1)}, \ve{x}^{(0)}) }\\
+            &= \frac{q(\ve{x}^{(t)}, \ve{x}^{(t-1)}, \ve{x}^{(0)})}{ q(\ve{x}^{(t-1)}, \ve{x}^{(0)}) } \frac{q(\ve{x}^{(t)}, \ve{x}^{(0)})}{q(\ve{x}^{(t)}, \ve{x}^{(0)})} \\
+            &= \frac{q(\ve{x}^{(t)}, \ve{x}^{(t-1)}, \ve{x}^{(0)})}{ q(\ve{x}^{(t)}, \ve{x}^{(0)}) } \frac{q(\ve{x}^{(t)}, \ve{x}^{(0)})}{ q(\ve{x}^{(t-1)}, \ve{x}^{(0)}) } \\
+            &= \frac{q(\ve{x}^{(t)}, \ve{x}^{(t-1)}, \ve{x}^{(0)})}{ q(\ve{x}^{(t)}, \ve{x}^{(0)}) } \frac{q(\ve{x}^{(t)}| \ve{x}^{(0)}) q(\ve{x}^{(0)})}{ q(\ve{x}^{(t-1)}| \ve{x}^{(0)}) q(\ve{x}^{(0)}) } \\
+            &= q(\ve{x}^{(t)}| \ve{x}^{(t-1)}, \ve{x}^{(0)}) \frac{q(\ve{x}^{(t)}| \ve{x}^{(0)})}{ q(\ve{x}^{(t-1)}| \ve{x}^{(0)}) }.
+        \end{align*}       
+        As a result,
+        \begin{align*}
+        &\log  p_\theta(\ve{x}^{(T)}) + \log \frac{ p_\theta(\ve{x}^{(0)}|\ve{x}^{(1)})}{ q(\ve{x}^{(1)}|\ve{x}^{(0)})} + \sum_{t=2}^T \log \frac{ p_\theta(\ve{x}^{(t-1)}|\ve{x}^{(t)})}{ q(\ve{x}^{(t)}|\ve{x}^{(t-1)})} \\
+        &= \log  p_\theta(\ve{x}^{(T)}) + \log \frac{ p_\theta(\ve{x}^{(0)}|\ve{x}^{(1)})}{ q(\ve{x}^{(1)}|\ve{x}^{(0)})} + \sum_{t=2}^T \log \frac{ p_\theta(\ve{x}^{(t-1)}|\ve{x}^{(t)})}{ q(\ve{x}^{(t-1)}|\ve{x}^{(t)}, \ve{x}^{(0)})} \frac{q(\ve{x}^{(t-1)}|\ve{x}^{(0)})}{q(\ve{x}^{(t)}|\ve{x}^{(0)})} \\
+        &= \log  p_\theta(\ve{x}^{(T)}) 
+        + \log \frac{ p_\theta(\ve{x}^{(0)}|\ve{x}^{(1)})}{ q(\ve{x}^{(1)}|\ve{x}^{(0)})} 
+        + \sum_{t=2}^T \log q(\ve{x}^{(t-1)}|\ve{x}^{(0)}) 
+        - \sum_{t=2}^T \log q(\ve{x}^{(t)}|\ve{x}^{(0)})
+        + \sum_{t=2}^T \log \frac{ p_\theta(\ve{x}^{(t-1)}|\ve{x}^{(t)})}{ q(\ve{x}^{(t-1)}|\ve{x}^{(t)}, \ve{x}^{(0)})} \\
+        &= \log  p_\theta(\ve{x}^{(T)}) 
+        + \log \frac{ p_\theta(\ve{x}^{(0)}|\ve{x}^{(1)})}{ q(\ve{x}^{(1)}|\ve{x}^{(0)})} 
+        + \log q(\ve{x}^{(1)}|\ve{x}^{(0)}) 
+        - \log q(\ve{x}^{(T)}|\ve{x}^{(0)})
+        + \sum_{t=2}^T \log \frac{ p_\theta(\ve{x}^{(t-1)}|\ve{x}^{(t)})}{ q(\ve{x}^{(t-1)}|\ve{x}^{(t)}, \ve{x}^{(0)})} \\
+        &= \log \frac{p_\theta(\ve{x}^{(T)})}{q(\ve{x}^{(T)}|\ve{x}^{(0)})} 
+        + \log p_\theta(\ve{x}^{(0)}|\ve{x}^{(1)})
+        + \sum_{t=2}^T \log \frac{ p_\theta(\ve{x}^{(t-1)}|\ve{x}^{(t)})}{ q(\ve{x}^{(t-1)}|\ve{x}^{(t)}, \ve{x}^{(0)}) }.
+        \end{align*}
+        </li>
+
+        <li>Hence,
+        \begin{align*}
+        L
+        &= -\int q(\ve{x}^{(0\dotsm T)}) \bigg( \log \frac{p_\theta(\ve{x}^{(T)})}{q(\ve{x}^{(T)}|\ve{x}^{(0)})} 
+        + \log p_\theta(\ve{x}^{(0)}|\ve{x}^{(1)})
+        + \sum_{t=2}^T \log \frac{ p_\theta(\ve{x}^{(t-1)}|\ve{x}^{(t)})}{ q(\ve{x}^{(t-1)}|\ve{x}^{(t)}, \ve{x}^{(0)})} \bigg)\, \dee \ve{x}^{(0\dotsm T)}\\
+        &= -\int q(\ve{x}^{(0\dotsm T)}) \log \frac{p_\theta(\ve{x}^{(T)})}{q(\ve{x}^{(T)}|\ve{x}^{(0)})}\, \dee \ve{x}^{(0\dotsm T)}
+        - \int q(\ve{x}^{(0\dotsm T)}) \log p_\theta(\ve{x}^{(0)}|\ve{x}^{(1)})\, \dee \ve{x}^{(0\dotsm T)} 
+        - \sum_{t=2}^T \int q(\ve{x}^{(0\dotsm T)}) \log \frac{ p_\theta(\ve{x}^{(t-1)}|\ve{x}^{(t)}) }{ q(\ve{x}^{(t-1)}|\ve{x}^{(t)}, \ve{x}^{(0)}) }\, \dee \ve{x}^{(0\dotsm T)}\\
+        &= \int q(\ve{x}^{(0\dotsm T)}) \log \frac{q(\ve{x}^{(T)}|\ve{x}^{(0)})}{p_\theta(\ve{x}^{(T)})}\, \dee \ve{x}^{(0\dotsm T)} 
+        - \int q(\ve{x}^{(0\dotsm T)}) \log p_\theta(\ve{x}^{(0)}|\ve{x}^{(1)})\, \dee \ve{x}^{(0\dotsm T)}
+        + \sum_{t=2}^T \int q(\ve{x}^{(0\dotsm T)}) \log \frac{ q(\ve{x}^{(t-1)}|\ve{x}^{(t)}, \ve{x}^{(0)}) }{ p_\theta(\ve{x}^{(t-1)}|\ve{x}^{(t)})} \, \dee \ve{x}^{(0\dotsm T)}
+        \end{align*}
+        </li>
+
+        <li>To simplify the above expression, we make use of the following "meta" property. Say, we are interested in evaluating
+        \begin{align*}
+            \int q(\ve{x}^{(0\dotsm T)}) f(\ve{x}^{(t_1)}, \ve{x}^{(t_2)}, \dotsc, \ve{x}^{(t_k)}) \,\dee \ve{x}^{(0\dotsm T)}
+        \end{align*}
+        where $f$ is a function that only depends on only on a small number of $\ve{x}^{(t)}$ values. Then, we can rewrite the integral as:
+        \begin{align*}
+            \int \int \dotsm \int q(\ve{x}^{(t_1)}, \ve{x}^{(t_2)}, \dotsc, \ve{x}^{(t_k)}) f(\ve{x}^{(t_1)}, \ve{x}^{(t_2)}, \dotsc, \ve{x}^{(t_k)}) \,\dee \ve{x}^{(t_1)} \dee \ve{x}^{(t_2)} \dotsm \dee \ve{x}^{(t_k)}
+        \end{align*}
+        Since the above expression is cumbersome, we shall denote it as:
+        \begin{align*}
+            \int q(\ve{x}^{(t_1)}, \ve{x}^{(t_2)}, \dotsc, \ve{x}^{(t_k)}) f(\ve{x}^{(t_1)}, \ve{x}^{(t_2)}, \dotsc, \ve{x}^{(t_k)}) \,\dee \ve{x}^{(t_1,t_2,\dotsc,t_k)} 
+        \end{align*}
+        The proof of this is done by rewriting $q(\ve{x}^{(0\dotsm T)})$ as
+        \begin{align*}
+            q(\ve{x}^{(0\dotsm T)}) = q(\ve{x}^{(t_1)}, \ve{x}^{(t_2)}, \dotsc, \ve{x}^{(t_k)}) q(\mbox{ the rest of the variables } | \ve{x}^{(t_1)}, \ve{x}^{(t_2)}, \dotsc, \ve{x}^{(t_k)})
+        \end{align*}
+        and noting that the second term would integrate to $1$ with respect to $\dee\ve{x}^{(\text{the rest of the variables})}$.
+        </li>
+
+        <li>Back to simplifying $L$, we have that
+        \begin{align*}
+        L
+        &= \int q(\ve{x}^{(0\dotsm T)}) \log \frac{q(\ve{x}^{(T)}|\ve{x}^{(0)})}{p_\theta(\ve{x}^{(T)})}\, \dee \ve{x}^{(0\dotsm T)} 
+        - \int q(\ve{x}^{(0\dotsm T)}) \log p_\theta(\ve{x}^{(0)}|\ve{x}^{(1)})\, \dee \ve{x}^{(0\dotsm T)}
+        + \sum_{t=2}^T \int q(\ve{x}^{(0\dotsm T)}) \log \frac{ q(\ve{x}^{(t-1)}|\ve{x}^{(t)}, \ve{x}^{(0)}) }{ p_\theta(\ve{x}^{(t-1)}|\ve{x}^{(t)})} \, \dee \ve{x}^{(0\dotsm T)} \\
+        &= \int q(\ve{x}^{0}, \ve{x}^{(T)}) \log \frac{q(\ve{x}^{(T)}|\ve{x}^{(0)})}{p_\theta(\ve{x}^{(T)})}\, \dee \ve{x}^{(0,T)} 
+        - \int q(\ve{x}^{(0)}, \ve{x}^{(1)}) \log p_\theta(\ve{x}^{(0)}|\ve{x}^{(1)})\, \dee \ve{x}^{(0,1)}
+        + \sum_{t=2}^T \int q(\ve{x}^{0}, \ve{x}^{(t-1)}, \ve{x}^{(t)}) \log \frac{ q(\ve{x}^{(t-1)}|\ve{x}^{(t)}, \ve{x}^{(0)}) }{ p_\theta(\ve{x}^{(t-1)}|\ve{x}^{(t)})} \, \dee \ve{x}^{(0,t-1,t)} \\
+        &= \int q(\ve{x}^{0}) q(\ve{x}^{(T)}|\ve{x}^{(0)}) \log \frac{q(\ve{x}^{(T)}|\ve{x}^{(0)})}{p_\theta(\ve{x}^{(T)})}\, \dee \ve{x}^{(0,T)} 
+        - E_{\ve{x}^{(0)}, \ve{x}^{(1)} \sim q} [ \log p_\theta(\ve{x}^{(0)}|\ve{x}^{(1)}) ] 
+        + \sum_{t=2}^T \int q(\ve{x}^{0}, \ve{x}^{(t)}) q(\ve{x}^{(t-1)}|\ve{x}^{t}, \ve{x}^{(0)}) \log \frac{ q(\ve{x}^{(t-1)}|\ve{x}^{(t)}, \ve{x}^{(0)}) }{ p_\theta(\ve{x}^{(t-1)}|\ve{x}^{(t)})} \, \dee \ve{x}^{(0,t-1,t)} \\
+        &= \int q(\ve{x}^{0}) \bigg( \int q(\ve{x}^{(T)}|\ve{x}^{(0)}) \log \frac{q(\ve{x}^{(T)}|\ve{x}^{(0)})}{p_\theta(\ve{x}^{(T)})}\, \dee \ve{x}^{(T)}\bigg) \, \dee \ve{x}^{(0)} 
+        - E_{\ve{x}^{(0)}, \ve{x}^{(1)} \sim q} [ \log p_\theta(\ve{x}^{(0)}|\ve{x}^{(1)}) ] 
+        + \sum_{t=2}^T \int q(\ve{x}^{0}, \ve{x}^{(t)}) \bigg( \int q(\ve{x}^{(t-1)}|\ve{x}^{t}, \ve{x}^{(0)}) \log \frac{ q(\ve{x}^{(t-1)}|\ve{x}^{(t)}, \ve{x}^{(0)}) }{ p_\theta(\ve{x}^{(t-1)}|\ve{x}^{(t)})}\, \dee\ve{x}^{(t-1)}\bigg) \, \dee \ve{x}^{(0,t)} \\
+        &= \int q(\ve{x}^{0}) D_{KL}(q(\ve{x}^{(T)}|\ve{x}^{(0)})\|p_\theta(\ve{x}^{(T)}))\, \dee \ve{x}^{(0)} 
+        - E_{\ve{x}^{(0)}, \ve{x}^{(1)} \sim q} [ \log p_\theta(\ve{x}^{(0)}|\ve{x}^{(1)}) ] 
+        + \sum_{t=2}^T \int q(\ve{x}^{0}, \ve{x}^{(t)}) D_{KL}(q(\ve{x}^{(t-1)}|\ve{x}^{t}, \ve{x}^{(0)} )\| p_\theta(\ve{x}^{(t-1)}|\ve{x}^{(t)})) \, \dee \ve{x}^{(0,t)} \\
+        &= + \underbrace{E_{\ve{x}^{(0)} \sim q} [D_{KL}(q(\ve{x}^{(T)}|\ve{x}^{(0)})\|p_\theta(\ve{x}^{(T)})) ]}_{L_T} 
+        + \underbrace{E_{\ve{x}^{(0)}, \ve{x}^{(1)} \sim q} [ -\log p_\theta(\ve{x}^{(0)}|\ve{x}^{(1)}) ]}_{L_0}
+        + \sum_{t=2}^T \underbrace{E_{\ve{x}^{(0)},\ve{x}^{(t)} \sim q} [ D_{KL}(q(\ve{x}^{(t-1)}|\ve{x}^{t}, \ve{x}^{(0)} )\| p_\theta(\ve{x}^{(t-1)}|\ve{x}^{(t)})) ]}_{L_{t-1}} \\
+        \end{align*}
+        </li>        
+
+        <li>The Ho et al. paper proposes how to deal with the three terms on the RHS above.
+    </ul>
+
+    <h3>The $L_T$ term.</h3>
+
+    <ul>
+        <li>The Ho et al. paper simply drops the $L_T$ term.</li>
+
+        <li>This is because the variance schedule $\beta_t$s are constants.
+        <ul>
+            <li>For any given $\ve{x}^{(0)}$, we have that  $q(\ve{x}^{(T)}|\ve{x}^{(0)})$ is a function of only $\ve{x}^{(0)}$.</li>
+            <li>So is $D_{KL}(q(\ve{x}^{(T)}|\ve{x}^{(0)}) \| p_\theta(\ve{x}^{(T)}))$.</li>
+            <li>This makes $E_{\ve{x}^{(0)} \sim q} [D_{KL}(q(\ve{x}^{(T)}|\ve{x}^{(0)})\|p_\theta(\ve{x}^{(T)})) ]$ is constant.</li>
+        </ul>        
+    </ul>
+
+    <h3>The $L_1$, $L_2$, $\dotsc$, $L_{T-1}$ terms</h3>
+
+    <ul>
+        <li>For these terms, we have that $q(\ve{x}^{(t-1)}|\ve{x}^{t}, \ve{x}^{(0)} )$ is a Gaussian whose parameters can be found in Proposition 2.</li>
+
+        <li>The Ho et al. paper chooses $p_\theta(\ve{x}^{(t-1)}|\ve{x}^{(t)})$ to be
+        \begin{align*}
+            p_\theta(\ve{x}^{(t-1)}|\ve{x}^{(t)}) = N(\ve{x}^{(t-1)}; \mu_\theta(\ve{x}^{(t)},t), \sigma_t^2 I)
+        \end{align*}
+        where $\mu_\theta(\ve{x}^{(t)},t)$ computed by a neural network, and $\sigma_t$ is a positive constant that depends only on $t$. The paper tried:
+        <ul>
+            <li>$\sigma^2_\theta(\ve{x}^{(t)},t) = \beta_t$, and</li>
+            <li>$\sigma^2_\theta(\ve{x}^{(t)},t) = \tilde{\beta}_t$ where $$\tilde{\beta}_t = \frac{1 - \overline{\alpha}_{t-1}}{1 - \overline{\alpha}_t} \beta_t.$$</li>
+        </ul>
+        They found that these two variance schedules yielded similar results.
+        </li>
+
+        <li>Now, consider the KL-divergence $D_{KL}(q(\ve{x}^{(t-1)}|\ve{x}^{t}, \ve{x}^{(0)}) \| p_\theta(\ve{x}^{(t-1)}|\ve{x}^{(t)}))$.
+        <ul>
+            <li>By Propositon 2, $q(\ve{x}^{(t-1)}|\ve{x}^{t}, \ve{x}^{(0)}) = \N(\ve{x}^{(t-1)}; \tilde{\mu}_t(\ve{x}^{(t)}, \ve{x}^{(0)}), \tilde{\beta}_t I)$ </li>
+            <li>We just let $p_\theta(\ve{x}^{(t-1)}|\ve{x}^{(t)}) = N(\ve{x}^{(t-1)}; \mu_\theta(\ve{x}^{(t)},t), \sigma_t^2 I)$.</li>
+            <li>Using the formulat for the KL-divergence of two Gaussian (Proposition A.4), we have that
+            \begin{align*}
+                D_{KL}(q(\ve{x}^{(t-1)}|\ve{x}^{t}, \ve{x}^{(0)}) \| p_\theta(\ve{x}^{(t-1)}|\ve{x}^{(t)}))
+                &= \frac{\| \tilde{\mu}_t(\ve{x}^{(t)}, \ve{x}^{(0)}) - \mu_\theta(\ve{x}^{(t)},t) \|^2}{2\sigma_t^2} + C
+            \end{align*}
+            where $C$ is a quantity that does not depend on $\theta$.
+            </li>
+        </ul>
+        </li>
+
+        <li>Consider the term $L_{t-1}$.
+        \begin{align*}
+            L_{t-1} - C 
+            &= E_{\ve{x}^{(0)},\ve{x}^{(t)} \sim q} \bigg[ \frac{\| \tilde{\mu}_t(\ve{x}^{(t)}, \ve{x}^{(0)}) - \mu_\theta(\ve{x}^{(t)},t) \|^2}{2\sigma_t^2} \bigg] \\
+            &= E_{\ve{x}^{(0)},\ve{x}^{(t)} \sim q} \bigg[ \frac{1}{2\sigma_t^2} \bigg\| 
+                \frac{\beta_{t}  \sqrt{\overline{\alpha}_{t-1}} }{1 - \overline{\alpha}_{t}} \ve{x}^{(0)} + \frac{\sqrt{\alpha_{t}} (1-\overline{\alpha}_{t-1})}{1 - \overline{\alpha}_{t}} \ve{x}^{(t)} - \mu_\theta(\ve{x}^{(t)},t) \bigg\|^2 \bigg].
+        \end{align*}
+        </li>
+        
+        <li>According to Proposition 1, $\ve{x}^{(t)} = \sqrt{\overline{\alpha}_t} \ve{x}^{0} + \sqrt{1 - \overline{\alpha}_t} \xi$ where $\xi \sim \N(0,I)$. As result, we may write
+        \begin{align*}
+            \ve{x}^{(0)} = \frac{\ve{x}^{(t)}}{\sqrt{\overline{\alpha}_t}} - \frac{\sqrt{1 - \overline{\alpha}_t}\xi}{\sqrt{\overline{\alpha}_t}}
+        \end{align*}
+        As a result,
+        \begin{align*}
+        \frac{\beta_{t}  \sqrt{\overline{\alpha}_{t-1}} }{1 - \overline{\alpha}_{t}} \ve{x}^{(0)} + \frac{\sqrt{\alpha_{t}} (1-\overline{\alpha}_{t-1})}{1 - \overline{\alpha}_{t}} \ve{x}^{(t)} 
+        &= \frac{\beta_{t}  \sqrt{\overline{\alpha}_{t-1}} }{1 - \overline{\alpha}_{t}} \bigg( \frac{\ve{x}^{(t)}}{\sqrt{\overline{\alpha}_t}} - \frac{\sqrt{1 - \overline{\alpha}_t}\xi}{\sqrt{\overline{\alpha}_t}} \bigg) + \frac{\sqrt{\alpha_{t}} (1-\overline{\alpha}_{t-1})}{1 - \overline{\alpha}_{t}} \ve{x}^{(t)} \\
+        &= \bigg( \frac{\beta_{t}  \sqrt{\overline{\alpha}_{t-1}} }{(1 - \overline{\alpha}_{t}) \sqrt{\overline{\alpha}_t} } + \frac{\sqrt{\alpha_{t}} (1-\overline{\alpha}_{t-1})}{1 - \overline{\alpha}_{t}} \bigg) \ve{x}^{(t)} - \frac{\beta_{t}  \sqrt{\overline{\alpha}_{t-1}} }{1 - \overline{\alpha}_{t}} \frac{\sqrt{1 - \overline{\alpha}_t}}{\sqrt{\overline{\alpha}_t}} \xi \\
+        &= \bigg( \frac {1 - \alpha_t }{(1 - \overline{\alpha}_{t}) \sqrt{\alpha_t} } + \frac{\sqrt{\alpha_{t}} (1-\overline{\alpha}_{t-1})}{1 - \overline{\alpha}_{t}} \bigg) \ve{x}^{(t)} - \frac{\beta_{t} }{ \sqrt{1 - \overline{\alpha}_{t}} \sqrt{\alpha}_t } \xi \\
+        &= \frac {1 - \alpha_t + \alpha_t(1-\overline{\alpha}_{t-1})}{(1 - \overline{\alpha}_{t}) \sqrt{\alpha_t} } \ve{x}^{(t)} - \frac{\beta_{t} }{ \sqrt{1 - \overline{\alpha}_{t}} \sqrt{\alpha}_t } \xi \\
+        &= \frac {1 - \alpha_t + \alpha_t -\overline{\alpha}_{t}}{(1 - \overline{\alpha}_{t}) \sqrt{\alpha_t} } \ve{x}^{(t)} - \frac{\beta_{t} }{ \sqrt{1 - \overline{\alpha}_{t}} \sqrt{\alpha}_t } \xi \\
+        &= \frac {1 -\overline{\alpha}_{t}}{(1 - \overline{\alpha}_{t}) \sqrt{\alpha_t} } \ve{x}^{(t)} - \frac{\beta_{t} }{ \sqrt{1 - \overline{\alpha}_{t}} \sqrt{\alpha}_t } \xi \\
+        &= \frac{1}{\sqrt{\alpha_t}} \bigg( \ve{x}^{(t)} - \frac{\beta_t}{\sqrt{1 - \overline{\alpha}_t}} \xi \bigg).
+        \end{align*}        
+        </li>
+
+        <li>We will now parameterize the loss term as a function of $\ve{x}^{(0)}$ and $\xi$, so let us write $\ve{x}^{(t)}$ as $\ve{x}^{(t)} = \ve{x}^{(t)}(\ve{x}^{(0)}, \xi).$ By this, we have
+        \begin{align*}
+        L_{t-1} - C 
+        &= E_{\ve{x}^{(0)},\ve{x}^{(t)} \sim q} \bigg[ \frac{1}{2\sigma_t^2} \bigg\| 
+                \frac{\beta_{t}  \sqrt{\overline{\alpha}_{t-1}} }{1 - \overline{\alpha}_{t}} \ve{x}^{(0)} + \frac{\sqrt{\alpha_{t}} (1-\overline{\alpha}_{t-1})}{1 - \overline{\alpha}_{t}} \ve{x}^{(t)} - \mu_\theta(\ve{x}^{(t)},t) \bigg\|^2 \bigg] \\
+        &= E_{\ve{x}^{(0)}\sim q, \xi \sim \N(0,I)} \bigg[ \frac{1}{2\sigma_t^2} \bigg\| \frac{1}{\sqrt{\alpha_t}} \bigg( \ve{x}^{(t)}(\ve{x}^{(0)}, \xi) - \frac{\beta_t}{\sqrt{1 - \overline{\alpha}_t}} \xi \bigg) - \mu_\theta(\ve{x}^{(t)}(\ve{x}^{(0)}, \xi), t) \bigg\|^2 \bigg]
+        \end{align*}
+        </li> 
+
+        <li>We see from the above equation that that $\mu_\theta$ is supposed to predict $\frac{1}{\sqrt{\alpha_t}} \bigg( \ve{x}^{(t)} - \frac{\beta_t}{\sqrt{1 - \overline{\alpha}_t}} \xi \bigg)$ from $\ve{x}^{(t)}$. Since it is already given $\ve{x}^{(t)}$, the task boils down to predicting $\xi$ from $\ve{x}^{(t)}$ instead. To exploit this structure, Ho et al. proposes having the network be the function $\xi_\theta(\ve{x}^{(t)}, t)$ that is supposed to predict $\xi$ instead.
+        </li>
+
+        <li>With the above parametermization of the network, the loss becomes:
+        \begin{align*}
+        L_{t-1} - C 
+        &= E_{\ve{x}^{(0)}\sim q, \xi \sim \N(0,I)} \bigg[ \frac{1}{2\sigma_t^2} \bigg\| 
+            \frac{1}{\sqrt{\alpha_t}} \frac{\beta_t}{\sqrt{1 - \overline{\alpha}_t}} \xi
+            - \frac{1}{\sqrt{\alpha_t}} \frac{\beta_t}{\sqrt{1 - \overline{\alpha}_t}} \xi_\theta(\ve{x}^{(t)}(\ve{x}^{(0)}, \xi), t)
+        \bigg\|^2 \bigg] \\
+        &= E_{\ve{x}^{(0)}\sim q, \xi \sim \N(0,I)} \bigg[
+            \frac{\beta_t^2}{2\sigma_t^2 \alpha_t(1-\overline{\alpha}_t)} \| \xi - \xi_\theta(\ve{x}^{(t)}(\ve{x}^{(0)}, \xi), t) \|^2
+        \bigg] \\
+        &= E_{\ve{x}^{(0)}\sim q, \xi \sim \N(0,I)} \bigg[
+            \frac{\beta_t^2}{2\sigma_t^2 \alpha_t(1-\overline{\alpha}_t)} \| \xi - \xi_\theta(\sqrt{\overline{\alpha}_t}\ve{x}^{(0)} + \sqrt{1-\overline{\alpha}_t} \xi, t) \|^2
+        \bigg].
+        \end{align*}
+        </li>
+
+        <li>Ho et al. mention that the form of the loss above is related to a loss in another paper <a href="https://arxiv.org/pdf/1907.05600.pdf">[LINK]</a>, which uses Lagevin dynamics. (I have no idea what Langevin dynamics is, but it seems to be used a lot in machine learning nowadays.) They also say that it resembles "denoising score matching".</li>        
+    </ul>
+
+    <h3>The $L_0$ Term</h3>
+
+    <ul>
+        <li>The paper treats the $L_0$ term in a special way because the pixel values of images in the data distribution are discrete.</li>        
+
+        <li>Assume that the pixel values are integers in $\{0, 1, \dotsc, 255\}$ that have been rescaled to the range $[-1, 1]$. In other words, pixels values
+        come from the set
+        \begin{align*}
+            P = \bigg\{ 2\frac{j}{255} - 1 : j \in \{ 0, 1, \dotsc, 255 \} \bigg\}.
+        \end{align*}
+        For simplicity, let $p_j$ denote the $j$th value in the above set. That is,
+        \begin{align*}
+            p_j = 2\frac{j}{255} -1.
+        \end{align*}
+        </li>
+
+        <li>To give some intuition, suppose that we insist that $p_\theta(\ve{x}_0|\ve{x}_1)$ is the Gaussian $\N(\ve{x}^{(0)}; \mu_1(\ve{x}^{(1)},1), \sigma_1^2 I)$ as we have done before in the last section. When we sample $\ve{x}^{(0)}$ from the distribution, each of its dimensions would take values in $(-\infty, \infty)$ instead of the discrete 256 pixels values in $P$.</li>
+
+        <li>So, instead, we put the probability mass of $\N(\ve{x}^{(0)}; \mu_1(\ve{x}^{(1)},1), \sigma_1^2 I)$ along each dimension into $256$ bins corresponding to $p_0$, $p_1$, $\dotsc$, and $p_{255}$.</li>
+
+        <p>More precisely, let us denote the $i$th component of $\ve{x}^{(0)}$ by $x^{(0)}_i$. The probability that $x^{(0)}_i$ taking the value of $p_j$ is given by the integral of $\N(\ve{x}^{(0)}; \mu_1(\ve{x}^{(1)},1), \sigma_1^2 I)$ on an interval "around" $p_j$. There are three cases.
+        <ul>
+            <li>If $p_j$ is not the extreme values (i.e. $p_0$ and $p_{255}$), then we integrate on $(p_j - \frac{1}{255}, p_j + \frac{1}{255})$, which is the interval of width $2/255$ around $p_j$. In other words,
+            \begin{align*}
+                p_\theta(x^{(0)}_i = p_j|\ve{x}^{(1)}) = \int_{p_j - 1/255}^{p_j + 1/255} \N(x; \mu_{\theta,i}(\ve{x}^{(1)}, 1), \sigma_1^2)\, \dee x
+            \end{align*}
+            where $\mu_{\theta,i}(\ve{x}^{(1)}, 1)$ denotes the $i$th component of $\mu_{\theta}(\ve{x}^{(1)}, 1)$.
+            </li>
+
+            <li>If $p_j = p_0$, then the interval should extend on the left side down to $-\infty$:
+            \begin{align*}
+                p_\theta(x^{(0)}_i = p_0|\ve{x}^{(1)}) = \int_{-\infty}^{p_0 + 1/255} \N(x; \mu_{\theta,i}(\ve{x}^{(1)}, 1), \sigma_1^2)\, \dee x.
+            \end{align*}
+            </li>
+
+            <li>If $p_j = p_{255}$, then the interval should extend on the right side up to $\infty$:
+            \begin{align*}
+                p_\theta(x^{(0)}_i = p_{255}|\ve{x}^{(1)}) = \int_{p_{255} - 1/255}^{\infty} \N(x; \mu_{\theta,i}(\ve{x}^{(1)}, 1), \sigma_1^2)\, \dee x.
+            \end{align*}
+            </li>
+        </ul>
+        The equations can then be rewritten into a single equation as follows:
+        \begin{align*}
+            p(x^{(0)}_i | \ve{x}^{(1)}) = \int_{\delta_{-}(x^{(0)}_i)}^{\delta_{+}(x^{(0)}_i)} \N(x; \mu_{\theta,i}(\ve{x}^{(1)}, 1), \sigma_1^2)\, \dee x
+        \end{align*}
+        where
+        \begin{align*}
+            \delta_{-}(x^{(0)}_i) &= \begin{cases}
+                -\infty,           & x^{(0)}_i = -1 \\
+                x^{(0)}_i - 1/255, & x^{(0)}_i > -1
+            \end{cases},\\
+            \delta_{+}(x^{(0)}_i) &= \begin{cases}
+                \infty,           & x^{(0)}_i = 1 \\
+                x^{(0)}_i + 1/255, & x^{(0)}_i < 1
+            \end{cases}.
+        \end{align*}
+        The probability of the whole vector $\ve{x}^{(1)}$ would be the product of the probabilities of all the components as we choose to treat the components independently:
+        \begin{align*}
+             p(\ve{x}^{(0)} | \ve{x}^{(1)}) = \prod_{i=1}^d \int_{\delta_{-}(x^{(0)}_i)}^{\delta_{+}(x^{(0)}_i)} \N(x; \mu_{\theta,i}(\ve{x}^{(1)}, 1), \sigma_1^2)\, \dee x.
+        \end{align*}
+        </p>
+
+        <li>The above definition for $p(\ve{x}^{(0)} | \ve{x}^{(1)})$ makes it hard to evaluate and optimize. Recall that we have to minimize
+        \begin{align*}
+            E_{\ve{x}^{(0)}, \ve{x}^{(1)} \sim q} [-\log p_\theta(\ve{x}^{(0)}, \ve{x}^{(1)})]
+            &= E_{\ve{x}^{(0)}, \ve{x}^{(1)} \sim q} \bigg[ -\log \prod_{i=1}^d \int_{\delta_{-}(x^{(0)}_i)}^{\delta_{+}(x^{(0)}_i)} \N(x; \mu_{\theta,i}(\ve{x}^{(1)}, 1), \sigma_1^2)\, \dee x \bigg] \\
+            &= \sum_{i=1}^d E_{\ve{x}^{(0)}, \ve{x}^{(1)} \sim q} \bigg[ -\log \int_{\delta_{-}(x^{(0)}_i)}^{\delta_{+}(x^{(0)}_i)} \N(x; \mu_{\theta,i}(\ve{x}^{(1)}, 1), \sigma_1^2)\, \dee x \bigg] \\
+            &\leq \sum_{i=1}^d E_{\ve{x}^{(0)}, \ve{x}^{(1)} \sim q} \bigg[ \int_{\delta_{-}(x^{(0)}_i)}^{\delta_{+}(x^{(0)}_i)} -\log \N(x; \mu_{\theta,i}(\ve{x}^{(1)}, 1), \sigma_1^2)\, \dee x \bigg] \\
+            &= \sum_{i=1}^d E_{\ve{x}^{(0)}, \ve{x}^{(1)} \sim q} \bigg[ \int_{\delta_{-}(x^{(0)}_i)}^{\delta_{+}(x^{(0)}_i)} \| x - \mu_{\theta,i}(\ve{x}^{(1)},1) \|^2 \, \dee x \bigg] + C
+        \end{align*}
+        We do not want to deal with the integral inside the expectation operator.
+        </li>
+
+        <li>As a result, the paper uses a simpler loss function (which we will discuss in the next section). The definition above would only be useful when we generate examples. It basically instructs us to fine the nearly element in $P$ that is closest to $\mu_{\theta,i}(\ve{x}^{(1)}, 1)$ and use that as $x^{(0)}_t$.</li>
+    </ul>
+
+    <h3>A Simpler, Unified Loss Function</h3>
+
+    <ul>
+        <li>The loss functions in the lass sections are complicated.
+        <ul>
+            <li>$L_0$ has an integral inside the expectation operator and deals with discrete values.</li>
+            <li>$L_1$, $L_2$, $\dotsc$, and $L_{T-1}$ have different scaling factors.</li>
+        </ul>
+        </li>
+
+        <li>The Ho et al. paper proposes approximating $L_0$ with a Gaussian and dropping all the scaling factors of $L_1$ to $L_{T-1}$, resulting in the loss:
+        \begin{align*}
+            L_{simple}(\theta) = E_{t \sim \{1,2,\dotsc,T\},\ve{x}^{(0)} \sim q, \xi \sim \N(0,I)}  [ \| \xi - \xi_\theta(\sqrt{\overline{\alpha}_t} \ve{x}^{(0)} + \sqrt{1 - \overline{\alpha}_t}\xi, t) \|^2 ].
+        \end{align*}
+        </li>
+    </ul>
+
+    <h3>The Specifics</h3>
+
+    <ul>
+        <li>The training algorithm is as follows:        
+        <p>
+            <b>repeat</b><br>
+            $\quad$ Sample $\ve{x}^{(0)}$ from $q(\ve{x}^{(0)})$<br>
+            $\quad$ Sample $t$ uniformly from ${1, 2, \dotsc, T}$.<br>
+            $\quad$ Sample $\xi$ from $\N(0,I)$.<br>            
+            $\quad$ Take a gradient descent step $\nabla_\theta \| \xi - \xi_\theta(\sqrt{\overline{\alpha}_t} \ve{x}^{(0)} + \sqrt{1 - \overline{\alpha}_t}\xi, t) \|^2$.<br>
+            <b>until</b> convergence
+        </p>
+        </li>
+
+        <li>The sampling algorithm is as follows:
+        <p>
+            Sample $\ve{x}^{(T)}$ from $\N(0,I)$.<br>
+            <b>for</b> $t \gets T,  T-1, \dotsc, 1$<br>
+            $\quad$ If $t > 1$, sample $\ve{z}$ from $\N(0,I)$. Otherwise, $\ve{z} \gets 0$.<br>
+            $\quad$ $\ve{x}^{(t-1)} \gets \frac{1}{\sqrt{\alpha_t}}\bigg( \ve{x}^{(t)} - \frac{\beta_t}{\sqrt{1 - \overline{\alpha}_t}} \xi_\theta(\ve{x}^{(t)},t) \bigg) + \sigma_t \ve{z}$<br>
+            <b>end for</b><br>
+            <b>return</b> $\ve{x}^{(0)}$
+        </p>
+        </li>
+
+        <li>Details on the network architecture:
+        <ul>
+            <li>The general architecture is U-Net.</li>
+
+            <li>At each resolution, there are two residual blocks.</li>
+
+            <li>Group normalization <a href="https://arxiv.org/pdf/1803.08494.pdf">[LINK]</a> is used throughout.</li>            
+
+            <li>Time $t$ is specified to the network using the Transformer sinusoidal embedding <a href="https://arxiv.org/abs/1706.03762">[LINK]</a> into each residual blocks. The encoding is given by:
+            \begin{align*}
+                \text{encoding}(t) = \begin{bmatrix}
+                    \sin(\omega_1 t) \\
+                    \cos(\omega_1 t) \\
+                    \sin(\omega_2 t) \\
+                    \cos(\omega_2 t) \\
+                    \vdots \\
+                    \sin(\omega_{d/2} t) \\
+                    \cos(\omega_{d/2} t)
+                \end{bmatrix}
+            \end{align*}
+            where $\omega_k = 1/10000^{2k/d}$. I'm not so sure how this is actually used in an image. It would seems the constant $10000$ might need to be higher because the dimensions of an image might be larger than $10000$.
+            </li>
+
+            <li>An attention module is used at the $16 \times 16$ resolution.</li>
+        </ul>
+        </li>
+    </ul>
+
+    <h2>Other Stuffs Mentioned in the Papers</h2>
+
+    <ul>
+        <li>The Ho et al. paper also mentions
+        <ul>
+            <li>progressive coding and</li>
+            <li>connection to autoregressive models</li>
+        </ul>
+        However, I didn't understand what they meant because I have no idea what these are. I might study them later.
+        </li>
+
+        <li>It seems that the Ho et al. paper is only concerned with training a model that produces high quality samples. The Sohl-Dickstein et al. paper, however, goes into the process of multiplying $p_\theta(\ve{x}^{(0)})$ with a second distribution to do signal denoising or inference of missing values. We do not this aspect here in this note.</li>
+    </ul>
+
+    <h2>Appendix</h2>
+
+    <ul>
+        <li>We introduce here some identities on the multivariate Gaussian distribution. They are mostly taken from <a href="https://www.user.tu-berlin.de/mtoussai/notes/gaussians.pdf">this note</a> by Marc Toussaint.</li>
+
+        <li>A multivariate Gaussian with mean $\mu$ and covariance matrix $\Sigma$, denoted by $\N(\mu,\Sigma)$ is the distribution:
+        \begin{align*}
+        \N(\ve{x}; \mu, \Sigma) = \frac{1}{(\det 2\pi\Sigma)^{1/2}} \exp\bigg(-\frac{1}{2} (\ve{x}-\mu)^T \Sigma^{-1} (\ve{x}-\mu) \bigg).
+        \end{align*}
+        It is defined only if the covariance matrix is positive definite.  
+        </li>
+
+        <li><b>Proposition A.1.</b> Think of $\N$ as a function on the $\ve{x}$ and $\mu$, we have that $\N(\ve{x}; \mu, \Sigma) = \N(\mu; \ve{x}, \Sigma)$.
+        <p><i>Proof.</i> Obvious from the definition. $\square$</p>
+        </li>
+
+        <li><b>Proposition A.2.</b> For any invertible matrix $A$ and any vector $\ve{b}$, we have that
+        \begin{align*}
+        \N(A\ve{x} + \ve{b}; \mu, \Sigma) = \frac{1}{|\det A|} \N(\ve{x}, A^{-1}(\mu - \ve{b}), A^{-1}\Sigma A^{-T}).
+        \end{align*}
+
+        <p><i>Proof.</i> We have that
+        \begin{align*}
+        \N(\ve{x}; \mu, \Sigma) 
+        &= \frac{1}{(\det 2\pi\Sigma)^{1/2}} \exp\bigg(-\frac{1}{2} (A\ve{x} + \ve{b} -\mu)^T \Sigma^{-1} (A\ve{x} + \ve{b} -\mu) \bigg) \\
+        &= \frac{1}{(\det 2\pi\Sigma)^{1/2}} \exp\bigg(-\frac{1}{2} (A\ve{x} + \ve{b} -\mu)^T A^{-T} A^T \Sigma^{-1} A A^{-1} (A\ve{x} + \ve{b} -\mu) \bigg) \\
+        &= \frac{1}{(\det 2\pi\Sigma)^{1/2}} \exp\bigg(-\frac{1}{2} (\ve{x} - A^{-1}(\mu - \ve{b}))^T (A^{-1} \Sigma A^{-T})^{-1} (\ve{x} + A^{-1}(\mu - \ve{b})) \bigg) \\
+        &= \frac{1}{(\det AA^T)^{1/2}} \frac{1}{ (\det A^{-1}A^{-T})^{1/2} (\det 2\pi\Sigma)^{1/2}} \exp\bigg(-\frac{1}{2} (\ve{x} - A^{-1}(\mu - \ve{b}))^T (A^{-1} \Sigma A^{-T})^{-1} (\ve{x} + A^{-1}(\mu - \ve{b})) \bigg) \\
+        &= \frac{1}{|\det A|} \frac{1}{ (\det 2\pi A^{-1}\Sigma A^{-T})^{1/2}} \exp\bigg(-\frac{1}{2} (\ve{x} - A^{-1}(\mu - \ve{b}))^T (A^{-1} \Sigma A^{-T})^{-1} (\ve{x} + A^{-1}(\mu - \ve{b})) \bigg) \\
+        &= \frac{1}{|\det A|} \N(\ve{x}, A^{-1}(\mu - \ve{b}), A^{-1}\Sigma A^{-T})
+        \end{align*}
+        </p>
+        as required $\square$.
+        </li>
+
+        <li>In particular, if $a$ and $b$ are constants, then
+        \begin{align*}
+            \N(a\ve{x}; \mu, bI) 
+            &= \N\Big((aI)\ve{x}; \mu, bI) 
+            = \frac{1}{|\det (aI)|} \N\Big( \ve{x}; (aI)^{-1}\mu, (aI)^{-1}(bI)(aI)^{T} \Big) 
+            = \frac{1}{|a|^d} \N(\ve{x}; \mu/a, (b/a^2)I).
+        \end{align*}
+        </li>
+
+        <li><b>Prosition A.3.</b>
+        \begin{align*}
+            \N(\ve{x};\mu_1, \Sigma_1) \N(\ve{x};\mu_2, \Sigma_2) = \N(\mu_1; \mu_2, \Sigma_1 + \Sigma_2) \N(\ve{x}; \mu_3, \Sigma_3)
+        \end{align*}
+        where
+        \begin{align*}
+        \mu_3 &= \Sigma_2(\Sigma_1 + \Sigma_2)^{-1} \mu_1 + \Sigma_1(\Sigma_1 + \Sigma_2)^{-1} \mu_2, \\
+        \Sigma_3 &= \Sigma_1 (\Sigma_1 + \Sigma_2)^{-1} \Sigma_2.
+        \end{align*}
+
+        <p><i>Proof.</i> This looks painful. We will not prove it.</p>
+        </li>
+
+        <li><b>Proposition A.4.</b> Let $\mu_1, \mu_2 \in \Real^d$ and $\Sigma_1,\Sigma_2 \in \Real^{d \times d}$. We have that
+        \begin{align*}
+            D_{KL}(\N(\mu_1,\Sigma_1) \| \N(\mu_2, \Sigma_2) = \frac{1}{2} \bigg( \log \frac{\det \Sigma_2}{\det \Sigma_1} + \tr(\Sigma_2^{-1} \Sigma_1) + (\mu_2 - \mu_1)^T \Sigma_2^{-1} (\mu_2 - \mu_1) - d \bigg).
+        \end{align*}    
+        </li>
+
+        <li>In particular, if the Gaussians are spherical, we have that
+        \begin{align*}
+            D_{KL}(\N(\mu_1,\sigma_1^2 I) \| \N(\mu_2, \sigma_2^2) 
+            &= 
+            \frac{1}{2} \bigg[ \log \frac{\det (\sigma_2^2 I)}{\det (\sigma_1^2 I)} + \tr((\sigma_2^2 I)^{-1} (\sigma_1^2 I)) + (\mu_2 - \mu_1)^T (\sigma_2^2 I) (\mu_2 - \mu_1) - d \bigg] \\
+            &= \frac{1}{2} \bigg[ \log \frac{\sigma_2^{2d}}{\sigma_1^{2d}} + \tr\bigg( \frac{\sigma_1^2}{\sigma_2^2} I \bigg) + \frac{\| \mu_2 - \mu_1 \|^2}{\sigma_2^2} - d \frac{1}{2} \bigg]\\
+            &= \frac{1}{2} \bigg[ \frac{\| \mu_2 - \mu_1 \|^2}{\sigma_2^2} + 2d (\log |\sigma_2| - \log |\sigma_1|) + d\frac{\sigma_1^2}{\sigma_2^2} - d \bigg].
+        \end{align*}
+        </li>
+
+        <li>We now prove Proposition 1.
+        
+        <p><b>Proposition 1.</b> Let $\alpha_t = 1-\beta_t$ and $\overline{\alpha}_t = \prod_{s=1}^t \alpha_s$. We have that
+        \begin{align*}
+            q(\ve{x}^{(t)}|\ve{x}^{(0)}) = \N(\ve{x}^{(t)} ; \sqrt{\overline{\alpha}_t}\ve{x}^{(0)}, (1-\overline{\alpha}_t) I).
+        \end{align*}
+        </p>
+
+        <p><i>Proof.</i> We prove the proposition by induction on $t$. For the base case, $t = 1$. We have that
+        \begin{align*}
+            q(\ve{x}^{(1)}|\ve{x}^{(0)}) 
+            &= \N(\ve{x}^{(1)} ; \sqrt{1-\beta_1}\ve{x}^{(0)}, \beta_1 I) \\
+            &= \N(\ve{x}^{(1)} ; \sqrt{1-\beta_1}\ve{x}^{(0)}, (1 - (1-\beta_1)) I)\\
+            &= \N(\ve{x}^{(1)} ; \sqrt{\alpha_1}\ve{x}^{(0)}, (1 - \alpha_1) I)\\
+            &= \N(\ve{x}^{(1)} ; \sqrt{\overline{\alpha}_1}\ve{x}^{(0)}, (1 - \overline{\alpha}_1) I).
+        \end{align*}
+        So, the proposition is true for $t = 1$.
+        </p>
+
+        <p>Now, suppose that the proposition is true for some $t \geq 1$. We have that
+        \begin{align*}
+        q(\ve{x}^{(t+1)}|\ve{x}^{(0)})
+        &= \int q(\ve{x}^{(t+1)}|\ve{x}^{(t)}) q(\ve{x}^{(t)}|\ve{x}^{(0)})\, \dee\ve{x}^{(t)} \\
+        &= \int \N(\ve{x}^{(t+1)}; \sqrt{1 - \beta_{t+1}} \ve{x}^{(t)}, \beta_{t+1} I) \N(\ve{x}^{(t)} ; \sqrt{\overline{\alpha}_t}\ve{x}^{(0)}, (1-\overline{\alpha}_t) I) \, \dee\ve{x}^{(t)} \\
+        &= \int \N(\sqrt{1 - \beta_{t+1}} \ve{x}^{(t)}; \ve{x}^{(t+1)}, \beta_{t+1} I) \N(\ve{x}^{(t)} ; \sqrt{\overline{\alpha}_t}\ve{x}^{(0)}, (1-\overline{\alpha}_t) I) \, \dee\ve{x}^{(t)}.
+        \end{align*}
+        Using Proposition A.2 (see the Appendix), we have that
+        \begin{align*}
+        \N(\sqrt{1 - \beta_{t+1}} \ve{x}^{(t)}; \ve{x}^{(t+1)}, \beta_{t+1} I)        
+        &= \frac{1}{(\alpha_{t+1})^{d/2}} \N\bigg( \ve{x}^{(t)}; \frac{\ve{x}^{(t+1)}}{\sqrt{\alpha_{t+1}}} , \frac{1-\alpha_{t+1}}{\alpha_{t+1}} I \bigg).
+        \end{align*}        
+        So,
+        \begin{align*}
+            q(\ve{x}^{(t+1)}|\ve{x}^{(0)}) 
+            &= \frac{1}{(\alpha_{t+1})^{d/2}} 
+            \int
+                \N\bigg( \ve{x}^{(t)}; \frac{\ve{x}^{(t+1)}}{\sqrt{\alpha_{t+1}}} , \frac{1-\alpha_{t+1}}{\alpha_{t+1}} I \bigg)
+                \N(\ve{x}^{(t)} ; \sqrt{\overline{\alpha}_t}\ve{x}^{(0)}, (1-\overline{\alpha}_t) I)\
+            \, \dee\ve{x}^{(t)}
+        \end{align*}        
+        By Proposition A.3, we know that the product of two Gaussians is a Gaussian times a constant. The expression is given by $\N(\mu_1; \mu_2, \Sigma_1 + \Sigma_2) \N(\ve{x}^{(t)};\mu_3, \Sigma_3) $ where
+        \begin{align*}
+            \mu_1 &= \frac{\ve{x}^{(t+1)}}{\sqrt{\alpha_{t+1}}} \\
+            \mu_2 &= \sqrt{\overline{\alpha}_t}\ve{x}^{(0)} \\
+            \Sigma_1 &= \frac{1-\alpha_{t+1}}{\alpha_{t+1}} I\\
+            \Sigma_2 &= (1-\overline{\alpha}_t) I \\
+            \Sigma_1+\Sigma_2 
+            &= \frac{1-\alpha_{t+1}}{\alpha_{t+1}} I + (1-\overline{\alpha}_t) I 
+            =  \bigg( \frac{1-\alpha_{t+1}}{\alpha_{t+1}} + (1-\overline{\alpha}_t) \bigg) I
+            =  \frac{1-\alpha_{t+1} + \alpha_{t+1} - \alpha_{t+1} \overline{\alpha}_t }{\alpha_{t+1}} I
+            =  \frac{1 - \overline{\alpha}_{t+1} }{\alpha_{t+1}} I \\
+            \Sigma_3 
+            &= \Sigma_1 (\Sigma_1+\Sigma_2)^{-1} \Sigma_2 \\
+            &= \bigg( \frac{1-\alpha_{t+1}}{\alpha_{t+1}} I \bigg) \bigg( \frac{1 - \overline{\alpha}_{t+1} }{\alpha_{t+1}} I \bigg)^{-1} \bigg( (1-\overline{\alpha}_t) I \bigg)
+            = (1-\alpha_{t+1}) \frac{1-\overline{\alpha}_t}{1 - \overline{\alpha}_{t+1}} I \\
+            &= \beta_{t+1} \frac{1-\overline{\alpha}_t}{1 - \overline{\alpha}_{t+1}} I \\
+            \mu_3
+            &= \Sigma_2(\Sigma_1 + \Sigma_2)^{-1} \mu_1 + \Sigma_1(\Sigma_1 + \Sigma_2)^{-1} \mu_2 \\
+            &= \bigg( (1-\overline{\alpha}_t) I \bigg) \bigg( \frac{1 - \overline{\alpha}_{t+1} }{\alpha_{t+1}} I \bigg)^{-1} \frac{\ve{x}^{(t+1)}}{\sqrt{\alpha_{t+1}}}
+            + \bigg( \frac{1-\alpha_{t+1}}{\alpha_{t+1}} I \bigg) \bigg( \frac{1 - \overline{\alpha}_{t+1} }{\alpha_{t+1}} I \bigg)^{-1} \sqrt{\overline{\alpha}_t}\ve{x}^{(0)} \\
+            &= \sqrt{\alpha_{t+1}} \frac{1-\overline{\alpha}_t}{1 - \overline{\alpha}_{t+1}} \ve{x}^{(t+1)}
+            + \sqrt{\overline{\alpha}_t} \frac{1-\alpha_{t+1}}{1 - \overline{\alpha}_{t+1}} \ve{x}^{(0)} \\
+            &= \frac{\beta_{t+1}  \sqrt{\overline{\alpha}_t} }{1 - \overline{\alpha}_{t+1}} \ve{x}^{(0)} 
+            +  \frac{\sqrt{\alpha_{t+1}} (1-\overline{\alpha}_t)}{1 - \overline{\alpha}_{t+1}} \ve{x}^{(t+1)}            
+        \end{align*}
+        So, 
+        \begin{align*}        
+            q(\ve{x}^{(t+1)}|\ve{x}^{(0)})
+            &= \frac{1}{(\alpha_{t+1})^{d/2}} 
+            \int
+                \N\bigg( \ve{x}^{(t)}; \frac{\ve{x}^{(t+1)}}{\sqrt{\alpha_{t+1}}} , \frac{1-\alpha_{t+1}}{\alpha_{t+1}} I \bigg)
+                \N(\ve{x}^{(t)} ; \sqrt{\overline{\alpha}_t}\ve{x}^{(0)}, (1-\overline{\alpha}_t) I)\, \dee\ve{x}^{(t)} \\
+            &= \frac{1}{(\alpha_{t+1})^{d/2}} 
+            \int
+                \N\bigg(  \frac{\ve{x}^{(t+1)}}{\sqrt{\alpha_{t+1}}}; \sqrt{\overline{\alpha}_t}\ve{x}^{(0)}, \frac{1 - \overline{\alpha}_{t+1} }{\alpha_{t+1}} I \bigg)
+                \N(\ve{x}^{(t)};\mu_3,\Sigma_3)\, \dee\ve{x}^{(t)} \\
+            &= \frac{1}{(\alpha_{t+1})^{d/2}} \N\bigg(  \frac{\ve{x}^{(t+1)}}{\sqrt{\alpha_{t+1}}}; \sqrt{\overline{\alpha}_t}\ve{x}^{(0)}, \frac{1 - \overline{\alpha}_{t+1} }{\alpha_{t+1}} I \bigg) \int \N(\ve{x}^{(t)};\mu_3,\Sigma_3)\, \dee\ve{x}^{(t)} \\
+            &= \frac{1}{(\alpha_{t+1})^{d/2}} (\alpha_{t+1})^{d/2} \N\bigg(  \ve{x}^{(t+1)}; \sqrt{\alpha_t}\sqrt{\overline{\alpha}_t}\ve{x}^{(0)}, \alpha_{t+1} \frac{1 - \overline{\alpha}_{t+1} }{\alpha_{t+1}} I \bigg) \\
+            &= \N(  \ve{x}^{(t+1)}; \sqrt{\overline{\alpha}_{t+1}}\ve{x}^{(0)}, (1 - \overline{\alpha}_{t+1}) I).
+        \end{align*}
+        We many now conclude that the proposition also holds for $t+1$ and in general for any value of $t \geq 1$ by induction. $\square$
+        </p>
+        </li>
+
+        <li>Note that the above derivation of $q(\ve{x}^{(t+1)}|\ve{x}^{(0)})$ can be rewritten as:
+        \begin{align*}
+        q(\ve{x}^{(t+1)}|\ve{x}^{(0)})
+        &= \int q(\ve{x}^{(t+1)}|\ve{x}^{(t)}) q(\ve{x}^{(t)}|\ve{x}^{(0)})\, \dee\ve{x}^{(t)} \\
+        &= \frac{1}{(\alpha_{t+1})^{d/2}} 
+            \int
+                \N\bigg(  \frac{\ve{x}^{(t+1)}}{\sqrt{\alpha_{t+1}}}; \sqrt{\overline{\alpha}_t}\ve{x}^{(0)}, \frac{1 - \overline{\alpha}_{t+1} }{\alpha_{t+1}} I \bigg)
+                \N(\ve{x}^{(t)};\mu_3,\Sigma_3)\, \dee\ve{x}^{(t)} \\
+        &= \int
+                \frac{1}{(\alpha_{t+1})^{d/2}}  \N\bigg(  \frac{\ve{x}^{(t+1)}}{\sqrt{\alpha_{t+1}}}; \sqrt{\overline{\alpha}_t}\ve{x}^{(0)}, \frac{1 - \overline{\alpha}_{t+1} }{\alpha_{t+1}} I \bigg)
+                \N(\ve{x}^{(t)};\mu_3,\Sigma_3)\, \dee\ve{x}^{(t)} \\
+        &= \int
+                \N(  \ve{x}^{(t+1)}; \sqrt{\overline{\alpha}_{t+1}}\ve{x}^{(0)}, (1 - \overline{\alpha}_{t+1}) I)
+                \N(\ve{x}^{(t)};\mu_3,\Sigma_3)\, \dee\ve{x}^{(t)}.
+        \end{align*}
+        In other words,
+        \begin{align*}
+        q(\ve{x}^{(t+1)}|\ve{x}^{(t)}) q(\ve{x}^{(t)}|\ve{x}^{(0)})
+        &= \N(  \ve{x}^{(t+1)}; \sqrt{\overline{\alpha}_{t+1}}\ve{x}^{(0)}, (1 - \overline{\alpha}_{t+1}) I) \N(\ve{x}^{(t)};\mu_3,\Sigma_3) \\
+        &= \N(  \ve{x}^{(t+1)}; \sqrt{\overline{\alpha}_{t+1}}\ve{x}^{(0)}, (1 - \overline{\alpha}_{t+1}) I) 
+        \N\bigg( \ve{x}^{(t)}; 
+            \frac{\beta_{t+1}  \sqrt{\overline{\alpha}_t} }{1 - \overline{\alpha}_{t+1}} \ve{x}^{(0)} 
+            +  \frac{\sqrt{\alpha_{t+1}} (1-\overline{\alpha}_t)}{1 - \overline{\alpha}_{t+1}} \ve{x}^{(t+1)},
+            \beta_{t+1} \frac{1-\overline{\alpha}_t}{1 - \overline{\alpha}_{t+1}} I
+        \bigg).
+        \end{align*}
+        So,
+        \begin{align*}
+            \frac{q(\ve{x}^{(t+1)}|\ve{x}^{(t)}) q(\ve{x}^{(t)}|\ve{x}^{(0)})}{q(\ve{x}^{(t+1)}|\ve{x}^{(0)})}
+            &= \N\bigg( \ve{x}^{(t)}; 
+            \frac{\beta_{t+1}  \sqrt{\overline{\alpha}_t} }{1 - \overline{\alpha}_{t+1}} \ve{x}^{(0)} 
+            +  \frac{\sqrt{\alpha_{t+1}} (1-\overline{\alpha}_t)}{1 - \overline{\alpha}_{t+1}} \ve{x}^{(t+1)},
+            \beta_{t+1} \frac{1-\overline{\alpha}_t}{1 - \overline{\alpha}_{t+1}} I
+            \bigg).
+        \end{align*}
+        </li>
+
+        <li>The above derivation gives us a proof of Proposition 2.
+
+        <p><b>Proposition 2.</b>If $t \geq 2$, then
+        \begin{align*}
+            q(\ve{x}^{(t-1)}|\ve{x}^{(t)}, \ve{x}^{(0)})
+            = \N\bigg( \ve{x}^{(t-1)}; 
+            \frac{\beta_{t}  \sqrt{\overline{\alpha}_{t-1}} }{1 - \overline{\alpha}_{t}} \ve{x}^{(0)} 
+            +  \frac{\sqrt{\alpha_{t}} (1-\overline{\alpha}_{t-1})}{1 - \overline{\alpha}_{t}} \ve{x}^{(t)},
+            \beta_{t} \frac{1-\overline{\alpha}_{t-1}}{1 - \overline{\alpha}_{t}} I
+            \bigg).
+        \end{align*}
+        </p>
+
+        <p><i>Proof.</i> We have that
+        \begin{align*}
+            q(\ve{x}^{(t-1)}|\ve{x}^{(t)}, \ve{x}^{(0)})
+            &= \frac{q(\ve{x}^{(t-1)},\ve{x}^{(t)},\ve{x}^{(0)})}{q(\ve{x}^{(t)},\ve{x}^{(0)})}
+            = \frac{q(\ve{x}^{(t)},\ve{x}^{(t-1)},\ve{x}^{(0)})}{q(\ve{x}^{(t)},\ve{x}^{(0)})}
+            = \frac{q(\ve{x}^{(t)}|\ve{x}^{(t-1)}) q(\ve{x}^{(t-1)}|\ve{x}^{(0)}) q(\ve{x}^{(0)})}{q(\ve{x}^{(t)}|\ve{x}^{(0)})q(\ve{x}^{(0)})} \\
+            &= \frac{q(\ve{x}^{(t)}|\ve{x}^{(t-1)}) q(\ve{x}^{(t-1)}|\ve{x}^{(0)})}{q(\ve{x}^{(t)}|\ve{x}^{(0)})}.
+        \end{align*}
+        From the above derivation, we have that:
+        \begin{align*}
+            \frac{q(\ve{x}^{(t)}|\ve{x}^{(t-1)}) q(\ve{x}^{(t-1)}|\ve{x}^{(0)})}{q(\ve{x}^{(t)}|\ve{x}^{(0)})}
+            &= \N\bigg( \ve{x}^{(t-1)}; 
+            \frac{\beta_{t}  \sqrt{\overline{\alpha}_{t-1}} }{1 - \overline{\alpha}_{t}} \ve{x}^{(0)} 
+            +  \frac{\sqrt{\alpha_{t}} (1-\overline{\alpha}_{t-1})}{1 - \overline{\alpha}_{t}} \ve{x}^{(t)},
+            \beta_{t} \frac{1-\overline{\alpha}_{t-1}}{1 - \overline{\alpha}_{t}} I
+            \bigg)
+        \end{align*}
+        as required $\square$.
+        </p>
+        </li>
+    </ul>
+
+    <hr>
+    <div class="page-header"></div>
+    <p>Last modified: 2020/08/23</p>    
+</div>
+
+<script type="text/javascript">
+$.bigfoot();
+</script>
+
+</body>
+</html>

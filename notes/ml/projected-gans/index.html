@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>Projected GANs Converge Faster</title>
+
+    <!-- Bootstrap -->
+    <link href="../../../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../../../css/theme.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      loader: {load: ['[tex]/boldsymbol']},
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+      TeX: { equationNumbers: {autoNumber: "AMS"} } 
+    });
+    </script>
+    <script type="text/javascript"
+            src="../../../MathJax/MathJax.js?config=TeX-AMS_HTML-full">
+    </script>
+
+    <script type="text/javascript" src="../../../js/jquery-3.4.1.min.js"></script>    
+    <script type="text/javascript" src="../../../js/bigfoot.min.js"></script>    
+
+    <link rel="stylesheet" type="text/css" href="../../../css/bigfoot-default.css">    
+
+</head>
+<body>
+<div class="container">
+    <span style="visibility: hidden;">
+        \(
+        \def\sc#1{\dosc#1\csod}
+        \def\dosc#1#2\csod{{\rm #1{\small #2}}}
+
+        \newcommand{\dee}{\mathrm{d}}
+        \newcommand{\Dee}{\mathrm{D}}
+        \newcommand{\In}{\mathrm{in}}
+        \newcommand{\Out}{\mathrm{out}}
+        \newcommand{\pdf}{\mathrm{pdf}}
+        \newcommand{\Cov}{\mathrm{Cov}}
+        \newcommand{\Var}{\mathrm{Var}}
+
+        \newcommand{\ve}[1]{\mathbf{#1}}
+        \newcommand{\mrm}[1]{\mathrm{#1}}
+        \newcommand{\etal}{{et~al.}}
+        \newcommand{\sphere}{\mathbb{S}^2}
+        \newcommand{\modeint}{\mathcal{M}}
+        \newcommand{\azimint}{\mathcal{N}}
+        \newcommand{\ra}{\rightarrow}
+        \newcommand{\mcal}[1]{\mathcal{#1}}
+        \newcommand{\X}{\mathcal{X}}
+        \newcommand{\Y}{\mathcal{Y}}
+        \newcommand{\Z}{\mathcal{Z}}
+        \newcommand{\x}{\mathbf{x}}
+        \newcommand{\y}{\mathbf{y}}
+        \newcommand{\z}{\mathbf{z}}
+        \newcommand{\tr}{\mathrm{tr}}
+        \newcommand{\sgn}{\mathrm{sgn}}
+        \newcommand{\diag}{\mathrm{diag}}
+        \newcommand{\Real}{\mathbb{R}}
+        \newcommand{\sseq}{\subseteq}
+        \newcommand{\ov}[1]{\overline{#1}}
+        \DeclareMathOperator*{\argmax}{arg\,max}
+        \DeclareMathOperator*{\argmin}{arg\,min}
+        \)
+    </span>
+
+    <br>
+    <h1>Projected GANs Converge Faster</h1>
+
+    <ul>
+        <li>Axel Sauer, Kashyap Chitta, Jens Müller, and Andreas Geiger. <b>Projected GANs Converge Faster.</b> NeurIPS, 2021.</li>
+
+        <li>Links: 
+            <a href="https://sites.google.com/view/projected-gan/">[Project]</a> 
+            <a href="https://github.com/autonomousvision/projected_gan">[GitHub]</a>
+            <a href="http://www.cvlibs.net/publications/Sauer2021NEURIPS.pdf">[PDF]</a>
+        </li>
+    </ul>
+
+    <h2>1 &nbsp; Introduction</h2>
+
+    <ul>
+        <li>What a GAN discriminator does is to project an input image into a low-dimensional representation. Then, it classifies whether this representation is realistic or not.</li>
+
+        <li>Up to now, we train the discriminator from scratch. Is it necessary to do so?</li>
+
+        <li>We learned from other tasks that pre-trained representations can be useful.
+        <ul>
+            <li>Transfer learning is used widely in classification tasks.</li>
+
+            <li>Perceptual losses <a href="https://arxiv.org/abs/1603.08155">[Johnson et al. 2016]</a> have become common tools in conditional image generation.</li>
+        </ul>
+        </li>    
+        
+        <li>Can we levarge some pre-trained representations to make GAN training easier by?</li>
+
+        <li>The paper says the answer is yes. Pre-trained representations can be used to make GAN training faster and more stable.</li>
+
+        <li>However, naive application of the above idea is not good enough.
+        <ul>
+            <li>STrong pre-trained representations enable the discriminator to dominate the two-player game, resulting in vanishing gradients for the generator.</li>
+        </ul>
+        </li>
+
+        <li>The paper proposes two methods to overcome the above problem.
+        <ul>
+            <li><b>Feature pyramids</b> use multiple discriminators to discriminate features at different scales.</li>
+
+            <li><b>Random projections</b> lead to better use of deeper layers for pre-trained networks.</li>
+        </ul>
+        </li>
+    </ul>
+
+    <h2>2 &nbsp; Projected GANs</h2>
+
+    <ul>
+        <li>A typical GAN is optimized to solve the following problem:
+        \begin{align*}
+            \min_G \max_D\ E_\ve{x \sim p_\ve{x}} [\log D(\ve{x})] + E_{\ve{z} \sim p_\ve{z}} [ \log (1 -D(G(\ve{z})))].
+        \end{align*}
+        </li>
+
+        <li>Let us introduce a set of projectors $\{P_l \}$, which images to the discriminator's input space. The optimization problem becomes:
+        \begin{align*}
+            \min_G \max_D\ \sum_{l} \bigg(  E_\ve{x \sim p_\ve{x}} [\log D_l(P_l(\ve{x}))] + E_{\ve{z} \sim p_\ve{z}} [ \log (1 -D_l(P_l(G(\ve{z}))))] \bigg).
+        \end{align*}
+        where $\{D_l\}$ is a set of independent discriminators.
+        </li>
+
+        <li>The projectors $\{ P_l \}$ are kept fixed. We only optimize the parameters of $G$ and $\{ D_l \}$.</li>
+
+        <li>Two criteria for the projectors.
+        <ul>
+            <li>They should be differentiable.</li>
+            <li>They should preserve important information about the image.</li>
+        </ul>
+        </li>
+    </ul>
+
+    <h2>3 &nbsp; Network Design and Training Setup</h2>
+
+    <ul>
+        <li>The paper experimented with multiple pre-trained networks.
+        <ul>
+            <li>Sevaral variants of EfficientNets pre-trained for ImageNet classification <a href="https://arxiv.org/abs/1905.11946">[Tan and Le 2019]</a>.</li>
+
+            <li>ResNets pre-trained for ImageNet classification <a href="https://arxiv.org/abs/1512.03385">[He et al. 2015]</a>. The paper uses ResNet-18 and ResNet-50.</li>
+
+            <li>R50-CLIP, which is a ResNet-50 trained to optimize the contrastive langauge-image object <a href="https://arxiv.org/abs/2103.00020">[Radford et al. 2021]</a>.</li>
+
+            <li>The ViT-Base variant of the vision transformers <a href="https://arxiv.org/abs/2010.11929">[Dosovitskiy et al. 2020]</a>.</li>
+
+            <li>DeiT-small distilled <a href="https://arxiv.org/abs/2012.12877">[Touvron et al. 2021]</a>.</li>
+        </ul>
+        </li>
+
+        <li>Given a pre-trained feature network $F$, the paper obtain feature tensors from four layers at resolutions $64 \times 64$, $32 \times 32$, $16 \times 16$ and $8 \times 8$.
+        <ul>
+            <li>These resolutions are indexed as $l=1$, $l=2$, $l=3$, and $l=4$, respectively.</li>
+
+            <li>The corresponding layers are called $L_1$, $L_2$, $L_3$ and $L_4$.</li>
+        </ul>
+        </li>
+
+        <li>The discriminators.
+        <ul>
+            <li>Each discriminator $D_l$ uses a simple convolutional architecture with spectral normalization <a href="https://arxiv.org/abs/1802.05957">[Miyato et al. 2018]</a> at each convolutional layer.</li>
+
+            <li>Empirically, it is best for all discriminators to output logits at the $4 \times 4$ resolution.</li>
+
+            <li>The logits are summed before being passed to the $\log$ function.</li>
+
+            <li>In the generator pass, the losses from all discriminators are summed together.</li>
+        </ul>
+        </li>
+
+        <li>The authors observed that the discriminator could focus on a subset of the feature space while disregarding for other parts. This problem becomes more severe in deeper layers where the features are more semantic.</li>
+
+        <li>They propose two strategies to dilute more prominent features to encourage the discriminator to use all information equally. These strategies use fixed <b>random projections</b> to mix features.
+        <ul>
+            <li><b>Cross-Channel Mixing (CCM).</b>
+            <ul>
+                <li>The paper applies a once, randomly initialized $1 \times 1$ convolution to the features that are to be fed to the discriminator <a href="https://arxiv.org/abs/1502.01852">[He et al. 2015]</a>.</li>
+
+                <li>The weights of this convolution layer is initialized with the He initialization.</li>
+            </ul>
+            </li>
+
+            <li><b>Cross-Scale Mising (CSM).</b>
+            <ul>
+                <li>The results of CCM are then subjected to random $3 \times 3$ convolutions (with padding of 1 to preserve spatial size).
+                <ul>
+                    <li>The weights of the convoultion layers are initialize with the He initialization.</li>
+                </ul>
+                </li>
+
+                <li>Features at lower resolution are then bilinearly upsampled and then added to features at the higher resolution, forming a U-Net-like chain.
+                <p align="center">
+                    <a href="cross-scale-mixing.png"><img src="cross-scale-mixing.png" width="240"></a>
+                </p>
+                </li>
+            </ul>
+            </li>            
+        </ul>
+        </li>
+        
+        <li>For the generator, the paper uses the FastGAN architecture <a href="https://arxiv.org/abs/2101.04775">[Liu et al. 2021]</a>.</li>
+
+        <li>The GANs are trained with the hinge loss <a href="https://arxiv.org/abs/1705.02894">[Lim and Ye 2017]</a> with batch size of 64 until 1 million images are shown to the discriminator.</li>
+
+        <li>Data augmentation techniques were used, and the paper found that they consistently improved performance.
+        <ul>
+            <li>The authors found that DiffAugment worked the FastGAN architecture.</li>
+        </ul>
+        </li>
+    </ul>
+
+    <h2>4 &nbsp; Summary of Results</h2>
+
+    <ul>
+        <li>When there are no random projections:
+        <ul>
+            <li>Using $L_1$ and $L_2$ together are better than using $L_1$ alone.</li>
+            
+            <li>However, adding $L_3$ and $L_4$ degrades performance.
+            <ul>
+                <li>Maybe more sematic features do not respond well to adversarial losses.</li>
+            </ul>
+            </li>
+
+            <li>Omitting shallow features also decreases performance.
+            <ul>
+                <li>This is to be expected because these layers contain the most information about the original image.</li>
+            </ul>
+            </li>            
+        </ul>
+        </li>
+
+        <li>CCM moderately improves performance across all settings.</li>
+
+        <li>Adding CSM improves performance in all settings. Moreover, settings that use more discriminators also perform better than those that use fewer discriminators.</li>
+
+        <li>EfficientNets-Lite models, which are the smallest, yielded the best FID scores.
+        <ul>
+            <li>Compact representation is faster and more beneficial to performance.</li>
+        </ul>
+        </li>
+
+        <li>The paper's technique improves FastGAN's training speed and final FID score significantly. However, less improvement can be observed for StyleGAN2.
+        <ul>
+            <li>FastGAN with projection reaches StyleGAN2's FID score after 3 hours instead of 5 days.</li>
+        </ul>
+        </li>
+
+        <li>The paper claims that projected GANs outperforms state-of-the-art models by a large margin in terms of FID scores on a number of large datasets (FFHQ, LSUN-Bedroom, and CityScapes) and small datasets (WikiArt, Oxfor Flowers, Flickr landscape photographs, AnimalFace-Dog, and Pokemon).</li>
+
+        <li>Artifacts.
+        <ul>
+            <li>For the AFHQ (animal face) dataset, projected GAN sometimes produce animal heads floating on the background.
+            <ul>
+                <li>This might be due to the fact that the feature networks were trained for classification, so they can ignore background if the foreground object is already depicted.</li>                
+            </ul>
+            </li>
+
+            <li>For the FFHQ dataset, projected GAN sometimes produce poor-quality images.</li>
+        </ul>
+        </li>
+    </ul>
+
+    <p>
+    <hr>
+    <div class="page-header"></div>
+    <p>Last modified: 2021/12/06</p>    
+</div>
+
+<script type="text/javascript">
+$.bigfoot();
+</script>
+
+</body>
+</html>

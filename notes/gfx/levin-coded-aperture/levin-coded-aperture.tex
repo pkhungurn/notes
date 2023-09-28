@@ -1,0 +1,346 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{epstopdf}
+\usepackage{enumerate}
+\usepackage{verse}
+
+\newtheorem{lemma}{Lemma}[section]
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\likelihood}{\mathcal{L}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\new}{\mathrm{new}}
+\DeclareMathOperator*{\argmin}{\arg\!\min}
+\DeclareMathOperator*{\argmax}{\arg\!\max}
+
+\title{Image and Depth\\ from a Conventional Camera with a Coded Aperture}
+\author{Pramook Khungurn}
+
+\begin{document}
+	\maketitle	
+	
+	This is an ``untangled'' version of ``Image and Depth from a Conventional Camera with a Coded Aperture'' by Leven \etal \cite{Levin:2007}. In this note, I try to explain some concepts that are new to myself at the time of reading.
+	
+\section{Statistical Model of Images}\label{sec:statistical_model_of_images} % (fold)
+
+\begin{itemize}
+  \item The paper thinks of an image as an array of real numbers. Of course, the array is 2D, but it's easier to think of it as a 1D vector $x = (x[1,1], x[1,2], \dotsc, x[p,q])^T \in \mathbb{R}^{pq}$.
+  
+  \item Citing a psychology paper from Cornell \cite{Olshausen1996}, the paper claims that natural images have sparse derivative distribution. However, to make computation tractable, they assume that the derivative has Gaussian distribution.
+  
+  That is, the property we observe a particular pixel to be a particular value is given by:
+  \begin{align*}
+    \Pr(x[i,j]) \propto \exp\bigg(-\frac{1}{2}\big( \alpha (x[i,j] - x[i+1,j])^2 + (x[i,j] - x[i,j+1])^2 \big) \bigg),
+  \end{align*}
+  where $\alpha$ is set to the variance of distribution that matches the variance of derivatives of natural images. (The paper sets $\alpha = 250$.)
+  
+  Therefore, the probability we observe the whole image is given by:
+  \begin{align*}
+    \Pr(x) = \prod_{i,j} \Pr(x[i,j]) = \prod_{i,j} \exp\bigg(-\frac{1}{2}\big( \alpha (x[i,j] - x[i+1,j])^2 + (x[i,j] - x[i,j+1])^2 \big) \bigg)
+  \end{align*}
+  
+  \item Let $g_x$ be vector corresponding to the filter that computes the derivative along $x$-direction. That is,
+  \begin{align*}
+    g_x[i,j] = \begin{cases}
+      1, & \mbox{if } i = j = 0\\
+      -1, & \mbox{if } i = 1 \mbox{ and } j = 0.\\
+    \end{cases}    
+  \end{align*}
+  Let $C_{g_x}$ be the $pq \times pq$ matrix of the convolution with $g_x$. That is,
+  \begin{align*}
+    C_{g_x}[(i,j), (i',j')] = \begin{cases}
+      1, & \mbox{if }(i,j) = (i',j')\\
+      -1, & \mbox{if }(i+1,j) = (i',j')\\
+      0, & \mbox{otherwise}.
+    \end{cases}
+  \end{align*}
+  We also define $g_y$ and $C_{g_y}$ in a similar manner for derivative along the $y$ direction.
+  
+  \item Now, we have that
+  \begin{align*}
+    \Pr(x) 
+    &\propto \prod_{i,j} \exp\bigg(-\frac{1}{2}\big( \alpha (x_{i,j} - x_{i+1,j})^2 + (x_{i,j} - x_{i,j+1})^2 \big) \bigg)\\
+    &= \exp\bigg(-\frac{\alpha}{2}\sum_{i,j} \big(  (x_{i,j} - x_{i+1,j})^2 + (x_{i,j} - x_{i,j+1})^2 \big) \bigg)\\
+    &= \exp\bigg(-\frac{\alpha}{2}\Big( \sum_{i,j} (x_{i,j} - x_{i+1,j})^2 + \sum_{i,j} (x_{i,j} - x_{i,j+1})^2 \big) \Big) \bigg)\\
+    &= \exp\bigg(-\frac{\alpha}{2}\Big( x^* C_{g_x}^* C_{g_x} x + x^* C_{g_y}^* C_{g_y} x \big) \Big) \bigg)\\
+    &= \exp\bigg(-\frac{1}{2}\Big( x^* (\alpha  (C_{g_x}^* C_{g_x} + C_{g_y}^* C_{g_y}) ) x \big) \Big) \bigg)\\
+    &= \exp\bigg(-\frac{1}{2} x^* \Psi^{-1} x \bigg)
+  \end{align*}
+  where $\Psi^{-1} = \alpha  (C_{g_x}^* C_{g_x} + C_{g_y}^* C_{g_y}).$ That is, $\Pr(x) \propto N(\ve{0}, \Psi)$ where $N$ is the anisotropic Gaussian distribution.
+  
+  \item We now would like to describe the probability distribution of the Fourier transform $X = \mathcal{F} x.$ Note that $X$ is still an $pq$-vector. However, the elements of $X$ are denoted by $(\nu,\omega)$ instead of $(i,j)$. Note also that we write $\mathcal{F}x$ instead of the standard notation $\mathcal{F}\{ x \}$. This is because the Fourier transform is a linear transformation and thus can be represent by a matrix. So, $\mathcal{F}$ is an $pq \times pq$ matrix in this case.
+  
+  \item Using this notation, we can state the Fourier convolution theorem in another way. Let $g$ be a convolution filter, and let $C_g$ be its corresponding matrix. Then, we have that
+  \begin{align*}
+    \mathcal{F} C_g = \diag(G) \mathcal{F}
+  \end{align*}
+  for $G = \mathcal{F}g$. In other words, $C_g = \mathcal{F}^{-1} \diag(G) \mathcal{F}$, which says that $C_g$ has an eigen decomposition. (This is not a surprise because $C_g$ is Toeplitz, and Toeplitz matrices have Fourier vectors as eigenvalues.)
+  
+  \item Because $C_{g_x}$ represents a convolution, we have that $\mathcal{F} C_{g_x} x = \diag(G_x) X$ where $G_x$ is the Fourier transform of $g_x$. We can also define $G_y$ in an analogous manner.
+  
+  \item Let $c$ be the constaint such $\mathcal{F}^* \mathcal{F} = cI.$ The probability distribution of the Fourier transform is given by:
+  \begin{align*}
+    \Pr(X) = \Pr(x) 
+    &\propto \exp\bigg( -\frac{\alpha}{2} x^* (C_{g_x}^* C_{g_x} + C_{g_y}^* C_{g_y})x \bigg)
+    = \exp\bigg( -\frac{\alpha}{2 c} x^* (C_{g_x}^*(cI)C_{g_x} + C_{g_y}^* (cI) C_{g_y})x \bigg)\\
+    &= \exp\bigg( -\frac{\alpha}{2 c} x^* (C_{g_x}^* \mathcal{F}^* \mathcal{F} C_{g_x} + C_{g_y}^* \mathcal{F}^* \mathcal{F} C_{g_y})x \bigg)\\
+    &= \exp\bigg( -\frac{\alpha}{2 c} x^* (\mathcal{F}^*\diag(G_x)^* \diag(G_x) \mathcal{F} + \mathcal{F}^* \diag(G_y)^* \diag(G_y) \mathcal{F}) x \bigg)\\
+    &= \exp\bigg( -\frac{\alpha}{2 c} x^* \mathcal{F}^* (\diag(G_x)^* \diag(G_x) + \diag(G_y)^* \diag(G_y) ) \mathcal{F} x \bigg)\\
+    &= \exp\bigg( -\frac{\alpha}{2 c} X^* (\diag(G_x)^* \diag(G_x) + \diag(G_y)^* \diag(G_y)) X \bigg)\\
+    &= \exp\bigg( -\frac{1}{2} X^* \bar{\Psi}^{-1} X \bigg)
+  \end{align*}
+  where $\bar{\Psi}^{-1} = \frac{\alpha}{c} (\diag(G_x)^* \diag(G_x) + \diag(G_y)^* \diag(G_y)).$ So, the Fourier transform has a Gaussian distribution as well.
+  
+  Also, from the above derivation, notice that $x^* \Psi^{-1} x = X^* \bar{\Psi}^{-1} X = x^* \mathcal{F}^* \bar{\Psi}^{-1} \mathcal{F}  x $. In other words, 
+  \begin{align*}
+    \Psi^{-1} &= \mathcal{F}^* \bar{\Psi}^{-1} \mathcal{F}\\
+    \mathcal{F}^{-*} \Psi^{-1} \mathcal{F}^{-1} &= \bar{\Psi}^{-1}\\  
+    \mathcal{F} \Psi \mathcal{F}^* &= \bar{\Psi}.
+  \end{align*}
+    
+  \item Suppose we have a blurred kernel $f_k$. We will observe the signal $$y = f_k * x + n = C_{f_k} x + n$$ where $n$ is a noise with Gaussian distribution $n \sim N(\ve{0}, \eta^2 I ).$ The noise is assumed to be independent of the other part of the signal.
+  
+  \item Since $C_{f_k} x$ is a linear transformation of $x$ and $x$ has Gaussian distribution $N(\ve{0}, \Psi)$. We have that $Pr(C_{f_k} x) \sim N(\ve{0}, C_{f_k} \Psi C_{f_k}^*).$ (This is a theorem?)
+  
+  Now, $y = C_{f_k} x + n$. Since $n$ is indenpent from $C_{f_k} x$, we have that $\Pr(y) \sim N(\ve{0}, C_{f_k} \Psi C_{f_k}^* + \eta^2 I ).$ We let $\Sigma_k = C_{f_k} \Psi C_{f_k}^* + \eta^2 I$.
+  
+  \item Let $Y = \mathcal{F}y$. We have that
+  \begin{align*}
+    \Pr(Y) = \Pr(y)
+    &\propto \exp\bigg( -\frac{1}{2} y^* (C_{f_k} \Psi C_{f_k}^* + \eta^2 I )^{-1} y \bigg)\\
+    &= \exp\bigg( -\frac{1}{2} y^* \mathcal{F}^* \mathcal{F}^{-*} (C_{f_k} \Psi C_{f_k}^* + \eta^2 I )^{-1} \mathcal{F}^{-1} \mathcal{F}y \bigg)\\ 
+    &= \exp\bigg( -\frac{1}{2} Y^* ( \mathcal{F} ( C_{f_k} \Psi C_{f_k}^* + \eta^2 I) \mathcal{F}^* )^{-1}  Y \bigg) \\    
+    &= \exp\bigg( -\frac{1}{2} Y^* ( \mathcal{F} C_{f_k} \Psi C_{f_k}^* \mathcal{F}^* + \eta^2 \mathcal{F} \mathcal{F}^* I )^{-1}  Y \bigg) \\    
+    &= \exp\bigg( -\frac{1}{2} Y^* ( \mathcal{F} C_{f_k} \Psi C_{f_k}^* \mathcal{F}^* + \eta^2 \mathcal{F} \mathcal{F}^* I )^{-1}  Y \bigg)\\
+    &= \exp\bigg( -\frac{1}{2} Y^* ( \diag(F_k) \mathcal{F} \Psi \mathcal{F}^* \diag(F_k)^* + c \eta^2 I )^{-1}  Y \bigg)\\
+    &= \exp\bigg( -\frac{1}{2} Y^* ( \diag(F_k) \bar{\Psi} \diag(F_k)^* + c \eta^2 I )^{-1}  Y \bigg).
+  \end{align*}
+  So, $Y \sim N(\ve{0}, \diag(F_k) \bar{\Psi} \diag(F_k)^* + c \eta^2 I)$. Let $\bar{\Sigma}_k = \diag(F_k) \bar{\Psi} \diag(F_k)^* + c \eta^2 I.$
+  
+  \item Note that, because $\bar{\Psi}$ is diagonal, we have that $\bar{\Sigma}_k$ is diagonal as well. Because $$\bar{\Psi}^{-1} = \frac{\alpha}{c} (\diag(G_x)^* \diag(G_x) + \diag(G_y)^* \diag(G_y)),$$
+  we have that
+  \begin{align*}
+    \bar{\Psi}^{-1}[(\nu,\omega), (\nu,\omega)] = \frac{\alpha}{c}( | G_x[\nu,\omega] |^2 + | G_y[\nu, \omega] |^2).
+  \end{align*}
+  So, 
+  \begin{align*}
+    \bar{\Psi}[(\nu,\omega), (\nu,\omega)] = \frac{c}{\alpha| G_x[\nu,\omega] |^2 + \alpha | G_y[\nu, \omega] |^2 },
+  \end{align*}
+  and
+  \begin{align*}
+    \bar{\Sigma}_k[(\nu,\omega), (\nu,\omega)]
+    &= \frac{c |F_k[\nu, \omega]|^2 }{\alpha| G_x[\nu,\omega] |^2 + \alpha | G_y[\nu, \omega] |^2 } + c\eta^2.
+  \end{align*}
+  For brevity, we let $\sigma_k[\nu, \omega]$ denote $\bar{\Sigma}_k[(\nu,\omega), (\nu,\omega)]$.
+  
+  \item Using the notation above, we have that
+  \begin{align*}
+    \Pr(Y) 
+    &= \exp\bigg(-\frac{1}{2} Y^* \bar{\Sigma}_k^{-1} Y \bigg)
+    = \exp\bigg( -\frac{1}{2} \sum_{\nu,\omega} \frac{| Y[\nu, \omega] |^2}{\sigma_k[\nu, \omega] } \bigg)
+  \end{align*}
+  For brevity, let $P_k(Y)$ denote the above distribution for a specific filter $f_k$.
+\end{itemize}
+
+% section section_name (end)
+
+\section{Filter Design}\label{sec:filter_design} % (fold)
+
+\begin{itemize}
+  \item Suppose we have a collection of filter $f_{k_1}, f_{k_2}, \dotsc, f_{k_\ell}$. In the paper, these filters correspond to the impulse responses of the aperture taken at different distances from the target. In other words, they are scaled versions of one another. We would like these filters to be as different as possible.
+  
+  \item Given two filters $f_{k_i}$ and $f_{k_j}$, we measure how different they are by the \emph{Kullback-Leibler divergence} of their corresponding probability distributions:
+  \begin{align*}
+    D_{KL}(P_{k_i}, P_{k_j}) = \int_{Y} P_{k_i}(Y)(\log P_{k_i}(Y) - \log P_{k_j}(Y) )\ \dee Y.
+  \end{align*}
+  According to the last section, $P_{k_i}$ and $P_{k_j}$ are anisotropic Gaussian distributions. Wikipedia says that the KL divergence of such distributions are:
+  \begin{align*}
+    D_{KL}(P_{k_i}, P_{k_j}) = \frac{1}{2}\bigg( \tr(\bar{\Sigma}^{-1}_{k_j} \bar{\Sigma}_{k_i} ) + (\mu_{k_j} - \mu_{k_i})^* \bar{\Sigma}_{k_j}^{-1} (\mu_{k_j} - \mu_{k_j}) - \ln \bigg( \frac{\det \bar{\Sigma}_{k_i} }{\det \bar{\Sigma}_{k_j}} \bigg) - pq \bigg).
+  \end{align*}
+  where $\mu_{k_i}$ and $\mu_{k_j}$ are the mean of $P_{k_i}$ and $P_{k_j}$, respectively. Because the means are zero,
+  \begin{align*}
+    D_{KL}(P_{k_i}, P_{k_j}) 
+    &= \frac{1}{2}\bigg( \tr(\bar{\Sigma}^{-1}_{k_j}\bar{\Sigma}_{k_i} ) - \ln \bigg( \frac{\det \bar{\Sigma}_{k_i} }{\det \bar{\Sigma}_{k_j}} \bigg) - pq \bigg)\\
+    &= \frac{1}{2} \bigg( \sum_{\nu, \omega} \frac{\sigma_{k_i}[\nu, \sigma]}{\sigma_{k_j}[\nu, \sigma]} - \sum_{\nu,\omega} \ln \bigg( \frac{\sigma_{k_i}[\nu, \sigma]}{\sigma_{k_j}[\nu, \sigma]} \bigg) -pq \bigg).
+  \end{align*}
+  
+  \item We define how different the filters are by taking the minimum of the KL divergences of all $f_{k_i}$ and $f_{k_j}$ pairs.
+  
+  \item The paper searches over binary patterns on $13 \times 13$ grid that can be cut out of papers without having a floating piece. They randomly generate the patters and keep the one with the lowest KL score.
+  
+\end{itemize}
+
+% section section_name (end)
+
+\section{Deblurring}\label{sec:deblurring} % (fold)
+
+\subsection{Deblurring with Maximum Likelihood Estimation}
+
+\begin{itemize}
+  \item For a fix filter $f_k$, we have that
+  \begin{align*}
+    \Pr(x | y) &\propto \Pr(x) \Pr(y|x) = \Pr(x) \Pr(n = y -C_{f_k}x)\\
+    &= \exp\bigg(-\frac{1}{2} x^* (\alpha C_{g_x}^* C_{g_x} + \alpha C_{g_y}^* C_{g_y} ) x\bigg) \exp \bigg( -\frac{1}{2} \frac{\| C_{f_k} x - y \|^2}{\eta^2} \bigg)\\
+    &= \exp\bigg(-\frac{1}{2}\bigg( \frac{\| C_{f_k} x - y \|^2}{\eta^2} + \alpha \| C_{g_x} x \|^2 + \alpha \| C_{g_y} x \|^2 \bigg) \bigg).
+  \end{align*}
+  
+  \item We find $x$ that maximize the above probability. That is, we we would like to find $\tilde{x}$ such that
+  \begin{align*}
+    \tilde{x} = \argmin_{x} \bigg( \frac{\| C_{f_k} x - y \|^2}{\eta^2} + \alpha \| C_{g_x} x \|^2 + \alpha \| C_{g_y} x \|^2 \bigg).
+  \end{align*}
+  That is, we would like to find $x$ that minimizes the reconstruction error $\| C_{f_k} x - y \|^2$ with the constraint that the derivative of $x$ should be small. (That is, $x$ is smooth).
+  
+  To minimize the above equation, we find the derivative with respect to $x$.
+  \begin{align*}
+    &\frac{\partial}{\partial x} \bigg( \frac{\| C_{f_k} x - y \|^2}{\eta^2} + \alpha \| C_{g_x} x \|^2 + \alpha \| C_{g_y} x \|^2 \bigg)\\
+    &= \frac{\partial}{\partial x} \bigg( \frac{\| C_{f_k} x - y \|^2}{\eta^2}\bigg)  + \frac{\partial}{\partial x} \bigg( \alpha \| C_{g_x} x \|^2 \bigg)   + \frac{\partial}{\partial x} \bigg( \alpha \| C_{g_y} x \|^2 \bigg)\\
+    &= \frac{1}{\eta^2} \frac{\partial}{\partial x} ((C_{f_k}x - y)^T (C_{f_k}x - y) ) + \alpha \frac{\partial}{\partial x} (x^T C_{g_x}^T C_{g_x}x) + \alpha \frac{\partial}{\partial x} (x^T C_{g_y}^T C_{g_y}x)\\
+    &= \frac{1}{\eta^2} \frac{\partial}{\partial x} ( x^T C_{f_k}^T C_{f_k}x - 2 y^T C_{f_k} x + y^T y ) + \alpha \frac{\partial}{\partial x} (x^T C_{g_x}^T C_{g_x}x) + \alpha \frac{\partial}{\partial x} (x^T C_{g_y}^T C_{g_y}x)\\    
+    &= \frac{1}{\eta^2} \frac{\partial}{\partial x} ( x^T C_{f_k}^T C_{f_k}x) - \frac{2}{\eta^2} \frac{\partial}{\partial x} ( y^T C_{f_k} x) + \alpha \frac{\partial}{\partial x} (x^T C_{g_x}^T C_{g_x}x) + \alpha \frac{\partial}{\partial x} (x^T C_{g_y}^T C_{g_y}x).
+  \end{align*}
+  Using the properties that $\partial(a^T x) /\partial{x} = a$ and  $\partial(x^T A x)/\partial x = (A + A^T) x$, we have that
+  \begin{align*}
+    &\frac{\partial}{\partial x} \bigg( \frac{\| C_{f_k} x - y \|^2}{\eta^2} + \alpha \| C_{g_x} x \|^2 + \alpha \| C_{g_y} x \|^2 \bigg)\\
+    &= \frac{2}{\eta^2} C_{f_k}^T C_{f_k}x - \frac{2}{\eta^2} C_{f_k}^T y + 2\alpha  C_{g_x}^T C_{g_x}x + 2\alpha C_{g_y}^T C_{g_y}x.
+  \end{align*}
+  Setting the above to 0, we have
+  \begin{align*}
+  \frac{2}{\eta^2} C_{f_k}^T C_{f_k}x - \frac{2}{\eta^2} C_{f_k}^T y + 2\alpha  C_{g_x}^T C_{g_x}x + 2\alpha C_{g_y}^T C_{g_y}x &= 0\\  
+  \frac{2}{\eta^2} C_{f_k}^T C_{f_k}x  + 2\alpha  C_{g_x}^T C_{g_x}x + 2\alpha C_{g_y}^T C_{g_y}x &= \frac{2}{\eta^2} C_{f_k}^T y\\
+  \bigg( \frac{1}{\eta^2} C_{f_k}^T C_{f_k}  + \alpha  C_{g_x}^T C_{g_x} + \alpha C_{g_y}^T C_{g_y} \bigg)x &= \frac{1}{\eta^2} C_{f_k}^T y.
+  \end{align*}
+  So, we have to solve the linear system $Ax = b$ with
+  \begin{align*}
+    A &= \frac{1}{\eta^2} C_{f_k}^T C_{f_k}  + \alpha  C_{g_x}^T C_{g_x} + \alpha C_{g_y}^T C_{g_y} \mbox{, and }\\
+    b &=\frac{1}{\eta^2} C_{f_k}^T y.
+  \end{align*}
+  
+  \item Using this approaches introduces some artifacts along the edges, but this is not a concern in large image.
+  
+  \item However, the real drawback is that the extimated images tend to be overly smooth.
+  
+\end{itemize}
+
+% section section_name (end)
+
+\subsection{Deblurring by Non-Linear Optimization}
+
+\begin{itemize}
+  \item To produce sharper results, the paper changes the objective function to:
+  \begin{align*}
+    \| C_{f_k} x - y \| + \sum_{i,j} \Big( \rho(x[i,j] - x[i+1,j]) + \rho(x[i,j] - x[i,j+1]) \Big)
+  \end{align*}
+  where the paper uses $\rho(z) = |z|^{0.8}.$ This function is more heavy-tailed than $|z|^2$ when thinking about it in terms of $e^{-\rho(x)}.$
+  
+  Minimizing the above function still minimizes the reconstruction error. However, it encourages the derivatives to be more different, and thus results in sharper images.
+  
+  \item However, optimizing the above function is more complicated. The paper claims that this can be solved using the iterative reweighting least square (IRLS) process published in a subsequent paper \cite{levin-weiss}. (It's unclear to me how the above problem was turned into a problem where IRLS can be applied.)
+\end{itemize}
+
+\subsection{Identifying the Correct Scale}
+
+\begin{itemize}
+  \item Let us assume that the whole picture's subject is a single depth. We can identify the scale corresponding to that depth by maximum likelhood estimation again:
+  \begin{align*}
+    \tilde{k} = \argmax_k P_k(y).
+  \end{align*}
+  However, this is unreliable because of issues such as high-frequency noise in the image.
+  
+  \item Instead the paper tries to minimize the energy term $E_k(y) = y^* \Sigma_k^{-1} y$, which is the exponent of $P_k(y)$. Also, each scale's energy is scaled by the scale-specific constant $\lambda_k$, which was learned from trianing images to minimize error. That is,
+  \begin{align*}
+    \tilde{k} = \argmax_k \lambda_k E_k(y).
+  \end{align*}
+  
+  \item Because $y^* \Sigma_k^{-1} y$ takes a long time, the paper approximates it by
+  \begin{align*}
+    y^*\Sigma_k^{-1} y \approx \frac{1}{\eta^2} \| C_{f_k}\tilde{x} - y \|^2 
+  \end{align*}
+  where $\tilde{x}$ is the deblurred image obtained from optimization.
+\end{itemize}
+
+\section{Depth Determination}\label{sec:depth_determination} % (fold)
+
+\begin{itemize}
+  \item Let there be $K$ discrete depths $k_1, k_2, \dots, k_K.$ 
+  
+  \item The paper starts by computing the deblurred images $x_{k_1}, \dotsc, x_{k_K}$ using each filter separately.
+  
+  \item Then, it computes the reconstruction error $e_{k} = y - f_{k} * x_{k}$ for each depth $k$.
+  
+  \item For each pixel $(i,j)$, we approximate the error of using depth $k$ in the neigborhood local to $(i,j)$ by
+  \begin{align*}
+    \hat{E}_{k}[i,j] = \sum_{-s \leq \Delta i, \Delta j \leq s} (e_k[i+\Delta i, j+\Delta j])^2.
+  \end{align*}
+  
+  \item The depth for pixel $(i,j)$ is then the depth that minimizes the energy times the learnt constant in the last section:
+  \begin{align*}
+    d[i,j] = \argmin_{k} \lambda_k \hat{E}_k[i,j].
+  \end{align*}
+  
+  \item The deblurred image is reconstructed as:
+  \begin{align*}
+    x[i,j] = x_{d[i,j]}[i,j].
+  \end{align*}
+  
+  \item The depth estimate is often neither continuous nor smooth. For example, in the area where there's not much texture, any depth's filter will result in low reconstruction error.
+  
+  \item Instead, we seek a depth map that will be useful in applications such as refocusing after the fact and object extraction. This depth map must be (1) smooth in the area where the image is smooth, and (2) its discontinuities are aligned with image edges.
+  
+  \item The paper then casts this problem as an energy minimization in a Markov random field over the image. It seeks to find depht label $\bar{d}$ over the image that minimize the energy function:
+  \begin{align*}
+    E(\bar{d}) = \sum_{i,j} E_1(\bar{d}[i,j]) - \lambda \sum_{i,j,i',j'} E_2(\bar{d}[i,j], \bar{d}[i',j'])
+  \end{align*}
+  where
+  \begin{align*}
+    E_1(\bar{d}[i,j]) = \begin{cases}
+      0, & \mbox{if } \bar{d}[i,j] = d[i,j]\\
+      1, & \mbox{if } \bar{d}[i,j] \neq d[i,j],\\
+    \end{cases}
+  \end{align*}
+  and
+  \begin{align*}
+    E_2(\bar{d}[i,j], \bar{d}[i',j']) = \begin{cases}
+      0, & \mbox{if } \bar{d}[i,j] = \bar{d}[i',j']\\
+      \exp(-(y[i,j] - y[i',j'])^2/\sigma^2), & \mbox{if } \bar{d}[i,j] \neq \bar{d}[i',j'].\\
+    \end{cases}
+  \end{align*}
+  This function is minimized using Boykov--Veksler--Zabih graph cuts algorithm \cite{Boykov:2001}.
+  
+  \item Sometimes, the depth labeling mises the exact layer boundaries due to insufficient image contrast. The paper incorporate user's brush stroke of required depth as additional input. The stroke is treated as hard constraint in the algorithm, and helps detect the right depth boundaries.
+  
+\end{itemize}
+% section section_name (end)
+  
+\bibliographystyle{plain}
+\bibliography{levin-coded-aperture}	
+
+\end{document}

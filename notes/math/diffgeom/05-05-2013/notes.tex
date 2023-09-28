@@ -1,0 +1,296 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{epstopdf}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+
+\newtheorem{lemma}{Lemma}[section]
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\Dee}{\mathrm{D}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\likelihood}{\mathcal{L}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\new}{\mathrm{new}}
+\newcommand{\Arg}{\mathrm{Arg\,}}
+\newcommand{\Log}{\mathrm{Log\,}}
+\newcommand{\RE}{\mathrm{Re\,}}
+\newcommand{\IM}{\mathrm{Im\,}}
+\newcommand{\Res}{\mathrm{Res}}
+\newcommand{\pv}{\mathrm{p.v.}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+\newcommand{\II}{\mathrm{II}}
+\DeclareMathOperator{\Bd}{Bd}
+
+\title{Differential Geometry Notes of 05/05/2013}
+\author{Pramook Khungurn}
+
+\begin{document}
+  \maketitle
+
+  \section{Complete Surfaces}
+  \begin{itemize}
+    \item We will concern ourselves with regular and connected surfaces, except when otherwise stated.
+
+    \item \begin{definition}
+      A regular (connected) surface $S$ is said to be {\bf extendable} if there exists a regular (connected) surface $\bar S$ such that $S \subset \bar S$ as a proper subset. If there exists no such $\bar S$, we say $S$ is {\bf nonextendable}.
+    \end{definition}
+
+    \item \begin{definition}
+      A regular surface $S$ is said to be {\bf complete} when, for every point $p \in S$, any parametermized geodesic $\gamma: [0,\epsilon) \ra S$, starting from $p = \gamma(0)$, may be extended into a parametermized geodesic $\bar \gamma: \Real \ra S$, defined on the entire line $\Real$.
+    \end{definition}
+
+    \item Every complete surface is nonextendable.\\
+    However, there exist nonextendable surfaces which are not complete.\\
+    Every closed surface in $\Real^3$ is complete.
+
+    So, nonextendable is weaker than complete, and complete is weaker than compact.
+
+    \item Examples
+    \begin{itemize}
+      \item The plane is a complete surface.
+
+      \item The cone minus the vertex is not a complete surface. Extending the generator (which is a geodesic) sufficiently will reach the vertex, which does not belong to the surface.
+
+      \item A sphere is a complete surface, since its parametermized geodesic may be defined for every real value.
+
+      \item The cylinder is a complete surface. Its geodesics are circles, lines, and helices, which are defined for all real values.  
+
+      \item The surface $S - \{ p \}$ obtained by removing a point $\{ p \}$ for a complete surface is not complete. By taking a point $q$ near $p$, there exists a parametermized geodesic of $S - \{ p \}$ that starts from $q$ that cannot be extended through $p$.
+    \end{itemize}
+
+    \item \begin{proposition}
+      A complete surface $S$ is nonextendable.
+    \end{proposition}
+
+    \begin{proof}
+      By way of contradiction, let us assume that $S$ is extendable. Since $S$ is extendable, there is a regular (connected) surface $\bar S$ with $S \subset \bar S$. Since $S$ is a regular surface, $S$ is open in $\bar S$. (For every point $p \in S$, there exists an open coordinate neighborhood in $S \subset \bar S$.) The boundary $\Bd S$ of $S$ in $\bar S$ is nonempty; otherwise, $\bar S = S \cup (\bar S - S)$ would be the union of two disjoint sets $S$ and $\bar S - S$, which contradicts the connectedness of $\bar S$. Therefore, there exists a point $p \in \Bd S$, and since $S$ is open in $\bar S$, $p \not\in S$.
+
+      Let $\bar V \sseq \bar S$ be a neighborhood of $p$ in $\bar S$ such that every $q \in \bar V$ may be joined to $p$ by a unique geodesic of $\bar S$. (The normal neighborhood is such a neighborhood.) Since $p \in \Bd S$, some $q_0 \in V$ belongs to $S$. Let $\bar \gamma : [0,1] \ra \bar S$ be a geodesic of $\bar S$, with $\bar\gamma(0) = p$ and $\bar\gamma(1) = q_0$. It is clear that $\alpha:[0, \epsilon] \ra \bar S$, given by $\alpha(t) = \bar\gamma(1-t),$ is a geodesic of $S$, with $\alpha(0) = q_0$, the extension of which to the line $\Real$ would pass through $p$ for $t = 1$. Since $p \not\in S$, the geodesic cannot be extended. Contradiction.
+    \end{proof}
+
+    \item The one-sheeted cone $S = \{ (x,y,z) \in \Real^3 : z = \sqrt{x^2 + y^2} \}$ is not a complete surface.
+
+    We will argue that it is also nonextendable. By way of contradiction, assume that there exists a regular (connected) surface $\bar S$ with $S \subset \bar S$. We will show that the boundary of $S$ in $\bar S$ reduces to the vertex $p_0$, and there exists a neighborhood $\bar W$ of $p_0$ in $\bar S$ such that $\bar W - \{ p_0 \} \sseq S$. However, this contradicts the fact that cone (vertex $p_0$) included is not a regular surface.
+
+    First, we observe that the only geodesic of $S$, starting from a point $p \in S$ that cannot be extended for every value of the parameter is the meridian that passes through $p$. This may be seen by using Clairau's relation.
+
+    Let $p \in \Bd S$. We know that $p \neq S$ because $S$ is open in $\bar S$. Let $\bar V$ be a neighborhood of $p$ in $\bar S$ such that every point $\bar V$ may be joined to $p$ by a unique geodesic of $\bar S$ in $\bar V$. Since $p \in \Bd S$, there exist $q \in\bar V \cap S$. Let $\bar \gamma$ be a geodesic of $\bar S$ joining $p$ and $q$. Because $S$ is open in $\bar S$, $\bar \gamma$ agrees with a geodesic $\gamma$ of $S$ in a neighborhood of $q$. Let $p_0$ be the first point of $\bar \gamma$ that does not belong to $S$. By the initial observation, $\bar \gamma$ is a meridian and $p_0$ is a vertex of $S$. Furthermore, $p_0 = p$; otherwise, there would exist a neighborhood of $p$ that does not contain $p_0$. By repeating the argument for the neighborhood, we obtain a vertex diffferent from $p_0$, which is a contradiction. It follows that $\Bd S$ reduces to the vertex $p_0$.
+
+    Let $\bar W$ be a neighborhood of $p_0$ in $\bar S$ such that any two points of $\bar W$ may be joined by a geodesic of $\bar S$. We shall prove that $\bar W - \{ p_0 \} \sseq S$. In fact, the points of $\gamma$ belong to $S$. On the other hand, a point $r \in \bar W$ such does not belong to $\gamma$ or to its extension may be joined to a point $t$ of $\gamma$, $t \neq p_0$, $t \sseq \bar W$, by a geodesic $\alpha$, differentent from $\gamma$. By the initial observation, eveyr point of $\alpha$, in partcular $r$, belongs to $S$. Finally, the points of the extension of $\gamma$, except $p_0$, also belong to $S$; otherwise, they would belong to the boundary of $S$, which we have proved to be made up of only $p_0$.
+  \end{itemize}
+
+  \section{Intrinsic Distance}
+  \begin{itemize}
+    \item A continuous mapping $\alpha: [a,b] \ra S$ of a closed interval $[a,b] \sseq \Real$ onto the surface $S$ is said to be a {\bf parametermized, piecewise differentiable curve} joining $\alpha(a)$ to $\alpha(b)$ if there exists a partition of $[a,b]$ by points $a = t_0 < t_1 < \dotsb < t_k < t_{k+1} = b$ such that $\alpha$ is differentiable in $[t_i, t_{i+1}]$ for all $i$.
+
+    The length $l(\alpha)$ of $\alpha$ is defined as
+    \begin{align*}
+      l(\alpha) = \sum_{t=0}^k \int_{t_{i}}^{t_{i+1}} |\alpha'(t)|\, \dee t
+    \end{align*}
+
+    \item \begin{proposition}
+      Given two points $p, q \in S$ of a regular (connected) surface $S$, there exists a parametermized piecewise differentiable curve jointing $p$ to $q$.
+    \end{proposition}
+    \begin{proof}
+      Because $S$ is connected, there exists a curve $\alpha: [a,b] \ra S$ such that $\alpha(a) = p$ and $\alpha(b) = b$. It is possible to divide the intervals $[a,b]$ into a finite number of intervals so that the image of each interval is contained in a coordinate neighborhood. For each interval, it is possible to connect the first point to the last point with a differentiable curve.
+    \end{proof}
+
+    \item Let $p, q \in S$  be two points of a regular surface $S$. We denote by $\alpha_{p,q}$ a parametermized piecewise differentiable curve joining $p$ to $q$. Let $l(\alpha_{p,q}$ denote its length.
+
+    \item \begin{definition}
+      The {\bf (intrinsic) distance} $d(p,q)$ from the point $p \in S$ to the point $q \in S$ is the number:
+      \begin{align*}
+        d(p,q) = \inf_{\alpha_{p,q}} l(\alpha_{p,q}).
+      \end{align*}
+      Here, the infemum is taken over all the parametermized piecewise differentiable curve connecting $p$ to $q$.
+    \end{definition}
+
+    \item \begin{proposition}
+      $d$ is a metric. That is,
+      \begin{enumerate}
+        \item $d(p,q) = d(q,p)$\\
+        \item $d(p,q) + d(q,r) \geq d(p,r)$\\
+        \item $d(p,q) \geq 0$\\
+        \item $d(p,q) = 0$ if and only if $p = q$
+      \end{enumerate}
+      where $p$, $q$, $r$ are arbitrary points on $S$.
+    \end{proposition}
+    \begin{proof}
+      For Property 1, for every curve connecting $p$ to $q$, there exists a curve connecting $q$ to $p$ with the same length.
+
+      For Property 2, $d(p,q) + d(q,r)$ is the infemum of the set $A$ of curves that goes from $p$ to $r$ passing through $q$. We have that $A \sseq B$ where $B$ is the set of curves connecting $p$ to $r$. Because, if $A \sseq B$, $\inf A \geq \inf B$, we have that $d(p,q) + d(q, r) \geq d(p,r)$.
+
+      Property 3 follows from the fact that the length of a curve is never less than 0.
+
+      Let us now prove Property 4. If $p = q$, then we can take the constant curve, which has length $0$.
+
+      For the converse, suppose for contradiction that $\inf l(\alpha_{p,q}) = 0$, but $p \neq q$. Let $V$ be a neighborhood of $p$ in $S$ with $q \neq V$, such that every point of $V$ may be joint to $p$ by a unique geodesic in $V$. Let $B_r(p) \sseq V$ be the region bounded by a geodesic circle of radius $r$ centered at $p$ and contained in $V$. By the definition of infimum, given $\epsilon > 0$ and $0 < \epsilon < r$, there exist a parametermized, piecewise differentiable curve $\alpha : [a,b] \ra S$ joining $p$ to $q$ with $l(\alpha) < \epsilon$. Since $\alpha([a,b])$ is connected and $q \neq B_r(p)$, there exists a point $t_0 \in [a,b]$ such that $\alpha(t_0)$ belongs to the  boundary of $B_r(p)$. It follows that $l(\alpha) \geq r > e$, which is a contradiction.
+    \end{proof}
+
+    \item \begin{corollary}
+      $|d(p,r) - d(r,q)| \leq d(p,q)$
+    \end{corollary}
+    \begin{proof}
+      We have that
+      \begin{align*}
+        d(p,r) &\leq d(p,q) + d(q,r)\\
+        d(r,q) &\leq d(r,p) + d(p,q)
+      \end{align*}
+      Therefore,
+      \begin{align*}
+        d(p,r) - d(q,r) &\leq d(p,q)\\
+        -d(p,q) &\leq d(r,p) - d(r,q).
+      \end{align*}
+      In other words,
+      \begin{align*}
+        -d(p,q) \leq d(p,r) - d(r,q) \leq d(p,q).
+      \end{align*}
+    \end{proof}
+
+    \item \begin{proposition}
+      If we let $p_0 \in S$ be a fixed point, then the function $f: S \ra \Real$ given by $f(p) = d(p_0,p)$ is continuous on $S$.
+    \end{proposition}
+    \begin{proof}
+      We have to show that for each $p$ in $S$, given $\epsilon > 0$, there exists $\delta > 0$ such that if $q \in B_\delta(p) \cup S$, then $|f(p) - f(q)| = |d(p_0, p) - d(p_0, q)| < \epsilon.$
+
+      Let $\epsilon' < \epsilon$ be such that the exponential map $\exp_p$ is a diffeomorphism in the disc $B_{\epsilon'}(\ve{0}) \sseq T_p(S)$. Set $V = \exp_p(B_{\epsilon'}(\ve{0}))$. Clearly, $V$ is an open set in $S$; hence, there exists an open ball $B_\delta(p) \in \Real^3$ such that $B_\delta(p) \cap S \sseq V$. Thus, if $q \in B_{\delta}(p) \cap S$, we have that
+      \begin{align*}
+        |d(p_0,p) - d(p_0,q)| \leq d(p,q) \leq \epsilon' < \epsilon
+      \end{align*}
+      as required.
+    \end{proof}
+
+    \item \begin{proposition}
+      A closed surface $S \sseq \Real^3$ is complete.
+    \end{proposition}
+    \begin{proof}
+      Let $\gamma: [0, \epsilon) \ra S$ be a parametermized geodesic of $S$ with $\gamma(0) = p$. WLOG, let us assume that $\gamma$ is parameterized with arc length. We need to show that it is possible to extend $\gamma$ to a geodesic $\bar \gamma : \Real \ra S$, defined on the entire real line.
+
+      Observe first that when $\bar \gamma (s_0)$, $s_0 \in \Real$, is defined, then, by the theorem of existence and uniqueness of geodesics, it is possible to extend $\gamma$ to a neighborhood of $s_0$ in $\Real$. As a result, the set of all $s \in \Real$ where $\bar \gamma$ is defined is open in $\Real$. If we can prove that this set is closed in $\Real$ (which is connected), it will be possible to define $\bar \gamma$ for all of $\Real$, and the proof will be completed.
+
+      Let us assume that $\bar \gamma$ is defined for $s < s_0$ and let us show that $\bar \gamma$ is defined for $s = s_0$. Consider a sequence $\{ s_n \} \ra s_0$ with $s_n < s_0$ for all $n$.
+
+      We shall first prove that the sequence $\{ \bar \gamma (s_n) \} $ converges in $S$. Because $\{ s_n \}$ is convergent, it is Cauchy. So, given $\epsilon = 0$, there exists $n_0$ such that if $n,m > n_0$, then $|s_n - s_m| < \epsilon$. Denote by $\bar d$ the Euclidean distance in $\Real^3$. Observe that, if $p, q \in S$, then $\bar d(p,q) < d(p,q)$. Thus,
+      \begin{align*}
+        \bar d(\bar \gamma(s_n), \bar \gamma(s_m)) \leq d(\gamma(s_n), \gamma(s_m)) = |s_n - s_m| < \epsilon.
+      \end{align*}
+      If follows that $\{ \bar\gamma(s_n) \}$ is a Cauchy sequence in $\Real^3$. Therefore, it converges to a point $q \in \Real^3$. Since $q$ is a limit point of $\{\bar\gamma(s_n) \}$ and $S$ is closed, $q \in S$.
+
+      Let $W$ and $\delta$ be the neighborhood of $q$ and the number such that, for every point $r \in W$, $\exp_r$ is a diffeomorphism in $B_\delta(\ve{0}) \in T_r(S)$ and $W \sseq \exp_r(B_\delta(\ve{0})).$ Let $\bar \gamma(s_n), \bar \gamma(s_m) \in W$ be points such that $|s_n - s_m| < \delta$, and let $\gamma$ be the unique geodesic with $l(\gamma) < \delta$ joining $\bar\gamma(s_n)$ and $\bar\gamma(s_m)$. Clearly, $\bar\gamma$ agrees with $\gamma$. Since $\exp_{\bar\gamma(s_n)}$ is a diffeomorphism in $B_\delta(\ve{0})$ and $W \sseq \exp_{\bar\gamma(s_n)}(B_\delta(\ve{0}))$, it follows that $\gamma$ extends $\bar\gamma$ beyond $q$. Thus, $\bar\gamma$ is defined at $s = s_0$, which completes the proof.
+    \end{proof}
+
+    \item \begin{corollary}
+      A compact surface is complete.
+    \end{corollary}
+
+    \item A complete surface need not be closed.
+  \end{itemize}
+
+  \section{Theorem of Hopf--Rinow}
+  \begin{itemize}
+    \item A geodesic $\gamma$ joining two points $p, q \in S$ is {\bf minimal} if its length $l(\gamma)$ is smaller than or equal to the length of any piecewise regular curve joining $p$ to $q$.
+
+    This is equivalent to saying that $l(\gamma) = d(p,q)$ because, for any given piecewise differentiable curve $\alpha$ joining $p$ to $q$, we can find a piecewise regular curve joining $p$ to $q$ that is not longer than $\alpha$.
+
+    \item \begin{theorem}[Hopf--Rinow]
+      Let $S$ be a complete surface. Given two points $p, q \in S$, there exists a minimal geodesic joining $p$ to $q$.
+    \end{theorem}
+    \begin{proof}
+      Let $r = d(p,q)$ be the distance between the points $p$ and $q$. Let $B_{\delta}(\ve{0}) \sseq T_p(S)$ be a disk of radius $\delta$, centered in the origin $\ve{0}$ of the tangent plane $T_p(S)$ and contained in a neighborhood $U \sseq T_p(S)$ of $\ve{0}$, where $\exp_p$ is a diffeomorphism. Let $B_\delta(p) = \exp_p(B_\delta(\ve{0}))$. Observe that the boundary $\Bd B_\delta(p) = \Sigma$ is compact since it is a continuous image of the compact set $\Bd B_\delta(\ve{0}) \sseq T_p(S).$
+
+      If $x \in \Sigma$, the continous function $d(x,q)$ reaches a minimum at a point $x_0$ of the compact set $\Sigma$. The point $x_0$ may be written as $x_0 = \exp_p(\delta v)$ where $|v| = 1$ and $v \in T_p(S)$.
+
+      Let $\gamma$ be a geodesic paraetermized by arc length, given by $\gamma(s) = \exp_p(sv)$. Since $S$ is complete, $\gamma$ is defined for eveyr $s \in \Real$. In particular, $\gamma$ is defined in the interval $[0,r]$. If we show that $\gamma(r) = q$, then $\gamma$ is the geodesic joining $p$ to $q$, which is minimal, since $l(\gamma) = r = d(p,q)$.
+
+      To prove this, we shall show that, if $s \in [\delta, r]$, then $d(\gamma(s), q) = r - s$. The equation implies that $d(\gamma(r), q) = 0$, which means $\gamma(r) = q$.
+
+      We shall first show that the equation holds for $s = \delta$. If this is true, then the set $$A = \{ s \in [ \delta, r] : d(\gamma(s), q) = r - s \}$$ is not empty. Moreover, it is closed. Next, we show that if $s_0 \in A$ and $s_0 < r$, then the equation holds for $s_0 + \delta' > 0$ and $\delta'$ is sufficiently small. It follows that $A = [\delta, r]$.
+
+      We now show that the equation holds for $s = \delta$. Because every curve joining $p$ to $q$ intersects $\Sigma$, we have, denoting by $x$ an arbitrary point of $\Sigma$,
+      \begin{align*}
+        d(p,q)
+        &= \inf_{\alpha_{p,q}} l(\alpha_{p,q}) 
+        = \inf_{x\in \Sigma} \{ inf_{\alpha_{p,x}} l(\alpha_{p,x}) + \inf_{\alpha_{x,q}} l(\alpha_{x,q}) \}\\
+        &= \inf_{x \in \Sigma} (d(p,x) + d(q,x)) = \inf_{x \in \Sigma} (\delta + d(x,q))\\
+        &= \delta + d(x_0, q).
+      \end{align*}
+      In other words,
+      \begin{align*}
+        d(\gamma(\delta), q) = r - \delta.
+      \end{align*}
+
+       Now, we shall show that if the equation holds for $s_0 \in [\delta, r]$, then, for sufficiently small $\delta' > 0$, it holds for $s_0 + \delta'$.
+
+       Let $B_{\delta'}(\ve{0})$ be a disk in the tangent plane $T_{\gamma(s_0)}(S)$, centered in the origin $\ve{0}$ of this tangent plane and contained in a neighborhood $U'$ where $\exp_{\gamma(s_0)}$ is a diffeomorphism. Let $B_{\delta'}(\gamma(s_0)) = \exp_{\gamma(s_0)}(B_{\delta'}(\ve{0}))$ and $\Sigma' = \Bd B_{\delta'}(\gamma(s_0))$. If $x' \in \Sigma'$, the continuous function $d(x',q)$ reachees a minimum at $x_0' \in \Sigma'$. Then, as argued previously,
+       \begin{align*}
+         d(\gamma(s_0),q) = \inf_{x' \in \Sigma'} \{ d(\gamma(s_0), x') + d(x', q) \} = \delta' + d(x_0', q).
+       \end{align*}
+       Since the equation holds at $s_0$, we have that $d(\gamma(s_0), q) = r - s_0$. Therefore, $d(x_0', q) = r - s_0 - \delta'$. Furthermore, since
+       \begin{align*}
+         d(p,x'_0) \geq d(p,q) - d(q,x'_0),
+       \end{align*}
+       we have that
+       \begin{align*}
+         d(p,x'_0) \geq r - (r - s_0 - \delta') = s_0 + \delta'.
+       \end{align*}
+       We see that the curve that goes from $p$ to $\gamma(s_0)$ through $\gamma$, and then from $\gamma(s_0)$ to $x'_0$ through a geodesic radius of $B_{\delta'}(\gamma(s_0))$ has length exactly equal to $s_0 + \gamma'$. Since $d(p,x'_0) \geq s_0 + \delta'$, this curve, which joins $p$ to $x'_0$ has minimal length. It follows that it is a geodesic, and hence regular in all its point. Therefore, it should coincide with $\gamma$; hence, $x'_0 = \gamma(s + \gamma')$. Thus, we can write:
+       \begin{align*}
+         d(\gamma(s_0 + \delta'), q) = r - (s_0 + \delta')
+       \end{align*}
+       which means that the equations holds for $s_0 + \delta'$.
+    \end{proof}
+
+    \item \begin{corollary}
+      Let $S$ be complete. Then, for every point $p \in S$, the map $\exp_p : T_p(S) \ra S$ is onto $S$.
+    \end{corollary}
+    \begin{proof}
+      If $q \in S$ and $d(p, q) = r$, then $q = \exp_p(rv)$ where $v = \gamma'(0)$ is the tangent vector of a minimal geodesic parametermized by arc length joining $p$ to $q$.
+    \end{proof}
+
+    \item \begin{corollary}
+      Let $S$ be complete and bounded in the matrix $d$ (that is, there exists $r > 0$ such that $d(p,q) < r$ for every $p, q \in S$). Then $S$ is compact.
+    \end{corollary}
+    \begin{proof}
+      By fixing $p \in S$, the fact that $S$ is bounded implies the existence of a closed ball $B \sseq T_p(S)$ of radius $r$, centered at the origin $\ve{0}$ of the tangent plane $T_p(S)$ such that $\exp_p(B) = \exp_p(T_p(S)).$ By the fact that $\exp_p$ is onto, we have that $S = \exp_p(B)$. Since $B$ is compact and $\exp_p$ is continuous, we conclude that $S$ is compact.
+    \end{proof}
+
+    \item The diameter of the surface $S$, denoted by $\rho(S)$, is defined as:
+    \begin{align*}
+      \rho(S) = \sup_{p, q \in S} d(p,q).
+    \end{align*}
+
+    \item The diameter of the unit sphere $S^2$ is $\rho(S^2) = \pi$.
+  \end{itemize}
+\end{document}

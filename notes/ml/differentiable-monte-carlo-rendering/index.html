@@ -1,0 +1,1533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>Differentiable Monte Carlo Rendering</title>
+
+    <!-- Bootstrap -->
+    <link href="../../../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../../../css/theme.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+      TeX: { equationNumbers: {autoNumber: "AMS"} } 
+    });
+    </script>
+    <script type="text/javascript"
+            src="../../../MathJax/MathJax.js?config=TeX-AMS_HTML-full">
+    </script>
+
+    <script type="text/javascript" src="../../../js/jquery-3.4.1.min.js"></script>    
+    <script type="text/javascript" src="../../../js/bigfoot.min.js"></script>    
+
+    <link rel="stylesheet" type="text/css" href="../../../css/bigfoot-default.css">    
+
+</head>
+<body>
+<div class="container">
+    <span style="visibility: hidden;">
+        \(
+        \def\sc#1{\dosc#1\csod}
+        \def\dosc#1#2\csod{{\rm #1{\small #2}}}
+
+        \newcommand{\dee}{\mathrm{d}}
+        \newcommand{\Dee}{\mathrm{D}}
+        \newcommand{\In}{\mathrm{in}}
+        \newcommand{\Out}{\mathrm{out}}
+        \newcommand{\pdf}{\mathrm{pdf}}
+        \newcommand{\Cov}{\mathrm{Cov}}
+        \newcommand{\Var}{\mathrm{Var}}
+
+        \newcommand{\ve}[1]{\mathbf{#1}}
+        \newcommand{\mrm}[1]{\mathrm{#1}}
+        \newcommand{\etal}{{et~al.}}
+        \newcommand{\sphere}{\mathbb{S}^2}
+        \newcommand{\modeint}{\mathcal{M}}
+        \newcommand{\azimint}{\mathcal{N}}
+        \newcommand{\ra}{\rightarrow}
+        \newcommand{\mcal}[1]{\mathcal{#1}}
+        \newcommand{\X}{\mathcal{X}}
+        \newcommand{\Y}{\mathcal{Y}}
+        \newcommand{\Z}{\mathcal{Z}}
+        \newcommand{\x}{\mathbf{x}}
+        \newcommand{\y}{\mathbf{y}}
+        \newcommand{\z}{\mathbf{z}}
+        \newcommand{\tr}{\mathrm{tr}}
+        \newcommand{\sgn}{\mathrm{sgn}}
+        \newcommand{\diag}{\mathrm{diag}}
+        \newcommand{\Real}{\mathbb{R}}
+        \newcommand{\sseq}{\subseteq}
+        \newcommand{\ov}[1]{\overline{#1}}
+        \newcommand{\iprod}{\mathbin{\lrcorner}}
+        \)
+    </span>
+
+    <br>
+    <h1>Differentiable Monte Carlo Rendering</h1>
+    <hr>
+
+    <p>I've written a note on <a href="../differentiable-rasterization/index.html">differentiable rasterization</a> before. However, there's a body of work on differentiable rendering through Monte Carlo integration, which I haven't studied in details. What pique my interest was the paper on <a href="https://people.csail.mit.edu/tzumao/diffvg/">differentiable vector graphics rasterization</a>, which I hope can be used to implement resolution-independent characters. So, in this note, I will study the following papers:
+    <ul>
+        <li><b>Differentiable Monte Carlo ray tracing through edge sampling</b> by Tzu-Mao, Miika Aittala, Frédo, and Jakko Lehtinen. <a href="https://people.csail.mit.edu/tzumao/diffrt/">[LINK]</a></li>
+        <li><b>Reparameterization discontinuous integrands for differentiable rendering</b> by Guillaume Loubet, Nicolas Holzschuch, and Wenzel. <a href="http://rgl.epfl.ch/publications/Loubet2019Reparameterizing">[LINK]</a></li>
+        <li><b>Path-space differentiable rendering</b> by Cheng Zhang, Bailey Miller, Kai Yan, Ioannis, and Shuang. <a href="https://shuangz.com/projects/psdr-sg20/">[LINK]</a></li>
+        <li><b>Radiative backpropagation: an adjoint method for lightning-fast differentiable rendering</b> by Merlin, Sébastien Speierer, Benoît Ruiz, and Wenzel <a href="http://rgl.epfl.ch/publications/NimierDavid2020Radiative">[LINK]</a></li>        
+        <li><b>Differentiable Vector Graphics Rasterization for Editing and Learning</b> by Tzu-Mao, Michal Lukáč, Michaël Gharbi, and Jonathan Ragan-Kelley <a href="https://people.csail.mit.edu/tzumao/diffvg/">[LINK]</a></li>        
+        <li><b>Unbiased warped-area sampling for differentiable rendering</b> by  Sai Praveen Bangaru, Tzu-Mao, and Frédo. <a href="https://www.saipraveenb.com/projects/was-2020/">[LINK]</a></li>        
+    </ul>
+    I actually participated in a project that uses <a href="http://www.cs.cornell.edu/projects/ctcloth/#matching-cloth">differentiable rendering</a> before, but the idea was mainly from the advisors and Shuang, and that part of the system was implemented by Daniel while I worked on geometry generation and the fiber scattering model.
+    </p>    
+
+    <h2>1 &nbsp; Li et al. (SIGGRAPH Asia 2018)</h2>
+
+    <ul>
+        <li>While my cloth paper can only compute gradients with respect to the material scattering parmeters, Tzu-Mao's 2018 paper can compute gradients with respect to all parameters, including camera pose and scene geometry.</li>
+
+        <li>The main difficulty computing gradients with respect to the above two parameters are the visibility term, which is not differentiable at object boundaries.</li>
+
+        <li>There are approximate solutions such as finite difference (which becomes inefficient once there are many parameters) and differentiable rasterization (which does not handle the full light transport).</li>
+
+        <li>Some properties of Tzu-Mao's algorithm:
+        <ul>
+            <li>It is the first Monte Carlo path tracing algorithm that works with the full light transport computation and is capable of computing gradients with respect to all parameters.</li>
+
+            <li>It is based on sampling edges of triangles.</li>
+
+            <li>The overhead with respect to normal path tracing is around 10x to 20x.</li>
+        </ul>
+        </li>
+    </ul>    
+
+    <h3>1.1 &nbsp; Method</h3>
+
+    <ul>
+        <li>Let $\Phi$ denote the continuous parameters of the scene.</li>
+
+        <li>Given a scalar function of the image, the goal is to compute the gradient of this function with respect to $\Phi$.</li>
+
+        <li>For the pixel color:
+        <ul>
+            <li>It is defined as the integral over all light paths that pass through the pixel filter;</li>
+
+            <li>Both its value and its gradients are computed using Monte Carlo integration.</li>
+        </ul>
+        </li>
+
+        <li>The integrand of the pixel color integral is discontinous at edges of geometry.
+        <ul>
+            <li>The derivative at edges is the Diract delta function.</li>
+
+            <li>Traditional area sampling does not work well here because it has probably zero of hitting the edges, and so cannot capture the effect of geometrical changes.</li>
+        </ul>
+        </li>
+
+        <li>Tzu-Mao's algorithm work by splitting the sampling domain into smooth and discontinuous regions.
+        <ul>
+            <li>For the smooth area, traditional area sampling is employed.</li>
+
+            <li>For the discontinous area, it uses a new edge sampling technique.</li>
+        </ul>
+        </li>
+
+        <li>Assumptions on the scene:
+        <ul>
+            <li>Geometry is a triangle mesh.</li>
+            <li>No point light sources.</li>
+            <li>No perfectly specular surfaces.</li>
+            <li>Scene is static.</li>
+        </ul>
+        </li>
+    </ul>
+
+    <h4>1.1.1 Primary Visibility</h4>
+
+    <ul>
+        <li>Let $k$ be the pixel filter and $L$ be the radiance, both are function defined on the image plane. We want to compute the pixel color:
+        \begin{align*}
+            I = \iint k(x,y) L(x,y)\, \dee x \dee y.
+        \end{align*}
+        For convience, let $f(x,y) = k(x,y) L(x,y)$, so the integral becomes:
+        \begin{align*}
+            I = \iint f(x,y)\, \dee x \dee y.
+        \end{align*}
+        </li>
+
+        <li>We are interested in computing the gradient of the above integral with respect to $\Phi$:
+        \begin{align*}
+            \frac{\partial I}{\partial \Phi}
+            = \frac{\partial I}{\partial \Phi} \iint f(x,y)\, \dee x \dee y.
+        \end{align*}
+        </li>
+
+        <li>Unlike the cloth paper, which computes the gradient by sliding the derivative operator into the integral, we cannot do the same thing here because of the discontinuity problem observed above.</li>
+
+        <li>Since the scene geometry is a triangle mesh, all discontinuities happen at triangle edges. Let the 2D line of the edge in image space be defined by the equation $\alpha(x,y) = 0$. The line splits the plane into the upper half
+        \begin{align*}
+            f_u(x,y) = \begin{cases}
+                f(x,y), & \alpha(x,y) \geq 0 \\
+                \mbox{undefined}, & \alpha(x,y) < 0
+            \end{cases},
+        \end{align*}
+        and the lower half
+        \begin{align*}
+            f_l(x,y) = \begin{cases}
+                f(x,y), & \alpha(x,y) < 0 \\
+                \mbox{undefined}, & \alpha(x,y) \geq 0
+            \end{cases}.
+        \end{align*}
+        </li>
+        So, the whole function can be written as
+        \begin{align*}
+            f(x,y) = \theta(\alpha(x,y)) f_u(x,y) + \theta(-\alpha(x,y)) f_l(x,y)
+        \end{align*}
+        where $\theta(x)$ is the Heaviside step function:
+        \begin{align*}
+            \theta(x) = \begin{cases}
+                1, & x \geq 0 \\
+                0, & x < 0
+            \end{cases}.
+        \end{align*}
+        </li>
+
+        <li>For a segment connecting $\ve{a} = (a_x, a_y)$ to $\ve{b} = (b_x, b_y)$, the function $\alpha(x,y)$ is given by:
+        \begin{align}
+            \alpha(x,y) = (a_y - b_y)x + (b_x - a_x)y + (a_x b_y - b_x a_y). \label{line-eq}
+        \end{align}
+        </li>
+
+        <li>Generalizing further, we can rewrite the function $f(x,y)$ in the following from:
+        \begin{align*}
+            f(x,y) = \sum_i \theta(\alpha_i(x,y)) f_i(x,y)
+        \end{align*}
+        where $f_i(x,y)$ can contain the indicator function of the form $\theta(\alpha_j(x,y))$ itself. This lets us handles interior of a triangle, which is a product of three indicator functions.
+        </li>
+
+        <li>With the above rewriting, the gradient becomes:
+        \begin{align*}
+            \frac{\partial I}{\partial \Phi}
+            &= \frac{\partial}{\partial \Phi} \iint \bigg( \sum_i \theta(\alpha_i(x,y)) f_i(x,y) \bigg)\, \dee x \dee y \\
+            &= \sum_i \frac{\partial}{\partial \Phi} \iint \theta(\alpha_i(x,y)) f_i(x,y) \, \dee x \dee y \\
+            &= \sum_i \iint \frac{\partial}{\partial \Phi} \Big( \theta(\alpha_i(x,y)) f_i(x,y) \Big) \, \dee x \dee y \\
+            &= \sum_i \bigg[ 
+            \iint \frac{\partial \theta(\alpha_i(x,y))}{\partial \Phi} f_i(x,y) \, \dee x \dee y 
+            + \iint \theta(\alpha_i(x,y))\frac{\partial f_i(x,y) }{\partial \Phi} \, \dee x \dee y
+            \bigg] \\
+            &= \sum_i 
+            \iint \frac{\partial \theta(\alpha_i(x,y))}{\partial \Phi} f_i(x,y) \, \dee x \dee y 
+            + \sum_i \iint \theta(\alpha_i(x,y))\frac{\partial f_i(x,y) }{\partial \Phi} \, \dee x \dee y\\
+            &= \sum_i 
+            \iint \frac{\dee \theta}{\dee \alpha_i} \frac{\partial \alpha_i(x,y)}{\partial \Phi} f_i(x,y) \, \dee x \dee y 
+            + \sum_i \iint \theta(\alpha_i(x,y))\frac{\partial f_i(x,y) }{\partial \Phi} \, \dee x \dee y \\
+            &= \sum_i 
+            \iint \delta(\alpha(x,y)) \frac{\partial \alpha_i(x,y)}{\partial \Phi} f_i(x,y) \, \dee x \dee y 
+            + \sum_i \iint \theta(\alpha_i(x,y))\frac{\partial f_i(x,y) }{\partial \Phi} \, \dee x \dee y.
+        \end{align*}
+        Here, $\delta(\cdot)$ denotes the Dirac delta function.
+        </li>
+
+        <li>Note that the second term of the above equation can be estimated normally with traditional Monte Carlo area sampling.</li>
+
+        <li>The problem is the first term because it has the Dirac delta function. However, following the derivation in Appendix A, we have that
+        \begin{align*}
+        &\iint \delta(\alpha(x,y)) \frac{\partial \alpha_i(x,y)}{\partial \Phi} f_i(x,y) \, \dee x \dee y \\
+        &= \int \frac{1}{\| \partial \alpha_i / \partial(x,y) \|} \frac{\partial \alpha_i(x,y)}{\partial \Phi} f_i(x,y)\, \dee\sigma(x,y)
+        \end{align*}
+        where $\sigma(x,y)$ is the measure of length on the line $\alpha(x,y) = 0$.
+        </li>
+
+        <li>Estimating the above integral with Monte Carlo integration on an edge from $\ve{a}_i$ to $\ve{b}_i$, we have that:
+        \begin{align*}
+        \int \frac{1}{\| \partial \alpha_i / \partial(x,y) \|} \frac{\partial \alpha_i(x,y)}{\partial \Phi} f_i(x,y)\, \dee\sigma(x,y)
+        \approx
+        \sum_{j=1}^N \frac{\| \ve{b}_i - \ve{a}_i \|}{\| \partial \alpha_i / \partial(x,y) \|} \frac{\partial \alpha_i(x_j,y_j)}{\partial \Phi} f_i(x_j,y_j).
+        \end{align*}
+        Here, we assume that the samples $(x_j,y_j)$ are independently and uniformly sampled from the edge.
+        </li>
+
+        <li>However, since an edge corresponds to two half plane functions, namely $f_{i,u}(x,y)$ and $f_{i,l}(x,y)$, we can estimate both sides together as follows:
+        \begin{align*}
+        \sum_{j=1}^N \frac{\| \ve{b}_i - \ve{a}_i \|}{\| \partial \alpha_i / \partial(x,y) \|} \frac{\partial \alpha_i(x_j,y_j)}{\partial \Phi} \Big(f_{i,u}(x_j,y_j) - f_{i,l}(x_j,y_j)\Big).
+        \end{align*}
+        Note that the minus sign before $f_{i,l}$ comes from the fact that its indicator function is $-\alpha_i(x,y)$.
+        </li>
+        
+        <li>If we employ smooth shading, most of the triangle edges are in the continuous region because $f_u(x,y) = f_l(x,y)$. The edge values are non-zero only at <i>silhouette edges</i>.</li>
+
+        <li>The paper select silhouette edges by repojectiving all triangles meshes to the screen space. Then, they sample the edges with weights proportional to their screen space lengths.</li>
+    </ul>
+
+    <h3>1.1.2 &nbsp; Secondary Visibility</h3>
+
+    <ul>
+        <li>Consider a shading point $\ve{p}$.</li>
+
+        <li>The outgoing radiance from $\ve{p}$ involves an integration over all points $m$ on the scene manifold $\mathcal{M}$:
+        \begin{align*}
+            g(\ve{p}) = \int_{\mathcal{M}} h(\ve{p}, \ve{m})\, \dee A(\ve{m})
+        \end{align*}
+        where $A$ is the area measure, and $h$ is an abbreviation for the outgoing radiance.
+        </li>
+
+        <li>It is instructive to think of the manifold as the light source when we do light source sampling.</li>
+
+        <li>An edge $(\ve{v}_0, \ve{v}_1)$, typically of an occluder, introduces a step function into the scene function $h$:
+        \begin{align*}
+        h(\ve{p},\ve{m}) = \theta(\alpha(\ve{p},\ve{m})) h_u(\ve{p},\ve{m}) + \theta(-\alpha(\ve{p},\ve{m})) h_l(\ve{p},\ve{m})
+        \end{align*}
+        where
+        \begin{align*}
+            \alpha(\ve{p},\ve{m}) = (\ve{m} - \ve{p}) \cdot \Big( (\ve{v}_0 - \ve{p}) \times (\ve{v}_1 - \ve{p})  \Big).
+        \end{align*}
+        </li>
+
+        <li>As with the derivation in the last section, we will need to compute the following integral:
+        \begin{align*}
+            \int_{\ve{v}_0 \rightarrow \ve{v}_1} \delta(\alpha(\ve{p},\ve{m})) \frac{\partial \alpha(\ve{p},\ve{m})}{\partial \Theta} h(\ve{p}, \ve{m})\, \dee A(\ve{m}).
+        \end{align*}
+        </li>
+
+        <li>Let us simplify the notation further. The points $\ve{p}$, $\ve{v}_0$, $\ve{v}_1$ form a plane with an (unnormalized) normal vector
+        \begin{align*}
+            \ve{n}_{\ve{v}} = (\ve{v}_0 - \ve{p}) \times (\ve{v}_1 - \ve{p}).
+        \end{align*}
+        The normalized version is denoted by $\hat{\ve{n}_\ve{v}}$:
+        \begin{align*}
+            \hat{\ve{n}}_\ve{v} = \frac{(\ve{v}_0 - \ve{p}) \times (\ve{v}_1 - \ve{p})}{\| (\ve{v}_0 - \ve{p}) \times (\ve{v}_1 - \ve{p}) \|}.
+        \end{align*}
+        With this, the function $\alpha$ becomes:
+        \begin{align*}
+            \alpha(\ve{p}, \ve{m}) = (\ve{m} - \ve{p}) \cdot \ve{n}_\ve{v}.
+        \end{align*}
+        </li>
+
+        <li>Consider a point $\ve{v}$ on the edge $(\ve{v}_0, \ve{v}_1)$. Let $\ve{m}_{\ve{v}}$ denote the corresponding point on the manifold, which is obtained by intersecting the ray from $\ve{p}$ through $\ve{v}$ with the manifold $\mathcal{M}$. Let $\hat{\ve{n}}_\ve{m}$ denote the normal vector at $\ve{m}_{\ve{v}}$. To compute the integral with measure $A(\ve{m})$, we need to parameterize the tangent plane at $\ve{m}_{\ve{v}}$.
+        <ul>
+            <li>Note that the tangent plane at $\ve{m}$ is given by the equation $(\ve{x} - \ve{m}) \cdot \hat{\ve{n}}_\ve{m} = 0$.
+            </li>
+
+            <li>We choose the first basis vector to be the direction of the line that forms from the intersection of the $(\ve{p},\ve{v}_0, \ve{v}_1)$ plane and the plane of the manifold:
+            \begin{align*}
+                \hat{\ve{s}} = \hat{\ve{n}}_{\ve{v}} \times \hat{\ve{n}}_{\ve{m}}.
+            \end{align*}
+            </li>        
+            
+            <li>
+            The second basis vector is given by:
+            \begin{align*}
+                \hat{\ve{t}} = \hat{\ve{n}}_{\ve{m}} \times \hat{\ve{s}}.
+            \end{align*}
+            </li>
+
+            <li>The tangent plane is thus given by:
+            \begin{align*}
+                \mbox{tangent plane} = \{ \ve{m}_{\ve{v}} + s \hat{\ve{s}} + t \hat{\ve{t}} : s \in \Real, t \in \Real \}.
+            \end{align*}
+            </li>
+        </ul>
+        </li>
+
+        <li>Consider a small neighborhood $N(\ve{v})$ of the segment $(\ve{v}_0, \ve{v}_1)$ around the point $\ve{v}$ with the property that all rays from $\ve{p}$ to any points in the neighborhood intersect the same triangle. In this neighborhood, the point $\ve{m}$ can be written as:
+        \begin{align*}
+            \ve{m} = \ve{m}_{\ve{v}} + s \hat{\ve{s}} + t \hat{\ve{t}}
+        \end{align*}
+        for some $s \in [-\Delta s, \Delta s]$ and $t \in [-\Delta t, \Delta t]$.
+        The integral becomes:
+        \begin{align*}
+            & \int_{N(\ve{v})} \delta(\alpha(\ve{p},\ve{m})) \frac{\partial \alpha(\ve{p},\ve{m})}{\partial \Theta} h(\ve{p}, \ve{m})\, \dee A(\ve{m}) \\
+            &= \int_{-\Delta s}^{\Delta s} \int_{-\Delta t}^{\Delta t} 
+            \delta(\alpha(\ve{p}, \ve{m})) 
+            \frac{\partial \alpha(\ve{p},\ve{m})}{\partial \Theta} 
+            h(\ve{p}, \ve{m})
+            \, \dee s \dee t.
+        \end{align*}
+        Consider the $\alpha(\ve{p}, \ve{m})$ term, we have that:
+        \begin{align*}
+            \alpha(\ve{p},\ve{m}) 
+            &= (\ve{m} - \ve{p}) \cdot \ve{n}_\ve{v} \\
+            &= (\ve{m}_\ve{v} - \ve{p} + s \hat{\ve{s}} + t \hat{\ve{t}}) \cdot \ve{n}_{\ve{v}} \\
+            &= (\ve{m}_\ve{v} - \ve{p}) \cdot \ve{n}_{\ve{v}} 
+            + s (\hat{\ve{s}} \cdot \ve{n}_{\ve{v}}) 
+            + t (\hat{\ve{t}} \cdot \ve{n}_{\ve{v}}) \\
+            &= t (\hat{\ve{t}} \cdot \ve{n}_{\ve{v}}) \\
+            &= t \| \ve{n}_\ve{v} \| (\hat{\ve{t}} \cdot \hat{\ve{n}}_{\ve{v}}) \\
+            &= t \| \ve{n}_\ve{v} \| \Big(\big(\hat{\ve{n}}_\ve{m} \times (\hat{\ve{n}}_\ve{v} \times \hat{\ve{n}}_{\ve{m}})\big) \cdot \hat{\ve{n}}_{\ve{v}}\Big).
+        \end{align*}
+        By the scalar triple product identity $((\ve{a} \times \ve{b}) \cdot \ve{c} = (\ve{c} \times \ve{a}) \cdot \ve{b})$, we have that:
+        \begin{align*}
+            \big(\hat{\ve{n}}_\ve{m} \times 
+            ( \hat{\ve{n}}_\ve{v} \times \hat{\ve{n}}_{\ve{m}}) \big) \times \hat{\ve{n}}_{\ve{v}}
+            = ( \hat{\ve{n}}_\ve{v} \times \hat{\ve{n}}_{\ve{m}}) \cdot ( \hat{\ve{n}}_\ve{v} \times \hat{\ve{n}}_{\ve{m}}) 
+            = \| \hat{\ve{n}}_\ve{v} \times \hat{\ve{n}}_{\ve{m}} \|.
+        \end{align*}
+        Hence,
+        \begin{align*}
+            \alpha(\ve{p},\ve{m}) = t \| \ve{n}_\ve{v} \| \| \hat{\ve{n}}_\ve{v} \times \hat{\ve{n}}_{\ve{m}} \|.
+        \end{align*}
+        As such,
+        \begin{align*}
+        & \int_{N(\ve{v})} \delta(\alpha(\ve{p},\ve{m})) \frac{\partial \alpha(\ve{p},\ve{m})}{\partial \Theta} h(\ve{p}, \ve{m})\, \dee A(\ve{m}) \\
+        &= \int_{-\Delta s}^{\Delta s} \int_{-\Delta t}^{\Delta t} 
+            \delta(t \| \ve{n}_\ve{v} \| \| \hat{\ve{n}}_\ve{v} \times \hat{\ve{n}}_{\ve{m}} \|) 
+            \frac{\partial \alpha(\ve{p},\ve{m})}{\partial \Theta} 
+            h(\ve{p}, \ve{m})
+            \, \dee s \dee t.
+        \end{align*}
+        We are going to make a substitution with $\tilde{t} = t \| \ve{n}_\ve{v} \| \| \hat{\ve{n}}_\ve{v} \times \hat{\ve{n}}_{\ve{m}} \|$, which yields $\dee t = \dee \tilde{t} / (\| \ve{n}_\ve{v} \| \| \hat{\ve{n}}_\ve{v} \times \hat{\ve{n}}_{\ve{m}} \|)$. This gives:
+        \begin{align*}
+        & \int_{N(\ve{v})} \delta(\alpha(\ve{p},\ve{m})) \frac{\partial \alpha(\ve{p},\ve{m})}{\partial \Theta} h(\ve{p}, \ve{m})\, \dee A(\ve{m}) \\
+        &= \int_{-\Delta s}^{\Delta s} \int_{-\Delta \tilde{t}}^{\Delta \tilde{t}} 
+            \frac{\delta(\tilde{t}) }{\| \ve{n}_\ve{v} \| \| \hat{\ve{n}}_\ve{v} \times \hat{\ve{n}}_{\ve{m}} \|}
+            \frac{\partial \alpha(\ve{p},\ve{m})}{\partial \Theta} 
+            h(\ve{p}, \ve{m})
+            \, \dee s \dee \tilde{t} \\
+        &= \bigg( \int_{-\Delta s}^{\Delta s}             
+            \frac{\partial \alpha(\ve{p},\ve{m})}{\partial \Theta} 
+            \frac{ h(\ve{p}, \ve{m}) }{\| \ve{n}_\ve{v} \| \| \hat{\ve{n}}_\ve{v} \times \hat{\ve{n}}_{\ve{m}} \|}            
+            \, \dee s \bigg) 
+            \bigg( \int_{-\Delta \tilde{t}}^{\Delta \tilde{t}} \delta(\tilde{t}) \dee \tilde{t}\bigg) \\
+        &= \int_{-\Delta s}^{\Delta s}             
+            \frac{\partial \alpha(\ve{p},\ve{m})}{\partial \Theta} 
+            \frac{ h(\ve{p}, \ve{m}) }{\| \ve{n}_\ve{v} \| \| \hat{\ve{n}}_\ve{v} \times \hat{\ve{n}}_{\ve{m}} \|}            
+            \, \dee s.
+        \end{align*}
+        Note that $\| \ve{n}_\ve{v} \| = \| \partial \alpha / \partial \ve{m} \|$, so we can write the above integral as:
+        \begin{align*}
+        & \int_{N(\ve{v})} \delta(\alpha(\ve{p},\ve{m})) \frac{\partial \alpha(\ve{p},\ve{m})}{\partial \Theta} h(\ve{p}, \ve{m})\, \dee A(\ve{m}) \\
+        & = \int_{-\Delta s}^{\Delta s} 
+        \frac{1}{\| \partial \alpha / \partial \ve{m} \|}
+        \frac{\partial \alpha(\ve{p},\ve{m})}{\partial \Theta} 
+        \frac{ h(\ve{p}, \ve{m}) }{ \| \hat{\ve{n}}_\ve{v} \times \hat{\ve{n}}_{\ve{m}} \|}            
+        \, \dee s.
+        \end{align*}
+        Now, note that $\dee s$ is the length measure on the manifold $\mathcal{M}$, so let us denote it with $\dee \sigma'(\ve{m})$. Expanding the neighborhood to the segment $(\ve{v}_0, \ve{v}_1)$, we have that the integral becomes:
+        \begin{align*}
+        \int_{\ve{v}_0 \rightarrow \ve{v}_1} 
+        \frac{1}{\| \partial \alpha / \partial \ve{m} \|}
+        \frac{\partial \alpha(\ve{p},\ve{m})}{\partial \Theta} 
+        \frac{ h(\ve{p}, \ve{m}) }{ \| \hat{\ve{n}}_\ve{v} \times \hat{\ve{n}}_{\ve{m}} \|}            
+        \, \dee \sigma'(\ve{m}).
+        \end{align*}
+        </li>
+
+        <li>To evaluate the above integral with Monte Carlo integration, we parametermize the segment $(\ve{v}_0, \ve{v}_1)$ with the function $$\ve{v}(t) = \ve{v}_0 + (\ve{v}_1 - \ve{v}_0) t$$ where $t \in [0,1]$. The (unnormalized) ray from $\ve{p}$ to $\ve{t}$ is given by 
+        $$\omega(t) = \ve{v}(t) - \ve{p}.$$ Let $\tau(t)$ to the time it takes for the ray to intersect a triangle, which is assumed to contain point $\ve{m}_0$ and has normal $\hat{\ve{n}}_{\ve{m}}$. We have that, for the intersection points,
+        \begin{align*}
+            (\ve{p} + \tau(t) \omega(t) - \ve{m}_0) \cdot \hat{\ve{n}}_{\ve{m}} &= 0 \\
+            \tau(t) &= \frac{(\ve{p} - \ve{m}_0)\cdot \hat{\ve{n}}_{\ve{m}}}{ \omega(t) \cdot \hat{\ve{n}}_{\ve{m}}}.
+        \end{align*}
+        The point $\ve{m}(t)$ is given by:
+        \begin{align*}
+            \ve{m}(t) &= \ve{p} + \omega(t) \tau(t).            
+        \end{align*}
+        We have,
+        \begin{align*}
+            \frac{\partial \ve{m}}{\partial t}
+            &= \frac{\partial \omega(t)}{\partial t} \tau(t) + \omega(t) \frac{\partial \tau(t)}{\partial t} \\
+            &= (\ve{v}_1 - \ve{v}_0) \tau(t) + \omega(t) \frac{\partial \tau(t)}{\partial t} \\
+            &= (\ve{v}_1 - \ve{v}_0) \tau(t) + \omega(t) \frac{\partial}{\partial t} \bigg( \frac{(\ve{p} - \ve{m}_0)\cdot \hat{\ve{n}}_{\ve{m}}}{ \omega(t) \cdot \hat{\ve{n}}_{\ve{m}}} \bigg) \\
+            &= (\ve{v}_1 - \ve{v}_0) \tau(t) - \omega(t) \frac{(\ve{p} - \ve{m}_0)\cdot \hat{\ve{n}}_{\ve{m}}}{(\omega(t) \cdot \hat{\ve{n}}_{\ve{m}})^2} \frac{\partial}{\partial t} (\omega(t) \cdot \hat{\ve{n}}_\ve{m}) \\
+            &= (\ve{v}_1 - \ve{v}_0) \tau(t) - \omega(t)\tau(t) \frac{1}{\omega(t) \cdot \hat{\ve{n}}_{\ve{m}}} \frac{\partial}{\partial t} (\omega(t) \cdot \hat{\ve{n}}_\ve{m}) \\
+            &= (\ve{v}_1 - \ve{v}_0) \tau(t) - \omega(t)\tau(t) \frac{1}{\omega(t) \cdot \hat{\ve{n}}_{\ve{m}}} \bigg( \frac{\partial \omega(t)}{\partial t}  \cdot \hat{\ve{n}}_\ve{m} \bigg) \\
+            &= (\ve{v}_1 - \ve{v}_0) \tau(t) - \omega(t)\tau(t) \frac{(\ve{v}_1 - \ve{v}_0)  \cdot \hat{\ve{n}}_\ve{m}}{\omega(t) \cdot \hat{\ve{n}}_{\ve{m}}} \\
+            &= \tau(t)\bigg[ \ve{v}_1 - \ve{v}_0 - \omega(t)\frac{(\ve{v}_1 - \ve{v}_0)  \cdot \hat{\ve{n}}_\ve{m}}{\omega(t) \cdot \hat{\ve{n}}_{\ve{m}}} \bigg].
+        \end{align*}
+        </li>
+        The integral the becomes:
+        \begin{align*}
+        \int_0^1
+        \frac{1}{\| \partial \alpha / \partial \ve{m} \|}
+        \frac{\partial \alpha(\ve{p},\ve{m})}{\partial \Theta} 
+        \frac{ h(\ve{p}, \ve{m}) }{ \| \hat{\ve{n}}_\ve{v} \times \hat{\ve{n}}_{\ve{m}} \|}            
+         \bigg\| \frac{\partial \ve{m}}{\partial t} \bigg\| \, \dee t.
+        \end{align*}
+        We can then approximate the integral with Monte Carlo integration.
+    </ul>
+
+    <h2>1.2 &nbsp; Importance Sampling the Edges</h2>
+
+    <ul>
+        <li>The methods described above requires us to sample edges of millions of triangles in the scene.</li>
+
+        <li>Most edges, however, would not contribute to gradients because they are not silhouette edges. Moreover, for some edges, only some parts of them would contribute to the gradient.</li>
+
+        <li>For the primary visibility, we can resolve this problem by projecting the edges onto the screen and sampling based on the projected length.</li>
+
+        <li>For the secondary visibility, the situation is much more complicated because the viewpoint can be anywhere in the scene, and we also have to take into account the BSDF into account.</li>
+
+        <li>The paper builds two hierarchies:
+        <ul>
+            <li>The first contains edges that associate with single faces or meshes that do not use smooth shading normals.
+            <ul>
+                <li>We build a 3D bounding volume hierarchy using the 3D positions of the endpoints.</li>
+            </ul>
+            </li>
+
+            <li>The second contains the remaining edges.
+            <ul>
+                <li>Build a 6D bounding volume hierarchy using the two endpoints positions and the two normals of the adjacent faces.</li>
+
+                <li>For quick rejection of non-silhouette edges, we store a cone direction and an angle covering all possible normal directions.</li>
+
+                <li>More implementation details of this hierarchy can be found in the paper. It is quite similar to the multidimensional lightcut paper.</li>
+            </ul>
+            </li>
+        </ul>
+        </li>
+
+        <li>The hierarchies are traversed twice.
+        <ul>
+            <li>The first traversal focuses on edges that ovelap with the cone subtended by the light source at the shading point.</li>
+
+            <li>The second sample all edges.</li>
+
+            <li>The two samples are combined using multiple importance sampling, which means we must be able to compute the probability of sampling an edge with each traversal.</li>
+
+            <li>During traveral, we compute for each node an importance value for selecting which child to traverse next because on an upper bound estimation of the contribution, similar to the lightcuts paper.
+            <ul>
+                <li>This is estimated using the total length of edges time the inverse square distance times a Blinn-Phong BRDF.</li>
+
+                <li>The importance is overridden with zero if the node does not contain any silhouette edge. (How is this decided?)</li>                
+            </ul>
+            </li>
+
+            <li>The traversal goes to both child node if:
+            <ul>
+                <li>The shading point is in both of their bounding boxes.</li>
+                <li>The BRDF bound is higher than a certain threshold.</li>
+                <li>The angle subtended by the light cone is smaller than a threshold.</li>
+            </ul>
+            </li>
+        </ul>
+        </li>
+
+        <li>After selecting a set of edges, we need to choose a point on the edges. (We can do this multiple times to do Monte Carlo integration.)
+        <ul>
+            <li>The paper builds on recent works on integrating linear light sources over Linearly Transformed Cosine Distribution.</li>
+
+            <li>Heitz and Hill <a href="https://hal.archives-ouvertes.fr/hal-02155101/document">[2017]</a> provides a closed-form solution of the integral between a point and a linear light source, weighted by BRDF and geometric forshortening.</li>
+
+            <li>The paper numerically invert the integrated CDF using Newton's method for importance sampling.</li>
+        </ul>
+        </li>
+    </ul>
+
+    <h2>2 &nbsp; Loubet et al. (SIGGRAPH Asia 2019)</h2>
+
+    <ul>
+        <li>One of the drawbacks of the last paper is the reliance on edge sampling, which, as one can see from the algorithm in Section 1.2, is a difficult problem.</li>
+
+        <li>The Loubet et al.'s paper proposes a way to compute the gradient without edge sampling, and this is done by reparameterizing the integrand on the fly.</li>
+
+        <li>The shading integral has the form:
+        \begin{align*}
+            I = \int_{\mathcal{X}} f(\ve{x}, \Theta)\, \dee\ve{x}
+        \end{align*}
+        where the domain $\mathcal{X}$ is often the unit sphere $\mathbb{S}^2$, and $\Theta$ is the scene parameters.
+        </li>
+
+        <li>To simplify the notation, let us assume that there is only one scalar parameter $\theta \in \Real$. The integral becomes:
+        \begin{align*}
+            I = \int_{\mathcal{X}} f(\ve{x}, \theta)\, \dee\ve{x}.
+        \end{align*}
+        </li>
+
+        <li>We would like to compute
+        \begin{align*}
+            \frac{\partial I}{\partial \theta} 
+            = \frac{\partial}{\partial \theta} \int_{\mathcal{X}} f(\ve{x},\theta)\, \dee\ve{x}.
+        \end{align*}
+        </li>
+
+        <li>If $f$ and the partial derivative exists and is continuous, then we can slide the derivative operator inside the integral:
+        \begin{align*}
+            \frac{\partial}{\partial \theta} \int_{\mathcal{X}} f(\ve{x},\theta)\, \dee\ve{x}
+            &= \int_{\mathcal{X}} \frac{\partial}{\partial \theta}  f(\ve{x},\theta)\, \dee\ve{x}
+        \end{align*}
+        </li>
+
+        <li>$I$ is typically estimated using Monte Carlo integration. We sample points from $\mathcal{X}$ with probability density function $p(\ve{x},\theta)$ that can depend on $\theta$. The samples generated are thus functions of $\theta$, and we denote them by $\ve{x}_i(\theta)$ for $i = 1$,$2$,$\dotsc$. The estimate of the integral is thus given by:
+        \begin{align*}
+            I \approx E = \frac{1}{N} \sum_{i=1}^N \frac{f(\ve{x}_i(\theta),\theta)}{p(\ve{x}_i(\theta),\theta)},
+        \end{align*}
+        and the estimator for gradient is given by:
+        \begin{align}
+            \frac{\partial I}{\partial \theta}
+            \approx \frac{\partial E}{\partial \theta}
+            = \frac{1}{N} \sum_{i=1}^N \frac{\partial}{\partial \theta} \frac{f(\ve{x}_i(\theta),\theta)}{p(\ve{x}_i(\theta),\theta)}. \label{gradient-monte-carlo-estimator}
+        \end{align}
+        </li>
+
+        <li>However, the integrand $f(\ve{x},\theta)$ is often non-differentiable with respecti to $\theta$ due to visibility change. So, the above derivative sliding would be invalid.</li>
+
+        <li>The paper uses a transformation $T: \mathcal{Y} \rightarrow \ve{X}$ that removes the discontinuity with respect to $\theta$. If it exists, the integral becomes:
+        \begin{align*}
+            \int_{\mathcal{X}} f(\ve{x},\theta)\, \dee\ve{x}
+            = \int_{\mathcal{Y}} f(T(\ve{y},\theta),\theta) |\det J_{T}| \, \dee\ve{y}
+        \end{align*}
+        where $J_T$ is the Jacobian of the transformation $T$. Because the discontinuity has disappeared, we can estimate the gradient with $\eqref{gradient-monte-carlo-estimator}$.
+        </li>
+
+        <li><b>Example.</b> Consider the indicator function 
+        $\mathbb{I}_{\mathrm{condition}}$ which is $1$ when the condition is true and $0$ otherwise. Consider the integral:
+        \begin{align*}
+            I = \int_{\mathcal{X}} \mathbb{I}_{x > \theta} k(x)\, \dee x.
+        \end{align*}
+        We have that the integrand is not continuous. However, we can introduce a change of variable $y = x - \theta$, and the integral becomes:
+        \begin{align*}
+            I 
+            = \int_{\mathcal{X}} \mathbb{I}_{x > \theta} k(x)\, \dee x
+            = \int_{\mathcal{Y}} \mathbb{I}_{y > 0} k(y + \theta)\, \dee y.
+        \end{align*}
+        Now, the integral is differentiable with respect to $\theta$. So, we can do the following estimation:
+        \begin{align*}
+            \frac{\partial I}{\partial \theta}
+            = \frac{1}{N} \sum_{i=1}^N \frac{\partial}{\partial \theta} \frac{\mathbb{I}_{y > 0} k(y_i + \theta)}{p(y_i)}.
+        \end{align*}
+        </li>
+
+        <li>The change of variable above can be interpreted in two ways:
+        <ul>
+            <li>Instead of integrating a function with a discontinuity whose position depends on $\theta$, we integrate in a space where the discontinuity does not move when $\theta$ changes.</li>
+
+            <li>Actually, we perform importanace sampling using the samples $x_i(\theta) = y_i + \theta$ that follows the discontinuity.</li>
+        </ul>
+        </li>
+
+        <li>Two things to be careful for:
+        <ul>
+            <li>The transformation should not affect the primal computation of $I$. It should be designed to yield the identity mape when $\theta = \theta_0$ where $\theta_0$ refers to the concrete parameter value for which the graidents are to be evaluated.
+            <ul>
+                <li>In the example above, the transformation can be accomplished by $T(y,\theta) = y + \theta - \theta_0$.</li>
+            </ul>
+            </li>
+
+            <li>The sampling density $p$ should not depend on $\theta$. Otherwise, discontinuity would arise anew.</li>
+        </ul>
+        </li>
+    </ul>
+
+    <h3>2.1 &nbsp; Method</h3>
+
+    <h4>2.1.1 &nbsp; Removing discontinuities using rotations</h4>
+
+    <ul>
+        <li>We suppose that the integrand has small angular suppose. This is an assumption that we will correct, or rather <i>enforce</i>, in the next Section.</li>
+
+        <li>An infinestesimal change that causes a displacement of some geometry would be well approximated by a spherical rotation.
+        <ul>
+            <li>The smaller the support of the integrand, the better the approximation.</li>
+        </ul>
+        </li>
+
+        <li>We assume that there is a suitable rotation so that the change of variable:
+        \begin{align*}
+            I = \int_{\mathbb{S}^2} f(\omega, \theta)\, \dee\omega = \int_{\mathbb{S}^2} f(R(\omega, \theta), \theta)\, \dee\omega
+        \end{align*}
+        makes $f(R(\omega,\theta),\theta)$ continuous with respect to $\theta$ for each direction $\omega$.
+        <ul>
+            <li>Note that the Jacobian for this rotation is $1$.</li>
+        </ul>
+        </li>
+
+        <li>Now, we can sample the directions with probability distribution that depends on the current parameter value $p(\omega, \theta_0)$. This distribution is fixed, so there's no dependence on $\theta$ to worry about.
+        \begin{align*}
+            I \approx E = \frac{1}{N} \sum_{i=1}^N \frac{f(R(\omega_i,\theta, \theta))}{p(\omega_i, \theta_0)}.
+        \end{align*}
+        </li>
+
+        <li>The suitable rotation can be found if we know the displacement of the discontinuity with respect to the infinitesimal change of the scene parameter in question.
+        <ul>
+            <li>There's no need to know which edge is a silhouette edge.</li>
+        </ul>
+
+        <li>Within the small support of the integrand, the displacement of points on silhouette edges will closely apprximate the displacement of <i>other</i> poisitions on the associated object.</li>
+
+        <li>The rotation is computed by ray casting.
+        <ul>
+            <li>Within the support of the integrand, we cast a small number of rays (4 in paper).</li>
+
+            <li>Using information about the distance of the intersection points and the normals there, the paper applies a heuristic to select a point that is likely belongs to an occluder.
+            <ul>
+                <li>Note that the paper says it describes the heuristics in more details in the Appendix, but I still did not know the exact algorithm after reading it. This probably best be learned by reading the code.</li>
+            </ul>
+            </li>
+
+            <li>The movement of the selected point is then said to match the movement of the silhouette.</li>
+        </ul>
+        </li>
+
+        <li>We project the selected the point onto $\mathbb{S}^2$. Let us call the resulting directioin $\omega_P(\theta)$.
+        <ul>
+            <li>Note that the projection is a function of $\theta$ because the position is a function of $\theta$.</li>
+        </ul>
+        </li>
+
+        <li>Set $\omega_{P,0} = \omega_P(\theta_0)$, which is just the projection of the position of the intersection point.</li>
+
+        <li>We then compute a rotation matrix $R(\theta)$ such that:
+        \begin{align*}
+            R(\theta_0)\omega &= \omega 
+        \end{align*}
+        for all $\omega \in \mathbb{S}^2$, and
+        \begin{align*}
+            \frac{\partial}{\partial \theta} \Big( R(\theta) \omega_{P,0}\Big) = \frac{\partial}{\partial \theta} \omega_P(\theta)
+        \end{align*}
+        for all $\theta$.
+        <ul>
+            <li>Let me confess that I'm at a lost of with the writing. The paper points to Appendix B for the formula that can be used to derive the matrix. However, the appendix does not use the notation defined just above. It talks about Rodriguez's formula defined in terms of $\omega_a$ and $\omega_b$. How am I supposed to know which is which? What about the differential operator?</li>
+        </ul>
+        </li>
+    </ul>
+
+    <h4>2.1.2 &nbsp; Generalizing to functions with large support</h4>
+
+    <ul>
+        <li>We rely on the property that the integral of a function $f$ is equal to the integral of convolution of $f$:
+        \begin{align*}
+            \int_{\mathbb{S}^2} f(\omega)\,\dee\omega 
+            = \int_{\mathbb{S}^2} \int_{\mathbb{S}^2} f(\mu) k(\mu,\omega)\,\dee\mu,\dee\omega
+        \end{align*}
+        where $k$ is a spherical convoution kernel satisfying:
+        \begin{align*}
+            \int_{\mathbb{S}^2} k(\mu,\omega)\,\dee\mu = 1
+        \end{align*}
+        for all $\omega \in \mathbb{S}^2$. An example of this kernel is the <a href="https://en.wikipedia.org/wiki/Von_Mises%E2%80%93Fisher_distribution">von Mises-Fisher</a> distribution.
+        </li>
+        
+        <li>The above integral can be estimated with the following Monte Carlo estimator:
+        \begin{align*}
+            I \approx E = \frac{1}{N} \sum_{i=1}^N \frac{f(R_i(\mu_i,\theta), \theta) k(R_i(\mu_i,\theta), \omega_i(\theta))}{p(\omega_i(\theta), \theta), p_k(\omega_i(\theta), \mu_i)}
+        \end{align*}
+        where we first sample $\omega_i(\theta)$ and then sample $\mu_i$ from the kernel probability density $p_k(\cdot, \mu_i)$.
+        </li>
+
+        <li>The size of the spherical kernel provides a trade-off between variance and bias of the gradient estimate:
+        <ul>
+            <li>For small kernels, rotations are an excellent model for the displacement of discontinuities (i.e., smaller bias), but the probability of finding discontinuities within the kernel support is small, and hence the gradient has more variance.</li>
+        </ul>
+        </li>
+    </ul>
+
+    <h3>2.2 &nbsp; Variance reduction using control variates</h3>
+
+    <ul>
+        <li>The algorithm in the last section produces gradients with high variance.</li>
+
+        <li>To reduce variance, the paper proposes the use of <a href="https://en.wikipedia.org/wiki/Control_variates">control variates</a>.</li>        
+    </ul>
+
+    <h4>2.2.1 &nbsp; The statistics of gradient estimator</h4>
+
+    <ul>
+        <li>The reparameterization introduces a change of variable, which manifests in the Monte Carlo esimate as follows:
+        \begin{align*}
+            E = \frac{1}{N} \sum_{i=1}^N f(T(y_i,\theta),\theta) \frac{k(T(y_i,\theta),\theta)}{k(T(y_i, \theta_0), \theta_0)}.
+        \end{align*}
+        Here $T$ is the associated change of variable, and I belive the $k$ term in the denominator comes from the sampling probability distribution $p_k(\cdot, \cdot)$. (Why do they have to keep changing the notation?)
+        </li>
+
+        <li>Let
+        \begin{align*}
+            w_i(\theta) = \frac{k(T(y_i,\theta),\theta)}{k(T(y_i, \theta_0), \theta_0)}.
+        \end{align*}
+        We have that $w_i(\theta) = 1$ in the forward computation (because $\theta_0 = \theta$). The estimator becomes:
+        \begin{align*}
+            E = \frac{1}{N} \sum_{i=1}^N f(T(y_i,\theta),\theta) w_i(\theta).
+        \end{align*}
+        </li>
+
+        <li>I found the discussion that comes after this definition incomprehensible.</li>
+    </ul>
+
+    <h4>2.2.2 &nbsp; Control variates</h4>
+
+    <ul>
+        <li>Suppose we have a random variable $E$ that we want to reduce its variance.</li>
+
+        <li>Let $F$ be another random variable that is correlated with $E$ whose expected value is known.</li>
+
+        <li>Define
+        \begin{align*}
+            E' = E + \alpha(F - \mathbb{E}[F])
+        \end{align*}
+        where $\alpha \in \Real$ is a constant to be chosen. The  choice of $\alpha$ that reduces the variance the most is:
+        \begin{align*}
+            \alpha = -\frac{\mathrm{Cov}(E,F)}{\mathrm{Var}(F)}.
+        \end{align*}
+        </li>
+
+        <li>$\alpha$ is different for every integral, so the paper opted for a value that is simpler to calculate.</li>
+
+        <li>Note that
+        \begin{align*}
+            \frac{\partial E}{\partial \theta} 
+            &= \frac{1}{N} \sum \frac{\partial}{\partial \theta} \Big[ f(T(y_i,\theta),\theta) w_i(\theta) \Big] \\
+            &= \frac{1}{N} \sum \bigg( \frac{\partial }{\partial \theta} f(T(y_i,\theta),\theta) \bigg) w_i(\theta)
+            + \frac{1}{N} \sum f(T(y_i,\theta),\theta) \frac{\partial w_i(\theta) }{\partial \theta}.
+        \end{align*}
+        So, we can see that $\frac{\partial E}{\partial \theta}$ is correlated with
+        \begin{align*}
+            \frac{\partial F}{\partial \theta} = \frac{1}{N} \sum \frac{\partial w_i(\theta) }{\partial \theta}.
+        \end{align*}
+        </li>
+
+        <li>The paper says that the expected value of $\partial w_i(\theta) / \partial \theta$ is zero. (Why?)</li>
+
+        <li>The improved estimator is given by:
+        \begin{align*}
+        E' &= \frac{1}{N}\sum \Big[ f(T(y_i,\theta),\theta) w_i(\theta) - \alpha(w_i(\theta) - w_i(\theta_0)) \Big] \\
+        \frac{\partial E'}{\partial \theta} &= \frac{1}{N}\sum \frac{\partial}{\partial \theta} \Big[ f(T(y_i,\theta),\theta) w_i(\theta) - \alpha(w_i(\theta) - w_i(\theta_0)) \Big].
+        \end{align*}
+        </li>        
+    </ul>
+
+    <h4>2.2.3 &nbsp; Using pairs of paths to determine $\alpha$</h4>
+
+    <ul>
+        <li>If $f(x) = c$ is constant in the domain, then the most rediction in variance can be obtained from setting $\alpha = -c$. (This might be because $w_i(\theta)$ would be cause to 1.)</li>
+
+        <li>However, $\alpha$ should be determined independent of $w_i(\theta)$ to avoid introducing bias in the gradient of $E'$. (Why?)</li>
+
+        <li>The paper uses a technique called the <i>cross-weighting scheme</i> <a href="https://cs.dartmouth.edu/wjarosz/publications/rousselle16image.html">[Rouselle et al. 2016]</a>, which uses two uncorrelated estimates to compute $\alpha$.</li>
+
+        <li>The paper sample pairs of simplar paths and then performs variance cross-reduction for each pair.
+        <ul>
+            <li>At each scattering event, a path accumulates radiacne either via emitter sampling or via BSDF sampling.</li>
+
+            <li>The total contribution $r_i$ of one path can be written as a sum:
+            \begin{align*}
+                r_i = \sum_{l=0}^\infty f_{i,l}(\theta) W_{i,l}(\theta)
+            \end{align*}
+            where
+            <ul>
+                <li>each index corresponds to the contribution from an emitter;</li>
+
+                <li>$f_{i,l}(\theta)$ represents the product of emitted radiance and path throughput.</li>
+
+                <li>$W_{i,l}(\theta)$ is the product of all associated weights.</li>
+
+                <li>Because $\mathcal{E}[\partial w_i/\partial \theta] = 0$ and each weight is independent from the gradients of other weights, we have that $\mathcal{E}[\partial W_{i,l}/\partial \theta] = 0$ too.</li>
+
+                <li>The paper uses the following estimator:
+                \begin{align*}
+                    r' &= \frac{1}{2}[ f_{0,l}(\theta) W_{0,l}(\theta) - f_{1,l}(\theta)(W_{0,l}(\theta)-W_{0,l}(\theta_0)) ]\\ & \qquad +
+                    \frac{1}{2}[ f_{1,l}(\theta) W_{1,l}(\theta) - f_{0,l}(\theta)(W_{1,l}(\theta)-W_{1,l}(\theta_0)) ].
+                \end{align*}
+                </li>
+            </ul>              
+            </li>
+        </ul>
+        </li>
+    </ul>
+
+    <h4>2.2.4 &nbsp; Using partially correlated paths</h4>
+
+    <ul>
+        <li>Similar paths are paths that are highly correlated. However, there should be no correlation btween $f_{0,l}$ and $\partial W_{1,l}(\theta)/\partial \theta$ for all scattering orders (and vice versa for the other directions).</li>
+
+        <li>This is possible by reusing the random numbers used to constructing the first path except those that affect the weights $W_{i,l}$.</li>
+    </ul>
+
+    <h3>2.3 &nbsp; Comment</h3>
+
+    <ul>
+        <li>This paper is very hard to read. It lacks clarity. Not enough discussion is given for the exact algorithm to use. I also could not find the source code to read. I'm really frustrated with it.</li>
+    </ul>
+
+    <h2>3 &nbsp; Zhang et al. (SIGGRAPH 2020)</h2>
+
+    <ul>
+        <li></li>
+    </ul>
+
+    <h2>4 &nbsp; Nimier-David et al. (SIGGRAPH 2020)</h2>
+
+    <ul>
+        <li></li>
+    </ul>
+
+    <h2>5 &nbsp; Li et al. (SIGGRAPH Asia 2020)</h2>
+
+    <ul>
+        <li></li>
+    </ul>
+
+    <h2>6 &nbsp; Bangaru et al. (SIGGRAPH Asia 2020)</h2>
+
+    <ul>
+        <li>Like Loubet et al.'s 2019 paper, this paper aims to resolve the difficulty involved in boundary sampling required to compute gradients in Li et al's 2018 paper.</li>
+
+        <li>Approach:
+        <ul>
+            <li>Apply the divergence theorem to convert the boundary integral into an area integral.</li>
+
+            <li>Rewrite the integral into a form tghat is suitable for Monte Carlo rendering.</li>
+        </ul>
+        </li>
+
+        <li>The paper also gives a sampling algorithm for the above rewritten integral.</li>
+
+        <li>Loubet et al.'s paper is the first paper that uses area sampling to compute gradients. The difference between this paper and that one is bias of the estimator.
+        <ul>
+            <li>Loubet et al.'s algorithm introduces many approximations to the gradient integral (i.e., approximating boundary movement with rotation and determining occluders with a heuristics), leading to bias. On the other hand, this paper's algorithm is consistent or unbiased.</li>
+        </ul>            
+        </li>                
+    </ul>
+
+    <h3>6.1 &nbsp; Area formulation of differentiable rendering</h3>
+
+    <ul>
+        <li>I've done my own studying. (See <a href="../../math/diff-form-primer/index.html">this note</a> and <a href="../../math/differentiating-integrals/index.html">this note</a>.) So, I'll not be following the derivation in the paper.</li>
+
+        <li>When doing Monte Carlo path tracing, we compute integrals of the form:
+        \begin{align*}
+            I = \int_D f(\omega)\, \dee \omega
+        \end{align*}
+        where the domain $D$ is, most of the time, 2D. It can be the domain of solid angles or the footprint of a pixel in the image plane.
+        </li>
+
+        <li>Let $\theta$ be a scalar parameter of interest. The contribution we wish to accumulate then would depend on $\theta$, so $f(\omega)$ becomes $f(\omega; \theta)$. Moreover, if $\theta$ is one of the camera parameters or a parameter that controls scene geometry, the domain of integration can depend on it too. So, $D$ becomes $D(\theta)$.
+        </li>
+
+        <li>In differentiable rendering, we wish to compute the gradient:
+        \begin{align*}
+            \frac{\partial}{\partial \theta} \int_{D(\theta)} f(\omega; \theta)\, \dee\omega. 
+        \end{align*}        
+        </li>        
+
+        <li>For this, we can use the 2D version of the Leibniz rule (see <a href="../../math/differentiating-integrals/index.html">this note</a>), and we have:
+        \begin{align*}
+            \frac{\partial}{\partial \theta} \int_{D(\theta)} f(\omega; \theta)\, \dee\omega
+            = \int_{D(\theta)} \bigg[ \nabla_\omega \cdot \Big( f(\omega;\theta) \ve{v}(\omega;\theta) \Big) + \frac{\partial f(\omega;\theta)}{\partial \theta}\bigg]\, \dee \omega
+        \end{align*}
+        where $\ve{v}(\omega;\theta)$ is the "velocity field" with the following properties:
+        <ol>
+            <li>For all $\omega \in \partial D(\theta)$, $\ve{v}(\omega;\theta) = \partial \omega / \partial \theta$.</li>
+
+            <li>$\ve{v}(\omega; \theta)$ is continuous in $D(\theta)$.</li>
+        </ol>
+        The paper calls it a <b>warp field</b>.
+        </li>
+
+        <li>A little more manipulation yields:
+        \begin{align*}
+        &\frac{\partial}{\partial \theta} \int_{D(\theta)} f(\omega; \theta)\, \dee\omega \\
+        &= \int_{D(\theta)} \frac{\partial f(\omega;\theta)}{\partial \omega} \cdot  \ve{v}(\omega;\theta)\, \dee\omega 
+        + \int_{D(\theta)} f(\omega;\theta)\, \nabla_\omega \cdot \ve{v}(\omega;\theta)\, \dee\omega 
+        + \int_{D(\theta)} \frac{\partial f(\omega;\theta)}{\partial \theta}\, \dee \omega.
+        \end{align*}
+        </li>
+
+        <li>The problem now becomes how to find warp fields for the integrals that we are interested to estimate.</li>
+
+        <li>One thing to note is that the integral above must be done in 2D, not on a 2D manifold as we would have liked for integrating over the hemisphere of directions. This is because of the Leibniz rule for manifolds (<a href="../../math/differentiating-integrals/index.html">source</a>) says:
+        \begin{align*}
+            \frac{\dee}{\dee\theta} \int_{D(\theta)} \alpha
+            = \int_{D(t)} \ve{v} \iprod \dee\alpha
+            + \int_{D(t)} \dee(\ve{v} \iprod \dee \omega)
+            + \int_{D(t)} \dot{\alpha}.
+        \end{align*}
+        Now, if we integrate on a 2D manifold, we have that $\alpha$ must be a 2-form. This means that the final integral must have three terms. However,  
+        \begin{align*}
+            \int_{D(\theta)} \bigg[ \nabla_\omega \cdot \Big( f(\omega;\theta) \ve{v}(\omega;\theta) \Big) + \frac{\partial f(\omega;\theta)}{\partial \theta}\bigg]\, \dee \omega
+        \end{align*}
+        has only two terms. (When you apply the general formula when $\alpha$ is a 2-form in a 2-dimensional space, the first term disappear because $d\alpha = 0$. However, for a 2-form in 3D space, the first term does not disappear!)
+        </li>
+    </ul>
+
+    <h3>6.2 &nbsp; Identifying the Warp Field</h3>
+
+    <ul>
+        <li>We now restrict ourselves to the case where $D(\theta) \subseteq \mathbb{S}^2$, the set of solid angles.</li>
+
+        <li>The paper constructs a warp field that respects the boundary condition but is not always continuous.</li>
+
+        <li>When doing ray tracing, we map a direction $\omega$ from position $\ve{x}$ to a scene point $\ve{y}$. This process is denoted by $\ve{y} = \mathrm{Intersect}(\ve{x},\omega;\theta)$. We can easily compute $\partial \ve{y} / \partial \theta$, and $\partial \ve{y} / \partial \omega$ through automatic differentiation. What we now need is the velocity of $\omega$ with respect to $\theta$, which is simply $\partial \omega / \partial \theta$. This is given by:
+        \begin{align*}
+            \frac{\partial \omega}{\partial \theta}
+            = \frac{\partial \omega}{\partial \ve{y}} \frac{\partial \ve{y}}{\partial \theta}.
+        \end{align*}
+        Because we have $\partial \ve{y} / \partial \omega$ at hand, we can compute:
+        \begin{align*}
+            \ve{v}^{(\mathrm{direct})}(\omega;\theta) 
+            = \frac{\partial \omega}{\partial \theta}
+            := \bigg( \frac{\partial \ve{y}}{\partial \omega} \bigg)^\dagger 
+            \frac{\partial \ve{y}}{\partial \theta}
+        \end{align*}
+        where $\dagger$ denotes taking the pseudoinverse.
+        </li>
+
+        <li>The paper, on the other hand, suggests using:
+        \begin{align*}
+            \frac{\partial \omega}{\partial \theta}
+            := \frac{\partial \ve{y} / \partial \theta}{|\partial \ve{y} / \partial \omega|}
+        \end{align*}
+        The expression, however, does not type check. 
+        <ul>
+            <li>$\omega$ is two-dimensional because the sphere can be parameterized by two angles. This makes $\partial \omega / \partial \theta$ a $2 \times 1$ column vector. </li>
+
+            <li>On the other hand, $\ve{y}$ is 3-dimensional because it is a member of $\Real^3$. So, $\partial \ve{y} / \partial \theta$ is a $3 \times 1$ vector.</li>
+
+            <li>The change of variable factor $|\partial \ve{y} / \partial \omega|$ is a scalar.</li>
+
+            <li>So, the RHS would be a $3 \times 1$ vector while the LHS would be a $2 \times 1$ vector.</li>
+        </ul>
+        THIS DOES NOT COMPILE!
+        </li>
+
+        <li>We mentioned earlier that the warp field respects the boundary conditions, but it is not continuous. How so?
+        <ul>
+            <li>Imagine a small triangle locating in front of a big triangle.</li>
+
+            <li>Zoom in on an edge of the small triangle. You will see that the image is partitioned into two parts. The one that belongs to the small triangle, and the one that belongs to the big triangle.</li>
+
+            <li>Let $\theta$ be one of the coordinates of the vertex that makes up the zoomed-in edge of the small triangle.</li>
+
+            <li>On the edge, the velocity is high. The high velocity spreads smoothly on the side of the small triangle.</li>
+
+            <li>However, for the side of the big triangle, the velocity would be zero. So, once the cross to that side, the value abruptly changes to zero, while it should decrease to zero more smoothly.</li>
+        </ul>
+        </li>
+
+        <li>The paper solves this problem by smoothing the velocity fields with a kernel:
+        \begin{align*}
+            \ve{v}^{(\mathrm{filtered})}(\omega;\theta) 
+            = \frac{\int_{\mathbb{S}^2} w(\omega,\omega')\ve{v}^{(\mathrm{direct})}(\omega;\theta)\, \dee \omega'}{\int_{\mathbb{S}^2} w(\omega,\omega')\, \dee \omega'}
+        \end{align*}
+        The weight must be chosen so that the boundary condition is still satisifed. This can be achieved by choosing the weight so that, if $\omega$ is on the boundary, $w(\omega, \omega')$ should approach infinitity as $\omega'$ approaches $\omega$.
+        </li>
+
+        <li>The paper proposes using:
+        \begin{align*}
+            w(\omega, \omega') = \frac{1}{D(\omega, \omega') + B(\omega')}
+        \end{align*}
+        where $D(\omega,\omega') = e^{\kappa(1 - \langle \omega, \omega' \rangle)} - 1$ is the von-Mises Fisher distance. Here, $\langle \omega, \omega' \rangle$ denotes the dot product between the 3D unit vectors that correspond to $\omega$ and $\omega'$. The function $B(\omega')$ is called the <b>boundary test</b>. It has the property that $B(\omega') \rightarrow 0$ if $\omega'$ approaches the boundary. For a triangle meshes, $B(\omega')$ is computed as follows:
+        <ol>
+            <li>Find the triangle that intersects the ray in the direction $\omega. For each triangle vertex, check if any of the adjacent edges are silhouette edges. An edge is a silhouette edge if (1) it has an adjacent face that is back-facing, or (2) it has only one adjacent face.</li>
+
+            <li>Compute $B_v$ for each vertex $v$. If a vertex $v$ is associated with a silhouette edge, set $B_v = 0$. Otherwise, set 
+            \begin{align*}
+                B_v = \frac{1 - (1-\langle \omega, \ve{n} \rangle^2)}{1 - (1-\beta)(1-\langle \omega, \ve{n} \rangle^2)}
+            \end{align*}
+            where $\ve{n}$ is the normal at vertex $v$. The parameter $\beta$ controls the spread rate, and the paper uses $\beta = 0.01$.
+            </li>
+
+            <li>Use barycentric coordinate at the hit point to average the $B_v$'s of the three vertices.</li>
+        </ol>
+        </li>
+    </ul>
+
+    <h3>6.3 &nbsp; Monte Carlo Estimation of the Derivative</h3>
+
+    <ul>
+        <li>Recall that we want to estimate
+        \begin{align*}
+            \frac{\partial I}{\partial \theta}
+            &= \int_{D(\theta)} \bigg[ \nabla_\omega \cdot ( \ve{v}^{(\mathrm{filtered})}(\omega;\theta)) f(\omega;\theta) + \frac{\partial f(\omega;\theta)}{\partial \theta} \bigg]\, \dee\omega \\
+            &= \int_{D(\theta)} \frac{\partial f(\omega;\theta)}{\partial\omega} \cdot \ve{v}^{(\mathrm{filtered})}(\omega;\theta) \, \dee\omega \\
+            &\qquad + \int_{D(\theta)} f(\omega;\theta)\nabla_\omega \cdot \ve{v}^{(\mathrm{filtered})}(\omega;\theta) \, \dee\omega \\
+            &\qquad + \int_{D(\theta)} \frac{\partial f(\omega;\theta)}{\partial \theta}\, \dee\omega 
+        \end{align*}
+        with
+        \begin{align*}
+            \ve{v}^{(\mathrm{filtered})}(\omega;\theta)
+            &= \frac{\int_{\mathbb{S}^2} w(\omega, \omega') \ve{v}^{(\mathrm{direct})}(\omega;\theta)\, \dee\omega'}{\int_{\mathbb{S}^2} w(\omega, \omega')\, \dee\omega'}.
+        \end{align*}
+        </li>
+
+        <li>We first generate a sample $\omega$ for the outer integral.</li>
+
+        <li><b>function</b> $\mathrm{Radiance}(\ve{x},\omega_in)$
+            <ul>
+                <li><i>Input:</i> $\ve{x}$ = scene position to evaluate reflection, $\omega_\mathrm{in}$ = the incoming light direction</li>
+
+                <li>Sample outgoing radiance direction $\omega$ with incoming direction $\omega_\mathrm{in}$.</li>
+
+                <li>$\ve{y} \gets \mathrm{Intersect}(\ve{x},\omega)$</li>
+
+                <li>$L, \partial_\theta L, \partial_\omega L \gets \mathrm{Radiance}(\ve{y},\omega)$</li>
+
+                <li>$\hat{\ve{v}}(\omega;\theta), \nabla_\omega \cdot \hat{\ve{v}}(\omega;\theta) \gets \mathrm{EstimateWarp}(\omega,\ve{y},N')$</li>
+
+                <li>$\widehat{\partial^b_\theta I} \gets \langle \partial_\omega L, \hat{\ve{v}}(\omega;\theta) \rangle + L \nabla_\omega \cdot \hat{\ve{v}}(\omega;\theta) $</li>
+
+                <li>$\widehat{\partial_\theta I}\gets \widehat{\partial^b_\theta I} + \partial_\theta L$</li>
+
+                <li>$\hat{I} \gets f_p(\omega_\mathrm{in}, \omega)L$</li>
+
+                <li>$\widehat{\partial_{\omega_{\mathrm{in}}} I}  \gets \partial_{\omega_in} (f_p(\omega_\mathrm{in}, \omega)L)$</li>
+
+                <li><b>return</b> $\hat{I}$, $\widehat{\partial_\theta I}$, $\widehat{\partial_{\omega_{\mathrm{in}}} I}$</li>
+            </ul>
+        </blockquote>
+        </li>
+
+        <li>The $\mathrm{EstimateWarp}$ function estimates the filtered velocity field. We generate a set of auxiliary samples $\{ \omega_1', \dotsc, \omega_{N'}'\}$ to estimate the inner convolution integral at $\omega$.
+        <ul>
+            <li>The quantity to estimate is a ratio, and the estimate is done by dividing the sum of the weighted contributions with the sum of the weights. This is guaranteed to converge to the correct value as the number of samples increases by <a href="https://en.wikipedia.org/wiki/Slutsky%27s_theorem">Slutsky's theorem</a>. So, the estimator is consistent, but biases if a fixed number of samples is used.</li>
+        </ul>
+        </li>
+
+        <li><b>function</b> $\mathrm{EstimateWarp}(\omega, \ve{y}, N')$</li>
+        <ul>
+            <li><b>for</b> $i \gets 1, \dotsc, N'$
+            <ul>
+                <li>Sample $\omega_i'$ from von-Mises Fisher distribution with mean $\omega$.</li>
+
+                <li>$\ve{y}'_i, \partial_\theta \ve{y}'_i, \partial_\omega \ve{y}'_i \gets \mathrm{DiffIntersect}(\ve{x},\omega'_i)$</li>
+
+                <li>$B_i \gets \mathrm{BoundaryDistance}(\ve{y}_i')$</li>
+
+                <li>$w_i \gets \frac{1}{\exp(\kappa - \kappa\langle \omega, \omega' \rangle)-1 + B_i} \times \frac{1}{\mathrm{pdf}(\omega'_i)}$</li>
+
+                <li>$\partial_\theta w_i \gets \partial_\omega \Big( \frac{1}{\exp(\kappa - \kappa\langle \omega, \omega' \rangle)-1 + B_i} \Big) \times \frac{1}{\mathrm{pdf}(\omega'_i)}$</li>
+
+                <li>$\ve{v}_i^{(l)} \gets (\partial_\omega \ve{y}_i')^\dagger \partial_\theta \ve{y}_i'$</li>
+            </ul>
+            </li>
+            <li><b>end for</b></li>
+
+            <li>$\hat{Z} \gets \sum w_i$</li>
+
+            <li>$\widehat{\partial Z} \gets \sum \partial_\omega w_i$</li>
+
+            <li>$\hat{\ve{v}}(\omega, \theta) \gets \frac{\sum w_i \ve{v}_i^{(l)}}{\hat{Z}}$</li>
+
+            <li>$\nabla_\omega \cdot \hat{\ve{v}}(\omega;\theta) \gets \frac{\sum \langle \partial_\omega w_i, \ve{v}_i^{(l)} \rangle}{\hat{Z}} - \frac{\sum w_i \langle \ve{v}_i^{(l)}, \widehat{\partial Z} \rangle}{\hat{Z}^2} $</li>
+
+            <li><b>return</b> $\hat{\ve{v}}(\omega;\theta)$, $\nabla_\omega \cdot \hat{\ve{v}}$</li>
+        </ul>
+
+        <li>The above estimator for the velocity field is biased. We can debias it with <a href="https://arxiv.org/pdf/1005.2228.pdf">the technique by McLeish</a>.
+        <ul>
+            <li>Let there be a sequence of random variable $X_0$, $X_1$, $X_2$, $\dotsc$ such that $\lim_{n \rightarrow \infty} E[X_n] = x_\infty$.</li>
+
+            <li>Let $\nabla X_n = X_n - X_{n-1}$ for $n \geq 1$.</li>
+
+            <li>Let $N$ be a random variable, independent of the sequence of random variables above, that takes non-negative integer value.</li>
+
+            <li>Let $Q_n = \Pr(N \geq n)$, and let $Q_n > 0$ for all $n \in \mathbb{N}$.</li>
+
+            <li>Define
+            \begin{align*}
+                Y 
+                = X_0 + \sum_{n=1}^N \frac{\nabla X_n}{Q_n}
+                = X_0 + \sum_{n=1}^N \nabla X_n \frac{\mathbb{I}(n \leq N)}{Q_n}.
+            \end{align*}
+            We have that $E[Y] = x_\infty$.
+            </li>
+        </ul>
+        </li>
+
+        <li>The $\mathrm{WarpEstimator}$ has two sequence of random variables: one for $\hat{v}(\omega,\theta)$ and the other for $\nabla_\omega \cdot \hat{v}(\omega,\theta)$. Note that both are indexed by $N'$. We can apply McLeish's technique to both of them.
+        </li>
+
+        <li>Note that Algorithm 3 in the paper is different from the straightforward application of McLeish's technique. In particular, they apply technique only to $\hat{Z}$, which I found strange.</li>
+    </ul>
+
+    <h3>6.4 &nbsp; Variance Reduction</h3>
+
+    <ul>
+        <li>The paper observes that the estimator above has high variance, especially for the $\nabla_\omega w(\omega, \omega')$ term.</li>
+
+        <li>The paper uses two techniques to reduce variance.
+        <ol>
+            <li>Antithetic variates.</li>
+            <li>Control variates.</li>
+        </ol>
+        The formulation for control variates was discussed earlier in the note. For antithetic variates, take a look at <a href="https://statweb.stanford.edu/~owen/mc/Ch-var-basic.pdf">this note by Art B. Owen</a>.
+        </li>
+
+        <li>For antithetic variates, the idea is to choose samples in pairs so that their values are <i>negatively correlated</i>. So, instead of estimating an integral with
+        \begin{align*}
+            \sum_{i=1}^N X_i,
+        \end{align*}
+        we do it with
+        \begin{align*}
+            \sum_{i=1}^N \frac{X_{2i} + X_{2i+1}}{2}
+        \end{align*}
+        where $X_{2i}$ and $X_{2i+1}$ are negatively correlated.
+        </li>
+
+        <li>In the context of our problem, we would like to reduce the variance of the estimate of $\nabla_\omega(\omega,\omega')$, which has a radially symmetric kernel as a part of it. For each $\omega'$, let $\omega''$ be $\omega'$ rotated around $\omega$ by $180^\circ$ so that it is antipodal to $\omega'$. We have that $\partial_\omega w(\omega,\omega')$ and $\partial_\omega w(\omega,\omega')$ would be negatively correlated because the derivative of the symmetric kernel would have opposite signs at $\omega'$ and $\omega''$. 
+        <ul>
+            <li>The interesting thing is that this use of antithetic variate would increase the noise of the original weight sum. It is unclear from the paper how antithetic variates are incorporated into the grand scheme of things. The only way to know might be to look at the code, which is not released yet.</li>
+        </ul>
+        </li>
+
+        <li>The paper observes that antithetic variates are effective only when the velocity field is uniform.</li>
+
+        <li>In case the velocity field exhibit linear variation, the paper uses control variates instead.</li>
+
+        <li>The paper discusses how this work by using the pixel prefilter integral. Here, we want to evaluate
+        \begin{align*}
+            I_B = \iint_{D(\theta)} \Big( \nabla_\ve{x} f(\ve{x};\theta) \Big) \cdot \ve{v}(\ve{x};\theta)\, \dee\ve{x} + \iint_{D(\theta)} \Big( \nabla_\ve{x} \cdot \ve{v}(\ve{x};\theta) \Big) f(\ve{x};\theta)\, \dee x
+        \end{align*}
+        where $\ve{x}$ are image plane positions, and
+        \begin{align*}
+            f(\ve{x};\theta) = g(\ve{x};\theta) k(\ve{x})
+        \end{align*}
+        where $g(\ve{x};\theta)$ denotes the radiance through point $\ve{x}$ and $k(\ve{x})$ is the pixel kernel.
+        </li>
+
+        <li>The first integral can be estimated as:
+        \begin{align*}
+            I_B^{(1)} 
+            \approx E_\ve{x}[g(\ve{x};\theta) \partial_{\ve{x}} k(\ve{x}) \cdot \ve{v}(\ve{x};\theta)]
+            + E_\ve{x}[ k(\ve{x}) \partial_{\ve{x}} g(\ve{x};\theta)  \cdot \ve{v}(\ve{x};\theta)].
+        \end{align*}
+        </li>
+
+        <li>The paper says that the main source of variance is the firs term $M = g(\ve{x};\theta) \partial_\ve{x} k(\ve{x}) \cdot \ve{v}(\ve{x};\theta)$.</li>
+
+        <li>Let
+        \begin{align*}
+            \mu_g &= E_\ve{x}[g(\ve{x};\theta)] \\
+            \nabla_g &= E_\ve{x}[\partial_\ve{x} g(\ve{x};\theta)] \\
+            \mu_\ve{v} &= E_{\ve{x}}[\ve{v}(\ve{x};\theta)] \\
+            \nabla_{\ve{v}} &= E_{\ve{x}}[\partial_\ve{x} \ve{v}(\ve{x};\theta)].
+        \end{align*}
+        We do not have these exact means, but we compute the experimental means.
+        </li>
+
+        <li>The paper constructs an estimate:
+        \begin{align*}
+            C = (\partial_{\ve{x}} k(\ve{x}))^T A \ve{x}
+        \end{align*}
+        where
+        \begin{align*}
+            A = \mu_g \nabla_{\ve{v}} + \mu_\ve{v} \nabla_g^T.
+        \end{align*}
+        Its expectation is given by:
+        \begin{align*}
+            E[C] = \tr\Big( A\ \mathrm{cov}((\partial_\ve{x} k(\ve{x}))^T, \ve{x} ) \Big) + E[(\partial_\ve{x} k(\ve{x}))^T] A E[\ve{x}].
+        \end{align*}
+        </li>
+
+        <li>Lastly, the full estimator is given by $Q = M - C + E[C]$.</li>
+
+        <li>It is unclear how to construct this estimator for the secondary bounces. For this, we may have to look at the source code.</li>
+
+        <li>To be honest, I'm lost reading this part.</li>
+    </ul>
+
+    <h2>Appendix A &nbsp; Removing the Dirac delta function from an integral</h2>
+
+    <ul>
+        <li>Suppose you have a function $g(x,y)$ defined on the $xy$-plane.</li>
+
+        <li>We want to compute the integral of $g(x,y)$ on the line connecting $\ve{a} = (a_x, a_y)$ and $\ve{b} = (b_x, b_y)$. The integral is given by:
+        \begin{align*}
+        \iint_{\alpha(x,y) = 0} \delta(\alpha(x,y)) g(x,y)\, \dee x \dee y
+        \end{align*}
+        where 
+        \begin{align*}
+        \alpha(x,y) 
+        &= (a_y - b_y)x + (b_x - a_x)y + (a_x b_y - b_x a_y).
+        \end{align*}</li>
+
+        <li>Let $\ell$ denote the length of the segment connecting $\ve{a}$ and $\ve{b}$:
+        \begin{align*}
+            \ell = \sqrt{(a_x - b_x)^2 + (a_y - b_y)^2} = \| \ve{b} - \ve{a} \|.
+        \end{align*}
+        </li>
+
+        <li>Let us parameterize the line with $s$, which we define to be the distance from $\ve{a}$ on the line. The points on the line is given by:
+        \begin{align*}
+            \ve{p}(s)
+            = \begin{bmatrix} a_x \\ a_y \end{bmatrix} + \frac{1}{\ell} \begin{bmatrix} b_x - a_x \\ b_y - a_y \end{bmatrix}s            
+            = \ve{a} + \frac{\ve{b} - \ve{a}}{\|\ve{b} - \ve{a} \|} s.            
+        \end{align*}        
+        </li>
+
+        <li>Let us simplify the notation even further. We say that the plane is spanned by two vectors:
+        \begin{align*}
+            \hat{\ve{s}} = \frac{\ve{b} - \ve{a}}{\| \ve{b} - \ve{a} \|}
+        \end{align*}
+        and
+        \begin{align*}
+            \hat{\ve{t}} = \begin{bmatrix} 0 & -1 \\ 1 & 0 \end{bmatrix} \hat{\ve{s}} = \frac{1}{\ell} \begin{bmatrix} a_y - b_y \\ b_x - a_x \end{bmatrix}.
+        \end{align*}
+        The plane can then be parameterized by the $(s,t)$ parameters:
+        \begin{align*}
+            \Real^2 = \{ s \hat{\ve{s}} + t \hat{\ve{t}} + \ve{a} : s \in \Real, t \in \Real \}.
+        \end{align*}
+        Here, $\ve{a}$ is designated as the origin of the plane.
+        </li>
+
+        <li>Now,
+        \begin{align*}
+        \alpha(x,y) 
+        &= (a_y - b_y)x + (b_x - a_x)y + (a_x b_y - b_x a_y) \\
+        &= \begin{bmatrix} a_y - b_y \\ b_x - a_x \end{bmatrix} \cdot \begin{bmatrix} x \\ y \end{bmatrix}
+        - \begin{bmatrix} a_y - b_y \\ b_x - a_x \end{bmatrix} \cdot \begin{bmatrix} a_x \\ a_y \end{bmatrix} \\
+        &= \ell \hat{\ve{t}}^T (x,y) - \ell \hat{\ve{t}}^T \ve{a} \\
+        &= \ell \hat{\ve{t}}^T \Big( (x,y) - \ve{a} \Big) \\
+        &= \ell t. 
+        \end{align*}         
+        </li>
+
+        <li>Set $\tilde{t} = \ell t$. Let $h$ be the function that transforms $(x,y)$ to $(s, \tilde{t})$. We have that:
+        \begin{align*}
+            h(x,y) 
+            =
+            \begin{bmatrix}
+                s \\ \tilde{t}
+            \end{bmatrix}
+            = 
+            \begin{bmatrix}
+            1 & \\
+            & \ell 
+            \end{bmatrix}
+            \begin{bmatrix}
+            - \hat{\ve{s}}^T - \\
+            - \hat{\ve{t}}^T -
+            \end{bmatrix}
+            \bigg( \begin{bmatrix}
+                x \\ y
+            \end{bmatrix} - \ve{a} \bigg).
+        \end{align*}
+        So,
+        \begin{align*}
+            \frac{\dee s \dee \tilde{t}}{\dee x \dee y} = \bigg| \frac{\partial h}{\partial (x,y)} \bigg| = \ell.
+        \end{align*}
+        In other words,
+        \begin{align*}
+            \dee x \dee y = \frac{1}{\ell} \dee s \dee \tilde{t}.
+        \end{align*}
+        </li>
+
+        <li>As a result, we may write
+        \begin{align*}      
+        \iint_{\alpha(x,y) = 0} \delta(\alpha(x,y)) g(x,y)\, \dee x \dee y 
+        &= \int_{-\infty}^\infty \int_{-\infty}^\infty \delta(\tilde{t}) g(\ve{p}(s))\, \frac{\dee s \dee \tilde{t}}{\ell} \\
+        &= \bigg( \int_{-\infty}^\infty \frac{g(\ve{p}(s))}{\ell}\,\dee s\bigg) \bigg( \int_{-\infty}^\infty \delta(\tilde{t})\, \dee\tilde{t} \bigg) \\
+        &= \int_{-\infty}^\infty \frac{g(\ve{p}(s))}{\ell}\,\dee s.
+        \end{align*}
+        </li>
+
+        <li>Now, note that
+        \begin{align*}
+            \frac{\partial \alpha}{\partial(x,y)} 
+            = \begin{bmatrix} a_y - b_y \\ b_x - a_x \end{bmatrix}
+            = \ell \tilde{\ve{t}}.
+        \end{align*}
+        So,
+        \begin{align*}
+            \bigg\| \frac{\partial \alpha}{\partial(x,y)} \bigg\| = \ell,
+        \end{align*}        
+        </li>
+
+        <li>As a result,
+        \begin{align*}      
+        \iint_{\alpha(x,y) = 0} \delta(\alpha(x,y)) g(x,y)\, \dee x \dee y 
+        &= \int_\infty^\infty \frac{g(\ve{p}(s))}{\ell}\,\dee s\\
+        &= \int_\infty^\infty \frac{g(\ve{p}(s))}{\| \partial \alpha / \partial(x,y) \| }\,\dee s \\
+        &= \int_\infty^\infty \frac{g(x,y)}{\| \partial \alpha / \partial(x,y) \| }\,\dee \sigma(x,y)
+        \end{align*}
+        where $\sigma(x,y)$ means $s$, which is the measure of length on the line $\alpha(x,y) = 0$.
+        </li>
+    </ul>
+
+    <h2>Appendix B &nbsp; Integral over $\mathbb{S}^2$</h2>
+
+    <ul>
+        <li>We can view $\mathbb{S^2}$ as a 2-manifold with a coordinate patch:
+        \begin{align*}
+            \ve{g}: (0,\theta) \times [0,2\pi) &\rightarrow \Real^3 \\
+            \begin{bmatrix}\vartheta \\ \varphi \end{bmatrix} &\mapsto 
+            \begin{bmatrix} x \\ y \\ z \end{bmatrix} =
+            \begin{bmatrix} \cos \varphi \sin\vartheta \\ \sin\varphi \sin\vartheta \\ \cos\vartheta \end{bmatrix}.
+        \end{align*}        
+        </li>
+
+        <li>We have that
+        \begin{align*}
+            \ve{g}_{\vartheta}
+            &= \begin{bmatrix}
+                \cos\varphi \cos\vartheta \\
+                \sin\varphi \cos\vartheta \\
+                -\sin \vartheta
+            \end{bmatrix} \\
+            \ve{g}_{\varphi}
+            &= \begin{bmatrix}
+                -\sin\varphi \sin\vartheta \\
+                \cos\varphi \sin\vartheta \\
+                0
+            \end{bmatrix}.
+        \end{align*}
+        So,
+        \begin{align*}
+            E 
+            &= \ve{g}_{\vartheta} \cdot \ve{g}_{\vartheta} \\
+            &= \cos^2\varphi \cos^2\vartheta + \sin^2\varphi \cos^2\vartheta + \sin^2 \vartheta \\
+            &= (\cos^2 \varphi + \sin^2\varphi) \cos^2\vartheta + \sin^2\vartheta \\
+            &= \cos^2\vartheta + \sin^2\vartheta \\
+            &= 1 \\
+            F 
+            &= \ve{g}_{\varphi} \cdot \ve{g}_{\varphi} \\
+            &= \sin^2\varphi \sin^2\vartheta + \cos^2\varphi \sin^2\vartheta \\
+            &= (\sin^2\varphi + \cos^2\varphi) \sin^2\vartheta \\
+            &= \sin^2\vartheta \\
+            G 
+            &= \ve{g}_{\vartheta} \cdot \ve{g}_{\varphi} \\
+            &= -\cos\varphi sin\varphi \cos\vartheta \sin\vartheta + \sin\varphi \cos\varphi \cos\vartheta \sin\vartheta \\
+            &= 0.
+        \end{align*}
+        As a result, the Riemannian volume form is given by
+        \begin{align*}
+            \sqrt{EF - G^2}\, \dee\vartheta \wedge \dee\varphi
+            = \sqrt{\sin^2\theta} \, \dee\vartheta \wedge \dee\varphi
+            = \sin\theta\, \dee\vartheta \wedge \dee\varphi.            
+        \end{align*}
+        </li>
+
+        <li>The normal vector $\ve{n}(\vartheta, \varphi)$ would be given by
+        \begin{align*}
+            \ve{n}(\vartheta, \varphi)
+            = \frac{\ve{g}_\vartheta \times \ve{g}_\varphi}{\| \ve{g}_\vartheta \times \ve{g}_\varphi \|}
+            = \begin{bmatrix} 
+            \cos \varphi \sin\vartheta \\
+             \sin\varphi \sin\vartheta \\ 
+             \cos\vartheta 
+             \end{bmatrix}
+            = \begin{bmatrix} x \\ y \\ z \end{bmatrix}.
+        \end{align*}
+        Why? Because we have a sphere or radius $1$, and the normal vector to the sphere is the position vector itself.
+        </li>
+
+        <li>Now, according to <a href="../../math/diff-form-primer/index.html">my other note</a>, the Riemannian volume form in $\Real^3$ would be:
+        \begin{align*}
+            \ve{n}[1]\, \dee y \wedge \dee z
+            + \ve{n}[2]\, \dee z \wedge \dee x
+            + \ve{n}[3]\, \dee x \wedge \dee y
+            &= x\, \dee y \wedge \dee z 
+            + y\, \dee z \wedge \dee x
+            + z\, \dee x \wedge \dee y.
+        \end{align*}
+        </li>
+
+        <li>When doing a pullback, we have
+        \begin{align*}
+            \dee x 
+            &= \frac{\partial x}{\partial \vartheta}\, \dee\vartheta 
+            + \frac{\partial x}{\partial \varphi}\, \dee\varphi
+            = \cos\varphi \cos\vartheta\, \dee\vartheta -\sin\varphi \sin\vartheta\, \dee\varphi \\
+            \dee y
+            &= \frac{\partial y}{\partial \vartheta}\, \dee\vartheta 
+            + \frac{\partial y}{\partial \varphi}\, \dee\varphi
+            = \sin\varphi \cos\vartheta\, \dee\vartheta +\cos\varphi \sin\vartheta\, \dee\varphi \\
+            \dee z
+            &= \frac{\partial z}{\partial \vartheta}\, \dee\vartheta 
+            + \frac{\partial z}{\partial \varphi}\, \dee\varphi
+            = -\sin\vartheta\, \dee\vartheta.
+        \end{align*}</li>
+
+        <li>Now, let $\ve{x}$ denote the vector $(x,y,z)^T$, and let $\omega$ denote $(\vartheta,\varphi)^T$. We have that
+        \begin{align*}
+            \ve{x} &= \ve{g}(\omega),
+        \end{align*}
+        and
+        \begin{align*}
+            \frac{\partial \ve{x}}{\partial \omega}
+            &= \begin{bmatrix}
+                \cos\varphi \cos\vartheta & -\sin\varphi \sin\vartheta \\
+                \sin\varphi \cos\vartheta & \cos\varphi \sin\vartheta \\
+                -\sin\vartheta & 0
+            \end{bmatrix}
+        \end{align*}
+        Suppose we have computed $\ve{y} = \ve{f}(\ve{x};\theta)$, and we also have computed
+        \begin{align*}
+            \frac{\partial \ve{y}}{\partial \theta} 
+            &= \begin{bmatrix}
+                y^1_\theta \\
+                y^2_\theta \\
+                y^3_\theta
+            \end{bmatrix}, \\
+            \frac{\partial \ve{y}}{\partial \ve{x}}
+            &= \begin{bmatrix}
+                y^1_x & y^1_y & y^1_z \\
+                y^2_x & y^2_y & y^2_z \\
+                y^3_x & y^3_y & y^3_z \\
+            \end{bmatrix}.
+        \end{align*}
+        We would like to know
+        \begin{align*}
+            \frac{\partial \omega}{\partial \theta}
+            = \frac{\partial \omega}{\partial \ve{y}} \frac{\partial \ve{y}}{\partial \theta}.
+        \end{align*}
+        We have that
+        \begin{align*}
+            \frac{\partial \ve{y}}{\partial \omega}
+            = \frac{\partial \ve{y}}{\partial \ve{x}} \frac{\partial \ve{x}}{\partial \omega}
+            = \begin{bmatrix}
+                y^1_x & y^1_y & y^1_z \\
+                y^2_x & y^2_y & y^2_z \\
+                y^3_x & y^3_y & y^3_z \\
+            \end{bmatrix}
+            \begin{bmatrix}
+                \cos\varphi \cos\vartheta & -\sin\varphi \sin\vartheta \\
+                \sin\varphi \cos\vartheta & \cos\varphi \sin\vartheta \\
+                -\sin\vartheta & 0
+            \end{bmatrix}
+        \end{align*}.
+        However, the matrix is $3 \times 2$ and so is not invertible. However, we still use the pseudoinverse:
+        \begin{align*}
+            \frac{\partial \omega}{\partial \ve{y}}
+            := \bigg( \frac{\partial \ve{y}}{\partial \omega} \bigg)^\dagger
+            = \left( \begin{bmatrix}
+                y^1_x & y^1_y & y^1_z \\
+                y^2_x & y^2_y & y^2_z \\
+                y^3_x & y^3_y & y^3_z \\
+            \end{bmatrix}
+            \begin{bmatrix}
+                \cos\varphi \cos\vartheta & -\sin\varphi \sin\vartheta \\
+                \sin\varphi \cos\vartheta & \cos\varphi \sin\vartheta \\
+                -\sin\vartheta & 0
+            \end{bmatrix} \right)^\dagger.
+        \end{align*}
+        As a result,
+        \begin{align*}
+            \frac{\partial \omega}{\partial \theta}
+            = \left( \begin{bmatrix}
+                y^1_x & y^1_y & y^1_z \\
+                y^2_x & y^2_y & y^2_z \\
+                y^3_x & y^3_y & y^3_z \\
+            \end{bmatrix}
+            \begin{bmatrix}
+                \cos\varphi \cos\vartheta & -\sin\varphi \sin\vartheta \\
+                \sin\varphi \cos\vartheta & \cos\varphi \sin\vartheta \\
+                -\sin\vartheta & 0
+            \end{bmatrix} \right)^\dagger
+            \begin{bmatrix}
+                y^1_\theta \\
+                y^2_\theta \\
+                y^3_\theta
+            \end{bmatrix}
+        \end{align*}
+        </li>        
+    </ul>
+
+    <hr>
+    <div class="page-header"></div>
+    <p>Last modified: 2021/02/06</p>    
+</div>
+
+<script type="text/javascript">
+$.bigfoot();
+</script>
+
+</body>
+</html>

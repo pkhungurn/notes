@@ -1,0 +1,844 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+\usepackage{verbatim}
+\usepackage{hyperref}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\Dee}{\mathrm{D}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\Var}{\mathrm{Var}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+\newcommand{\ov}[1]{\overline{#1}}
+
+\title{Probability Density Under Transformation}
+\author{Pramook Khungurn}
+
+\begin{document}
+  \maketitle
+
+  \section{Introduction}
+
+  In creating an algorithm that samples points from some domain, a problem that always comes up is the following:
+  \begin{quote}
+  	Let $A$ and $B$ be sets, \\
+  	$p_A(\cdot)$ be a probability density on $A$, and\\
+  	$f$ be a function from $A$ to $B$.\\
+  	If one samples $x$ from $A$ according to $p_A$, then what is the probability density of $f(x)$?
+  \end{quote}
+  This document discusses the solution to the above problem and its application to construction of sampling algorithm.
+
+  \section{One-Dimensional Case}
+  \subsection{The Main Theorem}
+  We first start with the simplest case where $A$ and $B$ are both subsets of the real line $\Real$.
+
+  Let $x \in A$.  The number $p_A(x)$ means that, in the infinitesimal interval $[x, x+\delta x)$, there exists $p_A(x) \delta x$ amount of ``probability mass.''  Here, $\delta x$ is a ``differential quantity'' such that $(\delta x)^2 = 0$.
+
+  Assume that $f$ is continuous and infinitely differentiable.  The function $f$ sends the interval $[x, x+\delta x)$ to the interval $[f(x), f(x+\delta x)).$  By Taylor expansion,
+  \begin{align*}
+  	f(x + \delta x) = f(x) + f'(x) \delta x + O((\delta x)^2) = f(x) + f'(x) \delta x.
+  \end{align*}
+  So, the resuling interval is $[f(x), f(x) + f'(x) \delta x)$, which as width $|f'(x)| \delta x$.
+
+  This means that the mass $p_A(x) \delta x$ gets distributed to an interval of width $f'(x) \delta x$.  As a result:
+  \begin{align*}
+  	\mbox{Density at point f(x)} = \frac{p_A(x) \delta x}{|f'(x)| \delta x} = \frac{p_A(x)}{|f'(x)|}.
+  \end{align*}
+  This density is defined only when $f'(x) \neq 0$, which means that $f$ is one-to-one in a neighborhood of $x$.  As such, we have the following theorem.
+
+  \begin{theorem}
+  	Let $A$ and $B$ be subsets of $\Real$, $p_A$ be a probability density on $A$, $f: A \ra B$ be continuous and differentiable and $f'(x) \neq 0$ for all $x \in A$.  The induced probability density $p_B(\cdot)$ arisen from the process of sampling $x$ according to $p_A$ and then computing $f(x)$ is given by:
+  	\begin{align*}
+  		p_B(f(x)) = \frac{p_A(x)}{|f'(x)|}.
+  	\end{align*}
+  \end{theorem}
+
+  \subsection{The Inversion Method}
+  The above theorem can be used to create sampling algorithm for any integrable density function on the real line from a uniformly random sample from the interval $[0,1)$.
+
+  In this situation, $A = [0,1)$ and $p_A(x) = 1$ for all $x \in A$.  The density $p_B(\cdot)$ is given to us.  We want to find function $f: A \ra B$ such that, for any $x \in A$:
+  \begin{align*}
+  	p_B(f(x)) = \frac{p_A(x)}{f'(x)} = \frac{1}{|f'(x)|}.
+  \end{align*}
+  Multiply both sides by $f'(x)$, we have:
+  \begin{align*}
+  	p_B(f(x)) |f'(x)| = 1.
+  \end{align*}
+  Let $P_B$ be the CDF of $p_B$:
+  \begin{align*}
+  	P_B(y) = \int_{-\infty}^y p_B(t)\ \dee t.
+  \end{align*}  
+  We have that:
+  \begin{align*}
+  	\{ P_B(f(x)) \}' = p_B(f(x))f'(x) = p_B(f(x)) |f'(x)|
+  \end{align*}
+  given that $f$ is an increasing function.  Let us assume that $f$ is increasing for now.  We have that
+  \begin{align*}
+  	\{ P_B(f(x)) \}' &= 1
+  \end{align*}
+  Integrating both sides from $t=0$ to $t=x$, we have:
+  \begin{align*}
+  	\int_{0}^x \{ P_B(f(t)) \}'\ \dee t &= \int_{0}^x 1\ \dee t\\
+  	P_B(f(x)) - P_B(f(0)) &= x.
+  \end{align*}
+  With the assumption that $f(0)$ should correspond to the lowest number in the set $B$, we can safely set $P_B(f(0)) = 0$.  So,
+  \begin{align*}
+  	P_B(f(x)) &= x \\
+  	f(x) &= P_B^{-1}(x).
+  \end{align*}
+  The CDF is an increasing function, so is its inverse.  Moreover, $P^{-1}_B(0)$ maps to the lowest number in the set $B$.  So, it is a valid choice for $f$.
+
+  In other words, to generate a point on the real line with probability distribution $p_B$, simply apply the inverse of the CDF to a point $x$ picked uniformly randomly from the interval $[0,1)$.
+
+  \subsection{Sampling from the Exponential Distribution}
+  We present a simple application of the inversion method.  The exponential distribution with parameter $\lambda$ is defined on $[0,\infty)$ with
+  \begin{align*}
+    p(x) = \lambda e^{-\lambda x}.
+  \end{align*}
+  The CDF is given by:
+  \begin{align*}
+    P(x) = 1 - e^{-\lambda x}.
+  \end{align*}
+  So,
+  \begin{align*}
+    P^{-1}(y) = \ln (1 - y).
+  \end{align*}
+  Hence, to sample $x$ acoording to the exponential distribution, we simply set:
+  \begin{align*}
+    x := \ln (1 - \xi)
+  \end{align*}
+  where $\xi$ is a randomly and uniformly sampled from the interval $[0,1)$.
+
+  \section{Multi-Dimensional Case}
+  \subsection{The Main Theorem}
+
+  Let $A, B \subseteq \Real^n$, and $p_A(\cdot)$ be a probability density on $A$.  Let $\ve{f}$ be given by:
+  \begin{align*}
+    \ve{f}(x_1, x_2, \dotsc, x_n) = \begin{bmatrix}
+      f_1(x_1, x_2, \dotsc, x_n) \\
+      f_2(x_1, x_2, \dotsc, x_n) \\
+      \vdots \\
+      f_n(x_1, x_2, \dotsc, x_n) \\
+    \end{bmatrix}
+  \end{align*}
+  be a function from $A$ to $B$.  The induced probability distribution $p_B$ arisen from the process of sampling a point $\ve{x} = (x_1, x_2, \dotsc, x_n)$ according to $p_A$ can then computing $\ve{f}(\ve{x})$ can again be computed by finding the volume of the image of the interval 
+  $$[x_1, x_1 + \delta x_1) \times [x_2, x_2 + \delta x_2) \times \dotsb \times [x_n, x_n + \delta x_n).$$
+  This volume is given by:
+  \begin{align*}
+    | D\ve{f}(\ve{x}) |\ \delta x_1 \delta x_2 \dotsc \delta x_n
+  \end{align*}
+  where 
+  \begin{align*}
+    D\ve{f}(\ve{x}) = \begin{bmatrix}
+      \partial f_1 / \partial x_1 & \partial f_1 / \partial x_2 & \cdots & \partial f_1 / \partial x_n \\
+      \partial f_2 / \partial x_1 & \partial f_2 / \partial x_2 & \cdots & \partial f_2 / \partial x_n \\
+      \vdots & \vdots & \ddots & \vdots \\
+      \partial f_n / \partial x_1 & \partial f_n / \partial x_2 & \cdots & \partial f_n / \partial x_n
+    \end{bmatrix}
+  \end{align*}
+  where all the partial derivatives are evaluated at $\ve{x}$.  Thus,
+  \begin{align*}
+    p_B(\ve{f}(\ve{x})) = \frac{p_A(\ve{x})}{|D\ve{f}(\ve{x})|}.
+  \end{align*}
+  Notice that $|D\ve{f}(\ve{x})|$ is the factor that shows up when we perform change of variables during an integration.
+
+  In two-dimensional space, we may write:
+  \begin{align*}
+    \ve{f}(u,v) = \begin{bmatrix}
+      x(u,v) \\ y(u,v)
+    \end{bmatrix}.
+  \end{align*}
+  In this case:
+  \begin{align*}
+    | D \ve{f}(u,v) | = \begin{vmatrix}
+      \partial x / \partial u & \partial x / \partial v \\
+      \partial y / \partial u & \partial y / \partial v
+    \end{vmatrix}.
+  \end{align*}
+  Thus,
+  \begin{align*}
+    p_B(x,y) = \frac{p_A(u,v)}{\begin{vmatrix}
+      \partial x / \partial u & \partial x / \partial v \\
+      \partial y / \partial u & \partial y / \partial v
+    \end{vmatrix}}.
+  \end{align*}
+
+  \subsection{The Polar Coordinate Transform}
+
+  The polar coordinate transforms two numbers $(r, \phi)$ to a point $(x,y)$ on the plane as follows:
+  \begin{align*}
+    x = r \cos\phi \\
+    y = r \sin\phi,
+  \end{align*}
+  which gives:
+  \begin{align*}
+    \frac{\partial x}{\partial r} &= \cos\phi \\
+    \frac{\partial x}{\partial \phi} &= -r \sin\phi \\
+    \frac{\partial y}{\partial r} &= \sin\theta \\
+    \frac{\partial y}{\partial \phi} &= r \cos\phi
+  \end{align*}
+  So, if we sample a polar coordinate $(r,\phi)$ with probability distribution $p_A$, then the distribution $p_B$ of the point $(x,y)$ is given by:
+  \begin{align*}
+    p_B(x,y) 
+    = \frac{p_A(r, \phi)}{\begin{vmatrix}
+      \cos\phi & -r\sin\phi \\
+      \sin\theta & r\cos\phi
+    \end{vmatrix}}
+    = \frac{p_A(r,\phi)}{r\cos^2 \phi + r \sin^2\phi}
+    = \frac{p_A(r,\phi)}{r}.
+  \end{align*}
+
+  \subsection{Sampling Uniformly from the Unit Disk}
+
+  The unit disk is given by the polar coordinates in the set $[0,1] \times [0,2\pi)$.  How should we be sampling the polar coordinates so that the resulting point distribution is uniform on the disk?
+
+  In our case, we have that $p_B(x,y) = 1/\pi$.  So, we want $p_A$ such that:
+  \begin{align*}
+    \frac{1}{\pi} &= \frac{p_A(r,\phi)}{r} \\
+    p_A(r,\phi) &= \frac{r}{\pi}.
+  \end{align*}
+
+  A common strategy is to sample $r$ and $\phi$ independently so that $p_A(r,\phi) = p_r(r) p_\phi(\phi)$.  Moreover, we shall sample $\phi$ uniformly from the interval $[0,2\pi)$ so that $p_\phi(\phi) = 1/(2\pi)$.  Thus,
+  \begin{align*}
+    p_r(r) = 2r.
+  \end{align*}
+  The above distribution can be sampled with the inversion method.  The CDF is given by:
+  \begin{align*}
+    P_r(r) = \int_0^{r} 2r'\ \dee r' = [r'^2]_0^{r} = r^2.
+  \end{align*}
+  The inverse CDF is then:
+  \begin{align*}
+    P_r^{-1}(t) = \sqrt{t}.
+  \end{align*}
+  So, we can sample points uniformly from the unit disk by setting:
+  \begin{align*}
+    r &:= \sqrt{\xi_1} \\
+    \phi &= 2\pi\xi_2
+  \end{align*}
+  where $\xi_1$ and $\xi_2$ are two independent random samples chosen uniformly from the interval $[0,1)$.
+
+  \subsection{Sampling Uniformly from a Triangle}
+
+  Suppose we have a triangle in a plane with point $A = (x_A, y_A)$, $B = (x_B, y_B)$, $C = (x_C, y_C)$.  Let us assume further that $(B-A) \times (C-A)$ is pointing in the positive $z$-direction so that:
+  \begin{align*}
+     \mathrm{area}(ABC) = \frac{1}{2} \| (B-A) \times (C-A) \| = \frac{1}{2} \begin{vmatrix}
+       x_B - x_A & x_C - x_A \\
+       y_B - y_A & y_C - y_A.
+     \end{vmatrix}
+  \end{align*}
+
+  We wish to find a transformation $\ve{f}$ that takes a point $(u,v)$ uniformly and randomly picked from the rectangle $[0,1)^2$ so that the distribution of $(x,y) = \ve{f}(u,v)$ is uniform on the triangle $ABC$.  In this setting, we have that $p_A(u,v) = 1$, and $p_B(x,y) = 1 / \mathrm{area}(ABC)$.  In other words,
+  \begin{align*}
+    \frac{1}{\mathrm{area}(ABC)} &= \frac{1}{|D\ve{f}(u,v)|} \\
+    | D\ve{f}(u,v) | &= \frac{1}{2} \begin{vmatrix}
+       x_B - x_A & x_C - x_A \\
+       y_B - y_A & y_C - y_A
+    \end{vmatrix}.
+  \end{align*}
+
+  One way to generate a point on a triangle is to generate barycentric coordinates $(\alpha, \beta, \gamma)$ such that $0 \leq \alpha, \beta, \gamma \leq 1$ and $\alpha + \beta + \gamma = 1$.  Then, we can get a point on the triangle by computing 
+  \begin{align*}
+    (x,y) 
+    &= \alpha A + \beta B + \gamma C \\
+    &= (1 - \beta - \gamma) A + \beta B + \gamma C  \\
+    &= A + (B - A) \beta + (C - A) \gamma.
+  \end{align*}
+  In other words,
+  \begin{align*}
+    x &= x_A + (x_B - x_A)\beta + (x_C - x_A)\gamma \\
+    y &= y_A + (y_B - y_A)\beta + (y_C - y_A)\gamma.
+  \end{align*}
+  Our task is to figure out what $\beta$ and $\gamma$ are as functions of $u$ and $v$.
+
+  We have that
+  \begin{align*}
+    \frac{\partial x}{\partial u} 
+    &= (x_B - x_A) \frac{\partial \beta}{\partial u}  + (x_C - x_A) \frac{\partial \gamma}{\partial u} \\
+    \frac{\partial x}{\partial v} 
+    &= (x_B - x_A) \frac{\partial \beta}{\partial v}  + (x_C - x_A) \frac{\partial \gamma}{\partial v} \\
+    \frac{\partial y}{\partial u} 
+    &= (y_B - y_A) \frac{\partial \beta}{\partial u}  + (y_C - y_A) \frac{\partial \gamma}{\partial u} \\
+    \frac{\partial y}{\partial v} 
+    &= (y_B - y_A) \frac{\partial \beta}{\partial v}  + (y_C - y_A) \frac{\partial \gamma}{\partial v}.
+  \end{align*}
+  So, the matrix $D\ve{f}(u,v)$ is given by:
+  \begin{align*}
+    D\ve{f}(u,v) 
+    &= \begin{bmatrix}
+      (x_B - x_A) \frac{\partial \beta}{\partial u}  + (x_C - x_A) \frac{\partial \gamma}{\partial u} &
+      (x_B - x_A) \frac{\partial \beta}{\partial v}  + (x_C - x_A) \frac{\partial \gamma}{\partial v} \\
+      (y_B - y_A) \frac{\partial \beta}{\partial u}  + (y_C - y_A) \frac{\partial \gamma}{\partial u} &
+      (y_B - y_A) \frac{\partial \beta}{\partial v}  + (y_C - y_A) \frac{\partial \gamma}{\partial v}
+    \end{bmatrix} \\
+    &= \begin{bmatrix}
+      x_B - x_A & x_C - x_A \\
+      y_B - y_A & y_C - y_A 
+    \end{bmatrix}
+    \begin{bmatrix}
+      \partial \beta / \partial u & \partial \beta / \partial v \\
+      \partial \gamma / \partial u & \partial \gamma / \partial v
+    \end{bmatrix}.
+  \end{align*}
+  Thus,
+  \begin{align*}
+    | D\ve{f}(u,v) |
+    &= \begin{vmatrix}
+      x_B - x_A & x_C - x_A \\
+      y_B - y_A & y_C - y_A 
+    \end{vmatrix}\ 
+    \begin{vmatrix}
+      \partial \beta / \partial u & \partial \beta / \partial v \\
+      \partial \gamma / \partial u & \partial \gamma / \partial v
+    \end{vmatrix} \\
+    \frac{1}{2} \begin{vmatrix}
+      x_B - x_A & x_C - x_A \\
+      y_B - y_A & y_C - y_A 
+    \end{vmatrix}
+    &= \begin{vmatrix}
+      x_B - x_A & x_C - x_A \\
+      y_B - y_A & y_C - y_A 
+    \end{vmatrix}\ 
+    \begin{vmatrix}
+      \partial \beta / \partial u & \partial \beta / \partial v \\
+      \partial \gamma / \partial u & \partial \gamma / \partial v
+    \end{vmatrix} \\
+    \frac{1}{2}
+    &= \begin{vmatrix}
+      \partial \beta / \partial u & \partial \beta / \partial v \\
+      \partial \gamma / \partial u & \partial \gamma / \partial v
+    \end{vmatrix} \\
+    \frac{\partial \beta}{\partial u} \frac{\partial \gamma}{\partial v}
+    - \frac{\partial \beta}{\partial v} \frac{\partial \gamma}{\partial u}
+    &= \frac{1}{2}.
+  \end{align*}
+
+  What should $\beta$ and $\gamma$ be as functions of $u$ and $v$?  We have the constraint that $0 \leq \beta + \gamma \leq 1$.  This condition is satisfied if we let
+  \begin{align*}
+    \beta &= g(u)(1 - v) \\
+    \gamma &= g(u)v
+  \end{align*}
+  where $g(u)$ is a function such that $0 \leq g(u) \leq 1$.  With this choice of $\beta$ and $\gamma$, we have that
+  \begin{align*}
+    \frac{1}{2}
+    &= \frac{\partial \beta}{\partial u} \frac{\partial \gamma}{\partial v}
+    - \frac{\partial \beta}{\partial v} \frac{\partial \gamma}{\partial u} 
+    = [ g'(u) (1-v) ] g(u) - [-g(u)][g'(u) v]
+    = g(u)g'(u).
+  \end{align*}
+  It remains to find the function $g$ with makes the above equation holds:
+  \begin{align*}
+    g \frac{\dee g}{\dee u} &= \frac{1}{2} \\
+    2g\ \dee g &= \dee u \\
+    \int 2g\ \dee g &= \int \dee u \\
+    g^2 &= u \\
+    g &= \sqrt{u}.
+  \end{align*}
+  Hence, a uniform distribution of points on triangle $ABC$ can be generated by computing:
+  \begin{align*}
+    (1 - \sqrt{u}(1-v) - \sqrt{u}v)A + \sqrt{u}(1-v)B + \sqrt{u}v C
+  \end{align*}
+  where $(u,v)$ is randomly and uniformly sampled from the rectangle $[0,1)^2$.
+
+  \section{Dealing with 3D Manifolds}
+  \subsection{The Main Theorem}
+
+  Suppose that we have a differentiable function $\ve{f}$ that maps a set $A \subseteq \Real^2$ to a surface $B \subseteq \Real^3$.  We shall write:
+  \begin{align*}
+    \ve{f}(u,v) = \begin{bmatrix}
+      f_x(u,v) \\
+      f_y(u,v) \\
+      f_z(u,v)
+    \end{bmatrix}.
+  \end{align*}
+
+  Again, let $p_A$ be a probability distribution on $A$.  Given point $(u,v) \in A$, consider the rectangle $[u + \delta u) \times  [v + \delta v)$, which has area $\delta u \delta v$.  This rectangle has probability mass $p_A(u,v) \delta u \delta v$ in it.
+
+  We have that:
+  \begin{align*}
+    (u,v) &\mapsto \ve{f}(u,v) \\
+    (u+\delta u,v) &\mapsto \ve{f}(u + \delta u,v) = \ve{f}(u,v) + \ve{f}_u (u,v) \delta u\\
+    (u,v+\delta v) &\mapsto \ve{f}(u,v + \delta v) = \ve{f}(u,v) + \ve{f}_v (u,v) \delta v\\
+    (u+\delta u,v+\delta v) &\mapsto \ve{f}(u + \delta u,v + \delta v) = \ve{f}(u,v) + \ve{f}_u(u,v) \delta u + \ve{f}_v (u,v) \delta v
+  \end{align*}
+  where
+  \begin{align*}
+    \ve{f}_u(u,v) &= \begin{bmatrix}
+      \frac{\partial f_x}{\partial u}(u,v) \\
+      \frac{\partial f_y}{\partial u}(u,v) \\
+      \frac{\partial f_z}{\partial u}(u,v)
+    \end{bmatrix}\mbox{, and}\\
+    \ve{f}_v(u,v) &= \begin{bmatrix}
+      \frac{\partial f_x}{\partial v}(u,v) \\
+      \frac{\partial f_y}{\partial v}(u,v) \\
+      \frac{\partial f_z}{\partial v}(u,v)
+    \end{bmatrix}.
+  \end{align*}
+  
+  In other words, the rectangle gets mapped to a parallelogram with sides defined by the vector $\ve{f}_u(u,v) \delta u$ and $\ve{f}_v(u,v) \delta v$.  The area of this parallelogram is given by:
+  \begin{align*}
+    \| \ve{f}_u(u,v) \delta u \times \ve{f}_u(u,v) \delta v \| 
+    &= \| \ve{f}_u(u,v) \times \ve{f}_u(u,v) \| \delta u \delta v    
+  \end{align*}
+  (Since the notation is getting a little unwieldy, let us drop the $(u,v)$ arguments from the function from now on.)  To compute the cross product, we make use of the following identity:
+  \begin{align*}
+    \| \ve{a} \times \ve{b} \|^2 + (\ve{a} \cdot \ve{b})^2 = (\ve{a} \cdot \ve{a}) (\ve{b} \cdot \ve{b}).
+  \end{align*}
+  So,
+  \begin{align*}
+    \| \ve{f}_u \times \ve{f}_v \|^2 &= (\ve{f}_u \cdot \ve{f}_u) (\ve{f}_v \cdot \ve{f}_v) - (\ve{f}_u \cdot \ve{f}_v)^2 \\
+    \| \ve{f}_u \times \ve{f}_v \| &= \sqrt{ (\ve{f}_u \cdot \ve{f}_u) (\ve{f}_v \cdot \ve{f}_v) - (\ve{f}_u \cdot \ve{f}_v)^2 }.
+  \end{align*}
+  Define
+  \begin{align*}
+    E(u,v) &= \ve{f}_u(u,v) \cdot \ve{f}_u(u,v) \\
+    F(u,v) &= \ve{f}_u(u,v) \cdot \ve{f}_v(u,v) \\
+    G(u,v) &= \ve{f}_v(u,v) \cdot \ve{f}_v(u,v).
+  \end{align*}
+  We have that:
+  \begin{align*}
+    \mbox{area of parallelogram} = \| \ve{f}_u \times \ve{f}_v \| = \sqrt{EG - F^2}.
+  \end{align*}
+  In differential geometry, $E$, $F$, and $G$ are called the \emph{coefficients of the first fundamental form}.
+
+  As a result, we have that the induced probability distribution is given by:
+  \begin{align*}
+    p_B(\ve{f}(u,v)) = \frac{p_A(u,v) \delta u \delta v}{\| \ve{f}_u \times \ve{f}_v\| \delta u \delta v} = \frac{p_A(u,v)}{\sqrt{EG - F^2}}.
+  \end{align*}
+
+  \subsection{The Spherical Coordinate Transform}
+
+  The spherical coordinate is the transformation from $(\theta, \phi) \in (0, \pi) \times [0, 2\pi)$ to a point $\omega$ on a 3D sphere $S^2$ with:
+  \begin{align*}
+    \omega = \begin{bmatrix}
+      \sin\theta \cos \phi \\
+      \sin\theta \sin \phi \\
+      \cos \theta
+    \end{bmatrix}.
+  \end{align*}
+  We then have that:
+  \begin{align*}
+    \omega_\theta &= \begin{bmatrix}
+      \cos\theta \cos\phi \\
+      \cos\theta \sin\phi \\
+      -\sin\theta
+    \end{bmatrix}, \\
+    \omega_\phi &= \begin{bmatrix}
+      -\sin\theta\sin\phi \\
+      \sin\theta \cos\phi \\
+      0
+    \end{bmatrix}.
+  \end{align*}
+  So,
+  \begin{align*}
+    E &= \cos^2 \theta \cos^2 \phi + \cos^2 \theta \sin^2 \phi + \sin^2 \theta \\
+    &= \cos^2\theta + \sin^2 \theta \\
+    &= 1 \\
+    F &= -\cos\theta \cos\phi \sin\theta \sin\phi + \cos\theta \sin\phi \sin\theta \cos\phi + 0\\
+    &= 0 \\
+    G &= \sin^2 \theta \sin^2 \phi  + \sin^2 \theta \cos^2 \phi \\
+    &= \sin^2 \theta\\
+    \sqrt{EG - F^2} &= \sqrt{\sin^2\theta} = |\sin\theta|.
+  \end{align*}
+  The inducted probability distribution is given by:
+  \begin{align*}
+    p_B(\omega(\theta,\phi)) = \frac{p_A(\theta, \phi)}{|\sin \theta|}.
+  \end{align*}
+  However, since $\theta \in (0,\theta)$, we have that $\sin \theta > 0$. So, we can write:
+  \begin{align*}
+    p_B(\omega(\theta,\phi)) = \frac{p_A(\theta, \phi)}{\sin \theta}.
+  \end{align*}
+
+  \subsection{Uniformly Sampling a Sphere}
+  We will use the identity to construct a sampling algorithm to sample a point on the unit sphere uniformly.  The idea is to pick a probability distribution $p_A$ on $(\theta, \phi) \in (0, \pi) \times [0, 2\pi)$ such that the induced probability distribution $p_B$ is the constant distribution $1/(4\pi)$.  In other words:
+  \begin{align*}
+    \frac{1}{4\pi} &= \frac{p_A(\theta, \phi)}{\sin\theta}.
+  \end{align*}
+  In other words:
+  \begin{align*}
+    p_A (\theta, \phi) = \frac{\sin\theta}{4\pi}.
+  \end{align*}  
+  A common strategy is to sample $\phi$ independenty from $\theta$ so that $p_A(\theta, \phi) = p_\theta(\theta) p_\phi(\phi)$.  Moreover, let us sample $\phi$ uniformly from $[0,2\pi)$ so that $p_\phi(\phi) = 1/(2\pi)$.  In other words,
+  \begin{align*}
+    \frac{p_\theta(\theta)}{2\pi} &= \frac{\sin\theta}{4\pi} \\
+    p_\theta(\theta) &= \frac{\sin\theta}{2}.
+  \end{align*}
+
+  We can sample $p_\theta(\theta)$ using the inversion method.  The CDF of $p_\Theta$ is given by:
+  \begin{align*}
+    P_\theta(\theta) 
+    = \frac{1}{2} \int_{0}^\theta \sin\theta'\ \dee\theta'
+    = \frac{1}{2} [-\cos\theta']_0^\theta
+    = \frac{\cos 0 - \cos\theta}{2}
+    = \frac{1 - \cos\theta}{2}.
+  \end{align*}
+  So, the inverse function is given by:
+  \begin{align*}
+    P^{-1}_\theta(u) = \cos^{-1}(1 - 2u).
+  \end{align*}
+  In conclusion, we compute $\theta$ and $\phi$ as:
+  \begin{align*}
+    \theta &:= \cos^{-1}(1 - 2\xi_0) \\
+    \phi &:= 2\pi \xi_1
+  \end{align*}
+  where $\xi_0$, $\xi_1$ are two independent random numbers sampled uniformly from the interval $[0,1)$.
+
+  Notice, however, that if the end goal is to get a point $\omega$, there is no need to compute $\theta$ because $\theta$ never appears directly in the expression for $\omega$.  More specifically,
+  \begin{align*}
+    \omega = \begin{bmatrix}
+      \sin\theta \cos\phi \\
+      \sin\theta \sin\phi \\
+      \cos\theta
+    \end{bmatrix}
+    = \begin{bmatrix}
+      \sqrt{1 - (1 - 2\xi_0)^2} \cos\phi \\
+      \sqrt{1 - (1 - 2\xi_0)^2} \sin\phi \\
+      1 - 2\xi_0
+    \end{bmatrix}.
+  \end{align*}
+
+  \subsection{Sampling a Cosine-Weighted Hemisphere}
+
+  In this section, we want to sample the $z$-positive unit hemisphere such that the probability density being proportional to $\cos\theta$ at each point.  In this case:
+  \begin{align*}
+    \frac{\cos\theta}{C} &= \frac{p_A(\theta,\phi)}{\sin\theta}\\
+    \frac{1}{C} \cos\theta\sin\theta &= p_A(\theta,\phi),
+  \end{align*}
+  where $C$ is the constant such that $\frac{\cos\theta}{C}$ is a probability distribution on the sphere.
+
+  Again, we sample $\theta$ and $\phi$ independently with $\phi$ being uniform in $[0, 2\pi)$. So,
+  \begin{align*}
+    \frac{2\pi}{C} \cos\theta\sin\theta &= p_\theta(\theta).
+  \end{align*}
+  The CDF then is given by:
+  \begin{align*}
+    P_\theta(\theta) 
+    &= \frac{2\pi}{C} \int_0^{\theta} \cos\theta'\sin\theta'\ \dee\theta'
+    = \frac{2\pi}{C} \bigg[ -\frac{\cos^2 \theta'}{2} \bigg]_0^\theta
+    = \frac{\pi}{C} (1 - \cos^2 \theta).
+  \end{align*}
+  To determine $C$, note that $P_\theta(\pi/2) = 1$, so
+  \begin{align*}
+    1 = \frac{\pi}{C} (1 - \cos^2 \frac{\pi}{2}) = \frac{\pi}{C}.
+  \end{align*}
+  In other words, $C = \pi$, and $P_\theta(\theta) = 1 - \cos^2 \theta$.  
+
+  Hence, we can sample the cosine-weighted hemisphere by setting:
+  \begin{align*}
+    \cos\theta &:= \sqrt{1 - \xi_0} \\
+    \phi &:= 2\pi\xi_1.
+  \end{align*}  
+
+  \subsection{From Area to Solid Angle}
+  \label{area-to-solid-angle}
+
+  When shading from an area light source, a way to sample the incoming light direction is to sample a point on the light source's surface with some probability density $p_A$ and then convert the vector from the shaded point to the sampled point to a unit vector $\omega$.  In this section, we find the relation between $p_A$ and the induced probability density.
+
+  For simplicity, let us say that the shaded point is at the origin and lying on the $xy$-plane so that the normal is the $z$-axis.  Let $\ve{r} = (r_x, r_y, r_z)$ denote the point on the light source.  Let $\ve{n}$ be the normal at $\ve{r}$, and let $\ve{s}$ and $\ve{t}$ be the basis of the tangent plane at $\ve{r}$ in such a way that $(\ve{s}, \ve{t}, \ve{n})$ is an orthonormal basis.  The tangent plane is the set
+  \begin{align*}
+    \{ \ve{r} + u \ve{s} + v \ve{t}\ |\ (u, v) \in \Real^2 \}.
+  \end{align*}
+  The function $\ve{f}$ that maps the tangent plane to the direction is given by:
+  \begin{align*}
+    \omega 
+    = \ve{f}(u,v) 
+    &= \frac{\ve{r} + u \ve{s} + v \ve{t}}{\| \ve{r} + u \ve{s} + v \ve{t} \|} 
+  \end{align*}  
+  Hence, using Lemma~\ref{unit-deriv} (proven in the appendix), we have:
+  \begin{align*}
+    \ve{f}_u(u,v) &= \frac{\ve{s}}{\| \ve{r} + u \ve{s} + v \ve{t} \|} - \frac{\ve{r} + u \ve{s} + v \ve{t}}{\| \ve{r} + u \ve{s} + v \ve{t} \|^3 } (\ve{r} \cdot \ve{s} + u) \\
+    \ve{f}_v(u,v) &= \frac{\ve{t}}{\| \ve{r} + u \ve{s} + v \ve{t} \|} - \frac{\ve{r} + u \ve{s} + v \ve{t}}{\| \ve{r} + u \ve{s} + v \ve{t} \|^3 } (\ve{r} \cdot \ve{t} + v)
+  \end{align*}
+  At $(u,v) = (0,0)$, we have that
+  \begin{align*}
+    \ve{f}_u(0,0) 
+    &= \frac{\ve{s}}{\| \ve{r} \|} - \frac{\ve{r}}{\| \ve{r}\|^3 } (\ve{r} \cdot \ve{s}) 
+    = \frac{\ve{s}\| \ve{r} \|^2 - \ve{r}(\ve{r}\cdot \ve{s})}{\| \ve{r} \|^3}\\
+    \ve{f}_v(0,0) 
+    &= \frac{\ve{t}}{\| \ve{r} \|} - \frac{\ve{r}}{\| \ve{r}\|^3 } (\ve{r} \cdot \ve{t})
+    = \frac{\ve{t}\| \ve{r} \|^2 - \ve{r}(\ve{r}\cdot \ve{t})}{\| \ve{r} \|^3}
+  \end{align*}
+  So,
+  \begin{align*}
+    E 
+    &= \frac{\| \ve{r} \|^4 - 2\| \ve{r}^2 \|(\ve{r} \cdot \ve{s})^2 + \| \ve{r} \|^2 (\ve{r} \cdot \ve{s}) }{\| \ve{r} \|^6}
+    = \frac{\| \ve{r} \|^4 - \| \ve{r} \|^2 (\ve{r}\cdot\ve{s})^2 }{\| \ve{r} \|^6}
+    = \frac{\| \ve{r}\|^2 - (\ve{r} \cdot \ve{s} )^2}{\| \ve{r} \|^4} \\
+    F 
+    &= -\frac{\| \ve{r} \|^2 (\ve{r}\cdot \ve{s})(\ve{r} \cdot \ve{t}) }{\| \ve{r} \|^6}
+    = - \frac{(\ve{r} \cdot \ve{s})(\ve{r} \cdot \ve{t})}{\| \ve{r} \|^4} \\
+    G 
+    &= \frac{\| \ve{r}\|^2 - (\ve{r} \cdot \ve{t} )^2}{\| \ve{r} \|^4}
+  \end{align*}
+  Next,
+  \begin{align*}
+    EG-F^2
+    &= \frac{ \| \ve{r} \|^4 - \| \ve{r} \|^2 (\ve{r} \cdot \ve{s})^2 - \| \ve{r} \|^2 (\ve{r} \cdot \ve{t})^2 + (\ve{r} \cdot \ve{s})^2 (\ve{r} \cdot \ve{t})^2   }{\| \ve{r}^8 \|} - \frac{(\ve{r} \cdot \ve{s})^2 (\ve{r} \cdot \ve{t})^2 }{\| \ve{r}^8 \|}\\
+    &= \frac{ \| \ve{r} \|^4 - \| \ve{r} \|^2 (\ve{r} \cdot \ve{s})^2 - \| \ve{r} \|^2 (\ve{r} \cdot \ve{t})^2 }{\| \ve{r}^8 \|} \\
+    &= \frac{1}{\| \ve{r} \|^4} \bigg[ 1 - \bigg( \frac{\ve{r}}{\| \ve{r} \|} \cdot \ve{s} \bigg)^2 - \bigg( \frac{\ve{r}}{\| \ve{r} \|} \cdot \ve{t} \bigg)^2 \bigg] \\
+    &= \frac{1}{\| \ve{r} \|^4}[1 - (\hat{\ve{r}} \cdot \ve{s})^2 - (\hat{\ve{r}} \cdot \ve{t})^2]
+  \end{align*}
+  where $\hat{\ve{r}}$ is the unit vector in the direction of $\ve{r}$.  Because $\ve{s}$, $\ve{t}$, $\ve{n}$ forms an orthonormal basis and $\| \hat{\ve{r}} \| = 1$, we have that
+  \begin{align*}
+    1 = \| \hat{\ve{r}} \|^2 = (\hat{\ve{r}} \cdot \ve{s})^2 + (\hat{\ve{r}} \cdot \ve{t})^2 + (\hat{\ve{r}} \cdot \ve{n})^2.
+  \end{align*}
+  So,
+  \begin{align*}
+    EG - F^2 
+    = \frac{1}{\| \ve{r} \|^4} [1 - (\hat{\ve{r}} \cdot \ve{s})^2 - (\hat{\ve{r}} \cdot \ve{t})^2]
+    = \frac{1}{\| \ve{r} \|^4} (\hat{\ve{r}} \cdot \ve{n})^2
+  \end{align*}
+  Thus,
+  \begin{align*}
+    \sqrt{EG - F^2} 
+    = \sqrt{\frac{(\hat{\ve{r}} \cdot \ve{n})^2}{\| \ve{r} \|^4}}
+    = \frac{|\hat{\ve{r}} \cdot \ve{n} |}{\| \ve{r} \|^2}.
+  \end{align*}
+  In conclusion,
+  \begin{align*}
+    p_B(\ve{f}(\ve{r})) 
+    = \frac{\| \ve{r}^2 \|}{ |\hat{\ve{r}} \cdot \ve{n}| } p_A(\ve{r})
+    = \frac{\| \ve{r}^2 \|}{ |\cos\theta| } p_A(\ve{r})
+  \end{align*}
+
+  \subsection{Area Under Linear Transformation}
+  \label{area-linear-xform}
+
+  Suppose we sample a point $\ve{r}$ on a surface with probability distribution $p_A(\ve{r})$.  Then, we transform it to $\ve{q} = M\ve{r}$ where $M$ is a linear transformation.  What is the probability density $p_B(\ve{q})$?
+
+  At $\ve{r}$, let the tangent space be spanned by unit tangent vectors $\ve{s}$ and $\ve{t}$.  The normal vector $\ve{n} = \ve{s} \times \ve{t}$, together with the two tangent vectors, forms an orthonomal coordinate system.  The tangent plane is thus given by:
+  \begin{align*}
+    \tilde{\ve{r}}(u,v) = \ve{r} + u\ve{s} + v\ve{t}.
+  \end{align*}
+  The image of the tangent plane under the transformation is given by:
+  \begin{align*}
+    \tilde{\ve{q}}(u,v) = M \tilde{\ve{r}}(u,v) = M\ve{r} + u M\ve{s} + v M\ve{t}.
+  \end{align*}
+  So,
+  \begin{align*}
+    \tilde{\ve{q}}_u &= M \ve{s} \\
+    \tilde{\ve{q}}_v &= M \ve{t}.
+  \end{align*}
+  The area of the parallelogram after transformation is ths:
+  \begin{align*}
+    \| M\ve{s} \times M \ve{t} \|.
+  \end{align*}
+  Using the identity
+  \begin{align*}
+    M \ve{a} \times M \ve{b} = \det(M) M^{-T} (\ve{a} \times \ve{b}),
+  \end{align*}
+  we have that:
+  \begin{align*}
+    \| M\ve{s} \times M \ve{t} \| = |\det(M)| \| M^{-T} (\ve{s} \times \ve{t}) \| = |\det(M)| \| M^{-T}\ve{n} \|.
+  \end{align*}
+  As a result,
+  \begin{align*}
+    p_B(M\ve{r}) = \frac{p_A(\ve{r})}{|\det(M)| \| M^{-T} \ve{n} \|}.
+  \end{align*}
+
+  \subsection{Solid Angle Under Linear Transformation}
+  \label{solid-angle-linear-xform}
+
+  Consider the following process.  We sample a direction $\omega_A$ acoording to probability density $p_A(\omega_A)$.  Then, we apply a linear transformation $M$ and normalize it to get a direction
+  \begin{align*}
+    \omega_B = \frac{M\omega_A}{\| M \omega_A \|}.
+  \end{align*}
+  What is the probability density $p_B(\omega_B)$?
+
+  The probability can be computed by considering the whole transformation in 2 steps: linear transformation and then normalizing.  Namely,
+  \begin{align*}
+    \ve{r}_C &= M \omega_A \\
+    \omega_B &= \frac{\ve{r}_C}{\| \ve{r}_C \|}.
+  \end{align*}
+
+  In the first step, we sample a point from the unit sphere, and the unit sphere gets transformed into some ellipsoid.  From Section~\ref{area-linear-xform}, we have that:
+  \begin{align*}
+    p_C(\ve{r}_C) = \frac{p_A(\omega_A)}{|\det(M)| \| M^{-T} \omega_A \|}.
+  \end{align*}
+  Note that we use $\omega_A$ as $\ve{n}$ because the normal vector of the unit sphere at any point is that point itself.
+
+  Now, we get a point $\ve{r}_C$ on an ellipsoid.  The normal vector at $\ve{n}_C$ at $\ve{r}_C$ is:
+  \begin{align*}
+    \ve{n}_C = \frac{M^{-T} \omega_A}{\| M^{-T} \omega_A \|}.
+  \end{align*}
+  The unit vector from the origin to $\ve{r}_C$ is given by
+  \begin{align*}
+    \frac{\ve{r}_C}{\| \ve{r}_C \| } = \frac{M\omega_A}{\| M\omega_A \|}.
+  \end{align*}
+  Using \ref{area-to-solid-angle}, we have:
+  \begin{align*}
+    p_B(\omega_B) 
+    &= \frac{\| \ve{r}_C \|^2}{\cos\theta} p_C(\ve{r}_C) \\
+    &= \frac{\| M \omega_A \|^2}{ | \frac{M \omega_A}{\|M\omega_A\|} \cdot \frac{M^{-T} \omega_A}{\| M^{-T} \omega_A \|} | } \frac{1}{ | \det(M) | \| M^{-T} \omega_A \| } p_A(\omega_A) \\
+    &= \frac{\| M \omega_A \|^3}{ | \omega_A^T M^{-1} M \omega_A | } \frac{1}{ | \det(M) | } p_A(\omega_A)  \\
+    &= \frac{\| M \omega_A \|^3 }{ | \det(M) | \| \omega_A \|^2} p_A(\omega_A) \\
+    &= \frac{\| M \omega_A \|^3 }{ | \det(M) | } p_A(\omega_A).
+  \end{align*}
+
+  \subsection{The Hair Coordinate System Transform}
+
+  The hair coordinate system maps $(\theta,\phi) \in (\pi/2, \pi/2) \times [0,2\pi)$ to a sphere with the following transformation function:
+  \begin{align*}
+    \omega = \begin{bmatrix}
+      \sin\theta \\
+      \cos\theta \cos\phi \\
+      \cos\theta \sin\phi
+    \end{bmatrix}.
+  \end{align*}
+  So,
+  \begin{align*}
+    \omega_\theta &= \begin{bmatrix}
+      \cos \theta \\
+      -\sin\theta \cos\phi \\
+      -\sin\theta \sin\phi \\
+    \end{bmatrix} \\
+    \omega_\phi &= \begin{bmatrix}
+      0 \\
+      - \cos\theta \sin\phi \\
+      \cos\theta \cos\phi
+    \end{bmatrix}\\
+    E &= \cos^2\theta + \sin^2 \theta \cos^2 \phi + \sin^2\theta \sin^2\phi = 1 \\
+    F &= \sin\theta\cos\theta \cos\phi\sin\phi - \sin\theta \cos\theta \cos\phi\sin\phi = 0 \\
+    G &= \cos^2\theta \sin^2\phi + \cos^2 \theta \cos^2\phi = \cos^2\theta\\
+    \sqrt{EG-F^2} &= \sqrt{\cos^2 \theta - 0} = | \cos\theta |.
+  \end{align*}
+  However, since $\theta \in (-\pi/2, \pi/2)$, we have that $\cos\theta > 0$, so
+  \begin{align*}
+    \sqrt{EG-F^2} &= \cos\theta.
+  \end{align*}
+  So, the probability density transformation formula is:
+  \begin{align*}
+    p_B(\omega(\theta, \phi)) = \frac{p_A(\theta,\phi)}{\cos \theta}.
+  \end{align*}
+
+  \subsection{Sampling for Diffuse Hair}
+  In this section, we want to sample the sphere so that $p_B(\omega) \propto \cos\theta$.  Applying the main theorem in this section, we have:
+  \begin{align*}
+    \frac{\cos\theta}{C} &= \frac{p_A(\theta,\phi)}{\cos\theta}\\
+    p_A(\theta,\phi) &= \frac{\cos^2\theta}{C}.
+  \end{align*}
+  Again, we sample $\phi$ uniformly from $[0,2\pi)$, and then sample $\theta$ independently from $\phi$.  So,
+  \begin{align*}
+    p_\theta(\theta) 
+    &= \frac{2\pi}{C} \cos^2\theta \\
+    P_\theta(\theta) 
+    &= \frac{2\pi}{C} \int_{-\pi/2}^{\theta} \cos^2 \theta'\ \dee\theta' \\
+    &= \frac{2\pi}{C} \bigg[ \frac{\theta' + \sin \theta' \cos\theta'}{2} \bigg]_{-\pi/2}^\theta \\
+    &= \frac{\pi}{C} \bigg[ \theta' + \frac{\sin(2\theta')}{2} \bigg]_{-\pi/2}^\theta \\
+    &= \frac{\pi}{C} \bigg( \theta + \frac{\sin(2\theta)}{2} + \frac{\pi}{2} \bigg).
+  \end{align*}
+  To find $C$, we note that $P_\theta(\pi/2) = 1$, so
+  \begin{align*}
+    1 &= \frac{\pi}{C}\bigg( \frac{\pi}{2} + 0 + \frac{\pi}{2} \bigg) = \frac{\pi^2}{C}
+  \end{align*}    
+  So, $C = \pi^2$, and
+  \begin{align*}
+    P_\theta(\theta) &= \frac{1}{\pi} \bigg( \theta + \frac{\sin(2\theta)}{2} + \frac{\pi}{2} \bigg).
+  \end{align*}
+  The above function cannot be inverted symbolically.  So, in Mitsuba's implementation, they solve for it using Brent's method.
+
+  \section{Radiance Under Linear Transformation}
+
+  Suppose you have an area light source.  Let $\ve{x}$ be a point on that surface, and let $L_e(\ve{x},\omega)$ be the outgoing radiance distribution at $\ve{x}$.  If the whole light source is transformed by a linear transformation $M$, what is the outgoing radiance from the same point in the same direction after transformation calculated in such a way that energy is conserved?
+
+  For example, if we have an area light source that emits a constant radiance, say $L$, in all direction.  If this light source is scaled uniformly by a factor of $2$ in all directions, then the surface area of the scaled light source is $4$ times that of the original one.  As such, to conserve energy, the radiance from each point has to be $L/4$.  We would like to find an expression for the radiance after transformation that correctly takes into account this behavior.
+
+  Let $\ve{n}$ be the normal at $\ve{x}$.  Then, the power of the radiance along the ray from $\ve{x}$ in direction $\omega$ is given by:
+  \begin{align*}
+    L(\ve{x}, \omega) (\omega \cdot \ve{n})\ \dee A(\ve{x}) \dee\sigma(\omega)
+  \end{align*}
+  where $A$ is the area measure, and $\sigma$ is the solid angle measure.
+
+  After transformation, we get:
+  \begin{align*}
+    \tilde{\ve{x}} &= M \ve{x} \\
+    \tilde{\omega} &= \frac{ M \omega }{ \| M \omega  \| } \\
+    \tilde{\ve{n}} &= \frac{ M^{-T} \ve{n} }{ \| M^{-T} \ve{n} \| }.
+  \end{align*}
+  The power of the radiance along the ray from $\tilde{\ve{x}}$ in direction $\tilde{\omega}$ is:
+  \begin{align*}
+    L(\tilde{\ve{x}}, \tilde{\omega}) (\tilde{\omega} \cdot \tilde{\ve{n}})\ \dee A(\tilde{\ve{x}}) \dee\sigma(\tilde{\omega}).
+  \end{align*}
+  Because we want to conserve energy, we have that:
+  \begin{align*}
+    L(\tilde{\ve{x}}, \tilde{\omega}) (\tilde{\omega} \cdot \tilde{\ve{n}})\ \dee A(\tilde{\ve{x}}) \dee\sigma(\tilde{\omega})
+    &= L(\ve{x}, \omega) (\omega \cdot \ve{n})\ \dee A(\ve{x}) \dee\sigma(\omega).
+  \end{align*}
+  Using the knowledge from Section~\ref{area-linear-xform},
+  \begin{align*}
+    \dee A(\tilde{\ve{x}}) = | \det(M) | \| M^{-T} \ve{n} \|\ \dee A(\ve{x}).
+  \end{align*}
+  Moreover, from Section~\ref{solid-angle-linear-xform}, we have:
+  \begin{align*}
+    \dee \sigma(\tilde{\omega}) = \frac{| \det(M) |}{\| M \omega \|^3} \ \dee \sigma(\omega).
+  \end{align*}
+  So,
+  \begin{align*}
+    L(\tilde{\ve{x}}, \tilde{\omega}) (\tilde{\omega} \cdot \tilde{\ve{n}})\ \dee A(\tilde{\ve{x}}) \dee\sigma(\tilde{\omega})
+    &= L(\ve{x}, \omega) (\omega \cdot \ve{n})\ \dee A(\ve{x}) \dee\sigma(\omega) \\
+    L(\tilde{\ve{x}}, \tilde{\omega}) \bigg( \frac{M\omega}{\| M \omega\|} \cdot \frac{M^{-T}\ve{n}}{\| M^{-T}\ve{n} \|} \bigg) | \det(M) | \| M^{-T} \ve{n} \| \frac{| \det(M) |}{\| M \omega \|^3} \ \dee A(\ve{x})\dee \sigma(\omega)
+    &= L(\ve{x}, \omega) (\omega \cdot \ve{n})\ \dee A(\ve{x}) \dee\sigma(\omega) \\
+    L(\tilde{\ve{x}}, \tilde{\omega}) (\omega \cdot \ve{n}) \frac{| \det(M) |^2}{\| M \omega \|^4}
+    &= L(\ve{x}, \omega) (\omega \cdot \ve{n})\\
+    L(\tilde{\ve{x}}, \tilde{\omega})
+    &= \frac{\| M \omega \|^4}{| \det(M) |^2} L(\tilde{\ve{x}}, \tilde{\omega}).
+  \end{align*}
+
+  Let us do some sanity check whether this satisfies the story we had before or not.  Say, $M$ is the uniform scaling by a factor of $2$ in all direction.  We have that $\|M \omega \| = 2 \|\omega\| = 2$, and $\det(M) = 8$.  So,
+  \begin{align*}
+     L(\tilde{\ve{x}}, \tilde{\omega}) = \frac{2^4}{8^2} L(\ve{x},\omega) = \frac{16}{64} L(\ve{x},\omega) = \frac{L(\ve{x},\omega)}{4},
+  \end{align*}
+  which matched our story above. 
+
+  \section{Appendix}
+
+  \begin{lemma} \label{unit-deriv}
+    $$ \frac{\partial}{\partial u} \frac{\ve{a}}{\|\ve{a} \|} =  \frac{1}{\| \ve{a} \|} \frac{\partial \ve{a}}{\partial u} - \frac{\ve{a}}{\| \ve{a} \|^3} \bigg( \ve{a} \cdot \frac{\partial \ve{a}}{\partial u} \bigg) $$ 
+  \end{lemma}
+
+  \begin{proof}    
+    \begin{align*}
+      \frac{\partial}{\partial u} \frac{\ve{a}}{\|\ve{a} \|}      
+      &= \frac{1}{\|\ve{a}\|^2} \bigg( \| \ve{a} \| \frac{\partial \ve{a}}{\partial u} - \ve{a} \frac{\partial \| \ve{a} \|}{\partial u} \bigg)
+      = \frac{1}{\|\ve{a}\|^2} \bigg( \| \ve{a} \| \frac{\partial \ve{a}}{\partial u} - \ve{a} \frac{\partial \sqrt{\ve{a} \cdot \ve{a}}}{\partial u} \bigg)\\
+      &= \frac{1}{\|\ve{a}\|^2} \bigg( \| \ve{a} \| \frac{\partial \ve{a}}{\partial u} - \ve{a} \frac{1}{2\sqrt{\ve{a}\cdot\ve{a}}} \bigg( 2 \ve{a} \cdot \frac{\partial \ve{a}}{\partial u} \bigg)\bigg) \\
+      &= \frac{1}{\|\ve{a}\|^2} \bigg( \| \ve{a} \| \frac{\partial \ve{a}}{\partial u} - \frac{\ve{a}}{\| \ve{a} \|} \bigg( \ve{a} \cdot \frac{\partial \ve{a}}{\partial u} \bigg)\bigg) \\
+      &=  \frac{1}{\| \ve{a} \|} \frac{\partial \ve{a}}{\partial u} - \frac{\ve{a}}{\| \ve{a} \|^3} \bigg( \ve{a} \cdot \frac{\partial \ve{a}}{\partial u} \bigg)
+    \end{align*}
+  \end{proof}
+\end{document}

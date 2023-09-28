@@ -1,0 +1,297 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+\usepackage{verbatim}
+\usepackage{hyperref}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\Dee}{\mathrm{D}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\Var}{\mathrm{Var}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+\newcommand{\ov}[1]{\overline{#1}}
+
+\title{Reweighting Firefly Samples}
+\author{}
+
+\begin{document}
+  \maketitle
+
+  I wrote this document as I read ``Reweighting Firefly Samples for Improved Finite-Sample Monte Carlo Estimates'' by Zirr, Hanika, and Dachsbacher \cite{Zirr:2018}.
+
+  \section{Basic Definitions}
+
+  \begin{itemize}
+  	\item Let $F$ be an unbiased estimator for the rendering equation. That is:
+  	\begin{align*}
+  		E[F] = \int_{\Omega} f(X)\ \dee X
+  	\end{align*}
+  	where $\Omega$ denotes the space of paths, $X$ denotes a path, and $f(x)$ denote the path's measurement.
+
+  	\item We assume that, for each pixel, we trace $N$ paths to compute the finite-sample estimate $F^N$ given by:
+  	\begin{align*}
+  		F^N = \frac{1}{N} \sum_{i=1}^n \frac{f(X_i)}{p(X_i)}
+  	\end{align*}
+  	where $X_i$ denotes the $i$th sampled path, and $p(X_i)$ denotes the probability of sampling $X_i$. 
+
+  	\item We will also denote the individual contribution of each path $X$ by $$S(X) = \frac{f(X)}{p(X)}.$$ In other words, we can write $$F^N = \frac{1}{N} \sum_{i=1}^N S(X_i).$$
+
+  	\item Let $p^*(X)$ denote the ideal probability of sampling path $X$. In other words, $f(X)/p^*(X) = E[F]$.
+
+  	\item Let $r^*(X)$ be the ratio between the actual sample value $S(X) = f(X)/p(X)$ and the target value $E[F]$:
+  	\begin{align*}
+  		r^*(X) = \frac{S(X)}{E[F]} = \frac{f(X)/p(X)}{f(X)/p^*(X)} = \frac{p^*(X)}{p(X)}.
+  	\end{align*}
+
+  	\item The estimate then can be rewritten as:
+  	\begin{align*}
+  		F^N 
+  		= \frac{1}{N} \sum_{i=1}^N \frac{f(X_i)}{p(X_i)}
+  		= \frac{1}{N} \sum_{i=1}^N \frac{f(X_i)}{p^*(X_i)/r^*(X_i)}
+  		= \frac{1}{N} \sum_{i=1}^N \frac{f(X_i)}{p^*(X_i)} r^*(X_i)
+  		= \frac{1}{N} \sum_{i=1}^N E[F] r^*(X_i).
+  	\end{align*}
+
+  	\item A firefly sample is a sample with high $r^*(X_i)$.
+
+  	\item Define a $\kappa$-firefly as a path sample with $r^*(X) \geq N/\kappa$. In particular, if we count the number of $\kappa$-fireflies and found more than $\kappa$ of them, then the estimate $F^N$ will be more than $E[F]$. 
+
+  	\item In other word, we are very afraid of $1$-fireflies. If there is one, our estimate overshoots $E[F]$.
+
+  	\item Let $\mathcal{F}_\kappa$ be the set of all $\kappa$-firefly:
+  	\begin{align*}
+  		\mathcal{F}_\kappa 
+  		= \bigg\{ X \in \Omega\ \bigg|\ r^*(X) \geq \frac{N}{\kappa} \bigg\}
+  		= \bigg\{ X \in \Omega\ \bigg|\ S(X) \geq E[F] \frac{N}{\kappa} \bigg\}.
+  	\end{align*}
+  	Let $\mathcal{N}_\kappa$ be the set of paths that are not $\kappa$-fireflies: $\mathcal{N}_\kappa$ = $\Omega - F_{\kappa}$.
+
+  	\item We can bound the probabiliy of sampling a $\kappa$-firefly as follows:
+  	\begin{align*}
+  	\Pr(X \in \mathcal{F}_\kappa)
+  	= \Pr\bigg(S(X) 
+  	\geq E[F] \frac{N}{\kappa} \bigg)
+  	\leq \frac{\kappa}{N}.
+  	\end{align*}
+  	The last inequality is just Markov's inequality as $E[S] = E[F]$.
+  \end{itemize}
+  
+  \section{Reweighting Fireflies}
+
+  \begin{itemize}
+  	\item Consider the following estimator that weights the $\kappa$-fireflies differently:
+  	\begin{align*}
+  		S' = \begin{cases}
+  			S(X), & X \in \mathcal{N}_\kappa \\
+  			w_\kappa(X) S(X), & X \in \mathcal{F}_\kappa 
+  		\end{cases}
+  	\end{align*}
+
+  	\item Assume that $\Pr(X \in \mathcal{F}_\kappa) = \frac{\kappa}{N}$. Then, there is a constant $\alpha < 1$ where, if we set $$w_\kappa(X) = \frac{\alpha N}{\kappa r^*(X)},$$ then $S'$ is an unbiased estimator of $F$. This is because:
+  	\begin{align*}
+  		E[S'] 
+  		&= \Pr(X \not\in \mathcal{F}_\kappa) E_{X \not\in \mathcal{F}_\kappa} [S(X)] 
+  		+ \Pr(X \in \mathcal{F}_\kappa) E_{X \in \mathcal{F}_\kappa}[w(X)S(X)] \\
+  		&= \frac{N-\kappa}{N} E_{X \not\in \mathcal{F}_\kappa} [S(X)] 
+  		+ \frac{\kappa}{N} E_{X \in \mathcal{F}_\kappa}\bigg[ \frac{\alpha N}{\kappa r^*(X)} S(X)\bigg] \\
+  		&= E[F] \frac{N-\kappa}{N} E_{X \not\in \mathcal{F}_\kappa} \bigg[ \frac{p^*(X)}{p(X)} \bigg]
+  		+ \alpha E[F] \\ 
+  		&= E[F] \frac{N-\kappa}{N} \frac{\int_{\mathcal{N}_\kappa} p^*(X)\ \dee X }{\Pr(X \in \mathcal{N}_\kappa)} \\
+  		& E[F] \bigg( \frac{N-\kappa}{N} \frac{\int_{\mathcal{N}_\kappa} p^*(X)\ \dee X }{\Pr(X \in \mathcal{N}_\kappa)}
+  		+ \alpha \bigg).
+  	\end{align*}
+  	That is, we can set 
+  	\begin{align*}
+  		\alpha = 1 - \frac{N-\kappa}{N} \frac{\int_{\mathcal{N}_\kappa} p^*(X)\ \dee X }{\Pr(X \in \mathcal{N}_\kappa)}
+  	\end{align*}
+  	to get $E[S'] = E[F]$.
+  	Now,
+  	\begin{align*}
+  		\alpha = 1 - \frac{N-\kappa}{N} \frac{\int_{\mathcal{N}_\kappa} p^*(X)\ \dee X }{\Pr(X \in \mathcal{N}_\kappa)}
+  		\geq 1 - \int_{\mathcal{N}_\kappa} p^*(X)\ \dee X.
+  	\end{align*}
+  	So, $\alpha \leq 1$.
+
+  	\item While it is possible (under an assumption) to weight the firefly down to still get an unbiased estimatior, the paper says it would use $\alpha = 1$ to keep as much energy as possible. This makes sense because there will be no way we would sample exactly $\kappa$ fireflies.
+
+  	\item What we now need is (1) how to classify a sample as a $\kappa$-firefly, and (2) how to estimate $r^*(X)$ so that we can weight the sample down by $N/(\kappa r^*(X))$.
+
+  	\item One thing that is not clear in the paper is that the weight function is not spelled out as an equation. I think it is:
+  	\begin{align*}
+  		w(S_i) = \min\bigg\{ 1, \frac{N}{\kappa r^*(X_i)} \bigg\}.
+  	\end{align*}
+  	In this way, we make sure that we only decrease the estimate that we compute.
+
+  \end{itemize}
+
+  \section{Firefly Classification by Sampling Counting}
+
+  \begin{itemize}
+  	\item Suppose we have sampled $N$ samples $S_1$, $S_2$, $\dots$, $S_N$. For each sample $S_i$, the paper suggests computing $n_i$, the number of samples that are similar to $S_i$ as follows:
+  	\begin{align*}
+  		n_i = \sum_{j = 1}^N K(S_i - S_j)
+  	\end{align*}
+  	where $K$ is a kernel function with $K(0) = 1$ that falls off to zero on both sides.
+
+  	\item For the $i$th sample, suppose that we find $n_i \geq \kappa$ samples similar to $S_i$. Then, there is a good chance that $X_i \in \mathcal{N}_{n_i}$.
+
+  	To see this, we shall bound the probability that $X_i \in \mathcal{F}_{n_i / \beta}$ for $\beta \geq 1$ given that $n_i$ samples similar to $X_i$ are generated. Let $I_j$ be the probability that the $j$th sample belongs to $\mathcal{F}_{n_i / \beta}$. We have that $\Pr(I_j = 1) \leq n_i/ (\beta N)$ by Markov's inequality. Because the $i$th sample belongs to $\mathcal{F}_{n_i / \beta}$, it means that all the $n_i$ samples similar to it must belong to $\mathcal{F}_{n_i / \beta}$ too. This probability is thus bounded above by the probability that $\Pr(\sum I_j \geq n_i)$. We have that:
+  	\begin{align*}
+  		\Pr(\sum I_j \geq n_i) 
+  		= \Pr\bigg(\sum I_j \geq \frac{n_i}{N} N \bigg) 
+  		=\Pr\bigg(\sum I_j \geq \beta \frac{n_i}{\beta N} N \bigg).
+  	\end{align*}
+  	Using Theorem 1 in \cite{Arratia:1989} with $p = n_i/ (\beta N)$ and $a = \beta p = \beta n_i/ (\beta N)$, we have that:
+  	\begin{align*}
+  		\Pr\big(\sum I_j \geq n_i\big) \leq e^{-N H}
+  	\end{align*}
+  	where
+  	\begin{align*}
+  		H 
+  		&= a \log \frac{a}{p} + (1-a) \log \frac{1-a}{1-p}.
+  	\end{align*}
+  	Now,
+  	\begin{align*}
+  		NH 
+  		&= Na \log \frac{a}{p} + N (1-a) \log \frac{1-a}{1-p} \\
+  		&= n_i \log \beta +  (N-n_i) \log \frac{ N(1-a)}{N(1-p)} \\
+  		&= n_i \log \beta + (N-n_i) \log \frac{N-n_i}{N-n_i/\beta}.
+  	\end{align*}
+  	So,
+  	\begin{align*}
+  		e^{-NH}
+  		&= \exp \bigg( -n_i \log \beta - (N-n_i) \log \frac{N-n_i}{N-n_i/\beta} \bigg)\\
+  		&= \exp(-n_i \log\beta) \bigg( \frac{N-n_i/\beta}{N-n_i} \bigg)^{N-n_i} \\
+  		&= \exp(-n_i \log\beta) \bigg( 1 + \frac{n_i-n_i/\beta}{N-n_i} \bigg)^{N-n_i}\\
+  		&\leq \exp(-n_i \log\beta) \exp\bigg( n_i - \frac{n_i}{\beta} \bigg) \\
+  		&= \exp \bigg( -n_i \log\beta + n_i - n_i/\beta \bigg) \\
+  		&= \exp \bigg( -n_i \Big(\log\beta + \frac{1}{\beta} - 1\Big) \bigg).
+  	\end{align*}
+  	The value $\log\beta + \frac{1}{\beta} - 1$ is greater than $0$ for all $\beta > 1$.
+
+  	As a result, as $n_i$ increases, it becomes exponentially less likely for $X_i$ to belong to any $\mathcal{F}_{n'}$ where $n' > n_i$. (Just graph it.)
+
+  	While it is not said in the paper, I think we may also bound the probability that $X_i \in \mathcal{N}_{n'}$ where $n' < n_i$ and obtain an exponential decay as well.
+
+  	\item Now, to reweight the $i$th sample, we estimate $r^*(S_i)$ by $N/n_i$. Why? Because $N/n_i$ is the most likely value according to the last item.
+
+  	\item The paper says that we may expect one sample in $\mathcal{F}_1$. When we get this sample, we will have that $n_i = 1$. Since there is only one sample, we don't know the right $\kappa \leq 1$ such that $X_i$ belongs to $\mathcal{F}_\kappa$. As a result, we cannot sensibly reweight this sample. Because of this, the paper recommends discarding this sample. 
+
+  	\item In general, instead of discarding just only one sample, the paper sets up a parameter $\kappa_{\min}$ such that it discards $X_i$ if $n_i \leq \kappa_{\min}$. Typically, $\kappa_{\min} = 1$. To minimize probability of misclassification, the paper averages $n_i$ of the immediate neighboring pixels (this doesn't make sense now, but it will later) and use this to decide whether to discard the sample.
+
+  	\item By the introduction of $\kappa_{\min}$, the ratio takes the form:
+  	\begin{align*}
+  		r_c^*(X_i) = \frac{N}{n_i - \kappa_{\min}},
+  	\end{align*}
+  	and the weighting function takes the form:
+  	\begin{align*}
+  		w_c(X_i) 
+  		= \min\bigg\{ 1, \frac{N}{\kappa} \frac{n_i-\kappa_{\min}}{N} \bigg\}
+  		= \min\bigg\{ 1, \frac{n_i-\kappa_{\min}}{\kappa} \bigg\}
+  	\end{align*}
+
+  	\item The weight $w_c$, however, treats samples with low values but small counts the same way as those with high values and small counts. That is, if the counts are small, the samples will be downweighted. This can lead to considerable energy loss. 
+
+  	\item To fix the above problem, they would like to compute a lower bound of the expected value $E_{\min}[F]$. This would then be used to compute an upper bound $r_v^*(S_i) = S_i/E_{\min}[F]$ to clamp $r_c^*(S_i)$. In other words, the ultimate weighting function is given by:
+  	\begin{align*}
+  		w(S_i) 
+  		&= \min\bigg\{ 1, \frac{N}{\kappa \min\{r^*_c(X_i), r^*_v(X_i)\} } \bigg\}
+  		= \min\bigg\{ 1, \max \Big\{ \frac{n_i - \kappa_{\min}}{\kappa}, \frac{N E_{\min}[F]}{\kappa S_i} \Big\} \bigg\}.
+  	\end{align*}
+
+  	\item When accumulating the samples, the algorithm sorts the samples based on their values in increasing order. That is, say, $S_1 \leq S_2 \leq \dotsm \leq S_N$. Then, it computes the partial $F'^N_i$ that takes into account samples up to $S_i$. When computing $F'^N_i$, it uses $F'^N_{i-1}$ as $E_{\min}[F]$. That is:
+  	\begin{align*}
+  		F'^N_1 
+  		&= \frac{1}{N} w_c(S_1) S_1 \\
+  		&= \frac{1}{N} \min\bigg\{1, \frac{n_1 - \kappa_{\min}}{\kappa}\bigg\} S_1\\
+  		F'^N_i
+  		&= F'^N_{i-1} + \frac{1}{N} w(S_i) S_i\\
+  		&= F'^N_{i-1} + \frac{1}{N} \min\bigg\{ 1, \max \Big\{ \frac{n_i - \kappa_{\min}}{\kappa}, \frac{N F'^N_{i-1}}{\kappa S_i} \Big\} \bigg\} S_i.
+  	\end{align*}
+
+  	\item I don't understand why they don't just sort the values and reweight only the high value ones instead of doing some complicated stuff here. The last section sounds like a hack more than principled reasoning.
+  	
+  \end{itemize}
+
+  \section{Practical Implementation}
+
+  \begin{itemize}
+  	\item The algorithm outlined in the last section requires us to keep all the samples for a pixel. This requires a lot of memory. The paper comes up with a scheme that does not have to store all individual samples.
+
+  	\item The algorithm employs a fixed number of framebuffers, each of such a buffer is called a \emph{cascade}. The buffer $B_j$ accumulates samples with brighness in the range $[b^{j-1}, b^{j+1}]$, where $b$ is a small constant. The paper typically uses $b = 8$.
+
+  	\item The total number of required buffers depends on the maximum sample brightness:
+  	\begin{align*}
+  		j \leq \log_b S_{\max}.
+  	\end{align*}
+  	Typically, $S_{\max}$ should be the brighness of the brightness light source.
+
+  	\item The paper seems to say that $B_0$ is the first buffer. However, we can go lower to $B_{-1}$, $B_{-2}$, and so on. I'm not so sure how low should be we down.
+
+  	\item Given a sample, we first compute
+  	\begin{align*}
+  		j = \lfloor \log_b S_i \rfloor.
+  	\end{align*}
+  	We then splat $S_i$ into $B_j$ and $B_{j+1}$. When splatting to $B_j$, the sample is multiplied with the weight:
+  	\begin{align*}
+  		\alpha_j = \frac{b^j /S_i - 1/b}{1 - 1/b}.
+  	\end{align*}
+  	When splatting to $B_{j+1}$, the weight is $\alpha_{j+1} = 1 - \alpha_j$.
+
+  	\item For samples that is dimmer than the range of the lowest buffer, we splat it fully to the lowest buffer.
+
+  	\item With the weights, we can have an estimate of the number of samples in each buffer. However, the paper does not do this. I don't know why.
+
+  	\item The number of samples stored in $B_j$ can be estimated by:
+  	\begin{align*}
+  		n_j = \frac{N B_{j-1}}{b^{j-1}} + \frac{N B_j}{b^j} + \frac{N B_{j+1}}{b^{j+1}}.
+  	\end{align*}
+
+  	\item When computing the estimate for each pixel, the algorithm iterates from the lowest buffer to the highest buffer. Using $n_j$ to compute the weighting factor. However, instead of computing $r^*v(S_i)$ as $B_j/E_{\min}{F}$, it computes $r^*v(S_i)/b^j$ instead, and I don't know why either.
+
+  \end{itemize}
+
+  Like, the promise of this paper is exciting, but many parts seem unclear and extremely hacking. Decisions are unmotivated, and logic does not flow well at all.
+
+  The GLSL source code in the website of the project also contains code that does not conform to what is written in the paper. What the heck!!!
+
+
+  \bibliographystyle{apalike}
+  \bibliography{reweight-firefly}  
+\end{document}

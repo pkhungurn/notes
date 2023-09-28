@@ -1,0 +1,785 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{epstopdf}
+\usepackage{enumerate}
+\usepackage{verse}
+
+\newtheorem{lemma}{Lemma}[section]
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\likelihood}{\mathcal{L}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\new}{\mathrm{new}}
+\newcommand{\Arg}{\mathrm{Arg\,}}
+\newcommand{\Log}{\mathrm{Log\,}}
+\newcommand{\RE}{\mathrm{Re\,}}
+\newcommand{\IM}{\mathrm{Im\,}}
+\newcommand{\Res}{\mathrm{Res}}
+\newcommand{\pv}{\mathrm{p.v.}}
+
+\title{Complex Analysis Review}
+\author{Pramook Khungurn}
+
+\begin{document}
+	\maketitle
+	
+  \section{Polar Form and Complex Exponentials} % (fold)
+  \label{sec:polar_form_and_complex_exponentials}
+
+  \begin{itemize}
+    \item A complex number $z = x + iy$ can be written in polar coordinate $(r, \theta)$ where $r = |z|$,
+    \begin{align*}
+      x = r \cos \theta,\qquad \mbox{and} \qquad y = r \sin\theta.
+    \end{align*}
+
+    \item The angle $\theta$ is not unique.\\
+    We know that $\theta = \tan^{-1} (y/x)$ works.\\
+    However, if $\theta$ works, then $\theta \pm 2\pi k$, where $k \in \mathbb{Z}$, also works.
+
+    \item We call the value of any of these $\theta$ angles the {\bf phase} or the {\bf argument} of $z$. It is denoted by $$\arg z.$$
+    For example, we write
+    \begin{align*}
+      \arg i = \frac{\pi}{2} + 2\pi k \quad (k \in \mathbb{Z}).
+    \end{align*}
+    Note that $\arg z$ is a multi-valued function.
+
+    \item To make $\arg z$ a single-valued function, we specify an interval that $\arg z$ can take.\\
+    We commonly use $\arg_\tau z$ to denote the argument that takes value from $(\tau, \tau + 2\pi]$.\\
+    Note that the function has a $2\pi$ value jump on the line containing complex number whose $\arg z = \tau$.    
+
+    \item The {\bf principal branch} of $\arg z$ is denoted $\Arg z$, and it is defined to be $\Arg z = \arg_{-\pi} z$.
+  \end{itemize}  
+  % section polar_form_and_complex_exponentials (end)
+
+  \section{Analytic Functions} % (fold)
+  \label{sec:analytic_functions}
+
+  \begin{itemize}
+    \item Let $f$ be a complex-value function defined in a neighborhood of $z_0$. Then the {\bf derivative} of $f$ at $z_0$ is given by 
+      \begin{align*}
+        \frac{\dee f}{\dee z}(z_0) \equiv f'(z_0) := \lim_{\Delta z \ra 0} \frac{f(z_0 + \Delta z) - f(z_0)}{\Delta z}.
+      \end{align*}
+      provided that the limit exists.  
+
+    \item $f(z)$ is {\bf complex differentiable} at $z_0$ if $f'(z_0)$ exists and independent of how $\Delta z$ approaches 0.    
+
+    \item If $f$ is complex differentiable in an open region, we say that $f$ is {\bf analytic} in that region.
+
+    \item All polynomials and quotients of polynomials are anlaytic where they are defined.\\
+    That is, except where the denominator is 0.
+
+    \item The function $f(z) = \bar{z}$ is nowhere differentiable.  
+  \end{itemize}  
+  % section analytic_functions (end)
+
+  \section{Cauchy--Riemann Equatnions} % (fold)
+  \label{sec:cauchy_riemann_equatnions}
+    
+  \begin{itemize}
+    \item 
+    \begin{theorem}
+    If $f(z) = u(x,y) + iv(x,y)$ is analytic in an open region, then the following {\bf Cauchy--Riemann equations}:
+    \begin{align*}
+      \frac{\partial u}{\partial x} = \frac{\partial v}{\partial y},\mbox{ and } \frac{\partial u}{\partial y} = -\frac{\partial v}{\partial x}
+    \end{align*}
+    must hold at every point in the region.  
+    \end{theorem}
+    
+
+    \item The converse is almost true:
+    \begin{theorem}
+      If the partial derivatives exist in an open region around point $z_0$, are continuous at $z_0$, and satisfy the Cauchy--Riemann equations at $z_0$, then $f$ is analytic at $z_0$.
+    \end{theorem}
+    It follows that, if the partial derivatives exist, are continuous, and satisfy Cauchy--Riemann equations in an open region, then $f$ is analytic in that region.
+
+    \item If $u(x,y)$ and $v(x,y)$ satisfies the Cauchy--Riemann equations, then they are {\bf harmonic}. That is,
+    \begin{align*}
+      \nabla^2 u = \frac{\partial^2 u}{\partial x^2} = \frac{\partial^2 u}{\partial y^2} = 0, \mbox{ and } \nabla^2 v = \frac{\partial^2 v}{\partial x^2} = \frac{\partial^2 v}{\partial y^2} = 0.
+    \end{align*}
+    This is because
+    \begin{align*}
+      \frac{\partial^2 u}{\partial x^2} &= \frac{\partial}{\partial x} \frac{\partial u}{\partial x} = \frac{\partial}{\partial x} \frac{\partial v}{\partial y} = \frac{\partial^2 v}{\partial x\partial y}, \mbox{ and}\\
+      \frac{\partial^2 u}{\partial y^2} &= \frac{\partial}{\partial y} \frac{\partial u}{\partial y} = \frac{\partial}{\partial x} \bigg( -\frac{\partial v}{\partial x} \bigg) = -\frac{\partial^2 v}{\partial y\partial x}.
+    \end{align*}
+    The same derivation can be shown for $\nabla^2 v$.
+
+    \item We also have that the contours of constant $u$ and $v$ almost always intersect at right angles.\\
+    The exceptions are the plances where $f'(z) = 0.$\\
+    This is the consequence of $f$ being analytic, so conformal.
+
+    \item \begin{example}
+      Find all functions $f(z)$ which are analytic in whole complex plane and have their real part $u(x,y) = xy - \cos x \cosh y$.
+    \end{example}
+
+    {\bf Solution.} Since $f$ is analytic everywhere, it must satisfy the Cauchy--Riemann equations everywhere. We have that
+    \begin{align*}
+      \frac{\partial u}{\partial x} = y + \sin x \cosh y = \frac{\partial v}{\partial y}.
+    \end{align*}
+    Therefore,
+    \begin{align*}
+      v = \frac{y^2}{2} + \sin x \sinh y + g(x)
+    \end{align*}
+    for some function $g(x)$. Now,
+    \begin{align*}
+      \frac{\partial v}{\partial x} = \cos x \sinh y + g'(x) = -\frac{\partial u}{\partial y} = -x + \cos x \sinh y.    
+    \end{align*}
+    As such,
+    \begin{align*}
+      g'(x) = -x,
+    \end{align*}
+    so $g(x) = -x^2/2 + C$ for some constant $C$.
+    As such, we have that
+    \begin{align*}
+      v(x,y) = \frac{y^2}{2} + \sin x \sinh y - \frac{x^2}{2} + C.
+    \end{align*}
+    Now,
+    \begin{align*}
+      f(z) 
+      &= u(x,y) + iv(x,y)\\
+      &= xy - \cos x \cosh y + i\bigg( \frac{y^2}{2} + \sin x \sinh y - \frac{x^2}{2} + C \bigg)\\
+      &= -\frac{i}{2}( x^2 - y^2 + 2ixy ) - (\cos x \cosh y - i \sin x \sinh y) + iC\\
+      &= -\frac{i}{2}z - \cos z + iC.
+    \end{align*}
+  \end{itemize}
+
+  % section cauchy_riemann_equatnions (end)
+
+  \section{Application to Fluid Dynamics} % (fold)
+  \label{sec:application_to_fluid_dynamics}
+
+  \begin{itemize}
+    \item We let $\ve{v}(x,y)$ denote a 2D velocity field.
+
+    \item We are interested in a velocity field $\ve{v}$ such that it is:
+      \begin{itemize}
+        \item {\bf Incompressible:} $\nabla \cdot \ve{v} = 0$. That is, there exists a scalar function $\psi(x,y)$ such that
+        \begin{align*}
+          \ve{v}_x = \frac{\partial \psi}{\partial y}, \mbox{ and } \ve{v}_y = -\frac{\partial \psi}{\partial x}.
+        \end{align*}
+        Here, $\psi$ is called the {\bf stream function}.
+
+        \item {\bf Irrotational:} There exists a scalar function $\phi(x,y)$ such that
+        \begin{align*}
+          \ve{v}_x = \frac{\partial \phi}{\partial x}, \mbox{ and } \ve{v}_y = \frac{\partial \phi}{\partial y}.
+        \end{align*}
+      \end{itemize}
+
+    \item Note that $\phi$ and $\psi$ satisfies Cauchy--Riemann equations. So, $\phi(x,y) + i \psi(x,y)$ is an analytic function.
+
+    \item The contours of $\psi$ are all the {\bf streamlines}.
+    
+    \item Fluid flows along stream lines.
+  \end{itemize}  
+  % section application_to_fluid_dynamics (end)
+
+  \section{Complex Exponentials, Sines, and Cosines} % (fold)
+  \label{sec:exp_sin_cos}
+
+  \begin{itemize}
+    \item We know that the exponential function $$e^z = e^{x + iy} = e^x \cos y + i e^x \sin y$$ is analytic on the whole complex plane.
+
+    \item Define
+    \begin{align*}
+      \cos z &= \frac{e^{iz} + e^{-iz}}{2},\\
+      \sin z &= \frac{e^{iz} - e^{-iz}}{2i},\\
+      \cosh z &= \frac{e^z + e^{-z}}{2}, \mbox{ and}\\
+      \sinh z &= \frac{e^z - e^{-z}}{2}.\\
+    \end{align*}
+
+    \item Familiar trigonometric identities hold with $\cos z$ and $\sin z$.
+
+    \item Here are some useful identities about hyperbolic functions:
+    \begin{align*}
+      \frac{\dee}{\dee z} \sinh z &= \cosh z\\
+      \frac{\dee}{\dee z} \cosh z &= \sinh z\\
+      \cos(iz) &= \cosh z\\
+      \sin(iz) &= i \sinh(z)\\
+      \cos z &= \cosh (iz)\\
+      \sin z &= i\sinh (iz)\\
+      \cosh^2 z - \sinh^2 z &= 1
+     \end{align*}
+
+     \item We also have that
+     \begin{align*}
+       \cos z &= \cos (x+iy) = \cos x \cos(iy) - \sin x \sin(iy) = \cos x \cosh y - i \sin x \sinh y,
+     \end{align*}
+     and
+     \begin{align*}
+       \sin z &= \sin (x + iy) = \sin x \cos (iy) + \cos x \sin(iy)
+       = \sin x \cosh y + i \cos x \sinh y.
+     \end{align*}    
+  \end{itemize}  
+  % section elementary_functions (end)
+
+  \section{Complex Logarithms} % (fold)
+  \label{sec:complex_logarithms}
+
+  \begin{itemize}
+    \item If $z \neq 0$, define $\log z$ to be the set of infinitely many values
+    \begin{align*}
+      \log z := \ln |z| + i \arg z = \ln |z| + i \Arg z + i2\pi k\ (k \in \mathbb{Z}).
+    \end{align*}
+
+    \item Let $f(z)$ be a multi-valued complex function.\\
+    We say that $g(z)$, defined on some open region $D$, to be a {\bf branch} of $f(z)$ if:
+    \begin{itemize}
+      \item $g$ is continuous in $D$, and
+      \item $g(z)$ agrees with one of the possible values of $f(z)$.
+    \end{itemize}
+
+    \item The {\bf principal branch} of the logarithm function $\log z$, denoted by $\Log z$, is defined as:
+    \begin{align*}
+      \Log z := \ln |z| + i \Arg z.
+    \end{align*}
+    It is defined on the set $\mathbb{C} - \{ z : \RE(z) \leq 0, \IM(z) = 0 \}$.
+
+    \item Once a branch of $\log z$ is chosen, we have that
+    \begin{align*}
+      \frac{\dee}{\dee z} \log z = \frac{1}{z}
+    \end{align*}
+    at any $z$ such that the branch is defined.
+
+    \item The point $z_0$ is called a {\bf branch point} for $f(z)$ if $f(z)$ changes its value as one starts out at a point, traces a closed path enclosing $z_0$ and returns to the starting point.    
+
+    \item The point $z = 0$ is a branch point of $\log z$.
+
+    \item The poin $z = \infty$ is also a branch point of $\log z$.\\
+    This is because, if we let $\zeta = 1/z$. We have that $\log z = -\log \zeta$.\\
+    Hence, there's a branch point at $\zeta = 0$, which means $z = \infty.$
+
+    \item To see if a finite $z_0$ is a branch point, encircle it with a small loop. If $f(z)$ changes after one circuit, it is a branch point.
+
+    \item To see if $\infty$ is a branch point, circle \emph{all} finite branch points. If $f(z)$ changes after one circuit, then $\infty$ is a branch point.
+
+    \item The function $f(z) = z^\alpha = e^{\alpha \log z}$, where $\alpha \not\in \mathbb{Z} \cup \{ 0 \}$, is a multi-valued function.
+  \end{itemize}  
+  % section complex_logarithms (end)
+
+  \section{Complex Integration} % (fold)
+  \label{sec:complex_integration}
+
+  \begin{itemize}
+    \item A point set $\gamma$ in the complex plane is said to be a {\bf smooth arc} if it is the range of some continuous complex-value function $z = z(t)$, $a \leq t \leq b$ that satisfies the following conditions:
+    \begin{itemize}
+      \item $z(t)$ has a continuous derivative on $[a,b]$,
+      \item $z'(t)$ does not vanishes on $[a,b]$.
+      \item $z(t)$ is one-to-one on $[a,b].$
+    \end{itemize}
+
+    \item A point set $\gamma$ is said to be a {\bf smooth closed curve} if it is the range of some continuous function $z = z(t), a \leq t \leq b$, satisfying the conditions:
+    \begin{itemize}
+      \item $z(t)$ has a continuous derivative on $[a,b]$,
+      \item $z'(t)$ does not vanishes on $[a,b]$.
+      \item $z(t)$ is one-to-one on $[a,b)$ and $z(a) = z(b)$ and $z'(a) = z'(b)$.
+    \end{itemize}
+
+    \item A {\bf contour} $\Gamma$ is either a single point $z_0$ or a finite sequence of directed smooth curve $(\gamma_1, \gamma_2, \dotsc, \gamma_n)$ such that the terminal point of $\gamma_k$ coincides with the initial point of $\gamma_{k+1}$.
+
+    We write $\Gamma = \gamma_1 + \gamma_2 + \dotsb + \gamma_n.$
+
+    \item If $f(z)$ is a continuous function on $\gamma$, the complex integral on a smooth curve $\gamma$ is given as:
+    \begin{align*}
+      \int_\gamma f(z)\, \dee z = \int_{a}^b f(z(t))z'(t)\, dt.
+    \end{align*}
+
+    \item If $\Gamma = \gamma_1 + \gamma_2 + \dotsb + \gamma_n$, then
+    \begin{align*}
+      \int_\Gamma f(z)\, \dee z = \int_{\gamma_1} f(z)\, \dee z + \int_{\gamma_2} f(z)\, \dee z + \dotsb + \int_{\gamma_n} f(z)\, \dee z.
+    \end{align*}
+
+    \item {\bf ML bound.} If $f$ is continuous on the contour $\Gamma$ and if $|f(z)| \leq M$ on every point $z \in \Gamma$, then
+    \begin{align*}
+      \bigg| \int_\Gamma f(z)\, \dee z \bigg| \leq ML
+    \end{align*}
+    where $L$ is the length of the contour $\Gamma$.
+
+    \item If $f(z) = F'(z)$ for some function $F$, then
+    \begin{align*}
+      \int_\gamma f(z)\, \dee z = F(z_T) - F(z_I),
+    \end{align*}
+    where $z_T$ is the terminal point and $z_I$ is the initial point of the smooth curve $\gamma$.
+
+    As a result, if $\gamma$ is a closed contour, the integral is identically zero.    
+
+    \item Any domain $D$ possessing the property that every loop in $D$ can be continuously deformed in $D$ to a point is called a {\bf simply connected domain}.
+
+
+    \item \begin{theorem}[Cauchy's Integral Theorem]
+      Let $f(z)$ be analytic in a simply connected domain $D$ and $\Gamma$ any loop in $D$. Then,
+      \begin{align*}
+        \int_{\Gamma} f(z)\, \dee z = 0.
+      \end{align*}
+    \end{theorem}
+
+    \item \begin{corollary}
+      If $f$ is analytic in a simply connected region $D$, then $f$ has path independence.
+    \end{corollary}
+
+    \item \begin{corollary}[Deforming the Contour]
+      Let $f$ be a function analytic in a domain $D$ containing loops $\Gamma_0$ and $\Gamma_1$. If these loops can be continuously deformed into one another in $D$, then
+      \begin{align*}
+        \int_{\Gamma_0} f(z)\, \dee z = \int_{\Gamma_1} f(z)\, \dee z.
+      \end{align*}
+    \end{corollary}
+
+    \item \begin{corollary}
+      In a simply connected domain, an analytic function has an anti-derivative, its contour integrals are independent of path, and its loop integrals vanish.
+    \end{corollary}
+
+    \item Consider the following integral:
+    \begin{align*}
+      \int_C (z-z_0)^n\, \dee z
+    \end{align*}
+    where $C$ is any circle centered at $z_0$ traversed in the counterclockwise direction (i.e., positively oriented).
+
+    If $n \neq -1$, then $(z-z_0)^n$ has an anti-derivative, which is $(z-z_0)^{n+1}/(n+1)$. So, the integral vanishes.
+
+    If $n = -1$, then we deform the circle to the circle of radius one. That is, we can now assume $C = \{ z: |z - z_0| = 1\}$. Now, take the parameterization $z(t) = z_0 + e^{it}$ where $0 \leq t \leq 2\pi$. We have that $z'(t) = ie^{it}.$ So,
+    \begin{align*}
+      \int_C \frac{1}{z - z_0}\, \dee z = \int_{0}^{2\pi} \frac{1}{e^{it}} (i e^{it})\, \dee t = \int_{0}^{2\pi} i\, \dee t = 2\pi i.
+    \end{align*}
+    Thus,
+    \begin{align*}
+      \int_C (z-z_0)^n\, \dee z
+      = \begin{cases}
+        0, & \mbox{if } n \neq -1,\\
+        2\pi i, & \mbox{if } n = -1.
+      \end{cases}
+    \end{align*}
+    It follows that, if $\Gamma$ is any simple positively oriented contour containing $z_0$ in the inside, then
+    \begin{align*}
+      \int_\Gamma (z-z_0)^n\, \dee z
+      = \begin{cases}
+        0, & \mbox{if } n \neq -1,\\
+        2\pi i, & \mbox{if } n = -1.
+      \end{cases}
+    \end{align*}
+
+    \item \begin{theorem}[Cauchy's Integral Formula]
+      Let $\Gamma$ be any simple positive oriented contour. If $f$ is analytic in some simply connected domain $D$ containing $\Gamma$ and $z_0$ is any point inside $\Gamma$, then
+      \begin{align*}
+        f(z_0) = \frac{1}{2\pi i} \int_\Gamma \frac{f(z)}{z-z_0}\, \dee z.
+      \end{align*}
+      In general,
+      \begin{align*}
+        f^{(n)}(z_0) = \frac{n!}{2\pi i} \int_{\Gamma} \frac{f(z)}{(z-z_0)^{n+1}}\, \dee z
+      \end{align*}
+      for any integer $n= 0, 1, 2, \dotsc$.
+    \end{theorem}
+
+    \item Using the Cauchy's integral formula, we can establish the following facts:
+    \begin{itemize}
+      \item  If $f$ is analytic in a domain $D$, then all of its derivatives exist and are analytic in $D$.
+      \item If $f = u+iv$ is analytic in a domain $D$, then all partial derivatives of $u$ and $v$ exist and are continuous in $D$.
+      \item If $f$ is continuous in a domain $D$ and if
+      \begin{align*}
+        \int_\Gamma f(z)\, \dee z = 0        
+      \end{align*}
+      for every closed contour $\Gamma$ in $D$, then $f$ is analytic in $D$.
+    \end{itemize}
+
+    \item Using the Cauchy's integral formula and the ML bound, we have the following lemma:
+    \begin{lemma}
+      Let $f$ be analytic inside and on a circle $C_R$ of radius $R$ centered about $z_0$. If $|f(z)| \leq M$ for all $z$ on the circle $C_R$, then the derivatives of $f$ at $z_0$ satisfies:
+      \begin{align*}
+        \Big| f^{(n)}(z_0) \Big| \leq \frac{n!M}{R^n}.
+      \end{align*}
+    \end{lemma}
+
+    \item \begin{theorem}[Liouville's]
+      The only bounded entire functions are constant functions.
+    \end{theorem}
+    \begin{proof}
+      Let us say that $|f(z)| \leq M$ for all $z$. Take a circle $C_R$ around any point $z_0$ and $n = 1$. We have that $|f'(z_0)| \leq M/R$. As $R \ra \infty$, we have that the bound goes to zero. Hence, $f'(z_0) = 0$ everywhere. So, $f$ must be constant.
+    \end{proof}
+
+    \item \begin{theorem}[Fundamental Theorem of Algebra]
+      Every non-constant polynomial with complex coefficients has at least one root.
+    \end{theorem}
+
+    \item \begin{lemma}[Mean-value property]
+      If $f$ is analytic inside and on the circle $C_R$ of radius $R$ around $z_0$, then
+      \begin{align*}
+        f(z_0) = \frac{1}{2\pi} \int_0^{2\pi} f(z_0 + Re^{it})\, \dee t.
+      \end{align*}
+      In other words, $f(z_0)$ is the average of its values around the circle $C_R$.
+      \end{lemma}
+
+    \item \begin{lemma}
+      Suppose that $f$ is analytic in a disk centered at $z_0$ and that the maximum value of $|f(z)|$ over this disk is $f(z_0)$. Then $|f(z)|$ is constant in the disk.
+    \end{lemma}
+
+    \item \begin{theorem}
+      If $f$ is analytic in a domain $D$ and $|f(z)|$ achieves its maximum value at a point $z_0$ in $D$, then $f$ is constant in $D$.
+    \end{theorem}
+
+    \item \begin{theorem}
+      A function analytic in a bounded domain and continuous up to and including its boundary attains its maximum modulus on the boundary.
+    \end{theorem}
+
+    \item \begin{theorem}
+      Let $\phi$ be a function harmonic on a simply connected domain $D$. Then there is an analytic function $f$ such that $\phi = \RE f$ on $D$.
+    \end{theorem}
+
+    \item \begin{theorem}
+      If $\phi$ is harmonic in a simply connected domain $D$ and $\phi$ achieves its maximum or minimum value at some point $z_0$ in $D$, then $\phi$ is constant in $D$.
+    \end{theorem}
+
+    \item \begin{theorem}
+      If $\phi$ is harmonic in a simply connected domain $D$ and continuous up to and including the boundary attains its maximum and minimum on the boundary.
+    \end{theorem}
+  \end{itemize}  
+  % section complex_integration (end)
+
+  \section{Series Representation of Analytic Functions} % (fold)
+  \label{sec:series_representation_of_analytic_functions}
+
+  \begin{itemize}
+    \item The series $\sum_{j=0}^\infty c^j$ converse to $1 / (1-c)$ if $|c| < 1$.
+
+    \item Suppose that the terms $c_j$ satisfies the inequality $|c_j| \leq M_j$ for all $j$ larger than some integer $J$.\\Then, if the series $\sum_{j=0}^\infty M_j$ converges, so does $\sum_{j=0}^\infty c_j$
+
+    \item \begin{lemma}[Ratio Test]
+      Suppose the terms of the series $\sum_{j=0}^\infty c_j$ have the property that the ratio $|c_{j+1}/c_j|$ approaches a limit $L$ as $j \ra \infty$. Then the series converges if $L < 1$ and diverges if $L > 1$.
+    \end{lemma}
+
+    \item The sequene $\{ F_n(z) \}_{n=1}^\infty$ is said to {\bf converge uniformly to $F(z)$ on the set $T$} if for any $\varepsilon > 0$ there exists an integer $N$ such that when $n > N$, we have
+    \begin{align*}
+      |F(z) - F_n(z)| < \varepsilon
+    \end{align*}
+    for all $z \in T$.
+
+    \item The series $\sum_{j=0}^\infty f_j(z)$ converges uniformly to $f(z)$ on $T$ if its sequence of partial sums converges uniformly to $f(z)$ on $T$.
+
+    \item If $f$ is analytic at $z_0$, then the series
+    \begin{align*}
+      f(z_0) + f'(z_0)(z-z_0) + \frac{f''(z_0)}{2!}(z-z_0)^2 + \dotsb = \sum_{j=0}^\infty \frac{f^{(j)}(z_0)}{j!}(z-z_0)^j
+    \end{align*}
+    is called the {\bf Taylor's series} for $f$ around $z_0$. If $z_0 = 0$, it is also known as the {\bf Maclaurin series} for $f$.
+
+    \item \begin{theorem}
+      If $f$ is analytic in the disc $|z - z_0| < R$, then the Taylor's series of $f$ around $z_0$ converges to $f(z)$ for all $z$ in this disk. Furthermore, the convergence of the series is uniform in any closed subdisk $|z-z_0| \leq R' < R$.
+    \end{theorem}
+
+    \item The series of the form $\sum_{j=0}^\infty a_j(z-z_0)^j$ is called a {\bf power series}. The constant $a_j$ are the {\bf coefficients} of the power series.
+
+    \item For any power series $\sum_{j=0}^\infty a_j(z-z_0)^j$ there is a real number $R$ between 0 and $\infty$ inclusive, which depends only on the coefficients $\{ a_j \}$ such that
+    \begin{itemize}
+      \item the series converges for $|z-z_0| < R$,
+      \item the series converges uniformly in any closed subdisk $|z-z_0| \leq R' < R,$ and
+      \item the series diverges for $|z-z_0| < R$.
+    \end{itemize}
+    The number $R$ is called the {\bf radius of convergence} of the power series.
+
+    \item If a power series $\sum_{j=0}^\infty a_j z^j$ converges at a point having modulus $r$, then it converges at every poin in the disk $|z| < r$.
+    
+    \item Let $f_n$ be a sequence of functions continuous on a set $T \subset \mathbb{C}$ and converging uniformly to $f$ on $T$. Then $f$ is also continous on $T$.
+
+    \item Let $f_n$ be a sequence of functions continuous on a set $T \subseteq \mathbb{C}$ containing the contour $\Gamma$, and suppose that $f_n$ converges uniformly to $f$ on $T$. Then, the sequence $\int_\Gamma f_n(z)\, \dee z$ converges to $\int_\Gamma f(z)\, \dee z$.
+
+    \item Let $f_n$ be a sequence of functions analytic in a simply connected domain $D$ and converging uniformly to $f$ in $D$. Then $f$ is analytic in $D$.
+
+    \item \begin{theorem}
+      A power series sums to a function that is analytic at every point in its circle of convergence.
+    \end{theorem}
+
+    \item If $\sum_{j=0}^\infty a_j(z-z_0)^j$ converges to $f(z)$ in some circular neighborhood of $z_0$, then
+    \begin{align*}
+      a_j = \frac{f^{(j)}(z_0)}{j!}.
+    \end{align*}
+    That is, the Taylor's series of $f$ around $z_0$ is unique.
+
+    \item \begin{theorem}
+      Let $f$ be analytic in the annulus $r < |z-z_0| < R$. Then $f$ can be expressed there as the sum of two series:
+      \begin{align*}
+        f(z) = \sum_{j=0}^\infty a_j(z - z_0)^j + \sum_{j=1}^\infty a_{-j}(z-z_0)^{-j}
+      \end{align*}
+      both series converging in the annulus, converging uniformly in any closed subannulus $r < \rho_1 \leq |z-z_0| \leq \rho_2 < R$. The coefficients of $a_j$ is given by:
+      \begin{align*}
+        a_j = \frac{1}{2\pi i} \int_{C} \frac{f(\zeta)}{(\zeta - z_0)^{j+1}}\, \dee \zeta
+      \end{align*}
+      where $C$ is a positively oriented simple closed contour lying in the annulus and containing $z_0$ in its interior.
+      The sum of the two series is called the {\bf Laurent series} of $f$ around $z_0$ in the annulus $r < |z - z_0| < R$.
+    \end{theorem}
+
+    \item The Laurent series is unique.
+
+    \item A point $z_0$ is called a {\bf zero of order $m$} for the function $f$ if $f$ is analytic at $z_0$ and its first $m-1$ derivatives vanishes at $z_0$, but $f^{(m)}(z_0) \neq 0$.
+
+    \item Let $f$ by analytic at $z_0$. Then $f$ has a zero of order $m$ at $z_0$ if and only if $f$ can be written as $f(z) = (z-z_0)^m g(z)$ where $g$ is an analytic function at $z_0$ and $g(z_0) \neq 0$.
+
+    \item If $f$ is an analytic function such that $f(z_0) = 0$, then either $f$ is identically zero in a neighborhood of $z_0$ or there is a punctured disk about $z_0$ in which $f$ has no zeros.
+
+    \item An {\bf isolated singularity} of $f$ is a point $z_0$ suc hthat $f$ is analytic in some punctured disk $0 < |z-z_0| < R$, but not analytic at $z_0$ itself.
+
+    \item \begin{definition}
+      Let $f$ have an isolated singularity at $z_0$, and let $\sum_{-\infty}^\infty a_j (z-z_0)^j$ be the Laurant series expansion of $f$ in $0 < |z-z_0| < R$. Then,
+      \begin{itemize}
+        \item  If $a_j = 0$ for all $j < 0$, we say that $z_0$ is a {\bf removable singularity} of $f$;
+        \item If $a_{-m} \neq 0$ for some positive integer $m$ but $a_j = 0$ for all $j < -m$, we say that $z_0$ is a {\bf pole of order $m$} of $f$;
+        \item If $a_j \neq 0$ for infinitely many negative $j$s, we say that $z_0$ is an {\bf essential singularity} of $f$.
+      \end{itemize}
+    \end{definition}
+
+    \item If $f$ has a removable singularity at $z_0$, then
+    \begin{itemize}
+      \item $f(z)$ is bounded in some punctured disk around $z_0$,
+      \item $f(z)$ has a (finite) limit at $z$ appraoches $z_0$, and 
+      \item $f(z)$ can be redefined at $z_0$ so that the new function is analytic at $z_0$.
+    \end{itemize}
+
+    \item If the function $f$ has a pole of order $m$ at $z_0$, then $|(z-z_0)^\ell f(z)| \ra \infty$ as $z \ra z_0$ for all integer $\ell < m$, while $(z-z_0)^m f(z)$ has a removable singularity at $z_0$. In particular $|f(z)| \ra \infty$ as $z$ approaches a pole.
+
+    \item A function $f$ as a pole of order $m$ at $z_0$ if and only if in some punctured neighborhood of $z_0$,
+    \begin{align*}
+      f(z) = \frac{g(z)}{(z-z_0)^m}
+    \end{align*}
+    where $g$ is analytic at $z_0$ and $g(z_0) \neq 0$.
+
+    \item If $f$ has a zero of order $m$ at $z_0$, then $1/f$ has a pole of order $m$ at $z_0$. Conversely, if $f$ has a pole of order $m$ at $z_0$, then $1/f$ has a removable singularity at $z_0$, and if we define $(1/f)(z_0) = 0$, then $1/f$ has a zero of order $m$ at $z_0$.
+
+    \item \begin{theorem}[Picard's] A function with an essential singularity assumes every complex number, with possibly one exception, as a vlue in any neighborhood of this singularity.
+    \end{theorem}
+
+    \item We can distinguishes singularity by looking at the limit of $f(z)$ as $z \ra z_0$. If the limit is bounded, that indicates a removable singularity. If the limit approaches infinity, that indicates a pole. Anything else indicates an essential singularity.    
+  \end{itemize}
+
+  % section series_representation_of_analytic_functions (end)
+
+  \section{Residue Theory} % (fold)
+  \label{sec:residue_theory}
+  
+  \begin{itemize}
+    \item \begin{definition}
+      If $f$ has an isolated singularity at the point $z_0$, then the coefficient of $a_{-1}$ of $1/(z-z_0)$ in the Laurent expansion of $f$ around $z_0$ is called the {\bf residue} of $f$ at $z_0$ and is denoted by
+      \begin{align*}
+        \Res(f;z_0)\mbox{ or }\Res(z_0).
+      \end{align*}
+    \end{definition}
+
+    \item Consider evaluating the integral
+    \begin{align*}
+      \int_\Gamma f(z)\, \dee z
+    \end{align*}
+    where $\Gamma$ is a simple closed positively oriented contour and $f(z)$ is analytic on and inside $\Gamma$ \emph{except} for a single isolated singularity $z_0$ inside $\Gamma$.
+
+    We know that $f(z)$ has Laurent series expansion
+    \begin{align*}
+      f(z) = \sum_{j=-\infty}^\infty a_j(z-z_0)^j.
+    \end{align*}
+    Thus,
+    \begin{align*}
+      \int_\Gamma f(z)\, \dee z = \sum_{j=-\infty}^\infty a_j \int_\Gamma (z-z_0)^j\, \dee z
+      = 2\pi i a_{-1} = 2\pi i \Res(f;z_0)
+    \end{align*}
+
+    \item Now, if $\Gamma$ has my isolated singularities inside it, say $z_1, z_2, \dotsc, z_m$, then
+    \begin{align*}
+      \int_\Gamma f(z)\, \dee z = 2\pi i\sum_{k=1}^m \Res(f; z_k).
+    \end{align*}
+
+    \item If $f$ has a pole of order $m$ at $z_0$, then
+    \begin{align*}
+      \Res(f;z_0) = \lim_{z \ra z_0} \frac{1}{(m-1)!} \frac{\dee^{m-1}}{dz^{m-1}} [(z-z_0)^m f(z)].
+    \end{align*}
+    In particular, if $f$ has a pole of order $1$ at $z_0$, then
+    \begin{align*}
+      \Res(f;z_0) = \lim_{z \ra z_0} (z-z_0)f(z).
+    \end{align*}
+
+    \item To find integrals of the form $\int_{0}^{2\pi} U(\cos\theta, \sin\theta)\, \dee \theta$, convert it to a contour integral around the circle $C = \{z: |z| = 1\}$ with:
+    \begin{align*}
+      \cos \theta &= \frac{1}{2}\bigg( z + \frac{1}{z} \bigg)\\
+      \sin \theta &= \frac{1}{2i}\bigg( z - \frac{1}{z} \bigg)\\
+      \dee\theta &= \frac{dz}{iz}.
+    \end{align*}
+    Then, use Residue theory to find the integral.
+
+    \item Given any function $f$ continuous on $(-\infty, \infty)$, the limit
+    \begin{align*}
+      \lim_{\rho \ra \infty} \int_{-\rho}^\rho f(x)\, \dee x
+    \end{align*}
+    is called the {\bf Cauchy's principal value} of the integral of $f$ over $(-\infty, \infty)$. We denote it by the symbol:
+    \begin{align*}
+      \pv \int_{-\infty}^\infty f(x)\, \dee x.
+    \end{align*}
+
+    \item If 
+    \begin{itemize}
+      \item $f$ is analytic on and above the real axis except for a finite number of isolated singularities in the open upper half-plane, and
+      \item $\lim_{\rho\ra \infty} \int_{C^+_\rho} f(z)\, \dee z = 0$ where $C^+_\rho$ is the half circular arc from $(\rho, 0)$ to $(-\rho, 0)$ traversed positively,
+    \end{itemize}
+    then $\pv \int_{-\infty}^\infty f(x)\, \dee x$ can be found by integrating the half circle contour.
+
+    \item \begin{lemma}
+      If $f(z) = P(z)/Q(z)$ is a quotient of two polynomials such that $\deg Q \geq 2 + \deg P$, then
+      \begin{align*}
+        \lim_{\rho \ra \infty} \int_{C^+_\rho} f(z)\,\dee z = 0.
+      \end{align*}
+    \end{lemma}
+
+    \item One can also find the Cauchy's principal value of the following integrals using Residue theory:
+    \begin{align*}
+      \int_{-\infty}^\infty \frac{P(x)}{Q(x)} \cos mx\, \dee x\\
+      \int_{-\infty}^\infty \frac{P(x)}{Q(x)} \sin mx\, \dee x
+    \end{align*}
+    where $m$ is a positive real number. Again, the trick is to transform the sine and cosine to complex exponetials with:
+    \begin{align*}
+      \cos mx &= \frac{e^{imx} + e^{-imx}}{2},\mbox{ and}\\
+      \sin mx &= \frac{e^{imx} - e^{-imx}}{2i}.
+    \end{align*}
+    Consider the case of evaluating the integral with cosine. We have that
+    \begin{align*}
+      \int_{-\infty}^\infty \frac{P(x)}{Q(x)} \cos mx\, \dee x
+      &= \int_{-\infty}^\infty \frac{P(x)}{Q(x)} \frac{e^{imx} + e^{-imx}}{2}\, \dee x\\
+      &= \frac{1}{2} \int_{-\infty}^\infty e^{imx} \frac{P(x)}{Q(x)} \, \dee x + \frac{1}{2} \int_{-\infty}^\infty e^{-imx} \frac{P(x)}{Q(x)} \, \dee x.
+    \end{align*}
+    We shall convert the two integrals on the RHS to contour integrals. Which contour should we use?
+
+    Consider $e^{imz}$. We have that $e^{imz} = e^{im(x+iy)} = e^{imx} e^{-my}$. So, we have that $e^{imz}$ is bounded in the upper half plane. On the other hand, $e^{-imz}$ is bounded in the lower half plane. As a result, we should use the upper half circle contour with the integral involving $e^{imx}$ and the lower half circle contour with integral involving $e^{-imx}$.
+
+    \item Evaluating the contour in the last item involves integrating over the half circular arc. The process can be simplified if the integral is zero.
+
+    \item \begin{lemma}[Jordan's]
+      If $m > 0$ and $P/Q$ is the quotient of two polynomials such that $deg Q \geq 1 + \deg P$, then
+      \begin{align*}
+        \lim_{\rho \ra \infty} \int_{C^+_\rho} e^{imz} \frac{P(z)}{Q(z)}\, \dee z = 0.
+      \end{align*}
+    \end{lemma}
+
+    \item \begin{lemma}[Hung Cheng's]
+      Consider $\int_{\Gamma_R} f(z) e^{iz} dz$ where $\Gamma_R$ is the contour $$(-R, 0) \ra (R,0) \ra (R, 2R) \ra (-R, 2R).$$ If $f(z)$ is bounded on $\Gamma_R$ with $\max_{\Gamma_R} |f(z)| \ra 0$ as $R \ra \infty$. Then, the integral is 0.
+    \end{lemma}
+
+    \item The following lemma is useful for evaluating indented contour:
+
+    \begin{lemma}
+      If $f$ has a simple pole at $z = c$ and $T_r$ is the circular arc define by:
+    \begin{align*}
+      T_r = \{z : z = c +re^{i\theta}, \theta_1 \leq \theta \leq \theta_2 \}.
+    \end{align*}
+    Then,
+    \begin{align*}
+      \lim_{r \ra 0^+} \int_{T_r} f(z)\, \dee z = i(\theta_2 - \theta_1) \Res(f;c)
+    \end{align*}
+    \end{lemma}
+
+    \item Given a closed curve $\gamma$, the {\bf winding number} of $\gamma$ is defined as
+    \begin{align*}
+      W(\gamma;0) = \frac{1}{2\pi i} \int_{\gamma} \frac{\dee w}{w}.
+    \end{align*}
+    It is equal to the number of times $\gamma$ winds around $0$ in the positive orientation.
+
+    \item Now, if $w = f(z)$, then
+    \begin{align*}
+      W(\gamma; 0) = \frac{1}{2\pi i} \int_\gamma \frac{\dee w}{w} = \frac{1}{2\pi i}\int_\beta \frac{f'(z)}{f(z)}\, \dee z
+    \end{align*}
+    where $\beta$ is the closed curve such that $f(\beta) = \gamma$.
+
+    \item \begin{theorem}[Argument Principle]
+      If $f$ is analytic and non-zero at each point of a simple closed positively oriented contour $C$ and is meromorphic inside $C$, then
+      \begin{align*}
+        \frac{1}{2\pi i} \int_C \frac{f'(z)}{f(z)}\, \dee z = N_0(f) - N_p(f)
+      \end{align*}
+      where $N_0(f)$ and $N_p(f)$ are, respectively, the number of zeros and poles of $f$ inside $C$ (multiplicity included).
+    \end{theorem}
+
+    \item If $f$ is analytic inside and on a simple closed positiveliy oriented contour $C$ and if $f$ is non-zero on $C$, then
+    \begin{align*}
+      \frac{1}{2\pi i} \int_C \frac{f'(z)}{f(z)}\, \dee z = N_0(f).
+    \end{align*}
+
+    \item \begin{theorem}[Rouche's]
+      If $f$ and $h$ are each functions that are analytic inside and on a simple closed contour $C$ and if the strict inequality $|h(z)| < |f(z)|$ holds at each point on $C$, then $f$ and $f+h$ must have the same total number of zeros (counting multiplicities) inside $C$.
+    \end{theorem}
+
+    \item If $f$ is a non-constant and analytic in an open domain $D$, then its image $f(D)$ is an open set.
+
+  \end{itemize}  
+
+  % section residue_theory (end)
+
+  \section{Conformal Mapping} % (fold)
+  \label{sec:conformal_mapping}
+
+  \begin{itemize}
+    \item If $\phi(x,y)$ is harmonic, then it satisfies {\bf Laplace's equation:}
+    \begin{align*}
+      \frac{\partial^2 \phi}{\partial x^2} + \frac{\partial^2 \phi}{\partial y^2} = 0.
+    \end{align*}
+
+    \item We know that $\phi$ is the real part of some analytic function.
+
+    \item Suppose $f$ sends $z = x+yi$ to $w = u+vi$ such that $f$ is one-to-one. Suppose that the function $\psi(w) = \psi(u,v)$ satisfies Laplace's equation:
+    \begin{align*}
+      \frac{\partial^2 \psi}{\partial u^2} + \frac{\partial^2 \psi}{\partial v^2} = 0.
+    \end{align*}
+    Then, the function
+    \begin{align*}
+      \phi(z) = \psi(f(z))
+    \end{align*}
+    satisfies Laplace's equation:
+    \begin{align*}
+      \frac{\partial^2 \phi}{\partial x^2} + \frac{\partial^2 \phi}{\partial y^2} = 0.
+    \end{align*}
+
+    \item The inversion mapping $w = 1/z$ maps lines and circles to lines and circles.
+
+    \item Lines and circles passing through 0 will be mapped to lines.
+
+    \item Lines and circles not passing through 0 will mapped to circles.
+
+    \item It maps the line $x = 1/2$ to a circle centered at $z = 1$ with radius 1.
+
+    \item A {\bf Mobius transformation} is any function of the form
+    \begin{align*}
+      w = \frac{az+b}{cz+d}
+    \end{align*}
+    with the restriction that $ab \neq bc$.
+
+    \item \begin{theorem}
+      If $f$ is any Mobius transformation, then
+      \begin{itemize}
+        \item $f$ can be expressed as the compotion of a finite number of translations, magnificatios, rotations, and inversions.
+        \item $f$ maps the extended complex plane one-to-one onto itself.
+        \item $f$ maps the class of circles and lines to itself.
+        \item $f$ is conformal at every point except its pole.
+      \end{itemize}
+    \end{theorem}
+  \end{itemize}
+  
+  % section conformal_mapping (end)
+
+  
+  
+\end{document}

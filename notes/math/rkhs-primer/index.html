@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>A Primer on Reproducing Kernel Hilbert Space Theory</title>
+
+    <!-- Bootstrap -->
+    <link href="../../../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../../../css/theme.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+      TeX: { equationNumbers: {autoNumber: "AMS"} } 
+    });
+    </script>
+    <script type="text/javascript"
+            src="../../../MathJax/MathJax.js?config=TeX-AMS_HTML-full">
+    </script>
+
+    <script type="text/javascript" src="../../../js/jquery-3.4.1.min.js"></script>    
+    <script type="text/javascript" src="../../../js/bigfoot.min.js"></script>    
+
+    <link rel="stylesheet" type="text/css" href="../../../css/bigfoot-default.css">    
+
+</head>
+<body>
+<div class="container">
+    <span style="visibility: hidden;">
+        \(
+        \def\sc#1{\dosc#1\csod}
+        \def\dosc#1#2\csod{{\rm #1{\small #2}}}
+
+        \newcommand{\dee}{\mathrm{d}}
+        \newcommand{\Dee}{\mathrm{D}}
+        \newcommand{\In}{\mathrm{in}}
+        \newcommand{\Out}{\mathrm{out}}
+        \newcommand{\pdf}{\mathrm{pdf}}
+        \newcommand{\Cov}{\mathrm{Cov}}
+        \newcommand{\Var}{\mathrm{Var}}
+
+        \newcommand{\ve}[1]{\mathbf{#1}}
+        \newcommand{\mrm}[1]{\mathrm{#1}}
+        \newcommand{\etal}{{et~al.}}
+        \newcommand{\sphere}{\mathbb{S}^2}
+        \newcommand{\modeint}{\mathcal{M}}
+        \newcommand{\azimint}{\mathcal{N}}
+        \newcommand{\ra}{\rightarrow}
+        \newcommand{\mcal}[1]{\mathcal{#1}}
+        \newcommand{\X}{\mathcal{X}}
+        \newcommand{\Y}{\mathcal{Y}}
+        \newcommand{\Z}{\mathcal{Z}}
+        \newcommand{\x}{\mathbf{x}}
+        \newcommand{\y}{\mathbf{y}}
+        \newcommand{\z}{\mathbf{z}}
+        \newcommand{\tr}{\mathrm{tr}}
+        \newcommand{\sgn}{\mathrm{sgn}}
+        \newcommand{\diag}{\mathrm{diag}}
+        \newcommand{\Real}{\mathbb{R}}
+        \newcommand{\sseq}{\subseteq}
+        \newcommand{\ov}[1]{\overline{#1}}
+        \DeclareMathOperator*{\argmax}{arg\,max}
+        \DeclareMathOperator*{\argmin}{arg\,min}
+
+        \newcommand{\data}{\mathrm{data}}
+        \newcommand{\N}{\mathcal{N}}
+        \newcommand{\Hil}{\mathcal{H}}
+        \)
+    </span>
+
+    <br>
+    <h1>A Primer on Reproducing Kernel Hilbert Space Theory</h1>
+    <hr>    
+
+    <h2>1 Hilbert Spaces</h2>
+
+    <ul>
+        <li>A <b>Hilbert space</b> is a vector space that is
+        <ul>
+            <li>equipped with an inner product, and</li>
+            <li>under the norm defined from the inner product, the vector space is complete.</li>
+        </ul>
+        Here, we denote a Hilbert space with the letter $\Hil$. The inner product and the norm for $\Hil$ are denoted $\langle \cdot, \cdot \rangle_{\Hil}$ and $\| \cdot \|_{\Hil}$, respectively. Moreover, let $0_\Hil$ denote the zero element of $\Hil$ for the sake of distinguishing it from the scalar $0$.
+        </li>
+
+        <li>To refresh your knowledge, see the <a href="../hilbert-space-primer/index.html">notes on Hilbert spaces</a>.</li>
+
+        <li>We are particularly interested in functions that maps a set $\mathcal{X} \subseteq \Real^d$ to a real number. So, from now on, $\Hil$ denotes a Hilbert space of such functions. Addition of two functions and multiplying a function by a scalar is defined in the usual way.</li>
+    </ul>
+
+    <h2>2 Reproducing Kernel Hilbert Spaces</h2>
+    <ul>                
+        <li>For any two argument function $k(\ve{x}, \ve{x}'): \X \times \X \ra \Real$, we write it as $k_{\ve{x}'}(\ve{x})$ when we want to turn it to a function of $\ve{x}$.</li>
+
+        <li><b>Definition 2.1.</b> A function $k$ is a <b>reproducing kernel</b> of $\Hil$ if
+        <ul>
+            <li>for all $\ve{x'} \in \mathcal{X}$, the function $k_{\ve{x}'}(\ve{x})$ is in $\Hil$;</li>
+
+            <li>for all $\ve{x'} \in \mathcal{X}$ and for all $f \in \Hil$, we have that 
+            \begin{align*}
+                f(\ve{x}') = \langle f, k_{\ve{x}'} \rangle_{\Hil}.
+            \end{align*}
+            </li>
+        </ul>
+        The second property is called the <b>reproducing property</b>.
+        </li>
+
+        <li>Note that if $k$ is a reproducing kernel of $\ve{x}$, we have that $k(\ve{x}, \ve{x}') = \langle k_{\ve{x}}, k_{\ve{x}'} \rangle_{\Hil}$.</li>
+
+        <li>Since we are only interested in real Hilbert spaces in this note, it follows that any reproducing kernel is symmetric. This is because
+        \begin{align*}
+        k(\ve{x}, \ve{x}') 
+        = \langle k_{\ve{x}}, k_{\ve{x}'} \rangle_{\Hil}
+        = \langle k_{\ve{x}', k_{\ve{x}}} \rangle_{\Hil}
+        = k(\ve{x}', \ve{x})
+        \end{align*}
+        because $\langle k_{\ve{x}}, k_{\ve{x}'} \rangle$ is a real number. If we work in a complex Hilbert space, the kernel would be <a href="https://encyclopediaofmath.org/wiki/Hermitian_kernel">Hermitian</a>.
+        </li>
+
+        <li><b>Definition 2.2.</b> If a Hilbert space $\Hil$ has a reproducing kernel, then we called it a <b>reproducing kernel Hilbert space</b> (RKHS).</li>
+
+        <li><b>Proposition 2.3.</b> For a Hilbert space $\Hil$, if a reproducing kernel exists, it is unique.
+
+        <p><i>Proof.</i> Let $k$ and $k'$ be reproducing kernels. Then, for any $f \in \Hil$, we have that
+        \begin{align*}
+            \langle f, k_\ve{x} \rangle_\Hil
+            &= \langle f, k'_\ve{x} \rangle_\Hil \\
+            \langle f, k_\ve{x} - k'_{\ve{x}} \rangle_\Hil 
+            &= 0.
+        \end{align*}
+        Using a <a href="../hilbert-space-primer/index.html#inner-product-prop">property of the inner product</a>, this means $k_\ve{x} - k'_{\ve{x}} = 0$, and so $k_\ve{x} = k'_{\ve{x}}$. $\square$
+        </p>
+        </li>      
+    
+        <li><b>Definition 2.4.</b> A <b>functional</b> is a real-valued function of a vector space.</li>
+
+        <li><b>Definition 2.5.</b> Define $\delta_\ve{x}$ to be the <b>evaluation functional</b> at $\ve{x}$. In other words, 
+        \begin{align*}
+            \delta_\ve{x} (f) = f(\ve{x}).
+        \end{align*}
+        It should be clear that $\delta_\ve{x}$ is linear.
+        </li>
+
+        <li><b>Definition 2.6.</b> A functional $F$ is bounded if, for all $f \in \Hil$, there exists a real constant $M > 0$ such that $F(f) \leq M \| f \|_\Hil$.</li>
+
+        <li>By <a href="../hilbert-space-primer/index.html#linear-functional-characterization">Theorem 5.3</a> of the Hilbert space note, we have that a linear functional is continuous if and only if it is bounded.</li>
+
+        <li><b>Theorem 2.6.</b> A Hilbert space of real-valued functions $\Hil$ is an RKHS iff the evaluation functional $\delta_\ve{x}$ is bounded. In other words, for every $\ve{x} \in \X$, there exists a real constant $M_\ve{x} > 0$ such that $$|\delta_{\ve{x}}(f)| = |f(\ve{x})| \leq M_{\ve{x}} \| f\|_\Hil. $$
+        <p><i>Proof.</i> Suppose that there exists a reproducing kernel $k$. Then, $\delta_\ve{x}(f) = f(\ve{x}) = \langle f, k_{\ve{x}} \rangle_\Hil$. Applying the Cauchy-Schwarz inequiality, we have that $|\delta_\ve{x}(f)| = |f(\ve{x})| \leq \| f\|_\Hil \| k_{\ve{x}} \|_\Hil$, so we can choose $M_\ve{x} = \| k_{\ve{x}} \|_\Hil$.</p>
+
+        <p>If the evaluation functional $\delta_\ve{x}$ is bounded, then it is continuous. By the <a href="../hilbert-space-primer/index.html#riesz">Riesz representation theorem</a>, there is a unique $g_\ve{x} \in H$ such that $\delta_\ve{x}(f) = \langle f, g_\ve{x} \rangle_\Hil$. Define $k(\ve{x}', \ve{x}) = g_{\ve{x}}(\ve{x}')$. It is clear that $k_\ve{x} = g_\ve{x} \in \Hil$. As a result, $k$ is a reproducing kernel of $\Hil$. $\square$</p>
+        </li>
+
+        <li><b>Lemma 2.6.</b> Let $\Hil$ be an RKHS, and let $f, g \in \Hil$. If $\| f - g\|_{\Hil} = 0$, then $f$ and $g$ agree at all points.
+        
+        <p>
+        <i>Proof</i>. We have that, for all $\ve{x} \in \mathcal{X}$,
+        \begin{align*}
+            \| f(\ve{x}) - g(\ve{x}) \| 
+            = |\delta_{\ve{x}}(f-g)| 
+            \leq c_\ve{x} \| f - g \|_{\Hil}
+            = 0.
+        \end{align*}
+        As a result, $f(\ve{x}) = g(\ve{x})$. $\square$
+        </p>
+        </li>
+    </ul>
+
+    <h3>3 Positive Definite Kernels and RKHS</h3>
+
+    <ul>
+        <li><b>Definition 3.1.</b> We call $k(\ve{x}, \ve{x}'): \mathcal{X} \times \mathcal{X} \rightarrow \Real$ a <b>positive definite kernel</b> if (1) $k$ is a symmetric function:
+        \begin{align*}
+            k(\ve{x}, \ve{x}') = k(\ve{x}', \ve{x})
+        \end{align*}
+        for all $\ve{x}, \ve{x}' \in \mathcal{X}$, and (2):
+        \begin{align*}
+            \sum_{i=1}^n \sum_{j=1}^n c_i c_j k(\ve{x}_i, \ve{x}_j) \geq 0
+        \end{align*}
+        for any $\ve{x}_1, \ve{x}_2, \dotsc, \ve{x}_n \in \mathcal{X}$ and $c_1, c_2, \dotsc c_n \in \Real$. In other words, the matrix
+        \begin{align*}
+            \begin{bmatrix}
+                k(\ve{x}_1, \ve{x}_1) & k(\ve{x}_1, \ve{x}_2)  & \cdots & k(\ve{x}_1, \ve{x}_n)  \\
+                k(\ve{x}_2, \ve{x}_1) & k(\ve{x}_2, \ve{x}_2)  & \cdots & k(\ve{x}_2, \ve{x}_n)  \\
+                \vdots & \vdots & \ddots & \vdots \\
+                k(\ve{x}_n, \ve{x}_1) & k(\ve{x}_n, \ve{x}_2)  & \cdots & k(\ve{x}_n, \ve{x}_n)
+            \end{bmatrix}
+        \end{align*}
+        is positive definite for all $\ve{x}_1, \ve{x}_2, \dotsc, \ve{x}_n \in \mathcal{X}$.
+        </li>
+
+        <li><b>Proposition 3.2.</b> Let $k: \X \times \X \ra \Real$. If there is an inner product space $V$ and a function $\phi: \X \ra V$ such that $k(\ve{x}, \ve{x}') = \langle \phi(\ve{x}), \phi(\ve{x}') \rangle_V$, then $k$ is positive definite. 
+
+        <p><i>Proof.</i> We have that
+        \begin{align*}
+        \sum_{i=1}^n \sum_{j=1}^n c_i c_j k(\ve{x}_j, \ve{x}_n)
+        &= \sum_{i=1}^n \sum_{j=1}^n c_i c_j \langle \phi(\ve{x}_i), \phi(\ve{x}_j) \rangle_V \\
+        &= \sum_{i=1}^n \sum_{j=1}^n \langle c_i \phi(\ve{x}_i), c_j \phi(\ve{x}_j) \rangle_V \\
+        &= \bigg\langle \sum_{i=1}^n c_i \phi(\ve{x}_i), \sum_{i=1}^n c_j \phi(\ve{x}_j) \bigg\rangle_V \\
+        &= \bigg\langle \sum_{i=1}^n c_i \phi(\ve{x}_i), \sum_{i=1}^n c_i \phi(\ve{x}_i) \bigg\rangle_V \\
+        &= \bigg\| \sum_{i=1}^n c_i \phi(\ve{x}_i) \bigg\|^2_V \\
+        &\geq 0.
+        \end{align*}
+        So, $k$ is positive definite. $\square$
+        </p>
+        </li>
+
+        <li><b>Theorem 3.3.</b> For any RKHS, its reproducing kernel is positive definite.
+
+        <p><i>Proof.</i> We have that $k(\ve{x}, \ve{x}') = \langle k_{\ve{x}}, k_{\ve{x}'} \rangle_{\Hil}$. So, we can set $\phi(\ve{x}) = k_{\ve{x}}$.</p>
+        </li>
+
+        <li><b>Theorem 3.4 (Moore-Aronszajn)</b>. Let $k: \X \times \X \ra \Real$ be positive definite. There is a unique RKHS $\Hil \subseteq \Real^\X$ with $k$ as the reproducing kernel. In particular, it is the closure of the linear span
+        \begin{align*}
+            \bigg\{ f : f(\ve{x}) = \sum_{i=1}^m a_i k(\ve{x}, \ve{x}_i), a_i \in \Real, m \in \mathbb{N}, \ve{x}_i \in \mathcal{X} \bigg\}.
+        \end{align*}
+        The inner product is defined as
+        \begin{align*}
+            \langle f, g \rangle_{\Hil} = \sum_{i,j} a_i b_j k(\ve{x}_i, \ve{x}_j)
+        \end{align*}
+        where $f(\ve{x}) = \sum_i a_i k(\ve{x}, \ve{x}_i)$ and $g(\ve{x}) = \sum_j b_j k(\ve{x}, \ve{x}_j)$.
+        In other words, this is the set of functions that can be written as a kernel density estimation of a finite set of points and their limit functions.
+        </li>
+
+        <li><b>Note.</b> I'm too lazy to complete the proof. I might return to this later.</li>
+    </ul>
+
+    <h2>4 Construction from Spectral Decomposition</h2>
+    <ul>
+        <li>Let $k$ be a positive definite kernel. By <a href="https://en.wikipedia.org/wiki/Mercer%27s_theorem">Mercer's theorem</a>, there exists eigenfunctions $\{ e_j \}_{j=1}^\infty$ and positive eigenvalues $\{\lambda_j \}_{j=1}^\infty$ such that:
+        \begin{align*}
+            k(\ve{x}, \ve{x}') = \sum_{j=1}^\infty \lambda_j e_j(\ve{x}) e_j(\ve{x}').
+        \end{align*}
+        Note that the eigenfunctions are orthogonal. In other words,
+        \begin{align*}
+            \int_{\mathcal{X}} e_i(\ve{x}) e_j(\ve{x})\, \dee\ve{x}
+            = \begin{cases}
+            1, & i = j \\
+            0, & i \neq j
+            \end{cases}.
+        \end{align*}
+        </li>
+
+        <li><b>Definition 4.1.</b> From the positive definite kernel $k$, we can define a Hilbert space of functions as follows:
+        \begin{align*}
+            \Hil = \bigg\{ \sum_{j=1}^\infty f_j e_j : \sum_{j=1}^\infty \frac{f_j^2}{\lambda_j} < \infty \bigg\}.
+        \end{align*}
+        Given $f = \sum_j f_j e_j$ and $g = \sum_j g_j e_j$, define the dot product as:
+        \begin{align*}
+        \langle f, g \rangle_\Hil = \sum_{j=1}^\infty \frac{f_j g_j}{\lambda_j}.
+        \end{align*}
+        The induced norm is given by
+        \begin{align*}
+        \| f \|_\Hil = (\langle f, f\rangle_\Hil)^{1/2} = \bigg( \sum_{j=1}^\infty \frac{f_j^2}{\lambda_j} \bigg)^{1/2}.
+        \end{align*}
+        </li>
+
+        <li>Note that one can prove that the inner product is well-defined, the space is closed under addition and multiplication by scalar, and that the space is complete using the same arguments that are used to prove that the space $\ell^2$ is a Hilbert space. See <a href="../hilbert-space-primer/index.html#l2-space">Section 3.1 of the Hilbert space note</a> for details.</li>
+
+        <li><b>Proposition 4.2.</b> With $\Hil$ defined above, $k$ is a reproducing kernel of $\Hil$.
+
+        <p><i>Proof.</i> Let $f = \sum_{i=1}^\infty f_i e_i \in \Hil$. We have that
+        \begin{align*}
+        k_{\ve{x}} = \sum_{j=1}^\infty \lambda_k e_j(\ve{x}) e_j
+        \end{align*}
+        Hence,
+        \begin{align*}
+        \langle f, k_\ve{x} \rangle
+        = \sum_{j=1}^\infty \frac{f_j \lambda_j e_j(\ve{x})}{\lambda_j}
+        = \sum_{j=1}^\infty f_j e_j(\ve{x})
+        = f(\ve{x}).
+        \end{align*}
+        So, $k$ is a reproducing kernel. $\square$
+        </p>
+        </li>
+    </ul>
+    <p>
+    <hr>
+    <div class="page-header"></div>
+    <p>Last modified: 2020/08/07</p>    
+</div>
+
+<script type="text/javascript">
+$.bigfoot();
+</script>
+
+</body>
+</html>

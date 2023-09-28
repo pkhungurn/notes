@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>Stein Method in Machine Learning</title>
+
+    <!-- Bootstrap -->
+    <link href="../../../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../../../css/theme.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+      TeX: { equationNumbers: {autoNumber: "AMS"} } 
+    });
+    </script>
+    <script type="text/javascript"
+            src="../../../MathJax/MathJax.js?config=TeX-AMS_HTML-full">
+    </script>
+
+    <script type="text/javascript" src="../../../js/jquery-3.4.1.min.js"></script>    
+    <script type="text/javascript" src="../../../js/bigfoot.min.js"></script>    
+
+    <link rel="stylesheet" type="text/css" href="../../../css/bigfoot-default.css">    
+
+</head>
+<body>
+<div class="container">
+    <span style="visibility: hidden;">
+        \(
+        \def\sc#1{\dosc#1\csod}
+        \def\dosc#1#2\csod{{\rm #1{\small #2}}}
+
+        \newcommand{\dee}{\mathrm{d}}
+        \newcommand{\Dee}{\mathrm{D}}
+        \newcommand{\In}{\mathrm{in}}
+        \newcommand{\Out}{\mathrm{out}}
+        \newcommand{\pdf}{\mathrm{pdf}}
+        \newcommand{\Cov}{\mathrm{Cov}}
+        \newcommand{\Var}{\mathrm{Var}}
+
+        \newcommand{\ve}[1]{\mathbf{#1}}
+        \newcommand{\mrm}[1]{\mathrm{#1}}
+        \newcommand{\etal}{{et~al.}}
+        \newcommand{\sphere}{\mathbb{S}^2}
+        \newcommand{\modeint}{\mathcal{M}}
+        \newcommand{\azimint}{\mathcal{N}}
+        \newcommand{\ra}{\rightarrow}
+        \newcommand{\mcal}[1]{\mathcal{#1}}
+        \newcommand{\X}{\mathcal{X}}
+        \newcommand{\Y}{\mathcal{Y}}
+        \newcommand{\Z}{\mathcal{Z}}
+        \newcommand{\x}{\mathbf{x}}
+        \newcommand{\y}{\mathbf{y}}
+        \newcommand{\z}{\mathbf{z}}
+        \newcommand{\tr}{\mathrm{tr}}
+        \newcommand{\sgn}{\mathrm{sgn}}
+        \newcommand{\diag}{\mathrm{diag}}
+        \newcommand{\Real}{\mathbb{R}}
+        \newcommand{\sseq}{\subseteq}
+        \newcommand{\ov}[1]{\overline{#1}}
+        \DeclareMathOperator*{\argmax}{arg\,max}
+        \DeclareMathOperator*{\argmin}{arg\,min}
+
+        \newcommand{\data}{\mathrm{data}}
+        \newcommand{\N}{\mathcal{N}}
+        \newcommand{\Hil}{\mathcal{H}}
+        \)
+    </span>
+
+    <br>
+    <h1>Stein's Method in Machine Learning</h1>
+    <hr>
+
+    <h2>1 Review: Gradient</h2>
+    <ul>
+        <li>Let $\ve{x}$ be a continuous random variable taking values in $\mathcal{X} \subseteq \Real^d$.</li>
+
+
+        <li>Let $f(\ve{x}): \mathcal{X} \rightarrow \Real$. The convention that the gradient of $f(\ve{x})$ is the <b>row</b> vector function
+        \begin{align*}
+            \nabla_{\ve{x}} f(\ve{x})
+            = \begin{bmatrix}
+                \frac{\partial f}{\partial x_1}(\ve{x}) &
+                \frac{\partial f}{\partial x_2}(\ve{x}) &
+                \cdots &
+                \frac{\partial f}{\partial x_d}(\ve{x})
+            \end{bmatrix}.
+        \end{align*}
+        </li>
+        
+        <li>For a <b>column</b> vector function $\phi(\ve{x}) = [\phi_1(\ve{x}), \phi_2(\ve{x}), \dotsc, \phi_{d'}(\ve{x})]^T$, its gradient is given by:
+        \begin{align*}
+            \nabla_{\ve{x}} \phi(\ve{x})
+            = \begin{bmatrix}
+                \nabla_{\ve{x}} \phi_1(\ve{x}) \\
+                \nabla_{\ve{x}} \phi_2(\ve{x}) \\
+                \cdots \\
+                \nabla_{\ve{x}} \phi_d(\ve{x}) 
+            \end{bmatrix}
+            = \begin{bmatrix}
+                \frac{\partial \phi_1}{\partial x_1}(\ve{x}) &
+                \frac{\partial \phi_1}{\partial x_2}(\ve{x}) &
+                \cdots &
+                \frac{\partial \phi_1}{\partial x_d}(\ve{x}) \\
+                \frac{\partial \phi_2}{\partial x_1}(\ve{x}) &
+                \frac{\partial \phi_2}{\partial x_2}(\ve{x}) &
+                \cdots &
+                \frac{\partial \phi_2}{\partial x_d}(\ve{x}) \\
+                \vdots &
+                \vdots &
+                \ddots &
+                \vdots \\
+                \frac{\partial \phi_{d'}}{\partial x_1}(\ve{x}) &
+                \frac{\partial \phi_{d'}}{\partial x_2}(\ve{x}) &
+                \cdots &
+                \frac{\partial \phi_{d'}}{\partial x_3}(\ve{x})
+            \end{bmatrix}.
+        \end{align*}        
+        </li>
+    </ul>
+
+    <h2>Stein's Identity and Stein Discrepancy</h2>
+    <ul>
+        <li>Let $p(\ve{x})$ be a continuously differentiable (i.e., smooth) density supported on $\mathcal{X}$.</li>
+
+        <li><b>Definition 2.1.</b> The <b>Stein score function</b> of $p$ is defined as:
+        \begin{align*}
+            s_p(\ve{x}) = \nabla_{\ve{x}} \log p(\ve{x}) = \frac{\nabla_{\ve{x}} p(\ve{x})}{p(\ve{x})}.
+        \end{align*}
+        Note that $s_p$ is a function that maps $\mathcal{X}$ to $\Real^{1 \times d}$.
+        </li>
+
+        <li><b>Definition 2.2.</b> The <b>Stein operator</b> $\mathcal{A}_p$, acting on a smooth function $f$, is defined as
+        \begin{align*}
+        \mathcal{A}_pf(\ve{x})
+        &= \Big(f(\ve{x}) \nabla_\ve{x} \log p(\ve{x}) 
+            + \nabla_\ve{x} f(\ve{x})\Big)^T
+        = \Big(f(\ve{x}) s_p(\ve{x})
+            + \nabla_\ve{x} f(\ve{x})\Big)^T.
+        \end{align*}
+        Note that $\mathcal{A}_pf(\ve{x})$ is a function from $\mathcal{X}$ to $\mathcal \Real^{d}$. >Generalizaing to a <b>column</b> vector function $\ve{f}(\ve{x}) = [f_1(\ve{x}), f_2(\ve{x}), \dotsc, f_{d'}(\ve{x})]^T$, the Stein operator is given by:
+        \begin{align*}
+        \mathcal{A}_p \ve{f}(\ve{x})
+        &= \Big(\ve{f}(\ve{x}) \nabla_\ve{x} \log p(\ve{x}) 
+            + \nabla_\ve{x} \ve{f}(\ve{x})\Big)^T
+        = \Big(\ve{f}(\ve{x}) s_p(\ve{x})
+            + \nabla_\ve{x} \ve{f}(\ve{x})\Big)^T.
+        \end{align*}
+        It transforms a function with signature $\mathcal{X} \rightarrow \Real^{d'}$ to a function with signature $\mathcal{X} \rightarrow \Real^{d \times d'}$.
+        </li>
+
+        <li><b>Theorem 2.3 (Stein's identity)</b>. We have that
+        \begin{align*}
+            E_{\ve{x} \sim p} [ \mathcal{A}_p \ve{f}(\ve{x})] = \ve{0}
+        \end{align*}
+        if $\ve{f}$ has zero boundary condition. That is, either
+        <ul>
+            <li>$p(\ve{x})\ve{f}(\ve{x}) = \ve{0}$ for all $\ve{x} \in \partial \mathcal{X}$ when $\mathcal{X}$ is compact, or</li>
+            <li>$\lim_{\| \ve{x} \| \rightarrow \infty} \ve{f}(\ve{x})p(\ve{x}) = \ve{0}$ when $\mathcal{X} = \Real^d$.</li>
+        </ul>
+        <br/>
+        <i>Proof.</i> The identity can be checked by integration by parts or applying the divergence theorem.
+        </li>
+
+        <li>Note that the expecation in the statement of Stein's identity can be rewritten as follows:
+        \begin{align*}
+        E_{\ve{x} \sim p} [ \mathcal{A}_p \ve{f}(\ve{x})]
+        = \bigg( \int_{\mathcal{X}} \nabla_{\ve{x}} (\ve{f}(\ve{x}) p(\ve{x})) \, \dee\ve{x} \bigg)^T.
+        \end{align*}
+        This is because:
+        \begin{align*}
+        E_{\ve{x} \sim p} [ \mathcal{A}_p \ve{f}(\ve{x})]
+        &= \int_{\mathcal{X}} p(\ve{x}) \mathcal{A}_p \ve{f}(\ve{x})\, \dee\ve{x} \\
+        &= \int_{\mathcal{X}} p(\ve{x}) \Big(\ve{f}(\ve{x}) s_p(\ve{x}) + \nabla_\ve{x} \ve{f}(\ve{x})\Big)^T\, \dee\ve{x} \\
+        &= \int_{\mathcal{X}} p(\ve{x}) \bigg(\ve{f}(\ve{x}) \frac{\nabla_{\ve{x}} p(\ve{x})}{p(\ve{x})} + \nabla_\ve{x} \ve{f}(\ve{x})\bigg)^T\, \dee\ve{x} \\
+        &= \int_{\mathcal{X}} \bigg(\ve{f}(\ve{x}) \nabla_{\ve{x}} p(\ve{x}) + \Big( \nabla_\ve{x} \ve{f}(\ve{x}) \Big) p(\ve{x})\bigg)^T\, \dee\ve{x} \\
+        &= \int_{\mathcal{X}} \Big( \nabla_{\ve{x}} (\ve{f}(\ve{x}) p(\ve{x})) \Big)^T\, \dee\ve{x} \\
+        &= \bigg( \int_{\mathcal{X}} \nabla_{\ve{x}} (\ve{f}(\ve{x}) p(\ve{x})) \, \dee\ve{x} \bigg)^T.
+        \end{align*}
+        </li>
+
+        <li><b>Definition 2.4.</b> The <b>Stein class</b> of $p$ is the set of all $\ve{f}$ such that the Stein's identity holds. In other words, $\{ \ve{f} : E_{\ve{x} \sim p} [\mathcal{A}_p \ve{f}(\ve{x})]  = \ve{0} \}$.</li>        
+
+        <li>Let $q$ be another smooth probability density also supposed in $\mathcal{X}$. Consider the expectation $E_{\ve{x} \sim p} [\mathcal{A}_q \ve{f}(\ve{x})]$ where $\ve{f}$ is in the Stein class of $p$.
+        <ul>
+            <li>Its value would not be zero for general $\ve{f}$.</li>
+            <li>The magnitude of $E_{\ve{x} \sim p} [\mathcal{A}_q \ve{f}(\ve{x})]$ indicates how different $p$ and $q$ are.</li>
+            <li>So, it can be used to define a discrepancy measure.</li>
+        </ul>
+        </li>
+
+        <li><b>Lemma 2.5</b>. Assume that $p(\ve{x})$ and $q(\ve{x})$ are smooth dentities supported on $\mathcal{X}$ and $\ve{f}(\ve{x})$ is in the Stein class of $p$, we have that:
+        \begin{align*}
+            E_{\ve{x} \sim p} [\mathcal{A}_q \ve{f}(\ve{x})]
+            = E_{\ve{x} \sim p} \Big[ \big( \ve{f}(\ve{x}) (s_q(\ve{x}) - s_p(\ve{x})) \big)^T \Big]
+        \end{align*}
+        <p>
+        <i>Proof</i>. Since $E_{\ve{x} \sim p} [\mathcal{A}_p \ve{f}(\ve{x})] = \ve{0}$, we have that:
+        \begin{align*}
+        E_{\ve{x} \sim p} [\mathcal{A}_q \ve{f}(\ve{x})]
+        &= E_{\ve{x} \sim p} [\mathcal{A}_q \ve{f}(\ve{x})] - E_{\ve{x} \sim p} [\mathcal{A}_p \ve{f}(\ve{x})] \\
+        &= E_{\ve{x} \sim p} [\mathcal{A}_q \ve{f}(\ve{x}) - \mathcal{A}_p \ve{f}(\ve{x})] \\
+        &= E_{\ve{x} \sim p} \Big[
+            \big(\ve{f}(\ve{x}) s_q(\ve{x})
+            + \nabla_\ve{x} \ve{f}(\ve{x})\big)^T
+            - \big(\ve{f}(\ve{x}) s_p(\ve{x})
+            + \nabla_\ve{x} \ve{f}(\ve{x})\big)^T
+        \Big] \\
+        &= E_{\ve{x} \sim p} \Big[ \big( \ve{f}(\ve{x}) (s_q(\ve{x}) - s_p(\ve{x})) \big)^T \Big]
+        \end{align*}
+        as required. $\square$
+        </p>
+        </li>
+
+        <li>The above lemma says that $E_{\ve{x} \sim p} [\mathcal{A}_q \ve{f}(\ve{x})]$ is the $\ve{f}(\ve{x})$-weighted expectation of the score function difference $s_q(\ve{x}) - s_p(\ve{x})$.</li>
+
+        <li>When $\ve{f}$ is a function from $\Real^d$ to $\Real^d$, we have that $E_{\ve{x} \sim p} [\mathcal{A}_q \ve{f}(\ve{x})]$ is a $d \times d$ matrix. Taking the trace of this gives a scalar:
+        \begin{align*}
+            E_{\ve{x} \sim p} [\tr(\mathcal{A}_q \ve{f}(\ve{x}))]
+            &= E_{\ve{x} \sim p} \Big[ 
+                \tr \Big( \big( \ve{f}(\ve{x}) (s_q(\ve{x}) - s_p(\ve{x})) \big)^T \Big)
+            \Big] \\
+            &= E_{\ve{x} \sim p} \Big[ 
+                \tr \big( \ve{f}(\ve{x}) (s_q(\ve{x}) - s_p(\ve{x})) \big)
+            \Big] \\
+            &= E_{\ve{x} \sim p} \big[ 
+                (s_q(\ve{x}) - s_p(\ve{x}))^T \ve{f}(\ve{x})
+            \big].
+        \end{align*}
+        </li>
+        
+        <li><b>Definition 2.6.</b> Let $\mathcal{F}$ be a set of vector-valued functions from $\Real^d$ to $\Real^d$ that is in the Stein class of $p$. The <b>Stein discrepancy</b> between $p$ and $q$ is defined as:
+        \begin{align*}
+        \mathbb{S}(p,q) = \max_{\ve{f} \in \mathcal{F}} \bigg\{ \Big( E_{\ve{x} \sim p} [ \tr(\mathcal{A}_q \ve{f}(\ve{x}))] \Big)^2 \bigg\}.
+        \end{align*}
+        In other words, it is the maximum violation of Stein's identity for $\ve{f}$ in $\mathcal{F}$.
+        </li>
+
+        <li>The choice function set $\mathcal{F}$ decides the discriminative power and computational tractability of Stein discrepancy.
+        <ul>
+            <li>Traditionally, $\mathcal{F}$ is taken to be the sets of functions with bounded Lipschitz norms, but this is not tractable.</li>
+        </ul>
+        </li>
+    </ul>    
+
+    <h2>3 Kernelized Stein Discrepancy</h2>
+    <ul>
+        <li><b>Definition 3.1.</b> We call $k(\ve{x}, \ve{x}'): \mathcal{X} \times \mathcal{X} \rightarrow \Real$ a <b>positive definite kernel</b> if (1) $k$ is a symmetric function:
+        \begin{align*}
+            k(\ve{x}, \ve{x}') = k(\ve{x}', \ve{x})
+        \end{align*}
+        for all $\ve{x}, \ve{x}' \in \mathcal{X}$, and (2):
+        \begin{align*}
+            \sum_{i=1}^n \sum_{j=1}^n c_i c_j k(\ve{x}_i, \ve{x}_j) \geq 0
+        \end{align*}
+        for any $\ve{x}_1, \ve{x}_2, \dotsc, \ve{x}_n \in \mathcal{X}$ and $c_1, c_2, \dotsc c_n \in \Real$.
+        </li>
+
+        <li><b>Definition 3.2.</b> Let $\ve{f}: \X \ra \Real^{d'}$ be a vector-valued function. Define the <b>L2-norm</b> of $\ve{f}$ as:
+        \begin{align*}
+        \| \ve{f} \|_2 
+        = \bigg( \int_\X \| \ve{f}(\ve{x}) \|^2\, \dee\ve{x}\bigg)^{1/2}.
+        \end{align*}
+        </li>
+
+        <li><b>Definition 3.3.</b> A kernel $k(\ve{x}, \ve{x}')$ is said to be <b>integrallly strictly positive definite</b>, if, for any function $\ve{g}$ that satisfies $0 < \| \ve{g} \|_2^2 < \infty$, we have that
+        \begin{align*}
+            \int_\X (g(\ve{x}))^T k(\ve{x}, \ve{x}')g(\ve{x}')\, \dee\ve{x}\dee\ve{x}' > 0.
+        \end{align*}
+        </li>
+
+        <li><b>Definition 3.4.</b> The <b>kernelized Stein discrepancy</b> (KSD) $\mathbb{S}(p,q)$ between two distribution $p$ and $q$ is defined as:
+        \begin{align*}
+            \mathbb{S}(p,q) 
+            &= E_{\ve{x}, \ve{x}' \sim p} [
+                (s_q(\ve{x}) - s_p(\ve{x})) k(\ve{x}, \ve{x}') (s_q(\ve{x}') - s_p(\ve{x}'))^T                
+            ]\\
+            &= \int_\X \int_\X p(\ve{x}) (s_q(\ve{x}) - s_p(\ve{x})) k(\ve{x}, \ve{x}') (s_q(\ve{x}') - s_p(\ve{x}'))^Tp(\ve{x}')\,\dee{\ve{x}}\dee{\ve{x}'} .
+        \end{align*}        
+        </li>        
+
+        <li><b>Proposition 3.5.</b> Define $\ve{g}_{p,q}(\ve{x}) = p(\ve{x})(s_q(\ve{x}) - s_p(\ve{x}))$. Assume that $k$ is integrally strictly positive definite, and $p$ and $q$ and continuous densities with $\| \ve{g}_{p,q} \|_2^2 < \infty$, we have that $\mathbb{S}(p,q) \geq 0$ and $\mathbb{S}(p,q) = 0$ if and only if $p = q$.
+
+        <p><i>Proof.</i> This follows immediately from the definition integrally strictly positive definiteness. $\square$</p>
+        </li>
+
+        <li>The above proposition shows that $\mathbb{S}(p,q)$ is valid discrepancy measure.</li>
+
+        <li>The requirement that $\| \ve{g}_{p,q} \|_2^2 < \infty$ can easily hold. For example, it holds when the tail of $p(\ve{x})$ decays exponentially.</li>
+
+        <li>For a kernel $k(\ve{x}, \ve{x}')$, we write it as $k_{\ve{x}'}(\ve{x})$ when we want to view it as a function of $\ve{x}$.</li>
+
+        <li><b>Definition 3.6.</b>  Let a probability distribution $p$ over $\mathcal{X}$. We say that a kernel function $k$ is in the Stein class of $p$ if, for all $\ve{x}' \in \mathcal{X}$, $k_{\ve{x}'}(\ve{x})$ is in the Stein class of $p$. In other words,
+        \begin{align*}
+            E_{\ve{x} \sim p} [ \mathcal{A}_p k_{\ve{x}'}(\ve{x})] = \ve{0}
+        \end{align*}
+        for all $\ve{x}'$.
+        </li>
+
+        <li>Note that, since $k$ is symmetric, it is true that if $k(\cdot, \ve{x}')$ is in the Stein class of $p$, then so is $k(\ve{x}, \cdot)$.</li>
+
+        <li>The <b>RBF kernel</b>
+        \begin{align*}
+        k(\ve{x},\ve{x}') = \exp\bigg(-\frac{\| \ve{x} - \ve{x}' \|^2}{2h^2} \bigg)
+        \end{align*}
+        is in the Stein class for all smooth densities suppoed on $\Real^d$.
+        </li>
+
+        <li><b>Proposition 3.7.</b> If $k(\ve{x}, \ve{x}')$ is in the Stein class of $p$, so is any $f \in \Hil$ where $\Hil$ denote the reproducing kernel Hilbert space with $k$ as the reproducing kernel.
+        <ul>
+            <li>See the note on <a href="../../math/rkhs-primer/index.html">reproducing kernel Hilbert space</a>, especially Section 4, for more details.</li>
+        </ul>
+        </li>
+
+        <li>Let $\Hil^{d'} = \Hil \times \Hil \times \dotsc, \Hil$ denote the space of functions from $\Real^d$ to $\Real^{d'}$ where each component function is a member of $\Hil$. Let $\ve{f} = [f_1, f_2, \dotsc, f_{d'}]^T$ and $\ve{g} = [g_1, g_2, \dotsc, g_{d'}]^T$. The inner product on $\Hil^{d'}$ is defined as
+        \begin{align*}
+            \langle \ve{f}, \ve{g} \rangle_{\Hil^{d'}}
+            &= \sum_{j=1}^{d'} \langle f_j, g_j \rangle_\Hil.
+        \end{align*}
+        The induced norm is given by:
+        \begin{align*}
+            \| \ve{f} \|_{\Hil^{d'}}
+            &= \bigg( \sum_{j=1}^{d'} \| f_i \|_\Hil^2 \bigg)^{1/2}.
+        \end{align*}
+        </li>
+
+        <li><b>Theorem 3.8.</b> Let $p$ and $q$ be smooth densities supported in $\X$. Let $k(\ve{x}, \ve{x}')$ be a kernel in the Stein class of $p$. Define
+        \begin{align*}
+            u_q(\ve{x},\ve{x}')
+            &= s_q(\ve{x})k(\ve{x},\ve{x}')(s_q(\ve{x}'))^T
+            + s_q(\ve{x}) (\nabla_{\ve{x}'} s_q(\ve{x},\ve{x}'))^T\\
+            &\phantom{=} + \nabla_{\ve{x}} s_q(\ve{x},\ve{x}')s_q(\ve{x'})^T
+            + \tr(\nabla_{\ve{x},\ve{x}'} k(\ve{x},\ve{x}')) \\
+        \end{align*}
+        Then,
+        \begin{align*}
+            \mathbb{S}(p,q) = E_{\ve{x}, \ve{x}' \sim p} [u_p(\ve{x}, \ve{x}')].
+        \end{align*}
+        </li>
+
+        <li>The formula above provides a tractable means for empirical evaluation of $\mathbb{S}(p,q)$ based on the sample $\{\ve{x}_i\} \sim p$ and the score function $s_q$.</li>
+
+        <li><b>Proposition 3.9.</b> For any positive definite kernel $k(\ve{x}, \ve{x}')$, there exists eigenfunctions $\{ e_j \}_{j=1}^\infty$ and positive eigenvalues $\{\lambda_j \}_{j=1}^\infty$ such that:
+        \begin{align*}
+            k(\ve{x}, \ve{x}') = \sum_{j=1}^\infty \lambda_j e_j(\ve{x}) e_j(\ve{x}').
+        \end{align*}
+        Note that the eigenfunctions are orthogonal. In other words,
+        \begin{align*}
+            \int_{\mathcal{X}} e_i(\ve{x}) e_j(\ve{x})\, \dee\ve{x}
+            = \begin{cases}
+            1, & i = j \\
+            0, & i \neq j
+            \end{cases}.
+        \end{align*}
+        </li>
+
+        <li><b>Theorem 3.10.</b> We have that $u_q(\ve{x}, \ve{x}')$ can be rewritten into
+        \begin{align*}
+        u_q(\ve{x}, \ve{x}')
+        = \sum_{j=1}^\infty \lambda_j [\mathcal{A}_q e_j(\ve{x})]^T [\mathcal{A}_q e_j(\ve{x}')]^T
+        \end{align*}
+        where $\mathcal{A}_q e_j(\ve{x}) = (s_q(\ve{x}) e_j(\ve{x}) + \nabla_\ve{x} e_j(\ve{x}))^T$ is the Stein's operator acting on $e_j$. Additionally,
+        \begin{align*}
+            \mathbb{S}(p,q) = \sum_{j=1}^\infty \lambda_j \| E_{\ve{x} \sim p} [\mathcal{A}_q e_j(\ve{x})] \|^2.
+        \end{align*}
+        </li>
+
+        <li><b>Theorem 3.11.</b> Let $\Hil$ be the RKHS with $k$ as the reproducing kernel. Let $k$ be in the Stein class of $p$. Let
+        \begin{align*}
+            \beta(\ve{x}') = E_{\ve{x} \sim p} [\mathcal{A}_q k_{\ve{x}'}(\ve{x})].
+        \end{align*}
+        Then.
+        \begin{align*}
+            \mathbb{S}(p,q) = \| \beta \|_{\Hil^2}^2.
+        \end{align*}
+        Moreover, we hae that 
+        \begin{align*}
+        \langle \ve{f}, \beta \rangle_{\Hil^d} 
+        &= E_{\ve{x} \sim p} [\tr(\mathcal{A}_q \ve{f})]
+        \end{align*}
+        for any $\ve{f} \in \Hil^d$. So,
+        \begin{align*}
+        \sqrt{\mathbb{S}(p,q)} = \max_{\ve{f} \in \Hil^d} \bigg\{ E_{\ve{x} \sim p} [\tr(\mathcal{A}_q \ve{f})]\mbox{ subjected to } \| \ve{f} \|_{\Hil^d}  \leq 1 \bigg\}.
+        \end{align*}
+        The maximum is achieved when $\ve{f} = \beta/\| \beta \|_{\Hil^d}$.
+        </li>
+    </ul>
+
+    <h2>4 Variational Stein Gradient Descent</h2>
+
+    <ul>
+        <li><a href="https://arxiv.org/pdf/1608.04471.pdf">[Link to paper]</a></li>
+
+        <li>The paper seeks to approximate an unknown distribution $p$, given explicit by empirical samples, by a set of particles.</li>
+
+        <li>We are given $\{ D_k \}$, a set of i.i.d. observations.</li>
+
+        <li>Let $\ve{x}$ be a continuous random variable of interest, taking values in $\X$.</li>
+
+        <li>Let $p_0(\ve{x})$ be a prior distribution of $\ve{x}$. The likelihood of observing $\{ D_k \}$ given $\ve{x}$ is given by:
+        \begin{align*}
+            \ov{p}(\ve{x}) = p_0(\ve{x}) \prod_{k=1}^N p_1(D_k|\ve{x}).
+        \end{align*}
+        We would like to reason about the probability distribution $p(\ve{x}) = \ov{p} / Z$ where $Z = \int_{\X} \ov{p}(\ve{x})\, \dee\ve{x}$ is the normalization constant.
+        </li>
+
+        <li>In variational inference, we approximate the target distribution $p(\ve{x})$ with a simpler distribution $q^*(\ve{x})$ from a predefined set $\mathcal{Q}$.
+        </li>
+
+        <li>This is done by solving the following minimization problem:
+        \begin{align*}
+            q^* 
+            &= \argmin_{q \in \mcal{Q}} \Big\{ d_{KL}(q \| p)  \Big\} \\ 
+            &= \argmin_{q \in \mcal{Q}} \bigg\{ E_{\ve{x} \sim q(\ve{x})} \bigg[ \log \frac{q(\ve{x})}{p(\ve{x})} \bigg]  \bigg\} \\ 
+            &= \argmin_{q \in \mcal{Q}} \Big\{ E_{\ve{x} \sim q(\ve{x})} [ \log q(\ve{x})] - E_{\ve{x} \sim q(\ve{x})} [ \log p(\ve{x}) ] \Big\} \\ 
+            &= \argmin_{q \in \mcal{Q}} \bigg\{ E_{\ve{x} \sim q(\ve{x})} [ \log q(\ve{x}) ] - E_{\ve{x} \sim q(\ve{x})} \bigg[ \log \frac{\ov{p}(\ve{x})}{Z} \bigg] \bigg\} \\ 
+            &= \argmin_{q \in \mcal{Q}} \Big\{ 
+                E_{\ve{x} \sim q(\ve{x})} [\log q(\ve{x})]
+                - E_{\ve{x} \sim q(\ve{x})}[\log \ov{p}(\ve{x})] 
+                + \log Z 
+            \Big\}.
+        \end{align*}
+        Luckily, because $p$ is given, $Z$ is a constant, so we do not have to calculate $\log Z$ to solve the optimization. The problem becomes
+        \begin{align*}
+            q^* 
+            &= \argmin_{q \in \mcal{Q}} \Big\{ 
+                E_{\ve{x} \sim q(\ve{x})} [\log q(\ve{x})]
+                - E_{\ve{x} \sim q(\ve{x})} [\log \ov{p}(\ve{x})] 
+            \Big\}.
+        \end{align*}
+        </li>
+
+        <li>The choice of $\mathcal{Q}$ is critical. It should be:
+        <ul>
+            <li><b>Accurate.</b> Broad enough to approximate a large class of target approximates.</li>
+            <li><b>Tractable.</b> Be made of simple distributions to make inference easy.</li>
+            <li><b>Solvable.</b> Otherwise, we would not achieve anything.</li>
+        </ul>
+        However, there are trade-offs between these properties.
+        </li>
+
+        <li>The paper chooses $\mcal{Q}$ to be distributions obtained by smooth transforms from a tractable reference distributions.</li>
+
+        <li>Formally, $\mcal{Q}$ is the set of distributions of the form $\ve{x} = T(\ve{x}')$ where $T: \X \ra X$ is a smooth, bijective transform. The "latent" parameter of interest $\ve{x}'$ is drawn from a tractable reference distribution $q'(\ve{x}')$.</li>
+
+        <li>The paper notes that such a form of transformations can model almost all transformations between two distributions, but this is not our focus.</li>
+
+        <li>Let us get more specific. Let $q$ be the probability distribution arising from the following process:
+        <ol>
+            <li>Sample $\ve{x}'$ according to probability distribution $q'$.</li>
+            <li>Compute $\ve{x} = T(\ve{x}')$.</li>
+        </ol>
+        What is the distribution of $q(\ve{x})$? Consulting my old note on <a href="https://pkhungurn.github.io/notes/notes/gfx/pdf-transform/pdf-transform.pdf">probability under transformation</a>, we have that
+        \begin{align*}
+        q(\ve{x}) = \frac{q'(\ve{x}')}{|\det DT(\ve{x}')|}
+        \end{align*}
+        Rewriting $\ve{x}'$ in terms of $\ve{x}$ and applying the inverse function theorem, we have that:
+        \begin{align*}
+            q(\ve{x}) = q'(T^{-1}(\ve{x})) \cdot |\det DT^{-1}(\ve{x}) |.
+        \end{align*}
+        </li>
+
+        <li>The above distribution is convenient in the sense that it can be evaluated "empirically". For any function that can be written as $E_{\ve{x} \sim q(\ve{x})}[f(\ve{x})]$, we have that
+        \begin{align*}
+        E_{\ve{x} \sim q(\ve{x})} [f(\ve{x})]
+        &= \int_\X q(\ve{x}) f(\ve{x})\, \dee\ve{x} \\
+        &= \int_\X q(\ve{x}) f(T(\ve{x}'))|\det DT(\ve{x})|\, \dee\ve{x}' \\
+        &= \int_\X \frac{q'(\ve{x'})}{|\det DT(\ve{x}')|} f(T(\ve{x}'))|\det DT(\ve{x}')|\, \dee\ve{x}' \\
+        &= \int_\X q'(\ve{x'}) f(T(\ve{x}'))\, \dee\ve{x}' \\
+        &= E_{\ve{x}' \sim q'(\ve{x}')} [f(T(\ve{x}'))] \\
+        &\approx \frac{1}{N} \sum_{i=1}^N f(T(\ve{x}_i)).
+        \end{align*}
+        where $\ve{x}_i$ are i.i.d. samples from $q'$. Because $q'$ is not explicitly needed, the paper just start with some set of particles and doesn't even bother say what $q'$ is supposed to be. Moreover, since everything depends only on $T(\ve{x}_i')$, it turns out that we don't event have to keep track of the exact form of $T$ or compute its Jacobian. We just need to keep track of the transformed samples.
+        </li>
+
+        <li>For convenience, let us write $q_{[T]}(\ve{x})$ to denote the distribution of $\ve{x}$ arisen from (implicitly) $q'$ and $T$.
+        </li>
+
+        <li>The paper proposes an algorithm that iteratively constructs incremental transforms that would approaches the solution $T$, effectively performing gradient descent on the space of $T$.</li>
+
+        <li>In each step of the iteration, the algorithm tries to come up with an incremental transformation of the form $T(\ve{x}) = \ve{x} + \varepsilon \phi(\ve{x})$ where $\phi(\ve{x})$ is a smooth function. When $\varepsilon$ is sufficiently small, the Jacobian of $T$ is diagonal heavy and would be invertible.</li>
+
+        <li><b>Theorem 4.1.</b> Let $T(\ve{x}') = \ve{x}' + \varepsilon \phi(\ve{x}')$ and $q(\ve{x})$ be the density of $\ve{x} = T(\ve{x}')$ where $\ve{x}' \sim q'(\ve{x})$. We have that:
+        \begin{align*}
+            \frac{\dee}{\dee \varepsilon} d_{KL}(q \| p) \bigg|_{\varepsilon=0} = -E_{\ve{x'} \sim q'(\ve{x}')} [\tr(\mathcal{A}_p \phi(\ve{x}'))]
+        \end{align*}
+        where $\mathcal{A}_p\phi(\ve{x}') = (\phi(\ve{x}') \nabla_{\ve{x}'} \log p(\ve{x}') + \nabla_{\ve{x}'} \phi(\ve{x}'))^T$ is the Stein operator.
+
+        <p><i>Proof.</i></p>
+        </li>
+
+        <li><b>Lemma 4.2.</b> Assume the conditions in Theorem 4.1. Let $k$ be a kernel and let $\Hil$ be its associated RKHS. Consider all the perturbation direction $\phi$ in the ball $\mcal{B} = \{ \phi \in \Hil^d : \| \phi \|_{\Hil^d}^2 \leq \mathbb{S}(q,p) \}$. The direction of steepest descent is
+        \begin{align*}
+            \beta_{q,p}(\ve{x}') = E_{\ve{x} \sim q(\ve{x})} [\mathcal{A}_p k_{\ve{x}'}(\ve{x})].
+        \end{align*}
+        Moreover, we have that the derivative with respect to $\varepsilon$ is given by:
+        \begin{align*}
+        \frac{\dee}{\dee \varepsilon} d_{KL}(q \| p) \bigg|_{\varepsilon=0} = -\mathbb{S}(q,p).
+        \end{align*}
+        </li>
+
+        <li>Starting from a distribution $q^{(0)}(\ve{x}^{(0)})$, we would transform it to distribution $p$ as follows:
+        <ul>
+            <li>Suppose that we already have a distribution $q^{(\ell)}(\ve{x}^{(\ell)})$.</li>
+
+            <li>Applying a transform $\ve{x}_{\ell+1} = T^*_{\ell}(\ve{x}_\ell) = \ve{x}_\ell + \varepsilon_\ell \beta_{q_\ell, p} (\ve{x}_\ell)$.</li>
+
+            <li>This gives rise to a new distribution $q_{\ell+1}(\ve{x}_{\ell+1}) = q_{\ell, [T_{\ell}]}(\ve{x}_{\ell+1})$.</li>
+
+            <li>Loop back to the start and improve the distribution yet again.</li>
+        </ul>
+        </li>
+
+        <li>The algorithm in the previous section, however, is not very precise.
+        <ul>
+            <li>How are we going to keep track of the distribution $q^{(\ell)}$ as it evolves?</li>
+
+            <li>How exactly are we going to compute the expression $\beta_{q^{(\ell)}}(\ve{x}^{(\ell)}) = E_{\ve{x} \sim q^{(\ell)}(\ve{x})} [\mcal{A}_p k_{\ve{x}^{(\ell)}}(\ve{x})]?$</li>
+        </ul>
+        </li>
+
+        <li>For a practical implementation, the paper suggests keeping $n$ particles and evolving them as the process goes. In particular,
+        <ul>
+            <li>Start with an initial set of particles $\ve{x}_1^{(0)}, \ve{x}_2^{(0)}, \dotsc, \ve{x}_n^{(0)}$.</li>
+
+            <li><b>for</b> $\ell \gets 1, 2, 3, 4, \dotsc$
+                <ul>
+                    <li><b>for</b> $i \gets 1, 2, \dotsc, n$
+                    <ul>
+                        <li>Compute
+                        \begin{align*}
+                            \beta_{q^{(\ell)}, p}(\ve{x}_i^{(\ell)})
+                            = \frac{1}{n} \sum_{j=1}^n \Big( k(\ve{x}_j^{\ell}, \ve{x}^{\ell}_i) \nabla_{\ve{x}_j^{(\ell)}} \log p(\ve{x}_j^{(\ell)}) + \nabla_{\ve{x}_j^{(
+                            \ell)}} k(\ve{x}_j^{(\ell)}, \ve{x}_i^{(\ell)}) \Big)^T.
+                        \end{align*}
+                        </li>
+
+                        <li>Compute $\ve{x}_i^{(\ell)} \gets \ve{x}_i^{(\ell)} + \varepsilon^{(\ell)} \beta_{q^{(\ell)}, p}(\ve{x}_i^{(\ell)})$
+                        where $\varepsilon^{(\ell)}$ is the learning at the $\ell$th step.
+                        </li>
+                    </ul>
+                    </li>
+                </ul>
+            </li>
+        </ul>
+        </li>
+
+        <li>The two terms of the $\beta_{q^{(\ell)},p}$ function can be interpreted as follows:
+        <ul>
+            <li>The first term drives the particles towards high probability areas of $p(x)$. It particles follows the <i>smooth gradient direction</i>. That is the gradient at all the points weighted by the kernel functions.</li>
+
+            <li>The second term repels the points from one other, preventing them from collapsing into a single point.</li>
+        </ul>
+        </li>
+
+        <li>Consider the algorithm where $n=1$. We can see it is equivalent to pushing a single point towards a high probability region of $p$ if $\nabla_{\ve{x}} k(\ve{x},\ve{x}) = 0$. Hence, it is equivalent to <i>maximum a posteriori</i> (MAP) estimation via gradient descent.</li>
+
+        <li>In their experiments, the paper uses the Gaussian kernel:
+        \begin{align*}
+        k(\ve{x},\ve{x}')
+        = \exp\bigg( -\frac{1}{h} \| \ve{x} - \ve{x}' \|^2\bigg).
+        \end{align*}
+        The bandwidth parameter $h$ is taken to be the $h = \mrm{med}^2/ \log n$ where $\mrm{med}$ is the median of the pairwise distance between the current points.
+        </li>
+    </ul>
+
+    <h2>5 Training Neural Networks to Draw Samples from a Target Distribution</h2>
+
+    <ul>
+        <li><a href="https://arxiv.org/pdf/1611.01722.pdf">[Paper link]</a></li>
+
+        <li>Given a distribution with density $p(\ve{x})$ and a function $f(\eta; \xi)$ with parameter $\eta$ and random input $\xi$. Find an optimal parameter $\eta$ so that the density of the random output $\ve{x} = f(\eta, \xi)$ where $\xi \sim q_0(\xi)$ closesly matches the target distribution $p(\ve{x})$. We need to do this with the following restrictions:
+        <ul>
+            <li>We do not know the exact form of $q_0$, and we are only allow to draw random inputs from it.</li>
+
+            <li>We can only compute the output $f(\eta, \xi)$ and compute the gadients $\nabla_\eta(\eta, \xi)$.</li>
+        </ul>
+        </li>
+    </ul>
+
+    <h3>The Neural Sampler</h3>
+    <ul>
+        <li>The requirement for the algorithm is that one needs to know how to compute $p$ up to a normalization constant, which is the same as the requirement for SVGD.</li>
+
+        <li>The paper pointed out that SVGD is inefficient in several ways.
+        <ul>
+            <li>One needs to start over when a new distribution to approximate $p$ is given. In other words, it cannot learn from past experiences.</li>
+
+            <li>It can require a lot of memory to store praticles.</li>
+        </ul>
+        </li>
+
+        <li>So, instead of keeping a set of particles, the paper proposes to train a neural network $f(\eta, \xi)$ that mimics the SVGD dynamics.</li>
+
+        <li>The paper uses an incrementatl approch that updates $\eta$ along the Stein variational gradient direction.</li>
+
+        <li>At the $t$th iteration of the algorithm:
+        <ul>
+            <li>Let $\eta^t$ be the estimated parameter at the $t$th iteration.</li>
+
+            <li>Draw a batch of random input $\{ \xi_i\}_{i=1}^m$.</li>
+
+            <li>Calculate the outputs $\{ \ve{x}_i = f(\eta^t, \xi_i) \}_{i=1}^m$.</li>
+
+            <li>From the set of particles, one can use the SVGD to calculate a new versions $\{ \ve{x}'_i \}_{i=1}^m$ that moves it along the Stein variational gradient direction:
+            \begin{align*}
+                \ve{x}'_i &= \ve{x}_i + \varepsilon \Delta \ve{x}_i
+            \end{align*}
+            where
+            \begin{align*}
+                \Delta \ve{x}_i
+                &= E_{\ve{x} \sim q^t} \Big[ \Big( \nabla_{\ve{x}} k(\ve{x}, \ve{x}_i) \log p(\ve{x})  + \nabla_{\ve{x}} k(\ve{x}, \ve{x}_i) \Big)^T \Big]
+            \end{align*}
+            </li>
+
+            <li>The algorithm then would adjust the network parameters so that the output would match $\ve{x}_i$. In other words, we want:
+            \begin{align*}
+                \eta^{t+1}
+                = \argmin_{\eta} \bigg\{ \sum_{i=1}^m \| f(\eta, \xi_i) - \ve{x}_i' \|^2 \bigg\}
+            \end{align*}
+            In practice, we would update $\eta$ based on the gradient of the RHS.
+            </li>
+        </ul>
+        </li>
+
+        <li>The paper went over some derivations to derive an update rule for $\eta$. However, since we do not write the update rules ourselves in real implementsion, I will not mention those derivations.</li>
+    </ul>
+
+    <h3>SteinGAN</h3>
+
+    <ul>
+        <li>Let $\{ \ve{x}_{i,\data} \}$ denote a set of observed data.</li>
+
+        <li>The paper condiers the maximum likelihood training of energy-based model of the form:
+        \begin{align*}
+            p(\ve{x}|\theta) 
+            &= \frac{\exp(-\phi(\ve{x}, \theta))}{\Phi(\theta)}
+        \end{align*}
+        where
+        \begin{align*}
+            \Phi(\theta) = \log \int \exp(-\phi(\ve{x},\theta))\, \dee\ve{x}.
+        \end{align*}
+        $\phi(\ve{x};\theta)$ is an energy function for $\ve{x}$ given the paraemter $\theta$, and $\Phi(\theta)$ is the normalization constant.
+        </li>
+
+        <li>Let us give an example of such an energy model. In the <a href="https://arxiv.org/abs/1609.03126">Energy-based Generative Adversarial Network</a> paper, Zhao et al. proposed such an energy function that is based on autoencoding:
+        \begin{align*}
+        \phi(\ve{x}, \theta) = \| \ve{x} - D(E(\ve{x};\theta);\theta) \|^2_2.
+        \end{align*}
+        </li>
+        
+        <li>The log-likelihood of the observed data is given by:
+        \begin{align*}
+        L(\theta)         
+        &= \frac{1}{n} \sum_{i=1}^n \log p(\ve{x}_{i,data}|\theta) \\
+        &= \sum_{i=1}^n \log \bigg( \frac{\exp(-\phi(\ve{x}_{i,data},\theta))}{\Phi(\theta)} \bigg) \\
+        &\approx - \log \Phi(\theta) - \sum_{i=1}^n \phi(\ve{x}_{i,data},\theta)         
+        \end{align*}
+        </li>
+
+        <li>The first team is hard to evaluate directly. However, its <b>gradient is easy to evaluate</b>.
+        \begin{align*}
+        \nabla_{\theta} (\log \Phi(\theta))
+        &= \frac{1}{\Phi(\theta)} \nabla_{\theta} \Phi(\theta)\\
+        &= \frac{1}{\Phi(\theta)} \nabla_{\theta} \int \exp(-\phi(\ve{x},\theta))\, \dee\ve{x} \\
+        &= \frac{1}{\Phi(\theta)} \int \nabla_{\theta} \exp(-\phi(\ve{x},\theta))\, \dee\ve{x} \\
+        &= \frac{1}{\Phi(\theta)} \int \exp(-\phi(\ve{x},\theta)) \nabla_{\theta}(-\phi(\ve{x},\theta)) \, \dee\ve{x} \\
+        &= - \int \frac{\exp(-\phi(\ve{x},\theta))}{\Phi(\theta)} \nabla_{\theta}\phi(\ve{x},\theta) \, \dee\ve{x} \\        
+        &= - \int p(\ve{x}|\theta) \nabla_{\theta}\phi(\ve{x},\theta) \, \dee\ve{x} \\
+        &= - E_{\ve{x} \sim p(\ve{x}|\theta)} [\nabla_{\theta}\phi(\ve{x},\theta)] \\
+        &\approx -\frac{1}{m} \sum_{i=1}^m \nabla_{\theta}\phi(\ve{x}_i,\theta)
+        \end{align*}
+        where $\ve{x}_i$ are i.i.d. samples from $p(\ve{x}|\theta)$.
+        As a result,
+        \begin{align*}
+        \nabla_\theta L(\theta)
+        &\approx \frac{1}{m} \sum_{i=1}^m \nabla_{\theta}\phi(\ve{x}_i,\theta)
+        - \frac{1}{n} \sum_{i=1}^n \nabla_{\theta} \phi(\ve{x}_{i,data},\theta)   
+        \end{align*}
+        </li>
+
+        <li>Hence, the paper proposes to use SVGD to train a neural network $f(\eta, \xi)$ to sample examples according to $p(\ve{x}|\theta)$. Then, we can use the samples to evaluate the gradients above.</li>
+
+        <li>Because $f(\eta,\xi)$ can generate samples according to the probabily defined by $\phi(\ve{x},\theta)$, it becomes the <b>generator</b> after the training is done.</li>
+
+        <li>Let us interpret the two terms of the gradient $\nabla_\theta L(\theta)$. The paper says that they can be viewed as an adversarial game between the energy model (the discriminator) and the generator.
+        <ul>
+            <li>The second term tries to reduce the energy of real samples.</li>
+
+            <li>The first term, however, tries to increase the energy of the samples generated by the generator.</li>
+        </ul>
+        In other words,  the energy model is trying to tell real and fake examples apart. It is quite remarkable that we get this interpretation starting from minimizing the log-likelihood of the optimization.        
+        </li>
+    </ul>
+
+    <hr>
+    <div class="page-header"></div>
+    <p>Last modified: 2020/08/07</p>    
+</div>
+
+<script type="text/javascript">
+$.bigfoot();
+</script>
+
+</body>
+</html>

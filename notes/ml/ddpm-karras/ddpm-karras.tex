@@ -1,0 +1,909 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+\usepackage{verbatim}
+\usepackage{hyperref}
+\usepackage{algorithm}
+\usepackage{clrscode3e}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\Dee}{\mathrm{D}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\Var}{\mathrm{Var}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\ves}[1]{\boldsymbol{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+\newcommand{\ov}[1]{\overline{#1}}
+\newcommand{\N}{\mathcal{N}}
+\newcommand{\data}{\mathrm{data}}
+\newcommand{\SNR}{\mathrm{SNR}}
+
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+\title{Karras \etal's DDPM Improvements}
+\author{Pramook Khungurn}
+
+\begin{document}
+\maketitle
+
+This note is written as I read ``Elucidating the Design Space of Diffusion-Based Generative Models'' by Karras \etal~\cite{Karras:2022}. I have to admit that it is very hard for me to read the paper because it requires so much background to understand, and all the derivations are folded into the appendix.
+
+\section{Introduction}
+
+\begin{itemize}
+  \item The paper casts a number of previous works on DDPM and score-based generative models into a common framework and suggests improvements to multiple parts of generative models in the framework.
+  
+  \item The previous works include:
+  \begin{itemize}
+    \item The stochastic differential equation paper by Song \etal~\cite{Song:2021}.
+    \item The improved DDPM paper by Nichol and Dharival~\cite{Nichol:2021}.
+    \item The DDIM paper by Song \etal~\cite{Song:DDIM:2020}.
+    \item The adaptive step-size SDE solver paper by Jolicoeur-Martineau \etal~\cite{Jolicoeur-Martineau:2021}.
+  \end{itemize}
+
+  \item The end results are score improvements on several datasets.
+  \begin{itemize}
+    \item SOTA FID score on CIFAR-10.
+    \item Near-SOTA FID score on ImageNet-64 without retraining.
+    \item SOTA FID score on ImageNet-64 with retraining.
+  \end{itemize}
+
+  \item I also believe that the Heun's 2nd order solver introduced in this paper has been include as a sampler in Stable Diffusion.
+  \begin{itemize}
+    \item Actually, this is why I try to read the paper.
+  \end{itemize}
+\end{itemize}
+
+\section{A Common Framework for Diffusion Models}
+
+\subsection{Preliminary}
+
+\begin{itemize}
+  \item Let each data item be a vector in $\Real^d$. We typically denote one with the letter $\ve{x}$.
+  
+  \item Let $p_{\data}(\ve{x})$ denote the data distribution. Let $\sigma_{\data}$ denotes the standard deviation of the ata.
+  
+  \item All diffusion model works with the distribution $p(\ve{x};\sigma)$ obtained by adding i.i.d. Gaussian noise of standard deviation $\sigma$ to the data sampled from $p_{\data}$.
+  \begin{itemize}
+    \item $p(\ve{x}; 0) = p_{\data}(\ve{x})$.
+    \item If $\sigma_{\max} \gg \sigma_{\data}$, then $p(\ve{x};\sigma_{\max})$ would be very close to $\mcal{N}(\ve{0}, \sigma_{\max}^2 I)$.
+  \end{itemize}
+
+  \item In general, here's how a diffusion model generates a sample.
+  \begin{enumerate}
+    \item We specify a number of noise levels $0 = \sigma_1 < \sigma_2 < \dotsb < \sigma_T = \sigma_{\max}$.
+    \item We first sample a point $\ve{x}_T$ from $\mcal{N}(\ve{0}, \sigma_{\max}^2 I)$ and simply assume that it comes from $p(\ve{x}; \sigma_{\max})$.
+    \item Given a point $\ve{x}_t$ that comes from $p(\ve{x}; \sigma_t)$, we revert the noising process inherent in $p(\ve{x}; \sigma_t)$ to produce a point $\ve{x}_{t-1}$ that should come from $p(\ve{x};\sigma_{t-1})$.
+    \item Starting from $\ve{x}_T$, we repeat Step 3 until we reach $\ve{x}_0$, which is returned as the output of the sampling process.
+  \end{enumerate}
+\end{itemize}
+
+\subsection{A General SDE and Its Probability Flow ODE}
+
+\begin{itemize}
+  \item In \cite{Song:2021}, Song \etal\ suggests that the noising process (i.e., $p(\ve{x}, \sigma)$) can be modeled by stochastic differential equations.
+
+  \item The sequence $\sigma_1$, $\sigma_2$, $\dotsc$, $\sigma_T$ becomes a continuous function $\sigma(t)$ of time where $t \in [0,T]$.
+  \item Here, $\sigma(0) = 0$, and $\sigma(T) = \sigma_{\max}$.
+  \item For each tiem $t$, we view $\ve{x}(t)$ which should be distributed according to $p(\ve{x}; \sigma(t))$ as a random variable. This means that $\{ \ve{x}(t) : t \in [0,T] \}$ is a stochastic process.
+  \item The evaluation of the above stochastic process is governed by the stochastic differential equation:
+  \begin{align*}
+    \dee \ve{x} = \ve{f}(\ve{x}(t), t)\, \dee t + g(t)\, \dee \ve{W}
+  \end{align*} 
+  where $\ve{f}: \Real^d \times \Real \rightarrow \Real^d$ is called the {\bf drift coefficient}, $g(t): \Real \rightarrow \Real$ is called the {\bf diffusion coefficient}, and $\ve{W}(t)$ is the standard $d$-dimensional Brownian motion (aka the Wiener process).
+  \item The initial condition is $\ve{x}(0) \sim p_{\data}$.
+  \begin{itemize}
+    \item To make it simpler, we say that $\ve{x}(0)$ is fixed and has no variance when deriving a solution to SDEs.
+  \end{itemize}
+  \item The Song \etal\ paper gives two SDEs. One is called the {\it variance-exploding (VE)} SDE, and another the {\it variance-preserving (VP)} SDE. Both SDEs are of the form
+  \begin{align*}
+    \dee \ve{x} = f(t)\ve{x}\, \dee t + g(t)\, \dee \ve{W}
+  \end{align*}
+  where $f(\ve{x},t)$ becomes $f(t)\ve{x}$, and $f$ is reduced to a function of signature $\Real \rightarrow \Real$.
+  \item The above SDE has an explicit, unique solution. We appeal from the following theorem (Equation 6.2) from \cite{Sarkka:2019}.
+  \begin{theorem}
+    Consider a {\bf linear SDE} of the form
+    \begin{align*}
+      \dee \ve{x} = \big(F(t)\ve{x} + \ve{u}(t) \big)\, \dee t + L(t)\, \dee \ve{W} 
+    \end{align*}
+    where $F: \Real \rightarrow \Real^{d \times d}$, $\ve{u}: \Real \rightarrow \Real^d$, and $L: \Real \rightarrow \Real^{d \times d}$. We have that the solution of this equation is a Gaussian process whose mean and covariance matrix,
+    \begin{align*}
+      \ves{\mu}(t) &= E[\ve{x}(t)], \\ 
+      \Sigma(t) &= E[(\ve{x}(t) - \ves{\mu}(t)) (\ve{x}(t) - \ves{\mu}(t))^T],
+    \end{align*}
+    satisfy the ODEs
+    \begin{align*}
+      \frac{\dee\ves{\mu}(t)}{\dee t} &= F(t) \ves{\mu}(t), \\
+      \frac{\dee\Sigma(t)}{\dee t} &= F(t) \Sigma(t) + \Sigma(t) F(t)^T + L(t)L(t)^T. 
+    \end{align*}
+  \end{theorem}
+  \item Setting $F(t) = f(t)I$, $\ve{u}(t) = \ve{0}$, and $L(t) = g(t)I$, we have that
+  \begin{align*}
+    \frac{\dee\ves{\mu}(t)}{\dee t} &= f(t) \ves{\mu}(t), \\
+    \frac{\dee\Sigma(t)}{\dee t} &= 2 f(t) \Sigma(t) + g(t)^2 I. 
+  \end{align*}
+  Assuming that the sample $\ve{x}(0)$ has already been sampled and fixed. The initial condition is $\ves{\mu}(0) = \ve{x}(0)$, and $\Sigma(0) = 0$. Solving the first ODE, we have that
+  \begin{align*}
+    \ves{\mu}(0) = \ve{x}(0) \exp\bigg( \int_0^t f(u)\, \dee u \bigg).
+  \end{align*}
+  The paper defines $$s(t) := \exp\bigg( \int_0^t f(u)\, \dee u\bigg),$$ and so $$\ves{\mu}(0) = s(t) \ve{x}(0).$$
+  For the second ODE, notice that $\Sigma(t)$ is a diagonal matrix whose entries are all the same. Let the entries have value $v(t)$. We have that
+  \begin{align*}
+    \frac{\dee v(t)}{\dee t} = 2f(t)v(t) + g(t)^2.
+  \end{align*}
+  Solving the equation (see Proposition~\ref{thm:linear-sde-variance}), we have that
+  \begin{align*}
+    v(t) = s(t)^2 \int_0^t \frac{g(u)^2}{s(u)^2}\, \dee u,
+  \end{align*}
+  assumming that $v(0) = 0$ (because we are under the setting where the sample $\ve{x}(0)$ has alrady been fixed). The paper defines $$\sigma(t) := \sqrt{\int_0^t \frac{g(u)^2}{s(u)^2}\, \dee u},$$
+  and so the conditional density of $\ve{x}(t)$ given $\ve{x}(0)$ is given by
+  $$p_{t|0}(\ve{x}|\ve{x}_0) = \mcal{N}(\ve{x} ; s(t)\ve{x}_0, s(t)^2 \sigma(t)^2 I ). $$
+  The marginal density of $\ve{x}(t)$ is given by
+  \begin{align*}
+    p_t(\ve{x}) = \int_{\Real^d} p_{t|0}(\ve{x} | \ve{x}_0) p_{\data}(\ve{x}_0)\, \dee \ve{x}_0.
+  \end{align*}
+
+  \item According to \cite{Song:2021}, the stochastic process $\ve{x}(t)$, when interpreted as a function of signature $\Real \rightarrow \Real^d$, and the marginal probability distribution $p_t(\ve{x})$ also satisfies the ODE
+  \begin{align*}
+    \frac{\dee \ve{x}}{\dee t} = f(t)\ve{x} - \frac{1}{2}g(t)^2 \nabla_{\ve{x}} \log p_t(\ve{x})
+  \end{align*}
+  called the {\bf probability flow ODE}. (Deriving this equation can be done my manipulating the Fokker--Planck equation that $p_t(\ve{x})$ is supposed to satisfy. See my notes on score-based generative models for more information \cite{KhungurnScoreBased}.)
+\end{itemize}
+
+\subsection{Making $s(t)$ and $\sigma(t)$ First Class Citizens}
+
+\begin{itemize}
+  \item Note that the conditional distribution $p_{t|0}$ is given in terms of $s(t)$ and $\sigma(t)$, which are derived from $f(t)$ and $g(t)$. However, we are more interested in $s(t)$ and $\sigma(t)$ because they tells use directly what the means and the standard deviations are. So, the paper rewrites the probability ODE in terms of $s(t)$ and $\sigma(t)$ instead of $f(t)$ and $g(t)$.
+
+  \item Consider the expression for the marginal distribution of $\ve{x}(t)$.
+    \begin{align*}
+      p_t(\ve{x}) 
+      &= \int_{\Real^d} p_{t|0}(\ve{x}|\ve{x}_0) p_{\data}(\ve{x}_0)\, \dee \ve{x}_0 \\
+      &= \int_{\Real^d} \mcal{N}(\ve{x}; s(t)\ve{x}_0, s^2(t)\sigma^2(t) I) p_{\data}(\ve{x}_0)\, \dee \ve{x}_0 \\
+      &= \int_{\Real^d} s(t)^{-d} \mcal{N}(\ve{x} / s(t); \ve{x}_0, \sigma^2(t) I) p_{\data}(\ve{x}_0)\, \dee \ve{x}_0 \\
+      &= s(t)^{-d}  \int_{\Real^d} \mcal{N}(\ve{x} / s(t); \ve{x}_0, \sigma^2(t) I) p_{\data}(\ve{x}_0)\, \dee \ve{x}_0 \\
+      &= s(t)^{-d} \Big[ p_{\data} * \mcal{N}(\ve{0}, \sigma^2(t) I ) \Big] \big( \ve{x} / s(t) \big)
+    \end{align*}
+    where $*$ is the convolution operation.
+
+  \item $p_{\data} * \mcal{N}(\ve{0}, \sigma^2(t) I )$ is the corrupted version of $p_{\data}$ due to the noise added by the diffusion process. The paper defines
+  \begin{align*}
+    p(\ve{x}; \sigma) := p_{\data} * \mcal{N}(\ve{0}, \sigma^2 I).
+  \end{align*} 
+  So,
+  \begin{align*}
+    p_t(\ve{x}) = \frac{p(\ve{x}/s(t); \sigma(t))}{s(t)^d}.
+  \end{align*}
+
+  \item Plugging the expression for $p_t(\ve{x})$ into the probability flow ODE, we have that
+  \begin{align*}
+    \frac{\dee \ve{x}}{\dee t} &= f(t)\ve{x} - \frac{1}{2}g(t)^2 \nabla_{\ve{x}} \log \frac{p(\ve{x}/s(t); \sigma(t))}{s(t)^d} \\
+    \frac{\dee \ve{x}}{\dee t} &= f(t)\ve{x} - \frac{1}{2}g(t)^2 \nabla_{\ve{x}} \log p(\ve{x}/s(t); \sigma(t)).
+  \end{align*}
+  
+  \item We now write $f(t)$ and $g(t)$ in terms of $s(t)$ and $\sigma(t)$.  For $f(t)$, we have that
+  \begin{align*}
+    \dot{s}(t) &= f(t) s(t) \\
+    f(t) &= \frac{\dot{s}(t)}{s(t)}.
+  \end{align*}
+  For $g(t)$, we have that
+  \begin{align*}
+    \{ \sigma^2(t) \}' &= \frac{g(t)^2}{s(t)^2} \\
+    2\sigma(t)^2 \dot{\sigma}(t) &= \frac{g(t)^2}{s(t)^2} \\
+    g(t) &= s(t) \sqrt{2 \sigma(t) \dot{\sigma}(t)}.
+  \end{align*}
+
+  \item Plugging in expressions for $f(t)$ and $g(t)$, we have that
+  \begin{align}
+    \frac{\dee \ve{x}}{\dee t}
+    &= \frac{\dot{s}(t)}{s(t)} \ve{x} - s(t)^2 \sigma(t) \dot{\sigma}(t) \nabla_{\ve{x}} \log p(\ve{x}/s(t); \sigma(t)). \label{eqn:scaled-probability-flow-ode}
+  \end{align}
+  When $s(t) = 1$ for all $t$ (which is the case for all the variations the paper deals with except the VP SDE formulation), the equation becomes,
+  \begin{align*}
+    \dee \ve{x}
+    &=  - \sigma(t) \dot{\sigma}(t) \nabla_{\ve{x}} \log p(\ve{x}; \sigma(t))\, \dee t.
+  \end{align*}
+\end{itemize}
+
+\subsection{Deterministic Sampling}
+
+\begin{itemize}
+  \item A way to sample from $p_{\data}$ is to (1) sample an element from $p_T(\ve{x})$ and (2) simulate Equation~\eqref{eqn:scaled-probability-flow-ode} numerically backward in time from $t = T$ to $t = 0$. The ability to sample from $p_T(\ve{x})$ rests on the fact that $p_{T|0} \sim \mcal{N}(s(T)\ve{x}(0), s(T)^2 \sigma(T)^2I)$. This can be easy in the following situations.
+  \begin{enumerate}
+    \item $s(T) = 1$, and $\sigma(T) \gg \sigma_{\data}$.\\ In this case, $p_T(\ve{x}) \approx \mcal{N}(\ve{0}, \sigma(T)^2I)$, and we can sample $\ve{x}(T)$ from $\mcal{N}(\ve{0}, \sigma(T)^2I)$.
+    \item $s(T) \approx 0$, and $s(T)^2 \sigma(T)^2 = 1$.\\ In this case, $p_T(\ve{x}) \approx \mcal{N}(\ve{0}, I)$, and we can sample $\ve{x}(T)$ from $\mcal{N}(\ve{0}, I)$.
+  \end{enumerate}
+  In \cite{Song:2021}, the VE formulation corresponds to the first situation, and the VP formulation corresponds to the second situation. 
+
+  \item Note that the sampling algorithm above is not ``deterministic'' per se. There is randomness in the sampling of $\ve{x}(T)$. However, this is the only randomness that is present in the algorithm. We will discuss ``stochastic'' sampling algorithms later. These algorithms use random numbers in each of its iterations.
+  
+  \item In order to simulate the ODE of Equation~\eqref{eqn:scaled-probability-flow-ode} numerically, we need to be able to compute the {\bf score} $\nabla_{\ve{x}} \log p(\ve{x}/s(t); \sigma^2(t))$. To make the problem more general, we drop the $s(t)^{-1}$ scaling factor and see if there is a way to compute $\nabla_{\ve{x}} \log p(\ve{x}; \sigma)$. A common way to do this is to train a neural network $D_{\ves{\theta}}(\widetilde{\ve{x}}, \sigma)$ such that it outputs $\ve{x}$ given a sample $\widetilde{\ve{x}} \sim p(\ve{x}; \sigma)$. This can be done by minimizing the loss
+  \begin{align*}
+    \mcal{L}(\ves{\theta}, \sigma) := E_{\ve{x}_0 \sim p_{\data}} E_{\ves{\xi} \sim \mcal{N}(0,I)} \Big[ \big\| D_{\ves{\theta}}(\ve{x}_0 + \sigma \ves{\xi}, \sigma) - \ve{x}_0 \big\|^2 \Big]
+  \end{align*}
+  Then, for the optimal $\ves{\theta}^*$, we would have that
+  \begin{align*}
+    \nabla_{\ve{x}} \log p(\ve{x}, \sigma) \approx \frac{D_{\ves{\theta}^*}(\ve{x}, \sigma) - \ve{x}}{\sigma^2}.
+  \end{align*}
+  The implementation of $D_{\ves{\theta}}(\ve{x}, \sigma)$ might include scaling $\ve{x}$ by the appropriate factor to make the inference easier. It is also common to use a single neural network for all $\sigma$ values, and so we need to think of a way to sample $\sigma$ and a way to assign weight to each $\mcal{L}(\ves{\theta}, \sigma)$. 
+  
+  \item We will come back to how to train $D(\ve{x},\sigma)$ later, but let us formulate the sampling algorithm right away that involves the probability flow ODE right away.
+  
+  \item We distinguished between samples from the distribution $p(\ve{x};\sigma(t)) = \mcal{N}(\ve{x}; \ve{x}(0), \sigma(t)^2 I)$, which is not scaled by $s(t)$, and the distribution $p_t(\ve{x}) = \mcal{N}(\ve{x}; s(t)\ve{x}(0), s(t)^2 \sigma(t)^2 I)$, which is scaled by $s(t)$.
+    
+  \item In particular, we let $\ve{x}$ denote a sample from $p_t(\ve{x})$, and $\hat{\ve{x}}$ denote a sample from $p(\hat{\ve{x}}, \sigma(t))$. It follows that
+  \begin{align*}
+    \ve{x} = s(t) \hat{\ve{x}}.
+  \end{align*}
+  The above equation is supposed to be read in the following way: one can sample $\ve{x} \sim p_T$ by sampling $\hat{\ve{x}} \sim \mcal{N}(\ve{x}(0), \sigma^2(t)I)$ and them computing $\ve{x} := s(t)\hat{\ve{x}}$.
+
+  \item We have that
+  \begin{align*}
+    \nabla_{\ve{x}} \log p(\ve{x}/s(t); \sigma(t))
+    &= \nabla_{s(t)\hat{\ve{x}}} \log p(\hat{\ve{x}}; \sigma(t))
+    = \frac{1}{s(t)} \nabla_{\hat{\ve{x}}} \log p(\hat{\ve{x}}; \sigma(t)) \\
+    &\approx \frac{D_{\ves{\theta}}(\hat{\ve{x}}, \sigma(t)) - \hat{\ve{x}}}{s(t)\sigma^2(t)} \\
+    &= \frac{D_{\ves{\theta}}(\ve{x}/s(t), \sigma(t)) - \ve{x}/s(t)}{s(t)\sigma^2(t)}.
+  \end{align*}
+
+  \item Subtituting the above expression for the score into Equation~\ref{eqn:scaled-probability-flow-ode}, we have that
+  \begin{align}
+    \frac{\dee \ve{x}}{\dee t}
+    &= \frac{\dot{s}(t)}{s(t)} \ve{x} - s(t)^2 \sigma(t) \dot{\sigma}(t) \frac{D_{\ves{\theta}}(\ve{x}/s(t), \sigma(t)) - \ve{x}/s(t)}{s(t)\sigma^2(t)} \notag \\
+    \frac{\dee \ve{x}}{\dee t} 
+    &= \frac{\dot{s}(t)}{s(t)} \ve{x} - s(t) \frac{\dot{\sigma}(t)}{\sigma(t)} \bigg( D_{\ves{\theta}}\bigg(\frac{\ve{x}}{s(t)}, \sigma(t)\bigg) - \frac{\ve{x}}{s(t)} \bigg) \notag \\
+    \frac{\dee \ve{x}}{\dee t}
+    &= \bigg( \frac{\dot{s}(t)}{s(t)} + \frac{\dot{\sigma}(t)}{\sigma(t)} \bigg) \ve{x} - s(t) \frac{\dot{\sigma}(t)}{\sigma(t)} D_{\ves{\theta}}\bigg(\frac{\ve{x}}{s(t)}, \sigma(t)\bigg). \label{eqn:probability-flow-ode-in-practice}
+  \end{align}
+
+  \item There are many algorithms for numerically solving an ODE such as Euler method and Runge--Kutta methods. The pseudocode for the Euler method that solves Equation~\eqref{eqn:probability-flow-ode-in-practice} backward in time is given in Algorithm~\ref{alg:euler-deterministic-sampler}. The paper advocates the use of Heun's method, which is a second order integrator. Its pseudocode is given in Algorithm~\ref{alg:heun-deterministic-sampler}.
+  
+  \begin{algorithm}[t]
+  \begin{codebox}
+    \Procname{$\proc{Euler-Sampler}(D_{\ves{\theta}}, \sigma, s, \{ t_0, t_1, \dotsc, t_N \} )$}
+    \li Sample $\ve{x}_0 \sim \mcal{N}(\ve{0}, s(t_0)^2 \sigma(t_0)^2 I)$.
+    \li \For $i \leftarrow 0, 1, \dotsc, N-1$
+    \li \Do
+          $\ve{d}_i \leftarrow \Big( 
+            \frac{\dot{\sigma}(t_i)}{\sigma(t_i)} + \frac{\dot{s}(t_i)}{s(t_i)}
+          \Big) \ve{x}_i
+          - s(t_i) \frac{\dot{\sigma}(t_i)}{\sigma(t_i)} D_{\ves{\theta}} \Big( \frac{\ve{x}_i}{s(t_i)}, \sigma(t_i)  \Big)$
+    \li   $\ve{x}_{i+1} \leftarrow \ve{x}_i + (t_{i+1} - t_i) \ve{d}_i$
+        \End
+    \li \Return $\ve{x}_N$.
+  \end{codebox}
+  \caption{Euler method for sampling from $p_{\data}$ by simulating the probability flow  ODE \eqref{eqn:probability-flow-ode-in-practice}.}  
+  \label{alg:euler-deterministic-sampler}
+  \end{algorithm}
+
+  \begin{algorithm}[t]
+  \begin{codebox}
+    \Procname{$\proc{Heun-Sampler}(D_{\ves{\theta}}, \sigma, s, \{ t_0, t_1, \dotsc, t_N \} )$}
+    \li Sample $\ve{x}_0 \sim \mcal{N}(\ve{0}, s(t_0)^2 \sigma(t_0)^2 I)$.
+    \li \For $i \leftarrow 0, 1, \dotsc, N-1$
+    \li \Do
+          $\ve{d}_i \leftarrow \Big( 
+            \frac{\dot{\sigma}(t_i)}{\sigma(t_i)} + \frac{\dot{s}(t_i)}{s(t_i)}
+          \Big) \ve{x}_i
+          - s(t_i) \frac{\dot{\sigma}(t_i)}{\sigma(t_i)} D_{\ves{\theta}} \Big( \frac{\ve{x}_i}{s(t_i)}, \sigma(t_i)  \Big)$
+    \li   $\ve{x}_{i+1} \leftarrow \ve{x}_i + (t_{i+1} - t_i) \ve{d}_i$
+    \li   \If $\sigma(t_{i+1}) \neq 0$ 
+    \li    \Then
+            $\ve{d}'_{i} \leftarrow \Big( 
+              \frac{\dot{\sigma}(t_{i+1})}{\sigma(t_{i+1})} + \frac{\dot{s}(t_{i+1})}{s(t_{i+1})}
+            \Big) \ve{x}_{i+1}
+            - s(t_{i+1}) \frac{\dot{\sigma}(t_{i+1})}{\sigma(t_{i+1})} D_{\ves{\theta}} \Big( \frac{\ve{x}_{i+1}}{s(t_{i+1})}, \sigma(t_{i+1})  \Big)$
+    \li     $\ve{x}_{i+1} \leftarrow \ve{x}_i + \frac{1}{2}(t_{i+1} - t_i)(\ve{d}_i + \ve{d}_i')$
+          \End
+        \End
+    \li \Return $\ve{x}_N$.
+  \end{codebox}
+  \caption{Heun's method for sampling from $p_{\data}$ by simulating the probability flow  ODE \eqref{eqn:probability-flow-ode-in-practice}.}  
+  \label{alg:heun-deterministic-sampler}
+  \end{algorithm}
+
+  \item Note that, to use the above algoriths, we must provide a sequence of times $\{ t_0, t_1, \dotsc, t_N \}$ where
+  \begin{align*}
+    T = t_0 > t_1 > t_2 > \dotsb > t_{N-1} > t_N = 0.
+  \end{align*}
+\end{itemize}
+
+\subsection{Stochastic Sampling}
+
+\begin{itemize}
+  \item Most previous works on diffusion models insert noise in each step of the sampling process. Let us refer to this type of sampling as ``stochastic sampling'' as opposed to ``deterministic sampling'' above.
+
+  \item The paper goes to a very long derivation (Appendix B.5) that uses heat equation to derive the reverse-time SDE \cite{Anderson:1982} so that it can derive the stochastic sampling algorithm. Moreover, the derived equation only works for the non-scaled version (i.e., $s(t) = 1$ and $f(t) = 0$) of the forward SDE. The stochastic sampling algorithm is also only for the non-scaled case. The paper claims that the derivation for the scaled case is similar and omits the derivation.
+  
+  \item I found the above treatment annoyhing as it is not complete. I also struggled with the derivation because it uses the heat equation and knowledge about partial differential equations, which I have not studied. So, in this note, I will summarize the results and provide an alternative, simpler derivation in the Appendix.  
+
+  \item The paper states that, for any $\beta(t): \Real \rightarrow [0,\infty)$, the SDE
+  \begin{align}
+    \dee\ve{x} = \underbrace{\bigg( \ve{f}(\ve{x},t) - \frac{1}{2}g(t)^2 \nabla_{\ve{x}} \log p_t(\ve{x}) \bigg)\, \dee t}_{\mathrm{probability\ flow\ ODE}} +  \bigg( \underbrace{\frac{1}{2} \beta(t) g(t)^2 \nabla_{\ve{x}} \log p_t(\ve{x})\, \dee t + \sqrt{\beta(t)} g(t)\, \dee \ve{W}}_{\mathrm{Langevin\ diffusion\ SDE}} \bigg). \label{eqn:generalized-diffusion-sde}
+  \end{align}
+  yields the same marginal probability distribution $p_t(\ve{x})$ as Equation~\ref{eqn:diffusion-sde}. This is true, and you can find the proof in the Appendix (Theorem~\ref{thm:generalized-diffusion-sde}). The equation gives us multiple ways to simulate Equation \eqref{eqn:diffusion-sde} forward in time.
+  
+  \item The paper also states that, for any $\beta(t): \Real \rightarrow [0,\infty)$, the SDE
+  \begin{align}
+    \dee\ve{x} = \underbrace{\bigg( \ve{f}(\ve{x},t) - \frac{1}{2}g(t)^2 \nabla_{\ve{x}} \log p_t(\ve{x}) \bigg)\, \dee t}_{\mathrm{probability\ flow\ ODE}} +  \bigg( \underbrace{-\frac{1}{2} \beta(t) g(t)^2 \nabla_{\ve{x}} \log p_t(\ve{x})\, \dee t + \sqrt{\beta(t)} g(t)\, \dee \overline{\ve{W}}}_{\mathrm{Langevin\ diffusion\ SDE}} \bigg) \label{eqn:generalized-reverse-time-diffusion-sde}
+  \end{align}
+  where $\overline{\ve{W}}$ is the standard $d$-dimensional Brownian motion that goes backward in time, yields the same marginal $p_{t}(\ve{x})$ as the distribution yielded by Equation~\eqref{eqn:diffusion-sde}. This time, however, the evolution of $p_{t}(\ve{x})$ is backward in time.
+
+  \item Specializing to our particular SDE, we have that $\ve{f}(\ve{x},t) = f(t)\ve{x}$. So,
+  \begin{align*}
+    \dee\ve{x} 
+    = \underbrace{\Big( f(t)\ve{x} - \frac{1}{2}g(t)^2 \nabla_{\ve{x}} \log p_t(\ve{x}) \Big) \, \dee t}_{\mathrm{probability\ flow\ ODE}} 
+    - \underbrace{ \frac{1}{2} \beta(t) g(t)^2 \nabla_{\ve{x}} \log p_t(\ve{x})\, \dee t}_{\mathrm{deterministic\ noise\ decay}} 
+    + \underbrace{\sqrt{\beta(t)} g(t)\, \dee \overline{\ve{W}}}_{\mathrm{noise\ injection}}
+  \end{align*}
+  Substituting $f(t) = \dot{s}(t)/s(t)$ and $g(t) = s(t)\sqrt{2\sigma(t)\dot{\sigma}(t)}$ and $p_t(\ve{x}) = p(\ve{x}/s(t); \sigma(t)) s(t)^{-d}$, we have that
+  \begin{align}
+    \dee\ve{x} 
+    &= \Big( f(t)\ve{x} - \frac{1}{2}g(t)^2 \nabla_{\ve{x}} \log p_t(\ve{x}) \Big) \, \dee t
+    - \frac{1}{2} \beta(t) g(t)^2 \nabla_{\ve{x}} \log p_t(\ve{x})\, \dee t
+    + \sqrt{\beta(t)} g(t)\, \dee \overline{\ve{W}} \notag \\
+    \dee\ve{x}
+    &= \bigg( \frac{\dot{s}(t)}{s(t)}\ve{x} - \big(1 + \beta(t)\big)s(t)^2 \sigma(t)\dot{\sigma}(t) \nabla_{\ve{x}} \log p(\ve{x}/s(t);\sigma(t)) \bigg) \dee t \notag \\
+    &\phantom{=} \quad + s(t) \sqrt{2 \beta(t)\sigma(t)\dot{\sigma}(t)} \dee \overline{\ve{W}} \notag \\
+    \dee\ve{x}
+    &= \bigg( \frac{\dot{s}(t)}{s(t)}\ve{x} - \big(1 + \beta(t)\big)s(t)^2 \sigma(t)\dot{\sigma}(t) \frac{D_{\ves{\theta}}(\ve{x}/s(t), \sigma(t)) - \ve{x}/s(t)}{s(t)\sigma^2(t)} \bigg) \dee t \notag \\
+    &\phantom{=} \quad + s(t) \sqrt{2 \beta(t)\sigma(t)\dot{\sigma}(t)} \dee \overline{\ve{W}} \notag \\
+    &= \bigg[ \bigg( \frac{\dot{s}(t)}{s(t)} + \big(1 + \beta(t)\big)\frac{\dot{\sigma}(t)}{\sigma(t)} \bigg)\ve{x} - \big( 1 + \beta(t) \big)s(t) \frac{\dot{\sigma}(t)}{\sigma(t)} D_{\ves{\theta}}\bigg( \frac{\ve{x}}{s(t)}, \sigma(t) \bigg)  \bigg]\dee t 
+    + s(t) \sqrt{2 \beta(t)\sigma(t)\dot{\sigma}(t)} \dee \overline{\ve{W}}.  \label{eqn:generalized-noise-added-sde}
+  \end{align}
+
+  \item The paper does not derive Equation~\eqref{eqn:generalized-noise-added-sde}. It opts for a simple equation where $s(t) = 1$, which we have that
+  \begin{align*}
+    \dee\ve{x}
+    &= \bigg( \frac{\dot{s}(t)}{s(t)}\ve{x} - \big(1 + \beta(t)\big)s(t)^2 \sigma(t)\dot{\sigma}(t) \nabla_{\ve{x}} \log p(\ve{x}/s(t);\sigma(t)) \bigg) \dee t \notag \\
+    &\phantom{=} \quad + s(t) \sqrt{2 \beta(t)\sigma(t)\dot{\sigma}(t)} \dee \overline{\ve{W}} \notag \\
+    \dee\ve{x} &=  - \big(1 + \beta(t)\big) \sigma(t)\dot{\sigma}(t) \nabla_{\ve{x}} \log p(\ve{x};\sigma(t))\, \dee t 
+    + \sqrt{2 \beta(t)\sigma(t)\dot{\sigma}(t)} \dee \overline{\ve{W}}.
+  \end{align*}
+  Take $\beta(t) := \gamma(t)\frac{\sigma(t)}{\dot{\sigma}(t)}$. The equation becomes
+  \begin{align} \label{eqn:no-scaling-diffusion-sde}
+    \dee\ve{x}
+    =
+    -\sigma(t)\dot{\sigma}(t) \nabla_{\ve{x}} \log p(\ve{x};\sigma(t))\, \dee t - \gamma(t)\sigma^2(t) \nabla_{\ve{x}} \log p(\ve{x};\sigma(t))\, \dee t + \sqrt{2\gamma(t)}\sigma(t) \dee \overline{\ve{W}}.
+  \end{align}  
+  This matches Equation (6) in the paper if we change the name of $\gamma$ to $\beta$.
+
+  \item Equation~\eqref{eqn:generalized-noise-added-sde} leads to an sampling algorithm based on the Euler--Maruyama method (Algorithm~\ref{alg:euler-stochastic-sampler}).
+  
+  \item The paper also proposes a stochastic sampler based on Heun's method. The implmenetation is little different from that to the Euler--Maruayama method above. The paper adds the noise to the current data item first before performing the steps of Heun's method. See Algorithm~\ref{alg:heun-stochastic-sampler}.
+  
+  \begin{algorithm}[t]
+  \begin{codebox}
+    \Procname{$\proc{Euler-Maruyama-Sampler}(D_{\ves{\theta}}, \sigma, s, \{ t_0, t_1, \dotsc, t_N \} )$}
+    \li Sample $\ve{x}_0 \sim \mcal{N}(\ve{0}, s(t_0)^2 \sigma(t_0)^2 I)$.
+    \li \For $i \leftarrow 0, 1, \dotsc, N-1$
+    \li \Do
+          $\ve{s}_i \leftarrow (1 + \beta(t_i)) s(t_i)\frac{\dot{\sigma}(t_i)}{\sigma(t_i)} D_{\ves{\theta}} \Big( \frac{\ve{x}_i}{s(t_i)}, \sigma(t_i)  \Big)$
+    \li   $\ve{d}_i \leftarrow \Big( 
+            \frac{\dot{\sigma}(t_i)}{\sigma(t_i)} + (1 + \beta(t_i))\frac{\dot{s}(t_i)}{s(t_i)}
+          \Big) \ve{x}_i
+          - \ve{s}_i$
+    \li   $\ves{\xi}_i \sim \mcal{N}(\ve{0}, 2\beta(t)\sigma(t)\dot{\sigma}(t)I)$.
+    \li   $\ve{x}_{i+1} \leftarrow \ve{x}_i + (t_{i+1} - t_i)\ve{d}_i + \sqrt{|t_{i+1} - t_i|} \ves{\xi}_i$
+        \End
+    \li \Return $\ve{x}_N$.
+  \end{codebox}
+  \caption{Euler--Maruyama method for sampling from $p_{\data}$ by simulating the SDE \eqref{eqn:generalized-noise-added-sde}.}  
+  \label{alg:euler-stochastic-sampler}
+  \end{algorithm}
+
+  \begin{algorithm}[t]
+    \begin{codebox}
+      \Procname{$\proc{Heun-Stochastic-Sampler}(D_{\ves{\theta}}, \sigma, s, \{ t_0, t_1, \dotsc, t_N \} )$}
+      \li Sample $\ve{x}_0 \sim \mcal{N}(\ve{0}, s(t_0)^2 \sigma(t_0)^2 I)$.
+      \li \For $i \leftarrow 0, 1, \dotsc, N-1$
+      \li \Do
+            $\ves{\xi}_i \sim \mcal{N}(\ve{0}, 2\beta(t)\sigma(t)\dot{\sigma}(t)I)$.
+      \li   $\widetilde{\ve{x}}_i \leftarrow \ve{x}_i + \sqrt{|t_{i+1} - t_i|} \ves{\xi}_i$
+      \li   $\ve{s}_i \leftarrow (1 + \beta(t_i)) s(t_i)\frac{\dot{\sigma}(t_i)}{\sigma(t_i)} D_{\ves{\theta}} \Big( \frac{\widetilde{\ve{x}}_i}{s(t_i)}, \sigma(t_i)  \Big)$
+      \li   $\ve{d}_i \leftarrow \Big( 
+              \frac{\dot{\sigma}(t_i)}{\sigma(t_i)} + (1 + \beta(t_i))\frac{\dot{s}(t_i)}{s(t_i)}
+            \Big) \widetilde{\ve{x}}_i
+            - \ve{s}_i$
+      \li   $\ve{x}_{i+1} \leftarrow \widetilde{\ve{x}}_i + (t_{i+1} - t_i)\ve{d}_i$
+      \li   \If $\sigma(t_{i+1}) \neq 0$ 
+      \li    \Then
+              $\ve{d}'_{i} \leftarrow \Big( 
+                \frac{\dot{\sigma}(t_{i+1})}{\sigma(t_{i+1})} + \frac{\dot{s}(t_{i+1})}{s(t_{i+1})}
+              \Big) \ve{x}_{i+1}
+              - s(t_{i+1}) \frac{\dot{\sigma}(t_{i+1})}{\sigma(t_{i+1})} D_{\ves{\theta}} \Big( \frac{\ve{x}_{i+1}}{s(t_{i+1})}, \sigma(t_{i+1})  \Big)$
+      \li     $\ve{x}_{i+1} \leftarrow \widetilde{\ve{x}}_i + \frac{1}{2}(t_{i+1} - t_i)(\ve{d}_i + \ve{d}_i')$
+            \End            
+          \End
+      \li \Return $\ve{x}_N$.
+    \end{codebox}
+    \caption{Huen's method for stochastically sampling from $p_{\data}$ by simulating the SDE \eqref{eqn:generalized-noise-added-sde}.}  
+    \label{alg:heun-stochastic-sampler}
+    \end{algorithm}
+\end{itemize}
+
+\section{Improvements on Deterministic Sampling}
+
+\begin{itemize}
+  \item The paper argues that the noise/scaling/time schedule ($\sigma(t)$, $s(t)$, and $\{ t_i\}$) should be doupled from the specification of the denoising model $D_{\ves{\theta}}$. 
+  
+  \item It does so by performing experiments on pre-trained models from previous works, only changing the noise/scaling/time schedule. It was able to achieve imprvements.
+  
+  \item The used models include:
+  \begin{itemize}
+    \item DDPM++ cont. trained on CIFAR-10 at $32 \times 32$ \cite{Song:2021}.\\
+    It is associated with the VP SDE formulation.
+    \item NCSN++ cont. trained on CIFAR-10 at $32 \times 32$ \cite{Song:2021}.\\
+    It is associated with the VE SDE formulation.
+    \item ADM (dropout) trained on class-conditional ImageNet at $64 \times 64$ \cite{Dhariwal:2021}.\\
+    It is associated with the ``improved DDPM paper'' \cite{Dhariwal:2021} and the DDIM paper \cite{Song:DDIM:2020}.
+  \end{itemize}
+
+  \item The paper advocates for the use of Heun's 2nd order method (Algorithm~\ref{alg:heun-deterministic-sampler}).
+  \begin{itemize}
+    \item The authors argue that it provides the right balance betweeen sample quality and the number of neural function evaluations (NFE).
+    \item From experiments (Figure 2 in the paper), using Heun's methods led to improvment in all casts. FID score dropped faster as a function of the number of NFEs.
+  \end{itemize}
+
+  \item Comments/improvements on the time steps $\{t_i\}$.
+  \begin{itemize}
+    \item The step size $|t_{i+1} - t_i|$ should decrease monotonically with decreasing $\sigma$. (In other words, the steps should become shorter as we more nearer to a finished product.)
+    
+    \item When defining the time steps, the paper first decide on the noise schedule $\sigma_0, \sigma_1, \dotsc, \sigma_N$ first. Then, it computes $t_i = \sigma^{-1}(\sigma_i)$ for each $i$ where $\sigma$ is the noise schedule specific to each model (Table 1 in the paper) For the noise schedule, the paper uses
+    \begin{align*}
+      \sigma_i = \begin{cases}
+        \big( \sigma_{\max}^{1/\rho} + \frac{i}{N-1}(\sigma_{\min}^{1/\rho} - \sigma_{\max}^{1/\rho}) \big)^{\rho} & 0 \leq i < N, \\
+        0 & i = N
+      \end{cases}      
+    \end{align*}
+    where $\rho$ is a positive constant.
+    
+    \item $\rho$ controls how much the steps near $\sigma_{\min}$ are shortened at the expense of the longer steps near $\sigma_{\max}$.
+    \begin{itemize}
+      \item $\rho = 3$ nearly equalizes the truncation error at each step.
+      \item $\rho \in [5,10]$ performs much better in terms of image quality.
+      \item The paper uses $\rho = 7$.
+    \end{itemize}
+  \end{itemize}
+
+  \item Comments on $\sigma(t)$ and $s(t)$.
+  \begin{itemize}
+    \item The authors argue that the best choice for these functions is $\sigma(t) = t$ and $s(t) = 1$.
+    
+    \item $\sigma$ and $t$ becomes interchangeable.
+    
+    \item The probability flow ODE \eqref{eqn:probability-flow-ode-in-practice} becomes
+    \begin{align*}
+      \frac{\dee \ve{x}}{\dee t} = \frac{\ve{x} - D_{\ves{\theta}}(\ve{x}, t)}{t}.
+    \end{align*}
+    
+    \item A single Euler step to $t=0$ yields the denoised image $D_{\ves{\theta}}(\ve{x},t)$.
+    
+    \item The tangent of the solution trajectory always points toward the denoiser output, so the tangent (i.e., the score) would change slowly with the noise level. The solution trajectory would be largely linear.
+    
+    \item The paper says that the DDIM already employs this schedule \cite{Song:DDIM:2020}. Moreover, when switching the VP and VE models to this noise/scaling schedule, the authors got improved results.
+  \end{itemize}
+\end{itemize}
+
+\section{Stochastic Sampling}
+
+\begin{itemize}
+  \item The authors observe that deterministic sampling tends to lead to poor sample quality than stochastic sampling.
+  
+  \item Setting $s(t) = 1$, the SDE we have to simulate is Equation~\eqref{eqn:no-scaling-diffusion-sde}:
+  \begin{align*}
+    \dee\ve{x}
+    =
+    \underbrace{-\sigma(t)\dot{\sigma}(t) \nabla_{\ve{x}} \log p(\ve{x};\sigma(t))\, \dee t}_{\mathrm{probability\ flow\ ODE}}
+    -
+    \underbrace{
+      \underbrace{\beta(t)\sigma^2(t) \nabla_{\ve{x}} \log p(\ve{x};\sigma(t))\, \dee t}_{\mathrm{detemrinistic\ noise\ decay}} 
+      + \underbrace{\sqrt{2\beta(t)}\sigma(t) \dee \overline{\ve{W}}}_{\mathrm{noise\ injection}}
+    }_{\mathrm{Langevin\ diffusion\ SDE}}
+    .
+  \end{align*}
+  where $\beta: \Real \rightarrow [0,\infty)$ is a non-negative function. The paper says that $\beta(t)$ is effectively the rate at which existing noise is replaced with new noise.
+
+  \item The paper says that the Langevin diffusion SDE drives the sample towards the desired distribution, correcting for errors made in earlier sampling steps. This is probabilty the reason why stochastic sampling is useful.
+  
+  \item However, $\beta(t)$ should not be set too large because the Langevin steps would reduce introduce as well. So, the optimal $\beta(t)$ should be determined empirically.
+  
+  \item The paper then introduces a stochastic sampler (Algorithm 2 in the paper) that I had a tough time recovering the SDE it tries to simulate. I guess the closest one would be
+  \begin{align*}
+    \dee\ve{x} = (1 + \beta(t))\frac{\ve{x} - D_{\ves{\theta}(\ve{x},t)}}{t} + \sqrt{\beta(t) t} \dee \overline{W}\, 
+  \end{align*}
+  which is Equation~\eqref{eqn:generalized-noise-added-sde} with $s(t) = 1$ and $\sigma(t) = t$. The reason why it is not correctly simulating the above equation is because:
+  \begin{itemize}
+    \item The noise has to be scaled with something porportional to $\sqrt{t}$. However, the scale of the noise is proportional to $\sqrt{\hat{t}_i^2 - t_i} = \sqrt{(1 + \gamma_i)t_i^2 - t_i^2} = \sqrt{\gamma} t_i$
+    \item The score, multiplied by noise factor $\beta(t) = \gamma_i$, must be {\bf added}, not subtracted from the update. In the paper, the added noise seems to shorten the distance travelled by the deterministic step. It should be the other way around.
+  \end{itemize}
+
+  \item The paper comments on adding noise in general.
+  \begin{itemize}
+    \item Excessive noise addition causes loss of details in the generated images.
+    \item Excessive noise addition also causes a drift towards oversaturated colors at very low and high noise levels. This is not observed in deterministic sampling.
+    \begin{itemize}
+      \item The paper solves this by only performing noise addition when $t_i \in [S_{\min}, S_{\max}].$
+      \item They also limit the total noise by the $S_{\mathrm{churn}}$ parameter.
+      \item They clamp $\gamma_i$ variable so that the noise addition never introduces more noise than there is in the image.
+      \item They set the noise level $S_{\mathrm{noise}}$ to be slightly above $1$ to avoid loss of details.
+    \end{itemize}
+  \end{itemize}
+
+  \item The paper's stochastic sampler outperformed other works, getting good FID score while keeping the NFEs low. 
+  
+  \item However, the algorithm also has a number of parameters $S_{\min}$, $S_{\max}$, $S_{\mathrm{churn}}$, and $S_{\mathrm{noise}}$. The authors had to fine-tune these parameters to get close to SOTA FID on ImageNet-64.
+\end{itemize}
+
+\section{Precondition and Training}
+
+\begin{itemize}
+  \item Especially with the variance exploding setting, the input to $D_{\ves{\theta}}$ has very large dynamic range. Nevertheless, it is advisable to keep the input and output signal magnitudes fixed to avoid large variation in gradient magnitudes.
+
+  \item In order to do so, the paper does not represent $D_{\ves{\theta}}$ as a neural network directly. It is instead a wrapper around another network $F_{\ves{\theta}}$. In particular, it uses
+  \begin{align*}
+    D_{\ves{\theta}}(\ve{x}, \sigma) = c_{\mrm{skip}}(\sigma) \ve{x} + c_{\mrm{out}}(\sigma) F_{\ves{\theta}}(c_{\mrm{in}}(\sigma) \ve{x}, c_{\mrm{noise}}(\sigma)).
+  \end{align*}
+  The formulation incorporates four scaling operations that can be used to make sure that magnitudes remain constant between noise levels.
+
+  \item When training, a noise level is sampled according to the probability $p_{\mrm{train}}(\sigma)$. The loss for the noise level $\sigma$ is multipled by the weight $\lambda(\sigma)$. All in all, the loss becomes
+  \begin{align*}
+    E_{
+      \substack{
+        \sigma \sim p_{\mrm{train}}, \\
+        \ve{y} \sim p_{\data}, \\
+        \ves{\xi} \sim \mcal{N}(\ve{0}, \sigma^2 I)
+      }
+    }
+    \bigg[
+      \lambda(\sigma) c_{\mrm{out}}(\sigma)^2
+      \bigg\|
+        F_{\ves{\theta}}(c_{\mrm{in}}(\sigma)(\ve{y} + \ves{\xi}), c_{\mrm{noise}(\sigma)})
+        - \frac{\ve{y} - c_{\mrm{skip}}(\sigma)(\ve{y} + \ves{\xi})}{c_{\mrm{out}(\sigma)}}
+      \bigg\|^2
+    \bigg].
+  \end{align*}
+
+  \item To facilitate further discussion, define
+  \begin{align*}
+    w(\sigma) &:= \lambda(\sigma) c_{\mrm{out}}(\sigma)^2, \\
+    F_{\mrm{target}}(\ve{y}, \ves{\xi}; \sigma) &:= \frac{\ve{y} - c_{\mrm{skip}}(\ve{y} + \ves{\xi})}{c_{\mrm{out}}(\sigma)}
+  \end{align*}
+  So, the loss function becomes
+  \begin{align*}
+    E_{
+      \substack{
+        \sigma \sim p_{\mrm{train}}, \\
+        \ve{y} \sim p_{\data}, \\
+        \ves{\xi} \sim \mcal{N}(\ve{0}, \sigma^2 I)
+      }
+    }
+    \Big[
+      w(\sigma)
+      \Big\|
+        F_{\ves{\theta}}(c_{\mrm{in}}(\sigma)(\ve{y} + \ves{\xi}), c_{\mrm{noise}(\sigma)})
+        - F_{\mrm{target}}(\ve{y}, \ves{\xi}; \sigma)
+      \Big\|^2
+    \Big].
+  \end{align*}
+
+  \item The paper picks $c_{\mrm{in}}$, $c_{\mrm{out}}$, $c_{\mrm{skip}}$, and $\lambda$ as follows.
+  \begin{itemize}
+    \item The training inputs to $F_{\ves{\theta}}$ should have unit variance. So,
+    \begin{align*}
+      c_{\mrm{in}}(\sigma) = 1/\sqrt{\sigma^2 + \sigma_{data}^2}.
+    \end{align*}
+    \item The training target $F_{\mrm{target}}$ should also have unit variance. So,
+    \begin{align*}
+      c_{\mrm{out}}(\sigma)^2 = (1 - c_{\mrm{skip}}(\sigma))^2 \sigma_{\data}^2 + c_{\mrm{skip}}(\sigma)^2 \sigma^2.
+    \end{align*}
+
+    \item $c_{\mrm{skip}}$ is selected to minimize $c_{\mrm{out}}$ so that the errors of $F_{\ves{\theta}}$ are amplified as little as possible. This gives
+    \begin{align*}
+      c_{\mrm{skip}}(\sigma) &= \argmin_{c_{\mrm{skip}}(\sigma)} \Big\{ c_{\mrm{out}}(\sigma)^2 \Big\} = \frac{\sigma_{\data}^2}{\sigma^2 + \sigma_{\data}^2}, \\
+      c_{\mrm{out}}(\sigma) &= \frac{\sigma \cdot \sigma_{\data}}{\sqrt{\sigma^2 + \sigma_{\data}^2}}.
+    \end{align*}
+
+    \item The effective weight $\lambda(\sigma)$ is required to be uniform $(=1)$ across noise levels. So,
+    \begin{align*}
+      \lambda(\sigma) = \frac{\sigma^2 + \sigma_{\data}^2}{(\sigma \cdot \sigma_{data})^2}
+    \end{align*}
+  \end{itemize}  
+
+  \item The formula for $c_{\mrm{noise}}$ was chosen empirically. The paper uses
+  \begin{align*}
+    c_{\mrm{noise}}(\sigma) = \frac{1}{4} \ln \sigma
+  \end{align*}
+  for its best algorithm.
+
+  \item Lastly, we have to specify the probability distribution for sampling $\sigma$.
+  \begin{itemize}
+    \item After training, the authors observed the training loss as a function of $\sigma$. They observe a U-shaped curve.
+    \begin{itemize}
+      \item At low noise level, the corrupted image is already very closed to the source image. So, it is very difficult (and meaningless) to reduce noise here.
+      \item At high noise level, the training targets is very different from the noisy images.
+    \end{itemize}
+    \item As a result, it makes sense to concentrate efforts on the middle noise levels, where more improvements are more possible.
+    \item The paper picks a simple log-normal distribution for $p_{\mrm{train}}(\sigma)$. (In the paper, this looks like a bell curve.)
+  \end{itemize}
+
+  \item After the improvement in training, the benefit of stochastic sampling diminishes.
+  \begin{itemize}
+    \item For models trained on CIFAR-10, deterministic sampling performed better than stochastic sampling. 
+    \item However, for class-conditional ImageNet-64, stochastic sampling still beats deterministic sampling. However, only a low amount of noise injection was needed, and the authors said the level was lower then they had expected.
+    \item So, more diverse datasets might benefit more from stochastic sampling.
+  \end{itemize}
+
+  \item With all the improvements on sampling algorithm, noise schedule, conditioning, and training, the paper's ImageNet-64 model achieved SOTA FID score.
+\end{itemize}
+
+\appendix
+
+\section{Mathematical Facts and Some Derivations}
+
+\begin{itemize}
+  \item \begin{proposition} \label{thm:linear-sde-variance}
+    The solution to the initial value problem 
+    \begin{align*}
+      \frac{\dee v(t)}{\dee t} &= 2f(t)v(t) + g(t)^2 \\
+      v(0) &= 0      
+    \end{align*}
+    is
+    \begin{align*}
+      v(t) = s(t)^2 \int_0^t \frac{g(u)^2}{s(u)^2}\, \dee u
+    \end{align*}
+    where $s(t) = \exp(\int_0^t f(u)\, \dee u)$.
+  \end{proposition}
+  \begin{proof}
+    \begin{align*}
+    \frac{\dee v(t)}{\dee t} &= 2f(t)v(t) + g(t)^2 \\
+    \frac{\dee v(t)}{\dee t} - 2f(t)v(t) &= g(t)^2.
+    \end{align*}
+  \end{proof}
+  Let $s(t) = \int_0^t f(u)\, \dee u$.
+  Multiplying both sides by $s(t)^{-2} = \exp(-2\int_0^t f(u)\, \dee t)$, we have that
+  \begin{align*}
+    \exp\bigg( -2 \int_0^t f(u)\, \dee t \bigg) \frac{\dee v(t)}{\dee t}
+    - 2f(t) \exp\bigg( -2 \int_0^t f(u)\, \dee t \bigg) v(t)
+    &= \exp\bigg( -2 \int_0^t f(u)\, \dee t \bigg) g(t)^2 \\
+    \bigg\{ \exp\bigg( -2 \int_0^t f(u)\, \dee t \bigg) v(t) \bigg\}'
+    &= \exp\bigg( -2 \int_0^t f(u)\, \dee t \bigg) g(t)^2 \\
+    \bigg\{ \frac{v(t)}{s(t)^2} \bigg\}'
+    &= \frac{g(t)^2}{s(t)^2} \\
+    \frac{v(t)}{s(t)^2} - \frac{v(0)}{s(0)^2} &= \int_0^t \frac{g(u)^2}{s(u)^2}\, \dee u.
+  \end{align*}
+  Because $v(0) = 0$ and $s(0) = 1$, we have that
+  \begin{align*}
+    \frac{v(t)}{s(t)^2} &= \int_0^t \frac{g(u)^2}{s(u)^2}\, \dee u \\
+    v(t) &= s(t)^2 \int_0^t \frac{g(u)^2}{s(u)^2}\, \dee u
+  \end{align*}
+  as required.
+
+  \item We now switch gear to show that Equation~\eqref{eqn:generalized-diffusion-sde} yields the same probability distribution as Equation~\eqref{eqn:diffusion-sde}. One way to check whether the equations derived by the paper is correct or not is to see if it satisfied the Fokker--Planck equation.
+  
+  \begin{theorem}
+    Let $\{ \ve{x}(t) : t \geq 0 \}$ be a stochastic process that solves the SDE
+    \begin{align}
+      \dee\ve{x} = \ve{f}(\ve{x}, t)\, \dee t + g(t)\, \dee\ve{W}. \label{eqn:diffusion-sde}
+    \end{align}
+    Then, the probability density function $p_t(\ve{x})$ of $\ve{x}(t)$ satisfies the {\bf Fokker--Planck equation}:
+    \begin{align} \label{eqn:fokker-planck}
+      \frac{\partial p_t(\ve{x})}{\partial t}
+      = - \sum_{i=1}^d \frac{\partial}{\partial x_i}[f_i(\ve{x},t) p_t(\ve{x})] + \frac{1}{2} \sum_{i=1}^d \frac{\partial^2}{\partial x_i^2} [g(t)^2 p_t(\ve{x})].
+    \end{align}
+  \end{theorem}
+
+  \item \begin{theorem} \label{thm:generalized-diffusion-sde}
+    Let $\beta(t): \Real \rightarrow [0,\infty)$ be a non-negative function. Consider the SDE
+    \begin{align}
+      \dee\ve{x} = \underbrace{\bigg( \ve{f}(\ve{x},t) - \frac{1}{2}g(t)^2 \nabla_{\ve{x}} \log p_t(\ve{x}) \bigg)\, \dee t}_{\mathrm{probability\ flow\ ODE}} +  \bigg( \underbrace{\frac{1}{2} \beta(t) g(t)^2 \nabla_{\ve{x}} \log p_t(\ve{x})\, \dee t + \sqrt{\beta(t)} g(t)\, \dee \ve{W}}_{\mathrm{Langevin\ diffusion\ SDE}} \bigg).
+    \end{align}
+    The probability density function $p_t(\ve{x})$ of its solution $\{ \ve{x}(t): t \geq 0 \}$ satisfies the Fokker--Planck equation~\eqref{eqn:fokker-planck}.
+  \end{theorem}
+  \begin{proof}
+    Rewriting the equation above, we have that
+    \begin{align*}
+      \dee \ve{x} = \bigg( \ve{f}(\ve{x},t) - \frac{1}{2}g(t)^2 \nabla_{\ve{x}} \log p_t(\ve{x}) + \frac{1}{2} \beta(t) g(t)^2 \nabla_{\ve{x}} \log p_t(\ve{x}) \bigg)\, \dee t + \sqrt{\beta(t)} g(t)\, \dee \ve{W}.
+    \end{align*}
+    Let
+    \begin{align*}
+      \hat{\ve{f}}(\ve{x,t}) := \ve{f}(\ve{x},t) - \frac{1}{2}g(t)^2 \nabla_{\ve{x}} \log p_t(\ve{x})  + \frac{1}{2} \beta(t) g(t)^2 \nabla_{\ve{x}} \log p_t(\ve{x}).
+    \end{align*}
+    We have that
+    \begin{align*}
+      \dee \ve{x} = \hat{\ve{f}}(\ve{x},t)\, \dee t + \sqrt{\beta(t)}g(t)\, \dee \ve{W}.
+    \end{align*}
+    The probability density function $p_t(\ve{x})$ would satisfy the Fokker--Planck equation
+    \begin{align*}
+      \frac{\partial p_t(\ve{x})}{\partial t} 
+      &= - \sum_{i=1}^d \frac{\partial}{\partial x_i}[\hat{f}_i(\ve{x},t) p_t(\ve{x})] + \frac{1}{2} \sum_{i=1}^d \frac{\partial^2}{\partial x_i^2} [\beta(t) g(t)^2 p_t(\ve{x})].      
+    \end{align*}
+    Now, we have that
+    \begin{align*}
+      \hat{f}_i(\ve{x},t) = f_i(\ve{x},t) - \frac{1}{2}g(t)^2 \frac{\partial \log p_t(\ve{x})}{\partial x_i} + \frac{1}{2}\beta(t) g(t)^2 \frac{\partial \log p_t(\ve{x})}{\partial x_i}.
+    \end{align*}
+    So,
+    \begin{align*}
+      &-\sum_{i=1}^d \frac{\partial}{\partial x_i}[\hat{f}_i(\ve{x},t) p_t(\ve{x})] \\
+      &= -\sum_{i=1}^d \frac{\partial}{\partial x_i}\bigg[ \bigg( f_i(\ve{x},t) - \frac{1}{2}g(t)^2 \frac{\partial \log p_t(\ve{x})}{\partial x_i} + \frac{1}{2}\beta(t) g(t)^2 \frac{\partial \log p_t(\ve{x})}{\partial x_i} \bigg) p_t(\ve{x}) \bigg] \\
+      &= -\sum_{i=1}^d \frac{\partial}{\partial x_i}\bigg[ \bigg( f_i(\ve{x},t) - \frac{1}{2}g(t)^2 \frac{\partial \log p_t(\ve{x})}{\partial x_i}\bigg) p_t(\ve{x}) \bigg] - \frac{1}{2} \sum_{i=1}^d \frac{\partial}{\partial x_i}\bigg[ \bigg( \beta(t) g(t)^2 \frac{\partial \log p_t(\ve{x})}{\partial x_i} \bigg) p_t(\ve{x}) \bigg].
+    \end{align*}
+    Next,
+    \begin{align*}
+      \frac{1}{2} \sum_{i=1}^d \frac{\partial^2}{\partial x_i^2} [\beta(t) g(t)^2 p_t(\ve{x})]
+      &= \frac{1}{2} \sum_{i=1}^d \frac{\partial}{\partial x_i} \bigg[\beta(t) g(t)^2 \frac{\partial p_t(\ve{x})}{\partial x_i}\bigg]
+      = \frac{1}{2} \sum_{i=1}^d \frac{\partial}{\partial x_i} \bigg[ \bigg( \beta(t) g(t)^2 \frac{\partial \log p_t(\ve{x})}{\partial x_i}\bigg) p_t(\ve{x}) \bigg]
+    \end{align*}
+    Adding the two equations together, we have that
+    \begin{align*}
+      &-\sum_{i=1}^d \frac{\partial}{\partial x_i}[\hat{f}_i(\ve{x},t) p_t(\ve{x})] + \frac{1}{2} \sum_{i=1}^d \frac{\partial^2}{\partial x_i^2} [\beta(t) g(t)^2 p_t(\ve{x})] \\
+      &= -\sum_{i=1}^d \frac{\partial}{\partial x_i}\bigg[ \bigg( f_i(\ve{x},t) - \frac{1}{2}g(t)^2 \frac{\partial \log p_t(\ve{x})}{\partial x_i}\bigg) p_t(\ve{x}) \bigg] \\
+      &= -\sum_{i=1}^d \frac{\partial}{\partial x_i}\bigg[ \bigg( f_i(\ve{x},t) - \frac{1}{2}\frac{g(t)^2}{p_t(\ve{x})} \frac{\partial p_t(\ve{x})}{\partial x_i}\bigg) p_t(\ve{x}) \bigg] \\
+      &= -\sum_{i=1}^d \frac{\partial}{\partial x_i}[ f_i(\ve{x},t) p_t(\ve{x}) ] + \frac{1}{2} \sum_{i=1}^d \frac{\partial}{\partial x_i}\bigg[ g(t)^2 \frac{\partial p_t(\ve{x})}{\partial x_i} \bigg] \\
+      &= -\sum_{i=1}^d \frac{\partial}{\partial x_i}[ f_i(\ve{x},t) p_t(\ve{x}) ] + \frac{1}{2} \sum_{i=1}^d \frac{\partial^2}{\partial x_i^2}[ g(t)^2 p_t(\ve{x})].
+    \end{align*}
+    In other words,
+    \begin{align*}
+      \frac{\partial p_t(\ve{x})}{\partial t} = -\sum_{i=1}^d \frac{\partial}{\partial x_i}[ f_i(\ve{x},t) p_t(\ve{x}) ] + \frac{1}{2} \sum_{i=1}^d \frac{\partial^2}{\partial x_i^2}[ g(t)^2 p_t(\ve{x})].
+    \end{align*}
+    as required.
+  \end{proof}
+
+  \item A lot more machinery is required to show that the conditional density $p_{t|T}$ corresponding to Equation~\eqref{eqn:generalized-reverse-time-diffusion-sde} is equivalent to that corresponding to the standard equation~\eqref{eqn:diffusion-sde}. First, we need the backward Kolmogorov equation.
+  \begin{theorem}
+    Let $\{ \ve{x}(t) : t \geq 0 \}$ be a stochastic process that satisfies the SDE
+    \begin{align*}
+      \dee \ve{x} = \ve{f}(\ve{x},t)\, \dee t + g(t)\, \dee\ve{W}.
+    \end{align*}
+    Let $T > 0$. Then, for any $0 \leq t < T$, we have that the conditonal probability $p_{T|t}(\ve{x}'|\ve{x})$ satisfies the following {\bf backward Kolmogorov equation}:
+    \begin{align*}
+      -\frac{\partial p_{T|t}(\ve{x}'|\ve{x})}{\partial t}
+      = \sum_{i=1}^d f_i(\ve{x},t) \frac{\partial p_{T|t}(\ve{x}'|\ve{x})}{\partial x_i} + \frac{1}{2} g(t)^2 \sum_{i=1}^d \frac{\partial^2 p_{T|t}(\ve{x}'|\ve{x})}{\dee x_i^2}.
+    \end{align*}
+  \end{theorem}
+
+  \item \begin{theorem}
+    Let $\{ \ve{x}(t) : t \geq 0 \}$ be a stochastic solution that is the solution of the SDE
+    \begin{align*}
+      \dee \ve{x} = \ve{f}(\ve{x},t)\, \dee t + g(t)\, \dee\ve{W}.
+    \end{align*}
+    Let $T > 0$. Then, for any $0 \leq t < T$, the conditional distribution $p_{t|T}$ satisfies the {\bf reverse-time Kolmogorov equation}:
+    \begin{align*}
+      -\frac{\partial p_{t|T}(\ve{x}|\ve{x}')}{\partial t}
+      &= -\sum_{i=1}^d \frac{\partial}{\partial x_i} \bigg[ \bigg( -f_i(\ve{x},t) + g(t)^2 \frac{\partial \log p_t(\ve{x})}{\partial x_i} \bigg) p_{t|T}(\ve{x}|\ve{x}') \bigg] + \frac{1}{2} \sum_{i=1}^d \frac{\partial^2}{\partial x_i^2} \big[g(t)^2 p_{t|T}(\ve{x}|\ve{x}')\big].
+    \end{align*}    
+  \end{theorem}    
+  \begin{proof}
+    Let $0 \leq t < T$. Let
+    \begin{align*}
+      p_{t,T}(\ve{x},\ve{x}') = p(\ve{x}(t) = \ve{x} \wedge \ve{x}(T) = \ve{x}').
+    \end{align*}
+    By the definition of conditional probability, we have that
+    \begin{align*}
+      p_{t,T}(\ve{x},\ve{x}') = p_t(\ve{x}) p_{T|t}(\ve{x}'|\ve{x}).
+    \end{align*}
+    So,
+    \begin{align*}
+      &\frac{\partial p_{t,T}(\ve{x},\ve{x}')}{\partial t} \\
+      &= \frac{\partial}{\partial t}\big( p_{T|t}(\ve{x}'|\ve{x}) p_t(\ve{x}) \big) \\
+      &= \frac{\partial p_t(\ve{x})}{\partial t} p_{T|t}(\ve{x}'|\ve{x}) + p_t(\ve{x}) \frac{\partial p_{T|t}(\ve{x}'|\ve{x})}{\partial t} \\
+      &= \bigg( - \sum_{i=1}^d \frac{\partial}{\partial x_i}[f_i(\ve{x},t) p_t(\ve{x})] + \frac{1}{2} \sum_{i=1}^d \frac{\partial^2}{\partial x_i^2} [g(t)^2 p_t(\ve{x})] \bigg) p_{T|t}(\ve{x}'|\ve{x}) \\
+      &\phantom{=} \qquad p_t(\ve{x}) \bigg( -\sum_{i=1}^d f_i(\ve{x},t) \frac{\partial p_{T|t}(\ve{x}'|\ve{x})}{\partial x_i} - \frac{1}{2} g(t)^2 \sum_{i=1}^d \frac{\partial^2 p_{T|t}(\ve{x}'|\ve{x})}{\dee x_i^2} \bigg) \\
+      &= - \sum_{i=1}^d p_{T|t}(\ve{x}'|\ve{x}) \frac{\partial}{\partial x_i}[f_i(\ve{x},t) p_t(\ve{x})] + \frac{1}{2} \sum_{i=1}^d p_{T|t}(\ve{x}'|\ve{x}) \frac{\partial^2}{\partial x_i^2} [g(t)^2 p_t(\ve{x})] \\
+      &\phantom{=} \qquad -\sum_{i=1}^d [f_i(\ve{x},t) p_t(\ve{x})] \frac{\partial p_{T|t}(\ve{x}'|\ve{x})}{\partial x_i} - \frac{1}{2} g(t)^2 p_t(\ve{x}) \sum_{i=1}^d \frac{\partial^2 p_{T|t}(\ve{x}'|\ve{x})}{\dee x_i^2} \\
+      &= -\sum_{i=1}^d \frac{\partial}{\partial x_i} \big[ f_i(\ve{x},t) p_t(\ve{x}) p_{T|t}(\ve{x}'|\ve{x}) \big] \\
+      &\phantom{=} \qquad + \frac{1}{2} \sum_{i=1}^d \bigg( g(t)^2 p_{T|t}(\ve{x}'|\ve{x}) \frac{\partial^2 p_t(\ve{x})}{\partial x_i^2} \bigg) - \frac{1}{2} \sum_{i=1}^d \bigg( g(t)^2 p_t(\ve{x}) \frac{\partial^2 p_{T|t}(\ve{x}'|\ve{x})}{\partial x_i^2}  \bigg) \\
+      &= -\sum_{i=1}^d \frac{\partial}{\partial x_i} \big[ f_i(\ve{x},t) p_{t,T}(\ve{x},\ve{x}') \big] \\
+      &\phantom{=} \qquad + \frac{1}{2} \sum_{i=1}^d \bigg( g(t)^2 p_{T|t}(\ve{x}'|\ve{x}) \frac{\partial^2 p_t(\ve{x})}{\partial x_i^2} \bigg) - \frac{1}{2} \sum_{i=1}^d \bigg( g(t)^2 p_t(\ve{x}) \frac{\partial^2 p_{T|t}(\ve{x}'|\ve{x})}{\partial x_i^2}  \bigg).
+    \end{align*}
+    Now, note that
+    \begin{align*}
+      &-\frac{1}{2} \frac{\partial^2}{\partial x_i^2} \big[g(t)^2 p_{t,T}(\ve{x},\ve{x}')\big] \\
+      &= -\frac{1}{2} \frac{\partial^2}{\partial x_i^2} \big[ g(t)^2 p_t(\ve{x}) p_{T,t}(\ve{x}'|\ve{x}) \big] \\
+      &= -\frac{1}{2} g(t)^2 p_{T|t}(\ve{x}',\ve{x}) \frac{\partial^2 p_t(\ve{x})}{\partial x_i^2} 
+      - g(t)^2 \frac{\partial p_{T|t}(\ve{x}',\ve{x})}{\partial x_i} \frac{\partial p_t(\ve{x})}{\partial x_i} 
+      - \frac{1}{2} g(t)^2 p_t(\ve{x}) \frac{\partial^2 p_{T|t}(\ve{x}'|\ve{x})}{\partial x_i^2}.
+    \end{align*}
+    So,
+    \begin{align*}
+      & \frac{1}{2} g(t)^2 p_{T|t}(\ve{x}',\ve{x}) \frac{\partial^2 p_t(\ve{x})}{\partial x_i^2} - \frac{1}{2} g(t)^2 p_t(\ve{x}) \frac{\partial^2 p_{T|t}(\ve{x}'|\ve{x})}{\partial x_i^2} \\
+      &= -\frac{1}{2} \frac{\partial^2}{\partial x_i^2} \big[g(t)^2 p_{t,T}(\ve{x},\ve{x}')\big] 
+      + g(t)^2 \frac{\partial p_{T|t}(\ve{x}',\ve{x})}{\partial x_i} \frac{\partial p_t(\ve{x})}{\partial x_i} 
+      + g(t)^2 p_{T|t}(\ve{x}',\ve{x}) \frac{\partial^2 p_t(\ve{x})}{\partial x_i^2} \\ 
+      &= -\frac{1}{2} \frac{\partial^2}{\partial x_i^2} \big[g(t)^2 p_{t,T}(\ve{x},\ve{x}')\big] + \frac{\partial}{\partial x_i} \bigg[ g(t)^2 p_{T|t}(\ve{x}'|\ve{x}) \frac{\partial p_t(\ve{x})}{\partial x_i} \bigg].
+    \end{align*}
+    As a result,
+    \begin{align*}
+      \frac{\partial p_{t,T}(\ve{x},\ve{x}')}{\partial t}
+      &= -\sum_{i=1}^d \frac{\partial}{\partial x_i} \big[ f_i(\ve{x},t) p_{t,T}(\ve{x},\ve{x}') \big] 
+      - \frac{1}{2} \sum_{i=1}^d \frac{\partial^2}{\partial x_i^2} \big[g(t)^2 p_{t,T}(\ve{x},\ve{x}')\big] 
+      + \sum_{i=1}^d \frac{\partial}{\partial x_i} \bigg[ g(t)^2 p_{T|t}(\ve{x}'|\ve{x}) \frac{\partial p_{T}(\ve{x})}{\partial x_i} \bigg] \\      
+      &= -\sum_{i=1}^d \frac{\partial}{\partial x_i} \big[ f_i(\ve{x},t) p_{t,T}(\ve{x},\ve{x}') \big] 
+      - \frac{1}{2} \sum_{i=1}^d \frac{\partial^2}{\partial x_i^2} \big[g(t)^2 p_{t,T}(\ve{x},\ve{x}')\big] 
+      + \sum_{i=1}^d \frac{\partial}{\partial x_i} \bigg[ g(t)^2 p_{t,T}(\ve{x},\ve{x}') \frac{\partial \log p_{T}(\ve{x})}{\partial x_i} \bigg] \\
+      &= -\sum_{i=1}^d \frac{\partial}{\partial x_i} \bigg[ \bigg( f_i(\ve{x},t) - g(t)^2 \frac{\partial \log p_t(\ve{x})}{\partial x_i} \bigg) p_{t,T}(\ve{x},\ve{x}') \bigg] - \frac{1}{2} \sum_{i=1}^d \frac{\partial^2}{\partial x_i^2} \big[g(t)^2 p_{t,T}(\ve{x},\ve{x}')\big].
+    \end{align*}
+    Deviding both sizes by $p_{T}(\ve{x}')$, we have that
+    \begin{align*}
+      \frac{\partial p_{t|T}(\ve{x}|\ve{x}')}{\partial t}
+      &= -\sum_{i=1}^d \frac{\partial}{\partial x_i} \bigg[ \bigg( f_i(\ve{x},t) - g(t)^2 \frac{\partial \log p_t(\ve{x})}{\partial x_i} \bigg) p_{t|T}(\ve{x}|\ve{x}') \bigg] - \frac{1}{2} \sum_{i=1}^d \frac{\partial^2}{\partial x_i^2} \big[g(t)^2 p_{t|T}(\ve{x}|\ve{x}')\big] \\
+      -\frac{\partial p_{t|T}(\ve{x}|\ve{x}')}{\partial t}
+      &= \sum_{i=1}^d \frac{\partial}{\partial x_i} \bigg[ \bigg( f_i(\ve{x},t) - g(t)^2 \frac{\partial \log p_t(\ve{x})}{\partial x_i} \bigg) p_{t|T}(\ve{x}|\ve{x}') \bigg] + \frac{1}{2} \sum_{i=1}^d \frac{\partial^2}{\partial x_i^2} \big[g(t)^2 p_{t|T}(\ve{x}|\ve{x}')\big] \\
+      -\frac{\partial p_{t|T}(\ve{x}|\ve{x}')}{\partial t}
+      &= -\sum_{i=1}^d \frac{\partial}{\partial x_i} \bigg[ \bigg( - f_i(\ve{x},t) + g(t)^2 \frac{\partial \log p_t(\ve{x})}{\partial x_i} \bigg) p_{t|T}(\ve{x}|\ve{x}') \bigg] + \frac{1}{2} \sum_{i=1}^d \frac{\partial^2}{\partial x_i^2} \big[g(t)^2 p_{t|T}(\ve{x}|\ve{x}')\big].
+    \end{align*}    
+    We are done.
+  \end{proof}
+
+  \item \begin{theorem}
+    Let $\{ \ve{x}(t) : t \geq 0 \}$ be the solution to the SDE
+    \begin{align*}
+      \dee\ve{x} = \big( \ve{f}(\ve{x},t) - g(t)^2 \nabla_{\ve{x}} \log p_t(\ve{x}) \big)\, \dee t + g(t)\, \dee \overline{\ve{W}}
+    \end{align*}
+    where $\overline{\ve{W}}$ is the Brownian motion that runs backward in time. Then, the probability density $p_t(\ve{x})$ of $\ve{x}(t)$ agrees with the probability distribution of the solution of
+    \begin{align*}
+      \dee\ve{x} = \ve{f}(\ve{x}, t)\, \dee t + g(t)\, \dee\ve{W}.
+    \end{align*}
+  \end{theorem}
+  
+  \begin{proof} (Not at all rigourous...)
+    Marginalizing over $\ve{x}(T)$, the reverse-time Kolmogorov equation becomes
+    \begin{align*}
+      -\frac{\partial p_{t}(\ve{x})}{\partial t}
+      &= - \sum_{i=1}^d \frac{\partial}{\partial x_i} \bigg[ \bigg( -f_i(\ve{x},t) + g(t)^2 \frac{\partial \log p_t(\ve{x})}{\partial x_i} \bigg) p_{t}(\ve{x}) \bigg] + \frac{1}{2} \sum_{i=1}^d \frac{\partial^2}{\partial x_i^2} \big[g(t)^2 p_{t}(\ve{x})\big].
+    \end{align*}
+    We now make a substitution $t \rightarrow \tau$ with $\tau = T-t$. We have that
+    \begin{align*}
+      \frac{\partial p_{\tau}(\ve{x})}{\partial \tau}
+      &= - \sum_{i=1}^d \frac{\partial}{\partial x_i} \bigg[ \bigg( -f_i(\ve{x},\tau) + g(\tau)^2 \frac{\partial \log p_\tau(\ve{x})}{\partial x_i} \bigg) p_{\tau}(\ve{x}) \bigg] + \frac{1}{2} \sum_{i=1}^d \frac{\partial^2}{\partial x_i^2} \big[g(\tau)^2 p_{\tau}(\ve{x})\big].
+    \end{align*}
+    The above equation is the Fokker--Planck equation of the SDE
+    \begin{align*}
+      \dee \ve{x} = \Big( -\ve{f}(\ve{x},\tau) + g(\tau)^2 \nabla_{\ve{x}} \log p_\tau(\ve{x}) \Big)\, \dee\tau + g(\tau)\, \dee \overline{\ve{W}}.
+    \end{align*}
+    Making a substution $\tau \rightarrow t$ again, we have that
+    \begin{align*}
+      \dee \ve{x} = \Big( \ve{f}(\ve{x},t) - g(t)^2 \nabla_{\ve{x}} \log p_t(\ve{x}) \Big)\, \dee t + g(t)\, \dee \overline{\ve{W}}.
+    \end{align*}
+    Since $p_t(\ve{x})$ satisfies the reverse-time Kolmogorov equation, it also satisfies the Fokker--Planck equation, which means that it agrees with the probability density of the solution of $\dee\ve{x} = \ve{f}(\ve{x},t)\, \dee t + g(t)\, \dee\ve{W}$.
+  \end{proof}  
+\end{itemize}
+
+\bibliographystyle{alpha}
+\bibliography{ddpm-karras}  
+\end{document}

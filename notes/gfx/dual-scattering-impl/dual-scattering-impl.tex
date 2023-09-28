@@ -1,0 +1,399 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{mathrsfs}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+\usepackage{verbatim}
+\usepackage{hyperref}
+\usepackage{color}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\Dee}{\mathrm{D}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\Var}{\mathrm{Var}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+\newcommand{\ov}[1]{\overline{#1}}
+
+\title{Dual Scattering Implementation}
+\author{Pramook Khungurn}
+
+\begin{document}
+  \maketitle
+
+  This document is written as I try to implement the dual scattering algorithm \cite{Zinke:2008} and coupling it with the fiber scattering function defined in \cite{Khungurn:2015}.  To do so, I will consult the implementation note from Walt Disney Animation Studios \cite{Sadeghi:2010}.
+
+  \section{Dual Scattering}
+
+  Dual scattering converts the incoming direct radiance field $L_d$ into an approximate muliply-scattered radiance field $L_i$.  This is done using the \emph{multiple scattering function} $\Psi$:
+  \begin{align*}
+  	L_i(x, \omega_i) = \int_{S^2} \Psi(x, \omega_d, \omega_i) L_d(x, \omega_d)\ \dee \omega_d.
+  \end{align*}
+
+  When shading a point, we compute:
+  \begin{align*}
+  	L_o(x,\omega_o) 
+  	&= \int_{S^2} L_i(x, \omega_i) f_s(\omega_i, \omega_o) \cos \theta_i\ \dee \omega_i \\
+  	&= \int_{S^2} \bigg( \int_{S^2} \Psi(x, \omega_d, \omega_i) L_d(x, \omega_d)\ \dee\omega_d \bigg) f_s(\omega_i, \omega_o) \cos \theta_i\ \dee \omega_i \\
+  	&= \int_{S^2} \bigg( \int_{S^2} \Psi(x, \omega_d, \omega_i)  f_s(\omega_i, \omega_o) \cos \theta_i\ \dee \omega_i\bigg) L_d(x, \omega_d)\ \dee \omega_d.
+  \end{align*}
+  When estimating the above integral (such as when implementing the \texttt{Li} method of an \texttt{Integrator}), we sample $\omega_d$ by emitter sampling and compute:
+  \begin{align}
+  	L_o(x,\omega_o) 
+  	\approx \bigg( \int_{S^2} \Psi(x, \omega_d, \omega_i) f_s(\omega_i, \omega_o) \cos \theta_i\ \dee \omega_i\bigg) \frac{L_d(x, \omega_d)}{p_{\mathrm{emitter}}(\omega_d)} \label{Li-expression}.
+  \end{align}
+  The main task of the algorithm then is to evaluate the integral in the RHS.
+
+  The multiple scattering function consists of two terms, the \emph{global multiple scattering function} $\Psi^G$ and the \emph{local multiple scattering function} $\Psi^L$.
+  \begin{align*}
+  	\Psi(x, \omega_d, \omega_i) = \Psi^G(x,\omega_d,\omega_i) (1+ \Psi^L(x, \omega_d, \omega_i)).
+  \end{align*}
+  The local multiple scattering function is not defined directly.  It is defined in combination with the fiber scattering function $f_s(\omega_i, \omega_o)$:
+  \begin{align*}
+  	\Psi^L(x,\omega_d, \omega_i) f_s(\omega_i, \omega_o) = d_b f_{\mathrm{back}}(\omega_i, \omega_o).
+  \end{align*}
+  where $d_b$ is a constant, which is set to $0.7$ in the paper.  With this, we can rewrite the integral in \eqref{Li-expression} as:
+  \begin{align*}
+  	& \int_{S^2} \Psi(x, \omega_d, \omega_i) f_s(\omega_i, \omega_o) \cos \theta_i\ \dee \omega_i \\
+  	&= \int_{S^2} \Psi^G(x, \omega_d, \omega_i)(1 + \Phi^L(x,\omega_d,\omega_i)) f_s(\omega_i, \omega_o) \cos\theta_i\ \dee \omega_i \\
+  	&= \int_{S^2} \Psi^G(x, \omega_d, \omega_i)f_s(\omega_i, \omega_o)\cos\theta_i\ \dee\omega_i + \int_{S^2} \Psi^G(x, \omega_d, \omega_i) \Phi^L(x,\omega_d,\omega_i) f_s(\omega_i, \omega_o) \cos\theta_i\ \dee \omega_i \\
+  	&= \int_{S^2} \Psi^G(x, \omega_d, \omega_i)f_s(\omega_i, \omega_o)\cos\theta_i\ \dee\omega_i + d_b \int_{S^2} \Psi^G(x, \omega_d, \omega_i) f_{\mathrm{back}}(\omega_i, \omega_o) \cos\theta_i\ \dee \omega_i \\
+  	&= F^G(x,\omega_d, \omega_o) + d_b F^L(x,\omega_d,\omega_o).
+  \end{align*}
+  We shall call $F^G$ the \emph{global term} and $F^L$ the \emph{local term}.  The main focus of this document deals with the computation of these terms.
+
+  \section{The Fiber Scattering Model}
+
+  In \cite{Khungurn:2015}, we proposed a fiber scattering with two modes:
+  \begin{align*}
+  	f_s(\omega_i, \omega_o) = f_R(\omega_i, \omega_o) + f_{TT}(\omega_i, \omega_o)
+  \end{align*}
+  where each mode is seperable into the \emph{longitudinal scattering function (LSF)} $M$ and the \emph{azimuthal scattering function (ASF)} $N$:
+  \begin{align*}
+  	f_R(\omega_i, \omega_o) &= M_R(\theta_i, \theta_o) N_R(\phi_i, \phi_o) \\
+  	f_{TT}(\omega_i, \omega_o) &= M_{TT}(\theta_i, \theta_o) N_{TT}(\phi_i, \phi_o).
+  \end{align*}
+  We note that both $f_R$ and $f_{TT}$ are colored.  We, however, will think of $N_R$ and $N_{TT}$ as probability distribution on $[0,2\pi)$, which is the domain of the azimuthal angle.  This implies that $M_R$ and $M_{TT}$ must be colored.
+
+  The LSFs are defined as a normalized gaussian times a color, which varies according to the incoming longitudinal angle $\theta_i$:
+  \begin{align*}
+  	M_R(\theta_i, \theta_o) &= \mathscr{F}_R(\theta_i)\ \bar{g}(\theta_o; -\theta_i, \beta_R) \\
+  	M_{TT}(\theta_i, \theta_o) &= (1 - \mathscr{F}_R(\theta_i))\ C_{TT}\ \bar{g}(\theta_o; -\theta_i, \beta_{TT})
+  \end{align*}
+  where $\mathscr{F}_R$ is the Schlick's approximation of the Fresnel factor
+  \begin{align*}
+  	\mathscr{F}_R(\theta_i) = C_R + (1-C_R)(1 - \cos\theta_i)^5,
+  \end{align*}
+  and $C_R$, $\beta_R$, $C_{TT}$, and $\beta_{TT}$ are all model parameters.  Note that $C_R$ and $C_{TT}$ are colors while $\beta_R$ and $\beta_{TT}$ are scalars.  The normalized Gaussian function $\bar{g}$ is defined on the domain $(-\pi/2,\pi/2)$ as:
+  \begin{align*}
+  	\bar{g}(x; \mu, \sigma) = \frac{g(x; \mu, \sigma)}{G(\mu,\sigma)}
+  \end{align*}
+  with
+  \begin{align*}
+  	G(\mu,\sigma) = \int_{-\pi/2}^{\pi/2} g(x; \mu, \sigma) Q(x)\ \dee x
+  \end{align*}
+  where $Q(x)$ is a polynomial that approximates $\cos^2 \theta x$ from above, and $g(x;\mu,\sigma)$ is the Gaussian function with mean $\mu$ and standard deviation $\sigma$.
+
+  For reference purpose, we shall expand the LSF a little bit:
+  \begin{align*}
+  	M_R(\theta_i, \theta_o) &= \mathscr{F}_R(\theta_i)\ \frac{g(\theta_o; -\theta_i, \beta_R)}{G(-\theta_i, \beta_R)} \\
+  	M_{TT}(\theta_i, \theta_o) &= (1 - \mathscr{F}_R(\theta_i))\ C_{TT}\ \frac{g(\theta_o; -\theta_i, \beta_{TT})}{G(-\theta_i, \beta_{TT})}.
+  \end{align*}
+
+  On to the ASFs, we define:
+  \begin{align*}
+  	N_R(\phi_i, \phi_o) &= \frac{1}{2\pi} \\
+  	N_{TT}(\phi_i, \phi_o) &= v(\phi_o; \phi_i + \pi, \gamma_{TT})
+  \end{align*}
+  where $v$ is the Von Mises distribution, and $\gamma_{TT}$ is a model parameters.
+
+  \section{The Global Multiple Scattering Function}
+
+  There are two cases for the global scattering function.  If the ray from $x$ in direction $\omega_d$ is not occluded by other fibers, then $\Psi^G(x, \omega_d, \omega_i)$ is the delta function $\delta(\omega_d - \omega_i)$.
+
+  Otherwise, the global scattering function $\Psi^G(x, \omega_d, \omega_i)$ is defined as:
+  \begin{align*}
+  	\Psi^G(x, \omega_d, \omega_i) &= T_f(x, \omega_d) S_f(x, \omega_d, \omega_i)
+  \end{align*}
+  where $T_f$ is the \emph{forward scattering transmittance function}, and $S_f$ is the \emph{forward scattering spread function}.
+
+  \subsection{Forward Scattering Transmittance Function} \label{forward-transmittance}
+  The forward scattering transmittance function is defined as:
+  \begin{align*}
+  	T_f(x,\omega_d) = d_f \prod_{k=1}^n \bar{a}_f (\theta_d^k)
+  \end{align*}
+  where $d_f$ is a constant which is set to $0.7$ in the paper, and $\bar{a}_f$ is the \emph{average attenuation function}, and $\theta_d^k$ is the inclination angle at the $k$th fiber along the ray from $x$ in the direction of $\omega_d$.  The $\bar{a}_f$ is defined as:
+  \begin{align*}
+  	\bar{a}_f(\theta_d) 
+  	&= \frac{1}{\pi} \int_{\textcolor{red}{0}}^{\textcolor{red}{\pi}} \int_{\Omega_f} f_s((\theta_d,\phi_d), \omega) \textcolor{red}{\cos\theta}\ \dee \omega\dee \phi_d \\
+  	&= \frac{1}{\pi} \int_{0}^{\pi}\bigg( \int_{\Omega_f} f_s((\theta_d,\phi_d), \omega)\cos\theta\ \dee \omega  \bigg)\ \dee \phi_d.
+  \end{align*}
+  Here, $\omega_f$ is the forward scattering hemisphere (i.e., the bottom hemisphere, which is the directions where $\phi \in (\pi, 2\pi)$).  The rationale for the above function is that it averages outgoing irradiance over the forward scattering hemisphere due to uniform coming radiance from backward directions with longitudinal $\theta_d$.
+
+  We note that there are a number of differences between our formulation of $\bar{a}_f$ and the one in the original paper.  (These differences are highlighted in red.) First, the integral on $\phi$ has range $(0,\pi)$ instead of $(-\pi/2, \pi/2)$.  This might be because we think of the light as coming from the top instead of the right as might be meant in the paper.  Second, we think, without the $\cos \theta$ factor, the calculation in the paper does not make sense.  This is because the integral value can exceed $1$ even the scattering function $f_s$ is energy conserving.
+
+  With this corrected definition in mind, we can compute the average attentuation of our scattering function.  We start with the inner integral:
+  \begin{align*}
+  	& \int_{\Omega_f} f_s((\theta_d,\phi_d), \omega)\cos\theta\ \dee \omega \\
+  	&= \int_{\Omega_f} f_R((\theta_d,\phi_d), \omega)\cos\theta\ \dee \omega
+  	+ \int_{\Omega_f} f_{TT}((\theta_d,\phi_d), \omega)\cos\theta\ \dee \omega \\
+  	&= \int_{\pi}^{2\pi} \int_{-\pi/2}^{\pi/2} M_R(\theta_d, \theta) N_R(\phi_d, \phi) \cos^2 \theta\ \dee \theta\dee\phi
+  	+ \int_{\pi}^{2\pi} \int_{-\pi/2}^{\pi/2} M_{TT}(\theta_d, \theta) N_{TT}(\phi_d, \phi) \cos^2 \theta\ \dee\theta\dee\phi\\
+  	&= \bigg( \int_{-\pi/2}^{\pi/2} M_{R}(\theta_d, \theta) \cos^2 \theta\ \dee\theta \bigg) \bigg( \int_{\pi}^{2\pi} N_{R}(\phi_d,\phi)\ \dee\phi \bigg)\\
+  	&\phantom{\ =} + \bigg( \int_{-\pi/2}^{\pi/2} M_{TT}(\theta_d, \theta) \cos^2 \theta\ \dee\theta \bigg) \bigg( \int_{\pi}^{2\pi} N_{TT}(\phi_d,\phi)\ \dee\phi \bigg).  
+  \end{align*}
+  Now, by the definition of the normalized Gaussian function, we have that
+  \begin{align*}
+  	\int_{-\pi/2}^{\pi/2} \frac{\bar{g}(x;\mu,\sigma)}{G(\mu,\sigma)} \cos^2 x\ \dee x \approx 1.
+  \end{align*}
+  So,
+  \begin{align*}
+  	\int_{-\pi/2}^{\pi/2} M_{R}(\theta_d, \theta) \cos^2 \theta\ \dee\theta
+  	&= \mathscr{F}_R(\theta_d) \int_{-\pi/2}^{\pi/2} \frac{\bar{g}(\theta;-\theta_d,\beta_R)}{G(-\theta_d,\beta_R)} \cos^2 \theta\ \dee \theta
+  	\approx \mathscr{F}_R(\theta_d)\\
+  	\int_{-\pi/2}^{\pi/2} M_{TT}(\theta_d, \theta) \cos^2 \theta\ \dee\theta
+  	&= (1-\mathscr{F}_R(\theta_d)) C_{TT} \int_{-\pi/2}^{\pi/2} \frac{\bar{g}(\theta;-\theta_d,\beta_{TT})}{G(-\theta_d,\beta_{TT})} \cos^2 \theta\ \dee \theta
+  	\approx (1-\mathscr{F}_R(\theta_d)) C_{TT}.
+  \end{align*}
+  Thus, we have that:
+  \begin{align*}
+  	& \int_{\Omega_f} f_s((\theta_d,\phi_d), \omega)\cos\theta\ \dee \omega \\
+  	&\approx \mathscr{F}_R(\theta_d) \bigg( \int_{\pi}^{2\pi} N_{R}(\phi_d,\phi)\ \dee\phi \bigg) + 
+  	(1-\mathscr{F}_R(\theta_d))C_{TT} \bigg( \int_{\pi}^{2\pi} N_{TT}(\phi_d,\phi)\ \dee\phi \bigg) \\
+  	&= \frac{\mathscr{F}_R(\theta_d)}{2} + 
+  	(1-\mathscr{F}_R(\theta_d))C_{TT} \bigg( \int_{\pi}^{2\pi} N_{TT}(\phi_d,\phi)\ \dee\phi \bigg)
+  \end{align*}
+  The average attenuation then is given by:
+  \begin{align*}
+  	\bar{a}_f(\theta_d) 
+  	&= \frac{1}{\pi} \int_{0}^{\pi}\bigg( \int_{\Omega_f} f_s((\theta_d,\phi_d), \omega)\cos\theta\ \dee \omega  \bigg)\ \dee \phi_d \\
+  	&= \frac{1}{\pi} \int_{0}^\pi \bigg( \frac{\mathscr{F}_R(\theta_d)}{2} + 
+  	(1-\mathscr{F}_R(\theta_d))C_{TT} \bigg( \int_{\pi}^{2\pi} N_{TT}(\phi_d,\phi)\ \dee\phi \bigg) \bigg)\ \dee \phi_d \\
+  	&= \frac{1}{\pi} \int_{0}^\pi \bigg( \frac{\mathscr{F}_R(\theta_d)}{2} + 
+  	(1-\mathscr{F}_R(\theta_d))C_{TT} \bigg( \int_{\pi}^{2\pi} N_{TT}(\phi_d,\phi)\ \dee\phi \bigg) \bigg)\ \dee \phi_d \\
+  	&= \frac{\mathscr{F}_R(\theta_d)}{2} + \frac{(1-\mathscr{F}_R(\theta_d))C_{TT}}{\pi} \int_{0}^\pi\int_{\pi}^{2\pi} N_{TT}(\phi_d,\phi)\ \dee\phi\dee\phi_d.
+  \end{align*}
+  The last double integral can be precomputed.  I will use Gaussian quadrature for that.
+
+  \subsection{Forward Scattering Spread Function}
+  The spread function approximates the angular distribution of the front scatttered light.  I found that there are many things wrong with the formulation in the original paper:
+  \begin{enumerate}
+  	\item Since it accounts for angular distribution, the function should be a \emph{probability distribution on the sphere}.  This means that
+  	\begin{align*}
+  		\int_{S^2} S_f(x,\omega_d, \omega_i)\ \dee\omega_i = \int_{0}^{2\pi} \int_{-\pi/2}^{\pi/2} S_f(x, \omega_d, \omega_i) \cos\theta_i\ \dee\theta_i \dee\phi_i =  1.
+  	\end{align*}
+  	However, both the original paper and \cite{Sadeghi:2010} define $S_f$ as a fraction with $\cos\theta_d$ in the denominator.  This makes the function loses energy, which might be okay, but I will not follow that approach.
+
+  	\item The distribution is on the \emph{incoming directions}, yet the original paper insists the function is non-zero on the ``front'' hemisphere.  However, it should be the back hemisphere that gets the energy.
+
+  	\item The original paper says the longitudinal lobe should be be centered around $\theta_i = -\theta_d$.  However, with the same logic as in the last item, it should be centered around $\theta_i = \theta_d$ instead.
+  \end{enumerate}
+  As such, we define the spread function as:
+  \begin{align*}
+  	S_f(x,\omega_d, \omega_i) = \frac{\tilde{s}_f(\phi_d, \phi_i)}{\cos \theta_i} \tilde{g}(\theta_i; \theta_d, \sigma_f(x,\omega_d))
+  \end{align*}
+  where
+  \begin{align*}
+  	\tilde{s}_f(\phi_d, \phi_i) = \begin{cases}
+  		1/\pi, & \phi_d - \pi/2 \leq \phi_i \leq \phi_d + \pi/2 \\
+  		0, & \mathrm{otherwise}
+  	\end{cases},
+  \end{align*}
+  and $\tilde{g}$ is the following normalized Gaussian function:
+  \begin{align*}
+  	\tilde{g}(x;\mu,\sigma) 
+  	= \frac{g(x;\mu,\sigma)}{\int_{-\pi/2}^{\pi/2} g(x;\mu,\sigma)\ \dee x}
+  	&= \frac{g(x;\mu,\sigma)}{\tilde{G}(\mu,\sigma)}.
+  \end{align*}  
+  %In practice, we will compute $\tilde{G}$ by approximating $\cos x$ the following polynomial:
+  %\begin{align*}
+  %	\cos x \approx 1.000576695200666  -0.496875117143304x^2 + 0.037238270992241x^4.
+  %\end{align*}
+
+  The standard deviation $\sigma_f(x,\omega_d)$ is computed by summing up the variances of the TT modes of the fibers encountered along the ray from $x$ in the direction $\omega_d$.  Supposing that all fibers have the same BCSDF, we have that:
+  \begin{align*}
+  	\sigma_f(x,\omega_d) = \sqrt{n \beta_{TT}^2}
+  \end{align*}
+  where $n$ is the number of fibers on the ray.
+
+  \section{Global Term}
+  We now turn our attention of the global term $F^G(x,\omega_d, \omega_o)$.  We have that
+  \begin{align*}
+  	F^G(x,\omega_d, \omega_o) 
+  	&= \int_{S^2} \Psi^G(x,\omega_d,\omega_i) f_s(\omega_i,\omega_o) \cos\theta_i\ \dee\omega_i \\
+  	&= T_f(x,\omega_d) \int_{S^2} \frac{\tilde{s}_f(\phi_d, \phi_i)}{\cos\theta_i} \tilde{g}(\theta_i; \theta_d, \sigma_f) f_s(\omega_i,\omega_o) \cos\theta_i\ \dee\omega_i\\
+  	&= T_f(x,\omega_d) \int_{S^2} \tilde{s}_f(\phi_d, \phi_i) \tilde{g}(\theta_i; \theta_d, \sigma_f) [ f_R(\omega_i,\omega_o) + f_{TT}(\omega_i,\omega_o) ]\ \dee\omega_i\\
+  	&= T_f(x,\omega_d) \bigg[ \int_{S^2} \tilde{s}_f(\phi_d, \phi_i) \tilde{g}(\theta_i; \theta_d, \sigma_f) f_R(\omega_i,\omega_o)\ \dee\omega_i + \int_{S^2} \tilde{s}_f(\phi_d, \phi_i) \tilde{g}(\theta_i; \theta_d, \sigma_f) f_{TT}(\omega_i,\omega_o) \ \dee\omega_i\bigg]
+  \end{align*}
+
+  We deal with the integral involving $f_R$ first.
+  \begin{align*}
+  	& \int_{S^2} \tilde{s}_f(\phi_d, \phi_i) \tilde{g}(\theta_i; \theta_d, \sigma_f) f_R(\omega_i,\omega_o)\dee\omega_i \\
+  	&= \int_{0}^{2\pi} \int_{-\pi/2}^{\pi/2} \tilde{s}_f(\phi_d, \phi_i) \frac{g(\theta_i; \theta_d, \sigma_f)}{\tilde{G}(\theta_d, \sigma_f)} \frac{M_R(\theta_i,\theta_o)}{2\pi} \cos\theta_i\ \dee\theta_i \dee\phi_i \\
+  	&= \frac{1}{2\pi} \bigg( \int_{0}^{2\pi} \tilde{s}_f(\phi_d,\phi_i)\ \dee\phi_i \bigg)
+  	\frac{1}{\tilde{G}(\theta_d,\sigma_f)} \bigg( \int_{-\pi/2}^{\pi/2}  g(\theta_i; \theta_d, \sigma_f) M_R(\theta_i,\theta_o) \cos\theta_i\ \dee\theta_i \bigg) \\
+  	&= \frac{1}{2\pi \tilde{G}(\theta_d, \sigma_f)} \int_{-\pi/2}^{\pi/2} g(\theta_i; \theta_d, \sigma_f)M_R(\theta_i, \theta_o)\cos\theta_i\ \dee\theta_i.
+  \end{align*}
+  I will compute the last integral by Gaussian quadrature.
+
+  For the integral involing $f_{TT}$, we have that:
+  \begin{align*}
+  	& \int_{S^2} \tilde{s}_f(\phi_d, \phi_i) \tilde{g}(\theta_i; \theta_d, \sigma_f) f_{TT}(\omega_i,\omega_o)\ \dee\omega_i \\
+  	&= \frac{1}{\tilde{G}(\theta_d,\sigma_f)} \bigg( \int_{0}^{2\pi} \tilde{s}(\phi_d, \phi_i) N_{TT}(\phi_i,\phi_o)\ \dee\phi_i \bigg) \bigg( \int_{-\pi/2}^{\pi/2} g(\theta_i; \theta_d, \sigma_f)M_{TT}(\theta_i, \theta_o)\cos\theta_i\ \dee\theta_i \bigg) \\
+  	&= \frac{1}{\tilde{G}(\theta_d,\sigma_f)} \bigg( \frac{1}{\pi} \int_{\phi_d - \pi/2}^{\phi_d + \pi/2} N_{TT}(\phi_i,\phi_o)\ \dee\phi_i \bigg) \bigg( \int_{-\pi/2}^{\pi/2} g(\theta_i; \theta_d, \sigma_f)M_{TT}(\theta_i, \theta_o)\cos\theta_i\ \dee\theta_i \bigg).
+  \end{align*}
+  Again, the two integrals can be evaluated with Gaussian quadrature.
+
+  \section{$f_{\mathrm{back}}$}
+  The function $f_{\mathrm{back}}$ has the same type as the BCSDF.  So, it should be energy conserving, meaning that:
+  \begin{align*}
+  	\int_{S^2} f_{\mathrm{back}}(\omega_i,\omega_o) \cos\theta_o\ \dee\omega_o
+  	&= \int_{0}^{2\pi} \int_{-\pi/2}^{\pi/2} f_{\mathrm{back}}(\omega_i,\omega_o) \cos^2\theta_o\ \dee\theta_o \dee\phi_o
+  	\leq 1.
+  \end{align*}
+  The way the paper defines the function eventually has $\cos^2 \frac{\theta_o - \theta_i}{2}$ in the denominator, but I'm not so sure whether all of that is sensible.  Instead, I'm redefining it as:
+  \begin{align*}
+  	f_{\mathrm{back}}(\omega_i, \omega_o)
+  	&= \bar{A}_b(\theta_i) \bar{S}_b(\omega_i, \omega_o)
+  \end{align*}
+  where $\bar{A}_b(\theta_i)$ is the \emph{average backscattering attenuation}, and $\bar{S}_b(\omega_i, \omega_o)$ is the {average backscattering spread}, which has the same type as a BCSDF.
+
+  \subsection{Average Backscattering Attentuation}
+
+  The average backscattering attenuation is a function on the incoming longitudinal angle $\theta_i$.  It arises from the hand calculation of scattering in a simplified world where there is an infinite array of parallel fibers arranged in a plane.  The function is the sum of two terms:
+  \begin{align*}
+  	\bar{A}_b(\theta_i) = \bar{A}_1(\theta_i) + \bar{A}_3(\theta_i)
+  \end{align*}
+  where
+  \begin{itemize}
+  	\item $\bar{A}_1(\theta_i)$ describes the fraction of light that survived the interaction with the parallel fibers in light paths that involves one backscattering, and
+  	\item $\bar{A}_3(\theta_i)$ describes the fraction of light that survived the interaction with the parallel fibers in light paths that involves three backscattering.
+  \end{itemize}
+  By calculation, we have that
+  \begin{align*}
+  	\bar{A}_1(\theta_i) &= \frac{\bar{a}_b(\theta_i) \bar{a}^2_f(\theta_i)}{1 - \bar{a}_f^2(\theta_i)} \\
+  	\bar{A}_3(\theta_i) &= \frac{\bar{a}_b^3(\theta_i) \bar{a}_f^2(\theta_i)}{(1 - \bar{a}_f^2(\theta_i))^3}
+  \end{align*}  
+
+  The forward average attenuation $\bar{a}_f$ was defined and calculated in Section~\ref{forward-transmittance}.  The \emph{backward average attenuation} $\bar{a}_b$ is defined as:
+  \begin{align*}
+  	\bar{a}_b(\theta_i) 
+  	&= \frac{1}{\pi} \int_{0}^\pi \int_{\Omega_b} f_s((\theta_i, \phi_i), \omega) \cos\theta_i \cos\theta\ \dee\omega\dee\phi_i \\
+  	&= \frac{1}{\pi} \int_{0}^\pi \bigg( \int_{\Omega_b} f_s((\theta_i,\phi_i), \omega)\cos\theta\ \dee\omega \bigg)\ \dee\phi_i.
+  \end{align*}
+  Here, $\Omega_b$ is the backward scattering hemisphere, i.e., those directions with $\phi \in (0,\pi)$.
+
+  With the calculation we did in Section~\ref{forward-transmittance}, we can say that:
+  \begin{align*}
+  	\bar{a}_b(\theta_i) = \frac{\mathscr{F}_R(\theta_i)}{2} + \frac{(1 - \mathscr{F}_R(\theta_i))C_{TT}}{\pi} \int_{0}^\pi \int_0^\pi N_{TT}(\phi_i, \phi)\ \dee\phi \dee\phi_i.
+  \end{align*}
+
+  \subsection{Average Backscattering Spread}
+  Since the average backscattering spread is supposed to be a BCSDF, I define it to be:
+  \begin{align*}
+  	\bar{S}_b(\omega_i, \omega_o) = \tilde{s}_b(\phi_i,\phi_o) \bar{g}(\theta_o; -\theta_i, \bar{\sigma}_b(\theta_i)).
+  \end{align*}
+  Here,
+  \begin{align*}
+  	\tilde{s}_b(\phi_i, \phi_o)
+  	&= \begin{cases}
+  		1/\pi, & \phi_i - \pi/2 \leq \phi_o \leq \phi_i + \pi/2 \\
+  		0, & \mathrm{otherwise}
+  	\end{cases}.
+  \end{align*}
+  The $\bar{g}$ function is the normalized Gaussian function used to define our BCSDF.  The standard deviation $\bar{\sigma}_b(\theta_i)$ is given by:
+  \begin{align*}
+  	\bar{\sigma}_b(\theta_i) \approx (1 + 0.7\bar{a}_f^2) \frac{\bar{a}_b \sqrt{2\beta_{TT}^2 + \beta_R^2} + \bar{a}_b^3 \sqrt{2\beta_{TT}^2 + 3 \beta_R^2}} {\bar{a}_b + \bar{a}_b^3(2 \beta_{TT} + 3\beta_R)}
+  \end{align*}
+  The above is taken directly from the original paper.  I'm not so sure how currect it is, but let us not discuss this now.
+
+  \section{Local Term}
+  Now, the local term is given by:
+  \begin{align*}
+  	F^L(x,\omega_d, \omega_o) 
+  	&= \int_{S^2} \Psi^G(x, \omega_d, \omega_i) f_{\mathrm{back}}(\omega_i, \omega_o) \cos\theta_i\ \dee \omega_i \\
+  	&= T_f(x,\omega_d) \int_{0}^{2\pi} \int_{-\pi/2}^{\pi/2} \frac{\tilde{s}_f(\phi_d, \phi_i)}{\cos\theta_i} \tilde{g}(\theta_i; \theta_d, \sigma_f) \bar{A}_b(\theta_i) \tilde{s}_f(\phi_i, \phi_o) \bar{g}(\theta_o;-\theta_i, \sigma_f(\theta_i)) \cos^2 \theta_i\ \dee\theta_i\dee\phi_i \\
+  	&= \frac{T_f(x,\omega_d)}{G(\theta_d, \sigma_f)} \bigg( \int_0^{2\pi} \tilde{s}_f(\phi_d, \phi_i) \tilde{s}_f(\phi_i,\phi_o)\ \dee\phi_i \bigg) \bigg( \int_{-\pi/2}^{\pi/2} \bar{A}_b(\theta_i) g(\theta_i;\theta_d,\sigma_f) \bar{g}(\theta_o;-\theta_i,\sigma_f(\theta_i)) \cos\theta_i\ \dee\theta_i \bigg).  	
+  \end{align*}
+  The first integral can be evaluated symbolically by finding the length of the interval which is the intersection of $(\phi_d-\frac{\pi}{2}, \phi_d+\frac{\pi}{2})$ and $(\phi_o-\frac{\pi}{2}, \phi_o+\frac{\pi}{2})$ and then dividing the length by $\pi^2$.  The second integral needs to be evaluated with Gaussian quadrature.
+
+  \section{The Complete Attenuation Term}
+
+  The paper only proposes approximates the attenuation $\bar{A}_b$ as the sum of two terms $\bar{A}_1 + \bar{A}_3$.  However, I think it is possible to do the infinite sum with some math.
+
+  First, let us define the situation that we are in.  We have an infinite arrangement of fibers in a plane, with Fiber $0$ above Fiber $1$, Fiber $1$ above Fiber $2$, and so on.
+  \begin{center}
+  	\begin{tikzpicture}
+  		\draw (0,0) node[anchor=east] {\scriptsize{Fiber $0$}} -- (3,0) node[anchor=west] {$\cdots$};
+  		\draw (0,-0.75) node[anchor=east] {\scriptsize{Fiber $1$}} -- (3,-0.75) node[anchor=west] {$\cdots$};
+  		\draw (0,-1.5) node[anchor=east] {\scriptsize{Fiber $2$}} -- (3,-1.5) node[anchor=west] {$\cdots$};
+  		\draw (0,-2.25) node[anchor=east] {\scriptsize{Fiber $3$}} -- (3,-2.25) node[anchor=west] {$\cdots$};
+  		\draw (1.5,-2.75) node{$\vdots$};
+  	\end{tikzpicture}
+  \end{center}
+
+  Let $a_i^+$ denote the attenuation that the light that strikes Fiber $i$ from above experiences after it travels through all the fibers and finally scatters upward from Fiber $0$.  Let $a_i^-$ denote the same attenuation, but now with the light striking Fiber $i$ from below.
+
+  For convience, we may think that there is actually Fiber $-1$ above Fiber $0$.  The goal of the process is to reach Fiber $-1$, so $a^{-}_{-1} = 1$ because that's our goal.  With this definition, we have that
+  \begin{align*}
+  	a_i^{+} &= \bar{a}_f a_{i+1}^+ + \bar{a}_b a_{i-1}^- \\
+  	a_i^{-} &= \bar{a}_b a_{i+1}^+ + \bar{a}_f a_{i-1}^-
+  \end{align*}
+  for all $i \geq 0$.  Consider Fiber $0$, we have that:
+  \begin{align}
+    a_0^{+} &= \bar{a}_f a_{1}^+ + \bar{a}_b \label{a0plus} \\
+  	a_0^{-} &= \bar{a}_b a_{1}^+ + \bar{a}_f. \label{a0minus}
+  \end{align}
+
+  Now, consider $a_1^+$.  We have that, to reach Fiber $-1$, the light must first travels back to Fiber $0$ from below.  This situation is the same as starting at Fiber $0$ and arriving at Fiber $-1$ from below.  In this first step, the light is attenuated by a factor of $a_0^+$.  Then, to reach Fiber $-1$, it is attenuated by another factor of $a_0^-$.  It follows that:
+  \begin{align*}
+  	a_1^+ = a_0^+ a_0^-.
+  \end{align*}
+  Multiplying \eqref{a0plus} and \eqref{a0minus} together, we have that:
+  \begin{align*}
+  	a_1^+ &= (\bar{a}_f a_1^+ + \bar{a}_b)(\bar{a}_b a_1^+ + \bar{a}_f) \\
+  	a_1^+ &= \bar{a}_f \bar{a}_b (a_1^+)^2 + (\bar{a}_f^2 + \bar{a}_b^2) a_1^+ + \bar{a}_f \bar{a}_b \\
+  	0 &= \bar{a}_f \bar{a}_b (a_1^+)^2 + (\bar{a}_f^2 + \bar{a}_b^2 - 1) a_1^+ + \bar{a}_f \bar{a}_b \\
+  	a_1^+ &= \frac{ 1 - \bar{a}_f^2 - \bar{a}_b^2 \pm \sqrt{ (\bar{a}_f^2 + \bar{a}_b^2 - 1)^2 - 4\bar{a}_f^2 \bar{a}_b^2 }}{2\bar{a}_f \bar{a}_b}
+  \end{align*}
+  Only one of the solution will be less than $1$, so we will take that one.
+
+  The attenuation to output should be $\bar{a}_f a_0^+$.  
+
+  \bibliographystyle{apalike}
+  \bibliography{dual-scattering-impl}  
+\end{document}

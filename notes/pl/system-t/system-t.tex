@@ -1,0 +1,340 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{epstopdf}
+\usepackage{enumerate}
+
+\newtheorem{lemma}{Lemma}[section]
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+\newcommand{\Ei}{\mathrm{Ei}}
+\newcommand{\Tri}{\mathbf{tri}}
+\newcommand{\Th}{\mathbf{th}}
+\newcommand{\V}{\mathbf{V}}
+\newcommand{\Const}{\mathbf{const}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+
+\title{G\"odel's System T}
+\author{Pramook Khungurn}
+
+\begin{document}
+	\maketitle
+	
+	G\"odel's System T is the first logical system of functions such that, if you can determine a type of a function,
+	the function terminates. The system is a restrictive subset of extended lambda calculus.
+	
+	\section{Definitions}
+	
+	\subsection{Types}
+	\begin{itemize}
+	  \item We define {\bf types} as follows:
+	    \begin{itemize}
+	      \item $\mathbb{N}$ is a type.
+	      \item If $\alpha$ and $\beta$ are types, then $\alpha \rightarrow \beta$ is a type.
+	    \end{itemize}
+	  
+	  \item $\mathbb{N}$ is called the {\bf atomic type},\\
+	    and types of the form $\alpha \rightarrow \beta$ are called {\bf higher types}.
+	  
+	  \item Types are typically denoted by $\sigma$ and $\tau$.
+	  
+	  \item $\sigma_1 \rightarrow \sigma_2 \rightarrow \sigma_3 \rightarrow \dotsb \rightarrow \sigma_n$
+	    means $\sigma_1 \rightarrow (\sigma_2 \rightarrow (\sigma_3 \rightarrow \dotsb \rightarrow \sigma_n ) ) )$
+	    
+	  \item Stenlund called all the objects we deal with in System T as {\bf computable functionals}.
+	  
+	  \item An object of type $\mathbb{N}$ is a natural number.\\
+	   Natural numbers are computable functionals.
+	  
+	  \item An object of type $\alpha \rightarrow \beta$ is a function\\ 
+	  which takes a computable functional of type $\alpha$ and\\ 
+	  spits out a computable functional of type $\beta$.
+	\end{itemize}
+	
+	\subsection{Constants}
+	
+	\begin{itemize}
+	  \item $0$ is a constant of type $\mathbb{N}$.
+	  \item $s$ is a constant of type $\mathbb{N} \rightarrow \mathbb{N}$,\\
+	    representing the successor function.
+	  \item For each type $\tau$, there's a constant $R^{\tau}$ of type $\tau \rightarrow (\mathbb{N} \rightarrow \tau \rightarrow \tau) \rightarrow \mathbb{N} \rightarrow \tau.$\\	    
+	    The $R^\tau$ represents the primitive recursive arithmetic combinator.\\
+	    (When $R^\tau$ is used, however, we will only write it as $R$.)
+	    
+	  \item The {\bf numerals} in System T as defined as $0$, $s(0)$, $s(s(0))$, $\dotsc$.
+	\end{itemize}
+	
+	\subsection{Terms}
+	
+	\begin{itemize}
+	  \item Each constant of type $\tau$ is a term of type $\tau$.
+	  
+	  \item For each type $\tau$, there exists a countably finite list of variables of type $\tau$,\\
+	    which we will denote by $x^\tau$, $y^\tau$, $z^\tau$, $\dotsc$.
+	    
+	  \item If $a$ is a term of type $\tau$ and $x$ is a variable of type $\sigma$,\\
+	    then $\lambda x.\ a$ is a term of type $\sigma \rightarrow \tau$\\
+	    (Abtraction)
+	    
+	  \item If $a$ is a term of type $\sigma \rightarrow \tau$ and $b$ is term of type $\sigma$,\\
+	    then $a\ b$ is a term of type $\tau.$\\
+	    (Application)
+	\end{itemize}
+	
+	\section{Equality}
+
+  \begin{itemize}	
+    \item There are two equality relations involved.
+      \begin{itemize}
+        \item ``$=$'' is the equality between natural numbers.
+        \item ``$=_i$'' is the intensional equality between terms.
+      \end{itemize}
+      
+    \item Of course, ``$=$'' implies ``$=_i$''.
+    
+    \item Equality can be inferred from a number of axioms:
+      \begin{itemize}
+        \item ``$=_i$'' is reflexive, symmetric, and transitive.
+        \item If $a =_i b$ and $c = _i d$, then $a\ b =_i b\ d$.
+        \item If $a =_i b$, then $\lambda x.\ a =_i \lambda x.\ b$.
+        \item $(\lambda x.\ (a\ x))\ b =_i a\ b$
+        \item $\lambda x.\ (a\ x) =_i a$
+        \item $R\ a\ b\ 0 =_i a$
+        \item $R\ a\ b\ s(t) =_i b\ t\ (R\ a\ b\ t)$
+        \item ``$=$'' is reflexive, symmetric, and transitive.
+        \item If $c = d$ and $a \in \mathbb{N} \rightarrow \mathbb{N}$, then $a\ c = a\ d$.
+        \item If $a = b$, then $(\lambda x.\ a) c = (\lambda x.\ b) c$ where $c \in \mathbb{N}$.
+        \item If $a, b \in \mathbb{N}$ and $a =_i b$, then $a = b$.
+        \item If $f\ 0 = a$ and $f\ s(t) = b\ t\ (f\ t)$, then $f\ t = R\ a\ b\ t$.\\
+          Here, $a \in \mathbb{N}$, $b \in \mathbb{N} \rightarrow \mathbb{N} \rightarrow \mathbb{N}$, and $t \rightarrow \mathbb{N}$.
+      \end{itemize}
+  \end{itemize}
+  
+  \section{Reduction}
+
+    \begin{itemize}
+      \item As with other lambda calculus, System T has its rule for reduction of terms.
+      
+      \item Here are the small-step reduction rules for System T.
+        \begin{itemize}
+          \item $R\ a\ b\ 0 \rightarrow_1 a$
+          \item $R\ a\ b\ s(t) \rightarrow_1 b\ t\ (R\ a\ b\ t)$
+          \item $(\lambda x.\ a)\ b \rightarrow_1 a[b/x]$
+          \item $\lambda x. (a\ x) \rightarrow_1 a$
+        \end{itemize}
+        
+      \item A term is called {\bf normal} if it does not contain a subterm which can be reduced by one of the above rules.          
+      
+      \item We write $a \rightarrow_* b$ if there's a finite series of reduction
+        $a \rightarrow_1 a_1 \rightarrow_1 a_2 \rightarrow_1 a_3 \rightarrow_1 \dotsb \rightarrow_1 b$.\\
+        Here, we say that $a$ {\bf reduces to} $b$.
+      
+      \item A term $a$ is {\bf normalizable} if it reduces to a normal term.\\
+        The normal term is said to be the {\bf normal form} of $a$.
+              
+      \item We say that two terms $a$ and $b$ are {\bf definitionally equal} if reduces to the same normal term.
+        
+      \item \begin{theorem}[Church--Rosser]
+        If $a \rightarrow_* b$ and $a \rightarrow_* c$, then there exists $d$ such that $b \rightarrow_* d$ and $c \rightarrow_* d$.
+      \end{theorem}            
+      
+      \item \begin{corollary}
+        Definitional equality is an equivalence relation.
+      \end{corollary}
+      
+      \item \begin{theorem} Two terms $a$ and $b$ are definitionally equal if and only if $a =_i b$. \end{theorem}
+      \begin{proof}
+        ($\rightarrow$) Observe that the two sides of the reduction rules are intensionally equal to one another.
+        So, definitional equality implies intensional equality.
+        
+        ($\leftarrow$) This is done by the induction on the rules of intensional equality.
+      \end{proof}
+    \end{itemize}
+    
+  \section{Computability and Normal Form}
+  
+    \begin{itemize}
+      \item A term $a$ is {\bf strongly normalizable} (SN) if all reduction sequences
+        $$a \rightarrow_1 a_1 \rightarrow_1 a_2 \rightarrow_1 a_3 \rightarrow_1 \dotsb$$
+        starting from $a$ are finite.
+        
+      \item In other words, $a$ is SN if $a$ is normalizable and each reduction sequence starting
+      with $a$ ends up in the normal form of $a$.
+      
+      \item There are terms which are normalizable but not SN. For example:
+        $$(\lambda x. y)\ ((\lambda x.\ x\ x)\ (\lambda x.\ x\ x)) $$
+        
+      \item The main theorem is that all typed terms in System T are SN. 
+      
+      \item The proof has three steps.
+        \begin{itemize}
+          \item Define what it means for a term of the \emph{computable}.
+          \item Show that computable terms are SN.
+          \item Show that all typed terms in System T are computable.
+        \end{itemize}
+        
+      \item We call a term $a$ {\bf computable} if it satisfies one of the following rules:
+        \begin{itemize}
+          \item If $a \in \mathbb{N}$, then $a$ is computable if it is SN.
+          \item If $a$ has type $\tau \rightarrow \sigma$, then $a$ is computable\\ 
+            if $(a\ b)$ is computable for all comptuble terms $b$ of type $\tau$.
+        \end{itemize}
+        
+      \item We can state the second rule in another way:
+        \begin{quote}
+          A term $a$ is computable if $a\ a_1\ a_2\ \dotsb\ a_n$ is computable
+          for all computable terms $a_1$, $a_2$, $\dotsc$, $a_n$ such
+          that $a\ a_1\ a_2\ \dotsb\ a_n \in \mathbb{N}$.
+        \end{quote}
+        
+      \item \begin{lemma}
+        If $a \rightarrow_* b$ and $a$ is computable, then $b$ is computable.
+      \end{lemma}
+      \begin{proof}
+        The lemma follows immediately if $a \in \mathbb{N}$. If $a$ is of higher type,
+        then it follows from the other form of the second rule above.
+      \end{proof}
+      
+      \item \begin{lemma}
+        For any type $\tau$, a computable term of type $\tau$ is SN.
+      \end{lemma}
+      
+      \begin{proof}
+        The proof is by structural induction on the type $\tau$.
+        
+        The first case is when $\tau$ is $\mathbb{N}$. We have all computable terms are SN by definition.
+        
+        The second case is when $\tau$ is $\alpha \rightarrow \beta$. Let $a$ be a computable term
+        of type $\tau$. Then, we have that for all computable term $b$ of type $\alpha$,
+        we have that $a\ b$ is a computable term of type $\beta$. By induction hypothesis,
+        we have that $a$ and $a\ b$ are SN. Consider any reduction sequence
+        $$a \rightarrow_1 a_1 \rightarrow a_2 \rightarrow a_3 \rightarrow \dotsb .$$
+        We have that it generates the corresponding sequence
+        $$a\ b \rightarrow_1 a_1\ b \rightarrow a_2\ b \rightarrow a_3\ b \rightarrow \dotsb .$$
+        Since the sequence sequence terminates, the first one must terminate as well.
+        Therefore, $a$ is normalizable, and since all reduction sequence terminates
+        $a$ is SN.
+      \end{proof}
+      
+      \item \begin{lemma}
+        The constants $0$ and $s$ are computable.
+      \end{lemma}
+      \begin{proof}
+        $0$ is a normal term, so it is computable.
+        
+        Let $a$ be a computable term of type $\mathbb{N}$.
+        We have that $a$ is SN. Then, $s(a)$ also SN because all
+        the reduction done to $s(a)$ must be done to $a$.
+        Therefore, $s(a)$ is computable. Hence, we have that
+        $s$ is also computable.        
+      \end{proof}
+      
+      \item \begin{lemma}
+        If $a[b/x]$ is computable, then $(\lambda x.\ a)\ b$
+        is also computable.
+      \end{lemma}
+      
+      \begin{proof}
+        Let $a_1$, $a_2$, $\dotsc$, $a_n$ be computable terms
+        such that $a[b/x]\ a_1\ a_2\ \dotsb\ a_n$
+        is a term of type $\mathbb{N}$. It follows that
+        $a[b/x]\ a_1\ a_2\ \dotsb\ a_n$ is computable and SN.
+        We can prove the lemma by showing that 
+        $(\lambda x.\ a)\ b\ a_1\ a_2\ \dotsb\ a_n$ is SN.
+        
+        Suppose by way of proof by contradiction that there is a infinite 
+        sequence of reduction in $$(\lambda x.\ a)\ b\ a_1\ a_2\ \dotsb\ a_n.$$
+        We know that thisreudction must be an infinite reduction of
+        $(\lambda x.\ a)$. Suppose such a sequence is
+        \begin{align*}
+          \lambda x.\ a \rightarrow_1 \lambda x.\ a' \rightarrow_1 \lambda x.\ a'' \rightarrow_1 \dotsb.
+        \end{align*}
+        This sequence would yield
+        \begin{align*}
+          a[b/x] \rightarrow_1 a'[b/x] \rightarrow_1 a''[b/x] \rightarrow_1 \dotsb
+        \end{align*}
+        which is an infinite reduction of $a[b/x]$, which is impossible. We have a contradiction.
+      \end{proof}
+      
+      \item \begin{lemma}
+        The constant $R^\tau$ for all $\tau$ is computable.
+      \end{lemma}
+      \begin{proof}
+        It is sufficient to prove that $R\ a\ b\ c$ is computable for all computable
+        $a$, $b$, and $c$ of the appropriate types. We do so by the number of $s$ in $c$.
+        
+        Let $a_1$, $a_2$, $\dotsc$, $a_n$ be computable terms such that
+        $R\ a\ b\ c\ a_1\ a_2\ \dotsb\ a_n$ is of type $\mathbb{N}$.
+        
+        If $c$ does not reduce to $0$ or $s(t)$ for some $t \in \mathbb{N}$, then
+        we cannot use the axiom for $R$ to reduce $R\ a\ b\ c$.
+        Thus, all the reduction done to $R\ a\ b\ c\ a_1\ a_2\ \dotsb\ a_n$
+        must be done in $a$, $b$, $c$, $a_1$, $a_2$, $\dotsc$, $a_n$. Since 
+        all these terms are computable and thus $SN$, then 
+        $R\ a\ b\ c\ a_1\ a_2\ \dotsb\ a_n$ is SN and thus computable.
+        
+        If $c$ reduces to $0$, then we have that
+        $$R\ a\ b\ c\ a_1\ a_2\ \dotsb\ a_n \rightarrow_* R\ a'\ b'\ 0\ a_1'\ a_2'\ \dotsb\ a_n' \rightarrow_1 a'\ a'_1\ a'_2\ \dotsb\ a'_n.$$
+        For some $a', b', a_1', a_2', \dotsc a'_n$ that $a, b, a_1, a_2, \dotsc, a_n$ reduce to, respectively.
+        Since $a\ a_1\ a_2\ \dotsb\ a_n \rightarrow a'\ a_1'\ a_2'\ \dotsb\ a_n'$, it must
+        be the case that $a'\ a_1'\ a_2'\ \dotsb\ a_n'$ is SN. Therefore, $R\ a\ b\ c\ a_1\ a_2\ \dotsb\ a_n$
+        is SN as well.
+        
+        If $c$ reduces to $s(t)$, we have that $s(t)$ is computable, thus SN. This means
+        that $t$ is SN, thus computable. It follows by induction hypothesis that $(R\ a'\ b'\ t)$
+        is computable for any computable $a'$ and $b'$. Consider the reduction of
+        $R\ a\ b\ c\ a_1\ a_2\ \dotsb\ a_n$, we have that it must be of the form
+        $$R\ a\ b\ c\ a_1\ a_2\ \dotsb\ a_n 
+        \rightarrow_* R\ a'\ b'\ s(t)\ a_1'\ a_2'\ \dotsb\ a_n'
+        \rightarrow_1 b'\ t\ (R\ a'\ b'\ t)\ a_1'\ a_2'\ \dotsb\ a_n'.$$
+        Since all the terms in the last expression is computable,
+        we have that the term is SN. Therefore, 
+        $R\ a\ b\ c\ a_1\ a_2\ \dotsb\ a_n$ is SN, that thus computable too.
+      \end{proof}
+      
+      \item \begin{lemma}
+        If $a$ is a term with free variable $x_1$, $x_2$, $\dotsb$, $x_n$
+        and $b_1, b_2, \dotsc, b_n$ are computable terms with the same
+        types as $x_1$, $x_2$, $\dotsc$, $x_n$, respectively, then
+        $a[b_1/x_1][b_2/x_2]\dotsb[b_n/x_n]$ is computable.
+      \end{lemma}
+      
+      \begin{proof}
+        We prove this by induction on the structure of $a$.
+        For convenience let $$a' := a[b_1/x_1][b_2/x_2]\dotsb[b_n/x_n].$$
+        
+        If $a$ is one of the free variables, say $x_i$, then $a' = b_i$,
+        which is computable.
+        
+        If $a$ is $a_1\ a_2$, then $a'$ is $a'_1\ a'_2$.
+        $a'_1$ and $a'_2$ are computable by the induction hypothesis.
+        Therefore, $a'_1\ a'_2$ is computable too.
+        
+        If $a$ is $\lambda x.\ a_1$, then by induction hypothesis
+        $a'_1[b/x]$ is computable for all computable $b$.
+        This implies that $(\lambda x. a_1)\ b$ is computable
+        for all computable $b$, which means that $\lambda x.\ a_1$
+        is computable.
+      \end{proof}
+        
+      
+      \item \begin{theorem} 
+        All terms are computable, and thus SN.
+      \end{theorem}
+      \begin{proof}
+        Use the last four lemmas with structural induction on the terms.
+      \end{proof}
+    \end{itemize}      
+\end{document}

@@ -1,0 +1,107 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+
+\newtheorem{lemma}{Lemma}[section]
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{claim}[lemma]{Claim}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+
+\title{Support Vector Machines}
+\author{Pramook Khungurn}
+
+\begin{document}
+\maketitle
+
+\begin{itemize}
+    \item Three properties make SVM attractive:
+        \begin{itemize}
+            \item SVM constructs a {\bf maximum margin separator}.
+                This helps them generalize well.
+            \item SVM constructs a linear separating plane,
+                but they have the ability to embed the data
+                into a higher-dimensional space, using
+                the {\bf kernel trick}. The high dimensional
+                linear separator is actually non-linear in
+                the input.
+            \item SVMs are non-parametric model.
+                They retain some inputs, but in practice
+                only a small fraction is stored.
+                So, SVMs combine advantages of parametric
+                and non-parametric models: flexible to
+                represent complex functions, but 
+                resistant to overfitting.
+        \end{itemize}
+        
+    \item SVM learning follows the following conventions:
+        \begin{itemize}
+            \item The class labels are $+1$ and $-1$ rather
+                than $0$ and $1$.
+            \item The separating hyperplane is specified by
+                two components: the weights $\ve{w}$ and 
+                the bias $b$. The equation of the plane is
+                $$\ve{w}\cdot\ve{x} + b = 0.$$
+        \end{itemize}
+        
+    \item To find the maximum margin separator, we solve
+        the following quadratic program:
+        \begin{align*}
+            \mbox{maximize } \sum_j \alpha_j 
+                - \frac{1}{2} \sum_{j,k} \alpha_j \alpha_k
+                    y_j y_k (\ve{x}_j \cdot \ve{x}_k)
+        \end{align*}
+        subjected to contrainst:
+        \begin{itemize}
+            \item $\sum_j \alpha_j y_j = 0$,
+            \item $\alpha_j \geq 0$.
+        \end{itemize}
+    
+    \item Once we have the solution to the above quadratic program,
+        we recover $$\ve{w} = \sum_j \alpha_j y_j \ve{x}_j.$$ 
+        
+        However, it's not necessary to do so because we note that
+        \begin{align*}
+            \ve{w} \cdot \ve{x} = \sum_{j} \alpha_j y_j (\ve{x}_j
+            \cdot \ve{x}).
+        \end{align*}
+        
+        The hypothesis thus becomes
+        \begin{align*}
+            h(\ve{x}) = \mathrm{sign}\bigg( \sum_{j} 
+                \alpha_j y_j (\ve{x}_j
+            \cdot \ve{x}) - b \bigg),
+        \end{align*}
+        so we can represent the hypothesis by keeping $\ve{x_j}$
+        such that $\alpha_j \neq 0$ and the weights $\alpha_j$
+        and $b$.
+        
+    \item The quadratic program above has two desirable properties:
+        \begin{itemize}
+            \item The target function is convex. So there's
+                a global maximum that can be found.
+            \item The expression only involves dot products
+                of pairs of points.
+        \end{itemize}
+        
+    \item The second desirable property has a far-reaching
+        consequence. It allows us to find a linear separator,
+        not only in $\ve{x}$, but in another high-dimensional 
+        feature space $F(\ve{x})$. All we need is a 
+        {\bf kernel function}:     
+        $$K(\ve{x}_j, \ve{x}_k) = F(\ve{x}_j) \cdot
+         F(\ve{x}_k).$$
+        We only need to know how to compute 
+        $F(\ve{x}_j) \cdot F(\ve{x}_k)$. We don't even need
+        to know what $F$ is!
+        
+        This is the {\bf kernel trick}. It allows for an
+        optimal linear separator to be found efficiently
+        in feature spaces with billions of dimensions.
+\end{itemize}
+
+\end{document}

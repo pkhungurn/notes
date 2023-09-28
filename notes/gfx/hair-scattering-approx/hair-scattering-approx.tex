@@ -1,0 +1,463 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{epstopdf}
+\usepackage{enumerate}
+\usepackage{verse}
+
+\newtheorem{lemma}{Lemma}[section]
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{claim}[lemma]{Claim}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+
+\title{Approximating Hair Scattering Function for Interactive Rendering}
+\author{Pramook Khungurn}
+
+\begin{document}
+	\maketitle
+
+  This document is written as a companion to reading ``Interactive Hair Rendering under Environment Lighting'' by Ren et~al.~\cite{Ren:2010} and ``Interative Hair Rendering and Appearance Editing under Environtmnet Lighting'' by Xu et al.~\cite{Xu:2011}.
+  
+  We focus on these two papers approximate the hair scattering function $S(\omega_i, \omega_o)$ for interactive rendering under environment lighting. We begin with a tutorial on the sphecial radial basis function, which is central to both papers.
+  
+  \section{Spherical Radial Basis Functions}
+  
+  \begin{itemize}
+    \item Let $\mathbb{S}^m$ denote the unit sphere in $\mathbb{R}^{m+1}$.
+    
+    \item Let $\omega$ and $\xi$ be two points on $\mathbb{S}^m$. We set $\theta$ be the geodesic distance between the two points. In other words, $\theta = \arccos(\omega \cdot \xi).$
+      
+    \item A \textbf{spherical radial basis function} (SBRF) $G(\omega)$ is a function from $\mathbb{S}^m \rightarrow \mathbb{R}$ that depends only on $\omega \cdot \xi$ where $\xi$ is a fixed point on the sphere. That is:
+      \begin{align*}
+        G(\omega) = G(\omega \cdot \xi) = G(\cos \theta).
+      \end{align*}
+    We call $\xi$ the \textbf{center} of the SRBF. When writing an SBRF, we will write $G(\omega \cdot \xi)$ instead of $G(\omega)$.
+      
+    \item Most of the time, SRBFs are represented in terms of expansions in Legendre polynomials:
+      \begin{align*}
+        G(\omega \cdot \xi) = \sum_{l=0}^\infty G_l P_l(\omega \cdot \xi)
+      \end{align*}
+      where $P_l(x)$ is the normalized Legendre polynomial of degree $l$. The \textbf{Legendre
+      coefficients} $G_l$ satisfy the property that $G_l \geq 0$ and $\sum_{l=0}^\infty G_l < \infty$.          
+    \item Let $G$ be an SRBF with center $\xi_g$, and $H$ be another SBRF with center $\xi_h$. The convolution of $G$ and $H$ are given by the following equation:
+    \begin{align*}
+      G *_m H 
+      = \int_{\mathbb{S}^m} G(\omega \cdot \xi_g) H(\omega \cdot \xi_h)\ \dee \omega(\omega)
+      = \sum_{l=0}^\infty G_l H_l \frac{\Omega_m}{d_{m,l}} P_l(\xi_g \cdot \xi_h).    
+    \end{align*}
+    Here, $\Omega_m$ is the volume of $\mathbb{S}^m$:
+    \begin{align*}
+      \Omega_m = \frac{(2\pi)^{(m+1)/2}}{\Gamma((m+1)/2)},      
+    \end{align*}
+    and $d_{m,l}$ i the imension of the space of the order-$l$ spherical harmonics on $\mathbb{S}^m$:
+    \begin{align*}
+      d_{m,l} = \begin{cases} 
+        \frac{(2l+m-1)!(l+m-2)!)}{l!(m-l)!}, & \mathrm{if}\ l \geq 1 \\
+        1, & \mathrm{if}\ l = 0
+      \end{cases}
+    \end{align*}
+    
+    \item There are two examples of SBRFs. 
+    \begin{itemize}
+      \item The \textbf{Abel--Poisson SRBF kernel} is defined as:
+      \begin{align*}
+        G^{\mrm{Abel}}(\omega \cdot \xi; \lambda) = \frac{1 - \lambda^2}{[1 - 2\lambda(\omega \cdot \xi) + \lambda^2]^{3/2}}    
+      \end{align*}
+      for $0 < \lambda < 1$.  
+      \item The \textbf{Gaussian SRBF kernel} is defined as:
+      \begin{align*}
+        G^{\mrm{Gau}}(\omega \cdot \xi; \lambda) = e^{-\lambda} e^{\lambda(\omega \cdot \xi)}
+      \end{align*}
+      for $\lambda > 0$.      
+    \end{itemize}
+    In both of these functions, $\lambda$ denotes the ``bandwidth'' parameter which controls the width of the lobes.
+    
+    \item Let $G^{\mrm{Abel}}$ be an Abel--Poisson SBRF kernel with center $\xi_g$ and bandwidth $\lambda_g$. Let $H^{\mrm{Abel}}$ be the same with center $\xi_h$ and $\lambda_h$. We have that
+    \begin{align*}
+      G^{\mrm{Abel}} *_m H^{\mrm{Abel}} &= \frac{1 - (\lambda_g \lambda_h)^2}{[1 - 2(\lambda_g \lambda_h)(\xi_g \cdot \xi_h) + (\lambda_g \lambda_h)^2]^{3/2}}.
+    \end{align*}
+    It's interesting to note that, if we view $G^{\mrm{Abel}} *_m H^{\mrm{Abel}}$ as a function of $\xi_g \cdot \xi_h$, then it is an Abel--Poisson SBRF kernel.
+    
+    \item Define $G^{\mrm{Gau}}$ and $H^{\mrm{Gau}}$ similarly as the previous item but with the Gaussian SRBF kernel. We have that:
+    \begin{align*}
+      G^{\mrm{Gau}} *_m H^{\mrm{Gau}} &= e^{-(\lambda + \lambda_h)} \Omega_m \Gamma \bigg( \frac{m+1}{2} \bigg) I_{\frac{m-1}{2}}(\| r \|) \bigg( \frac{2}{\| r \|} \bigg)^{\frac{m-1}{2}}.
+    \end{align*}
+    where $r = \lambda_g \xi_g + \lambda_h \xi_h$ and $I_\nu$ is the \emph{modified Bessel function of the first kind of order $\nu$}:
+    \begin{align*}
+      I_\nu(x) = \frac{(x/2)^\nu}{\Gamma(\nu + 1/2) \Gamma(1/2)} \int_{-1}^1 e^{-xz} (1-z^2)^{\nu - 1/2}\ \dee z.
+    \end{align*}
+    For the special case of $m = 2$ (sphere in 3D), we can simplify the convolution to:
+    \begin{align*}
+       G^{\mrm{Gau}} *_2 H^{\mrm{Gau}} = 4\pi \frac{\sinh(\| r \|)}{\| r \|}.
+    \end{align*}
+    
+    \item Given a spherical function $F(\omega)$, its \textbf{SRBF kernel expansion} is basically an approximation of $F$ as a linear combination of a finite number of SRBF kernels:
+    \begin{align*}
+      F(\omega) \approx \sum_{k=1}^n F_k G(\omega \cdot \xi_k; \lambda_k).
+    \end{align*}
+    If the centers $\xi_1, \xi_2, \dotsc, \xi_n$ and bandwidths $\lambda_1, \lambda_2, \dotsc, \lambda_n$ are given, the coefficient $F_1, F_2, \dotsc, F_n$ can be obtained by least squares. 
+  
+  \end{itemize}  
+
+  \section{Ren et~al. \cite{Ren:2010}}
+  
+  \begin{itemize}
+    \item Following \cite{Marschner:2003}, the outgoing \emph{curve intensity} can be written as:
+    \begin{align*}
+      \overline{L}(\omega_o) = D \int_{\mathbb{S}^2} L(\omega_i) T(\omega_i) S(\omega_i, \omega_o) \cos \theta_i\ \dee\omega_i
+    \end{align*}    
+    where 
+    \begin{itemize}
+      \item $D$ is the diameter of the hair fiber,
+      \item $L(\omega_i)$ is the incoming radiance,
+      \item $T(\omega_i)$ is the transmittance in the incident direction generated by the hair volume:
+      \begin{align*}
+        T(\omega_i) = T(x,\omega_i) = \exp\bigg( -\sigma_a \int_x^\infty \rho(x')\ \dee x' \bigg)
+      \end{align*}
+      where $\rho(x)$ is the density function at x, and
+      \item $S(\omega_i, \omega_o)$ is the bidirectional curve radiance distribution function.
+    \end{itemize}
+    Note that the positional dependence of each term is omitted for brevity.    
+    
+    \item It's important to distinguish between \emph{curved intensity} $\overline{L}(\omega)$ and \emph{radiance} $L(\omega)$. Curved intensity is energy per unit length of the fiber along a direction, but radiance is energy per unit area of the fiber's surface along a direction. 
+    
+    \item In a physically based renderer, we are concerned with radiance, not curved intensity. The formula that relates outgoing radiance to incoming radiance is:
+    \begin{align*}
+      L(\omega_o) = \int_{\mathbb{S}^2} L(\omega_i) T(\omega_i) S(\omega_i, \omega_o) \cos \theta_i\ \dee\omega_i.
+    \end{align*}    
+    Notice that there is no $D$ here.
+    
+    \item The environment light is approximate as a linear combination of a finite number of Gaussian SRBF kernels:
+    \begin{align*}
+      L(\omega_i) \approx \sum_{j=1}^N L_j G(\omega_i \cdot \xi_j; \lambda_j).
+    \end{align*}    
+    Using $G_j(\omega_i)$ to denote $G(\omega_i \cdot \xi_j; \lambda_j)$, this means that the outgoing curve intensity is given by:
+    \begin{align*}
+      \overline{L}(\omega_i) \approx D \sum_{j=1}^N L_j \int_{\mathbb{S}^2} G_j(\omega_i) T(\omega_i) S(\omega_i, \omega_o) \cos \theta_i\ \dee\omega_i
+    \end{align*}
+    
+    \item The transmittance term is also factored out as the \emph{effective transmittance} $\widetilde{T}$:
+    \begin{align*}
+      \overline{L}(\omega_o) \approx D \sum_{j=1}^N L_j \widetilde{T}(\xi_j, \lambda_j) \int_{\mathbb{S}^2} G_j(\omega_i) S(\omega_i, \omega_o)\cos \theta_i\ \dee\omega_i.
+    \end{align*}
+    where
+    \begin{align*}
+      \widetilde{T}(\xi_j, \lambda_j) = \frac{\int_{\mathbb{S}^2} G_j(\omega_i) T(\omega_i) S(\omega_i, \omega_o) \cos \theta_i\ \dee \omega_i}{\int_{\mathbb{S}^2} G_j(\omega_i) S(\omega_i, \omega_o) \cos \theta_i\ \dee \omega_i}.
+    \end{align*}
+
+    \item The effective transmittance depends on the position $x$ and is approximated exponentiating the optical depth at $x$ averaged over the directions covered by the SRBF light. We will not cover the details in this document.
+    
+    \item Note that after factoring out the effective transmittance, the term
+    \begin{align*}
+      I(\omega_o; \xi, \lambda) = \int_{\mathbb{S}^2} G(\omega_i \cdot \xi; \lambda) S(\omega_i, \omega_o) \cos \theta_i\ \dee\omega_i,
+    \end{align*}
+which the paper calls the \emph{convolution term}, is indenpendent of the hair geometry. The paper precomputes this term for a set of $\omega_o$, $\xi$, and $\lambda$ parameters and stores the results in a table for run-time lookup.
+    
+    \item If we use the Marschner model (or any other scattering model with circular cross section), then the above table is a 4D table $\mathbf{I}_M(\cos \theta_\xi, \cos \theta_o, \cos(\phi_\xi - \phi_o), 1/\lambda)$. 
+    
+    Ren et~al. chooses to use $1/\lambda$ instead of $\lambda$ because it is proportional to the width of the SRBF. The cosines are used to avoid the computation of inverse trigonometric functions.
+  \end{itemize}
+  
+  \section{Xu \etal~\cite{Xu:2011}}
+  
+  \begin{itemize}
+    \item The paper approximates the Marschner model with SRBF kernels.
+    
+    \item We will not give a complete formulation of the Marschner model here. Please refer to the Marschner model note written earlier.
+    
+    \item As a matter of notational different, the original Marschner paper uses $p$ to denote a scattering mode. However, the Xu paper uses the variable $t$. Therefore, the scattering function for Mode $t$ is denoted by $S_t(\omega_i, \omega_o)$.
+    
+    \item The paper also changes the definition of the Gaussian SRBF a little. It defines:
+      \begin{align*}
+        G(\omega_i \cdot \xi_j; \lambda_j) = e^{-2(\omega_i \cdot \xi_j -1)/\lambda_j^2}.
+      \end{align*}
+      It does this to be consistent with the 1D Gaussian:
+      \begin{align*}
+        g^u(x; \mu, \lambda) = \frac{1}{\sqrt{\pi} \lambda}e^{-(x-\mu)^2/\lambda^2}.
+      \end{align*}
+    
+    \item Define $\modeint_t(\xi_j, \lambda_j)$ to be the result of convolving $S_t(\omega_i, \omega_o)$ with $G_j(\omega_i) = G(\omega_i \cdot \xi_j; \lambda_j)$:
+    \begin{align*}
+      \modeint_t(\xi_j, \lambda_j) 
+      &= \int_{\sphere} G_j(\omega_i) S_t(\omega_i, \omega_o) \cos \theta_i\ \dee\omega_i\\
+      &= \int_{\sphere} G_j(\omega_i) M_t(\theta_h) N_t(\theta_d, \phi) \cos \theta_i / \cos^2 \theta_d\ \dee\omega_i
+    \end{align*}
+    where $\theta_h = (\theta_i + \theta_o) / 2$, and $\theta_d = \| \theta_i - \theta_o \| / 2$, and $\phi = \phi_o - \phi_i$.
+    
+    \item We write $\omega_i$ and $\xi_j$ in Cartesian coordinates:
+    \begin{align*}
+      \omega_i &= (\sin \theta_i, \cos \theta_i \cos \phi_i, \cos \theta_i \sin \phi_i)\\
+      \xi_j &= (\sin \theta_j, \cos \theta_j \cos \phi_j, \cos \theta_j \sin \phi_j).
+    \end{align*}
+    Their dot product minus one is given by:
+    \begin{align*}
+      \omega_i \cdot \xi_j - 1 = [\cos(\theta_i - \theta_j) - 1] + \cos \theta_i \cos \theta_j [\cos(\phi_i - \phi_j) - 1].
+    \end{align*}
+    Hence,
+    \begin{align*}
+      G(\omega_i \cdot \xi_j; \lambda_j) 
+      &= e^{-2([\cos(\theta_i - \theta_j) - 1] + \cos \theta_i \cos \theta_j [\cos(\phi_i - \phi_j) - 1])/\lambda_j^2}\\      
+      &= e^{-2[\cos(\theta_i - \theta_j) - 1]/\lambda_j^2 } e^{ - 2 \cos\theta_i \cos \theta_j [\cos(\phi_i - \phi_j) - 1]/\lambda_j^2}\\
+      &= g^c(\theta_i; \theta_j, \lambda_j) g^c(\phi_i; \phi_j, \lambda_i / \sqrt{\cos \theta_i \cos \theta_j})
+    \end{align*}
+    where $g^c(x; \mu, \lambda) = e^{2[\cos(x-\mu)-1]/\lambda^2}$. To make the notation even shorter, let
+    \begin{align*}
+      g^c_j(\theta_i) &= g^c(\theta_i;\theta_j, \lambda_j)\mbox{, and}\\
+      g^c_j(\phi_i) &=g^c(\phi_i;\phi_j, \lambda_j / \sqrt{\cos \theta_i \cos\theta_j}),
+    \end{align*}
+    so that we can write $G_j(\omega_i) = g^c_j(\theta_i) g^c_j(\phi_i)$.
+  
+    \item Now that we have factored the SRBF, we can write:
+    \begin{align*}
+      \modeint_t(\xi_j, \lambda_j) 
+      &= \int_{-\pi/2}^{\pi/2} \int_0^{2\pi} g^c_j(\theta_i) g^c_j(\phi_i) M_t(\theta_h) N_t(\theta_d, \phi) \frac{\cos^2 \theta_i}{\cos^2 \theta_d}\ \dee \phi_i \dee \theta_i\\
+      &= \int_{-\pi/2}^{\pi/2} g^c_j(\theta_i)  M_t(\theta_h) \frac{\cos^2 \theta_i}{\cos^2 \theta_d} \bigg( \int_0^{2\pi} g^c_j(\phi_i) N_t(\theta_d, \phi)\ \dee \phi_i \bigg)\ \dee \theta_i.
+    \end{align*}    
+    
+    \item Now consider the azimuthal integral:
+    \begin{align*}
+      \int_0^{2\pi} g^c_j(\phi_i) N_t(\theta_d, \phi)\ \dee \phi_i
+      &= \int_0^{2\pi} g^c(\phi_i; \phi_j, \lambda_j / \sqrt{\cos\theta_i \cos\theta_j}) N_t(\theta_d, \phi_o - \phi_i)\ \dee \phi_i.
+    \end{align*}
+    Let $\phi_i' = \phi_i - \phi_j$ and $\lambda_j' = \lambda_j / \sqrt{\cos\theta_i \cos\theta_j}$. We can write the above integral in terms of $\phi_i'$:
+    \begin{align*}
+      \int_0^{2\pi} g^c(\phi_i; \phi_j, \lambda_j') N_t(\theta_d, \phi_o - \phi_i)\ \dee \phi_i
+      &= \int_0^{2\pi} g^c(\phi_i'; 0, \lambda_j') N_t(\theta_d, (\phi_o - \phi_j) - \phi_i')\ \dee \phi_i'.
+    \end{align*}
+    We shall abbreviate the RHS as $\azimint_t(\lambda'_j, \phi_o-\phi_j, \theta_d)$.
+    
+    \item Now make the following approximations:
+    \begin{align*}
+      g^c_j(\theta_i) \approx e^{-(\theta_i - \theta_j)^2/\lambda_j} = g(\theta_i; \theta_j, \lambda_j) = g_j(\theta_i).
+    \end{align*}
+    Therefore,
+    \begin{align*}
+      \modeint_t(\xi_j, \lambda_j) =  \int_{-\pi/2}^{\pi/2} g_j(\theta_i)  M_t(\theta_h) \frac{\cos^2 \theta_i}{\cos^2 \theta_d} \azimint_t(\lambda'_j, \phi_o-\phi_j, \theta_d) \ \dee \theta_i
+    \end{align*}    
+    Thet task now is to evaluate the inner integral $\azimint_t$ and the outer integral $\modeint_t$ for each of the three modes.
+  \end{itemize}
+  
+  \subsection{Approximating the R Mode}
+  
+  \begin{itemize}
+    \item For the R mode, we have
+      \begin{align*}
+        N_R(\eta, \theta_d, \phi) = \frac{1}{4} |\cos(\phi/2)| F(\eta, \theta_d, -\sin(\phi/2))        
+      \end{align*}
+      were $F(\eta, \theta_d, h)$ is the Fresnel reflectance.
+      
+    \item We approximate the Fresnel term with Schlick's approximation:
+    \begin{align*}
+      F(\eta, \theta_d, h) \approx F_0 + (1 - F_0) (1 - \cos \theta_d \sqrt{1 - h^2})^5
+    \end{align*}
+    where $F_0 = (1 - \eta)^2/(1 + \eta)^2$.
+      
+    \item Substituting $h = -\sin(\phi/2)$, we have
+    \begin{align*}
+      F(\eta, \theta_d, -\sin(\phi/2)) 
+      &\approx F_0 + (1 - F_0)(1 - \cos \theta_d \sqrt{1 - \sin^2(\phi/2)})^5\\
+      &= F_0 + (1 - F_0)(1 - \cos \theta_d |\cos (\phi/2)|)^5.
+    \end{align*}
+    Now, $N_R$ becomes a polynomial of $|\cos(\phi/2)|$ of degree 6. Let us write:
+    \begin{align*}
+      N_R(\eta, \theta_d, \phi) \approx \sum_{k=0}^6 C_k(\theta_d, \eta) | \cos^k (\phi/2) |.
+    \end{align*}
+    
+    \item As such, the inner integral can be approximate as:
+    \begin{align*}
+      \azimint_R(\lambda_j', \phi_o - \phi_j, \theta_d)
+      &= \sum_{k=0}^6 C_k(\theta_d, \eta) \int_0^{2\pi} \bigg| \cos^k \bigg( \frac{\phi_o - \phi_j - \phi_i'}{2} \bigg) \bigg| g^c(\phi_i'; 0, \lambda'_j)\ \dee \phi_i'\\
+      &= \sum_{k=0}^6 C_k(\theta_d, \eta) \mathcal{C}_k(\lambda_j', \phi_o - \phi_j)
+    \end{align*}
+    where $\mathcal{C}_k(\lambda_j', \phi_o - \phi_j)$ stands for the integral in the RHS. The paper precomputes this for various values of $\lambda_j'$ and $\phi_o - \phi_j$ and look up its value in run time.
+    
+    \item Now, we need to figure out the outer integral $\modeint_R(\xi_j, \lambda_j)$. Consider the term $M_R(\theta_h)$. We have that
+    \begin{align*}
+      M_R(\theta_h) = g^u(\theta_h; \alpha_R, \beta_R) = 2g^u(\theta_i; 2\alpha_R - \theta_o, 2\beta_R).
+    \end{align*}
+    Therefore, the term $g_j(\theta_i) M_R(\theta_h)$ is a product of two 1D Gaussians, which means that it is also a Gaussian. Hence, $\modeint_R(\xi_j, \lambda_j)$ is an integral of a product of the function $\frac{\cos^2 \theta_i}{\cos^2 \theta_d} \azimint_t(\lambda'_j, \phi_o-\phi_j, \theta_d)$ with a Gaussian. The paper estimates this product integral with a numerical quadrature procedure that we will detail in the next section.
+  \end{itemize}
+  
+  \subsection{Approximate Product Integral with 1D Gaussian}
+  \begin{itemize}
+    \item Given a Guassian $g(x; \mu,\lambda)$ and an arbitrary function $f(x)$, we would like to approximate the integral
+    \begin{align*}
+      \int_{r_0}^{r_1} g(x; \mu, \lambda) f(x)\ \dee x,
+    \end{align*}
+    which generally has no analytic solution.
+    
+    \item We assume that $f(x)$ is smooth and approximate it as being piecewise linear. To do so:
+    \begin{itemize}
+      \item We take $m+1$ samples $r_0 = x_0 < x_1 < x_2 < \dotsc < x_m = r_1$ from the interval $[r_0, r_1]$. 
+      \item We approximate $f(x)$ on the interval $[x_s, x_{s_1}]$ as $f(x) \approx b_sx + c_s$.\\ Here, $b_s$ and $c_s$ are linear coefficients computed from $f(x_s)$ and $f(x_{s+1})$. 
+    \end{itemize}
+    
+    \item The product integral becomes:
+    \begin{align*}
+      \sum_{s=0}^{m-1} \int_{x_s}^{x_{s+1}} g(x; \mu, \lambda) (b_s x + c_s)\ \dee x
+    \end{align*}
+    which can be computed analytically because the product of a Gaussian with a linear function has an analytic solution involving the error function. (See the supplement material of the paper for details.)
+    
+    \item To compute $\modeint_t(\xi_j, \lambda_j)$ is to compute the product integral over the interval $[-\pi/2, \pi/2]$. The paper picks $m+1$ samples by:
+    \begin{itemize}
+      \item Pick the two end points $-\pi/2$ and $\pi/2$.
+      \item Pick $m-1$ samples uniformly from the interval $[u - (m-2)\lambda/2, \mu+(m-2)\lambda/2]$. 
+    \end{itemize}
+    The paper found that using $m=4$ is enough.
+  \end{itemize}
+  
+  \subsection{Approximating the TT Mode}
+  \begin{itemize}
+    \item For the $TT$ mode, we have that
+    \begin{align*}
+      N_{TT}(\eta, \theta_d, \sigma_a, \phi) = \frac{1}{2} \bigg| \frac{\dee\phi}{\dee h} \bigg|^{-1} (1 - F(\eta, \theta_d, h))^2 T(\sigma_a, \theta_d, h).
+    \end{align*}
+    
+    \item The paper approximates the above function by a single circular Gaussian centered at $\phi = \pi$ (apparently because the TT mode is forward scattering):
+    \begin{align*}
+      N_{TT}(\eta, \theta_d, \sigma_a, \phi) \approx b_{TT}(\eta, \sigma_d, \sigma_a) g^c(\phi; \pi, \lambda_{TT}(\eta, \theta_d, \sigma_a))
+    \end{align*}
+    where $b_TT$ and $\lambda_TT$ denote the scaling factor and the width of the Gaussian. Both depends on $\eta$, $\theta_d$, and $\sigma_a$.
+    
+    \item $b_{TT}$ is set to be the value of $N_{TT}$ at $\phi = \pi$.
+    
+    \item $\lambda_TT$ is defined as:
+    \begin{align*}
+      \lambda_{TT}(\eta, \theta_d, \sigma_a) = \frac{1}{\sqrt{\pi}b_{TT}(\eta, \theta_d, \sigma_a)} \int_{-\pi}^\pi N_{TT}(\eta, \theta_d, \sigma_a, \phi)\ \dee \phi.
+    \end{align*}
+    Thus, our task comes down to approximating the integral of $N_{TT}$ over $[-\pi, \pi]$.
+    
+    \item To approximate the integral, we first approximate the transmittance function $T(\sigma_a, \theta_d, h)$ with a fourth order Taylor expansion:
+    \begin{align*}
+      T(\sigma_a, \theta_d, h) \approx \sum_{k \in \{ 0, 2, 4\}} a_k(\theta_d, \sigma_a) h^k
+    \end{align*}
+    where $a_k(\theta_d, \sigma_a)$ is a Taylor expansion coefficient which has an analytic expression.
+    
+    \item Now, we have that
+    \begin{align*}
+      \int_{-\pi}^\pi N_{TT}(\eta, \theta_d, \sigma_a, \phi)\ \dee\phi 
+      &=  \int_{-\pi}^\pi \frac{1}{2} \bigg| \frac{\dee\phi}{\dee h} \bigg|^{-1} (1 - F(\eta, \theta_d, h))^2 T(\sigma_a, \theta_d, h)\ \dee \phi\\
+      &= \frac{1}{2} \int_{-1}^1 (1 - F(\eta, \theta_d, h))^2 T(\sigma_a, \theta_d, h)\ \dee h\\
+      &\approx \frac{1}{2} \int_{-1}^1 (1 - F(\eta, \theta_d, h))^2 \bigg( \sum_{k \in \{ 0, 2, 4\}} a_k(\theta_d, \sigma_a) h^k \bigg) \ \dee h\\
+      &= \frac{1}{2} \sum_{k \in \{ 0, 2, 4\}} a_k(\theta_d, \sigma_a)  \bigg(  \int_{-1}^1 (1 - F(\eta, \theta_d, h))^2 h^k  \ \dee h \bigg).
+    \end{align*}
+    Let us the denote the integral $\int_{-1}^1 (1 - F(\eta, \theta_d, h))^2 h^k  \ \dee h$
+    as $\mathcal{K}^{TT}_k(\eta, \theta_d)$. The paper precomputes these integrals for various values of $\eta$ and $\theta_d$ and stores the results in a 2D table for run-time lookups.
+    
+    \item Now that we have approximated $N_{TT}$, our next task is to evaluate the integral $$\azimint_{TT}(\lambda_j', \phi_o - \phi_j, \theta_d) = \int_0^{2\pi} g^c(\phi_i'; 0, \lambda_j') N_{TT}(\theta_d, (\phi_o - \phi_j) - \phi_i')\ \dee \phi_i'.$$
+    Note that we have approximated $N_{TT}$ as a circular Gaussian, we have that the integrand is a product of two circular Gaussians, which is still a circular Gaussian. The integral has an analytic solution which can be easily computed.
+    
+    \item The outer integral $\modeint_{TT}$ is a product integral between a Gaussian and the function $\azimint_{TT} \cos^2 \theta_i / \cos^2 \theta_d$, which is smooth. We evaluate this integral the same way we evaluated the integral for the $R$ mode.
+  \end{itemize}
+  
+  \subsection{Approximating the TRT Mode}
+  \begin{itemize}
+    \item In the Marschner model, the TRT has two types of behavior. When $\eta' < 2$, the azimuthal scattering function has two peaks. When $\eta' \geq 2$, it has no peaks.
+    
+    \item When $\eta' < 2$, Xu \etal~approximates the azimuthal scattering function as the sum of three Gaussians:
+    \begin{align*}
+      N_{TRT} \approx b_1( g^c(\phi; \phi^*, w_c) + g^c(\phi; -\phi^*, w_c) ) + b_2 g^c(\phi; 0, \phi^*).
+    \end{align*}
+    where $\phi^*$ is the peak location which is given by:
+    \begin{align*}
+      \phi^* = \phi(h^*) = \phi\bigg( \sqrt{ \frac{4-\eta'^2}{3} } \bigg),
+    \end{align*}
+    and $w_c$ is the width of the peak, which the user sets.
+    
+    \item The coefficient $b_2$ is set to:
+    \begin{align*}
+      b_2 = (1 - g^c(0;\phi^*, w_c))^2 N_{TRT}(0).
+    \end{align*}
+    
+    \item The coefficient $b_1$ is set to:
+    \begin{align*}
+      b_1 = \frac{\int_{-\pi}^\pi N_{TRT}(\phi)\ \dee\phi - \int_{-\pi}^\pi b_2 g^c(\phi)\ \dee\phi }{2\int_{-\pi}^\pi g^c(\phi; \phi^2, w_c)\ \dee\phi}
+      = \frac{\int_{-\pi}^\pi N_{TRT}(\phi)\ \dee\phi - b_2\sqrt{\pi}\phi^* }{2\sqrt{\pi}w_c}.
+    \end{align*}
+    
+    \item To approximate the $\int_{-\pi}^{\pi} N_{TRT} \dee\phi$ term, we use the same technique used to apprixmate $\int_{-\pi}^{\pi} N_{TT} \dee\phi$. First, we write:
+    \begin{align*}
+      \int_{-\pi}^\pi N_{TRT}(\phi)\ \dee\phi
+      &= \frac{1}{2} \int_{-1}^1 (1 - F(\eta, \theta_d, h))^2 F(\eta, \theta_d, h) T^2 (\sigma_a, \theta_d, h)\ \dee h\\
+    \end{align*}
+    Then, we approximate
+    \begin{align*}
+      T^2(\sigma_a, \theta_d, h) \approx \sum_{k \in \{ 0, 2, 4\}} c_k(\theta_d, \sigma_a) h^k
+    \end{align*}
+    where each $c_k(\theta_d, \sigma_a)$ is a Taylor series expansion coefficient that has analytic expressions.
+    
+    Thus, we have that
+    \begin{align*}
+      \int_{-\pi}^\pi N_{TRT}(\phi)\ \dee\phi
+      &\approx \frac{1}{2}\sum_{k \in \{ 0, 2, 4\}} c_k(\theta_d, \sigma_a) \bigg( \int_{-1}^1 (1 - F(\eta, \theta_d, h))^2 F(\eta, \theta_d, h) h^k \ \dee h \bigg)\\      
+    \end{align*}
+    Let $\mathcal{K}^{TRT}(\eta, \theta_d)$ denote the integral $\int_{-1}^1 (1 - F(\eta, \theta_d, h))^2 F(\eta, \theta_d, h) h^k \ \dee h$. We precompute a table of $\mathcal{K}^{TRT}(\eta, \theta_d)$ for real-time lookups.
+    
+    \item When $\eta' \geq 2$, $N_{TRT}$ is approximated using a single Guassian:
+    \begin{align*}
+      N_{TRT} \approx b_3 g^c(\phi; 0, \lambda_3).
+    \end{align*}
+    The coefficient $b_3$ is set to the value of $N_{TRT}$ at $\phi = 0$, and $\lambda_3$ is determined by trying to preserve the energy just like in the TT mode case:
+    \begin{align*}
+      \lambda_3 = \frac{1}{\sqrt{\pi}b_3}\int_{-\pi}^\pi N_{TRT}(\phi)\ \dee\phi.
+    \end{align*}
+    
+    \item The approximation of $N_{TRT}$ when $\eta' \geq 2$ might lead to discontinuity when $\eta'$ changes across 2.
+    
+    This is a problem because, when $\eta' < 2$, the center Gaussian bandwidth is $w_c$. However, when $\eta' \geq 2$, when Gaussian bandwidth is $\lambda_3$.
+    
+    Xu \etal~interpolates the bandwidth of the center Gaussian between $w_c$ and $\lambda_3$ over a small range of $\Delta \eta'$:
+    \begin{align*}
+      \lambda_3' = \mrm{interp}(w_c, \lambda_3, \mrm{smoothstep}(2, 2+\Delta\eta', \eta')).
+    \end{align*}
+    The coefficient $b'$ is modified to $b_3 \lambda_3 / \lambda_3'$ to preserve the energy of the lobe.
+    
+    \item The outer integral $\modeint_{TRT}$ is approximate using linear quadrature as was done in the TT mode.
+    
+  \end{itemize}
+  
+  \subsection{Handling Eccentricity in the TRT Mode}
+  
+  \begin{itemize}
+    \item Marschner proposed using varying refraction index $\eta^*$ that depends on the azimuthal half angle $\phi_h$ to simulate hair eccentricity:
+    \begin{align*}
+      \eta^*_1 &= 2(\eta-1)a^2 - \eta + 2\\
+      \eta^*_2 &= 2(\eta-1)a^{-2} - \eta + 2\\
+      \eta^*(\phi_h) &= ((\eta^*_1 + \eta^*_2) + \cos(2\phi_h)(\eta^*_1 - \eta^*_2))/2
+    \end{align*}
+    where $a$ is the eccentricity parameter.
+    
+    \item To incorporate eccentricity, the inner integral $\azimint_{TRT}$ is changed to:
+    \begin{align*}
+      \azimint_{TRT} 
+      &= \int g^c(\phi_i';0,\lambda'_j) N_{TRT}(\eta^*(\phi_h), \theta_d, \phi_o - \phi_j - \phi_i')\ \dee\phi_i'\\
+      &\approx \int g^c(\phi_i';0,\lambda'_j) N_{TRT}(\overline{\eta^*}, \theta_d, \phi_o - \phi_j - \phi_i')\ \dee\phi_i'
+    \end{align*}
+    where
+    \begin{align*}
+      \overline{\eta^*} = \frac{\int g^c(\phi_i';0,\lambda_j) \eta^*(\phi_h)\ \dee \phi_i'}{\int g^c(\phi_i';0,\lambda_j)\ \dee \phi_i'}.
+    \end{align*}
+    The average index of refraction $\overline{\eta^*}$ can be efficiently computed on the fly by reusing the precomputed $\mathcal{C}_k(\lambda_j', \phi_o - \phi_j)$. This because we have that $\cos(2\phi_h) = 2\cos^2(\phi_h) - 1 = 2\cos^2((\phi_i' - \phi_j + \phi_o)/2) - 1$, which means we only need $\mathcal{C}_0$ and $\mathcal{C}_2$.
+  \end{itemize}
+  
+  
+\bibliographystyle{plain}
+\bibliography{hair-scattering-approx}	
+
+\end{document}

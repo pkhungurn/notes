@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>Semantic Segmentation Papers</title>
+
+    <!-- Bootstrap -->
+    <link href="../../../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../../../css/theme.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+      TeX: { equationNumbers: {autoNumber: "AMS"} } 
+    });
+    </script>
+    <script type="text/javascript"
+            src="../../../MathJax/MathJax.js?config=TeX-AMS_HTML-full">
+    </script>
+
+    <script type="text/javascript" src="../../../js/jquery-3.4.1.min.js"></script>    
+    <script type="text/javascript" src="../../../js/bigfoot.min.js"></script>    
+
+    <link rel="stylesheet" type="text/css" href="../../../css/bigfoot-default.css">    
+
+</head>
+<body>
+<div class="container">
+    <span style="visibility: hidden;">
+        \(
+        \def\sc#1{\dosc#1\csod}
+        \def\dosc#1#2\csod{{\rm #1{\small #2}}}
+
+        \newcommand{\dee}{\mathrm{d}}
+        \newcommand{\Dee}{\mathrm{D}}
+        \newcommand{\In}{\mathrm{in}}
+        \newcommand{\Out}{\mathrm{out}}
+        \newcommand{\pdf}{\mathrm{pdf}}
+        \newcommand{\Cov}{\mathrm{Cov}}
+        \newcommand{\Var}{\mathrm{Var}}
+
+        \newcommand{\ve}[1]{\mathbf{#1}}
+        \newcommand{\mrm}[1]{\mathrm{#1}}
+        \newcommand{\etal}{{et~al.}}
+        \newcommand{\sphere}{\mathbb{S}^2}
+        \newcommand{\modeint}{\mathcal{M}}
+        \newcommand{\azimint}{\mathcal{N}}
+        \newcommand{\ra}{\rightarrow}
+        \newcommand{\mcal}[1]{\mathcal{#1}}
+        \newcommand{\X}{\mathcal{X}}
+        \newcommand{\Y}{\mathcal{Y}}
+        \newcommand{\Z}{\mathcal{Z}}
+        \newcommand{\x}{\mathbf{x}}
+        \newcommand{\y}{\mathbf{y}}
+        \newcommand{\z}{\mathbf{z}}
+        \newcommand{\tr}{\mathrm{tr}}
+        \newcommand{\sgn}{\mathrm{sgn}}
+        \newcommand{\diag}{\mathrm{diag}}
+        \newcommand{\Real}{\mathbb{R}}
+        \newcommand{\sseq}{\subseteq}
+        \newcommand{\ov}[1]{\overline{#1}}
+        \DeclareMathOperator*{\argmax}{arg\,max}
+        \DeclareMathOperator*{\argmin}{arg\,min}
+        \)
+    </span>
+
+    <br>
+    <h1>Semantic Segmentation Papers</h1>
+
+    <p>
+        I have to perform semantic segmentations. I don't know much about the subject, so I need to learn more about it. I read the <a href="https://arxiv.org/pdf/2001.05566.pdf">survey paper</a> by Minaee et al., but I'm still not  clear about many of the details. This note is an attempt (1) to put into a web-readable format some valuable information from the paper and also (2) to write out details of the some of the papers cited by the survey.
+    </p>
+    <hr>
+
+    <h2>1 &nbsp; Datasets for Semantic Segmentation</h2>
+
+    <p>Before going into the datasets, let us mention a convention for calling object categories.
+    </p>
+
+    <ul>
+        <li><b>Things</b> = objects whose individual instances may be easily labeled such as person, chair, or car.</li>
+
+        <li><b>Stuffs</b> = materials and objects with no clear boudaries such as sky, street, and grass.</li>
+    </ul>
+
+    <p>Now, we list some famous datasets that are sizable (> 1k images)</p>
+
+    <ul>
+        <li><b>PASCAL Visual Object Classes (VOC)</b>
+        <ul>
+            <li><a href="http://host.robots.ox.ac.uk/pascal/VOC/">[LINK]</a></li>
+            <li>Size
+            <ul>
+                <li>Training = 1,464 images.</li>
+                <li>Validation = 1,449 images.</li>
+            </ul>
+            </li>
+            <li>21 classes of "things" + a background class.</li>
+        </ul>
+        </li>
+        
+        <li><b>Microsoft Common Objects in Context (MS COCO)</b>
+        <ul>
+            <li><a href="https://cocodataset.org/#home">[LINK]</a></li>
+            <li>Size
+            <ul>
+                <li>Training set = 82k images.</li>
+                <li>Validation set = 40.5k images.</li>
+                <li>Test set = 89k images.</li>
+            </ul>
+            </li>
+            <li>91 classes of "things" with 80 classes containing semantic segmentation labels.            
+            </li>
+        </ul>
+        </li>
+
+        <li><b>Cityscapes</b>
+        <ul>
+            <li><a href="https://www.cityscapes-dataset.com/">[LINK]</a></li>
+            <li>Images of urban street scenes in Europe, captured from cars.</li>
+            <li>Size
+            <ul>
+                <li>Images with per-pixel labels = 5k.</li>
+                <li>Images with coarse annotations = 20k.</li>
+            </ul>
+            </li>
+            <li>Pixel annotations have 30 classes of both "things" and "stuffs."</li>            
+        </ul>
+        </li>
+
+        <li><b>ADE20K</b>
+        <ul>
+            <li><a href="https://groups.csail.mit.edu/vision/datasets/ADE20K/">[LINK]</a></li>
+            <li>Size
+            <ul>
+                <li>Training set = 20k images.</li>
+                <li>Validation set = 2k images.</li>
+                <li>Test set = unspecified.</li>
+            </ul>
+            </li>
+            <li>150 classes of "things" and "stuffs."</li>
+        </ul>
+        </li>
+    </ul>
+
+    <hr>
+    <h2>2 &nbsp; Metrics for Semantic Segmentation</h2>
+
+    <p>Let us say that there are $K$ object classes and one background class, so there are $K+1$ classes in total.</p>
+
+    <ul>
+        <li><b>Pixel accuracy (PA)</b>
+        <ul>
+            <li>The number of pixels correctly classified over the number of labelled pixels.</li>
+
+            <li>Let $p_{ij}$ be the number of pixels of class $i$ predicted as belonging to class $j$.</li>
+
+            <li>Definition:
+            \begin{align*}
+                \mathrm{PA} = \frac{\sum_{i=0}^K p_{ii}}{\sum_{i=0}^K \sum_{j=0}^k p_{ij}}
+            \end{align*}
+            </li>
+        </ul>
+        </li>
+
+        <li><b>Mean pixel accuracy (MPA)</b>
+        <ul>
+            <li>First, compute the pixel accuracy of each class.
+            \begin{align*}
+                \mathrm{PA}_i = \frac{p_{ii}}{\sum_{j=0}^K p_{ij}}
+            \end{align*}
+            </li>
+            <li>Then, compute the average the accuracies over the classes.
+            \begin{align*}
+                \mathrm{MPA} = \frac{1}{K+1} \sum_{i=0}^K \mathrm{PA}_i = \frac{1}{K+1} \sum_{i=0}^K   \frac{p_{ii}}{\sum_{j=0}^K p_{ij}}.
+            \end{align*}
+            </li>            
+        </ul>
+        </li>
+
+        <li><b>Intersection over Union (IoU)</b>
+        <ul>            
+            <li>Fix an object class, the ground truth and the prediction can be viewed as a binary function of the pixels, telling which pixels belong to the class.</li>
+            <li>Let $A$ be the set of pixels belonging to the class in the ground truth, and $B$ be the similar set for the prediction.</li>
+            <li>The IoU is defined as:
+            \begin{align*}
+                \mathrm{IoU} = \frac{|A \cap B|}{|A \cup B|}.
+            \end{align*}
+            That is, the number of correctly predicted pixels over the number of pixels that belong to the class in both the ground truth and the prediction.
+            </li>
+        </ul>
+        </li>
+
+        <li><b>Mean-IoU</b>
+        <ul>
+            <li>The mean of the IoU over all classes.</li>
+            <li>This is by far the most popular metrics.</li>
+        </ul>
+        </li>
+
+        <li><b>Precision/Recall/F1 score</b>
+        <ul>
+            <li>Well-known metrics for binary classification.</li>
+            <li>Hence, only defined for a single object class.</li>
+            <li>Recall the following concepts:
+            <ul>
+                <li>true positive (TP)</li>
+                <li>false positive (FP)</li>
+                <li>true negative (TN)</li>
+                <li>false negative (FN)</li>
+            </ul>
+            </li>
+            <li>Precision and recall are defined as follows:
+            \begin{align*}
+                \mathrm{precision} &= \frac{\#\mathrm{TP}}{\#\mathrm{TP} + \#\mathrm{FP}} \\
+                \mathrm{recall} &= \frac{\#\mathrm{TP}}{\#\mathrm{TP} + \#\mathrm{FN}}
+            \end{align*}
+            Here, $\#$ stands for "number of".
+            </li>
+            <li>The F1 score is just the harmonic mean of precision and recall.
+            \begin{align*}
+                \mathrm{F1} 
+                = \frac{2}{\frac{1}{\mathrm{precision}} + \frac{1}{\mathrm{recall}}}
+                = \frac{2 \times \mathrm{precision} \times \mathrm{recall}}{\mathrm{precision} + \mathrm{recall}}
+            \end{align*}
+            </li>
+        </ul>
+        </li>
+
+        <li><b>Dice coefficient</b>
+        <ul>
+            <li>Defined as follows:
+            \begin{align*}
+                \mathrm{dice} = \frac{2 |A \cap B|}{|A| + |B|}
+            \end{align*}
+            where $A$ and $B$ are the same as those quantities used in the definitino of the IoU.
+            </li>
+
+            <li>Actually, the dice coefficient is the same as the F1 score. First, note that
+            \begin{align*}
+                \#\mathrm{TP} &= |A \cap B| \\
+                \#\mathrm{FP} &= |B - A| \\
+                \#\mathrm{FN} &= |A - B|.
+            \end{align*}
+            So,
+            \begin{align*}
+                \mathrm{precision} &= \frac{|A \cap B|}{|A \cap B| + |B - A|} = \frac{|A \cap B|}{|B|}, \\
+                \mathrm{recall} &= \frac{|A \cap B|}{|A \cap B| + |A - B|} = \frac{|A \cap B|}{|A|},\\
+                \mathrm{F1} &= \frac{2}{\frac{1}{\mathrm{precision}} + \frac{1}{\mathrm{recall}}}
+                = \frac{2}{\frac{|B|}{|A \cap B|} + \frac{|A|}{|A \cap B|}}
+                = \frac{2|A \cap B|}{|A| + |B|} = \mathrm{dice}.
+            \end{align*}
+            </li>
+        </ul>
+        </li>
+    </ul>
+
+    <hr>
+    <h2>3 &nbsp; Approaches for Semantic Segmentation</h2>
+
+    <p>The survey paper by Minaee et al. classify previous works based on the network architectures they use. There are ten approaches. I'm only listing here approaches that involve only feed-forward networks, skipping recurrent models and those based on region proposals because I don't think I will implement them.</p>
+
+    <ul>
+        <li><b>Fully Convolutional Networks (FCNs)</b>
+        <ul>
+            <li>This approach adapts architectures used for image classification (AlexNet, GoogLeNet, VGG, etc.) by turning all fully connected layers to convolutional layers.</li>
+
+            <li>Just doing the above produces a feature map that has lower resolution than the input image. Therefore, works using this approach must upsample this feature map in some way to produce pixel-wise outputs.</li>
+
+            <li>Long et al. is the first paper that uses deep learning for semantic segmentation <a href="https://arxiv.org/abs/1411.4038">[2015]</a>. </li>
+
+            <li>Liu et al. tries to solve the problem that FCNs tend to ignore global context information by just adding one based on pooling features computed from the whole image <a href="https://arxiv.org/abs/1506.04579">[2015]</a>.</li>
+        </ul>
+        </li>
+
+        <li><b>Convolutional Models with Graphical Models</b>
+        <ul>
+            <li>Graphical models include conditional random fields (CRFs) and Markov random fields (MRFs).</li>
+
+            <li>The survey papers mention that these graphical models can help with taking into account the global context.</li>
+
+            <li>They also help with cleaning up porous boundaries produced by deep networks. This is often called the "localization" problem.</li>
+
+            <li>Chen et al.'s "DeepLab" system is a famous paper in this direction <a href="https://arxiv.org/abs/1412.7062">[2015]</a>.
+            <ul>
+                <li>It uses the famous fully connected CRF by Krahenbuhl and Koltun <a href="https://www.philkr.net/papers/kraehenbuehl2011efficient/">[2011]</a> as a post-processing step.</li>
+            </ul>
+            </li>
+
+            <li>Schwing and Urtasun unify CNNs with CRFs, training them jointly <a href="https://arxiv.org/abs/1503.02351">[2015]</a>.</li>
+
+            <li>Zheng et al. formulate a CRF as a recurrent neural network to enable join training <a href="https://arxiv.org/abs/1502.03240">[2015]</a>.</li>
+
+            <li>Liu et al. add additional layers to a CNN to approximate the mean field algorithm for the pairwise terms in an MRF <a href="https://arxiv.org/abs/1509.02634">[2015]</a>. </li>
+
+            <li>Lin et al. develops a CRF with CNN-based potential functions <a href="https://arxiv.org/abs/1504.01013">[2016]</a>.</li>
+        </ul>        
+        </li>
+
+        <li><b>Encoder-Decoder Models</b>
+        <ul>
+            <li>Noh et al. is the first paper in this direction <a href="https://arxiv.org/abs/1505.04366">[2015]</a>. It uses transposed convolution (i.e. deconvolution) in the decoder.</li>
+
+            <li>SegNet by Badrinarayanan et al. uses pooling indices computed in the max pooling step to do upsamping, leading to a network with a smaller number of parameters <a href="https://arxiv.org/abs/1511.00561">[2015]</a>.</li>
+
+            <li>HRNet is a new backbone architecture for visual tasks <a href="https://jingdongwang2017.github.io/Projects/HRNet/index.html">[Sun et al. 2019a]</a>, and it can be used to solve semantic segmentation <a href="https://jingdongwang2017.github.io/Projects/HRNet/SemanticSegmentation.html">[Sun et al. 2019b]</a>. The approach is extended with "object-contextual representions" and transformer-style attention <a href="https://arxiv.org/abs/1909.11065">[Yuan et al 2020]</a>.</li>
+
+            <li>U-Net is a tool I'm already familiar with <a href="https://arxiv.org/abs/1505.04597">[Ronneberger et al. 2015]</a>.</li>
+
+            <li>V-Net is similar to U-Net but is designed for 3D segmentation <a href="https://arxiv.org/abs/1606.04797">[Milletari et al. 2016]</a>.</li>
+
+            <li>Newer papers:
+            <ul>
+                <li>Fu et al. <b>Stacked Deconvolutional Network for Semantic Segmentation.</b> <a href="https://arxiv.org/abs/1708.04943">[2017]</a></li>
+                <li>Chaurasia and Culurciello. <b>LinkNet: Exploiting Encoder Representations for Efficient Semantic Segmentation</b> <a href="https://arxiv.org/abs/1707.03718">[2017]</a></li>
+            </ul>
+            </li>
+        </ul>
+        </li>
+
+        <li><b>Multi-Scale and Pyramid Networks</b>
+        <ul>
+            <li>Feature Pyramid Network (FPN) performs multi-scale analysis in a CNN <a href="https://arxiv.org/abs/1612.03144">[Lin et al. 2016]</a>, but it is designed for object detection.</li>
+
+            <li>Zhao et al. applies multi-scale analysis to semantic segmentation <a href="https://arxiv.org/abs/1612.01105">[2017]</a>. </li>
+
+            <li>Ghiasi and Fowlkes proposes an architecture that refines boundaries from low-resolution features <a href="https://arxiv.org/abs/1605.02264">[2016]</a>.</li>
+
+            <li>Newer papers.
+            <ul>
+                <li>He et al. <b>Dynamic Multi-scale Filters for Semantic Segmentation.</b> <a href="https://openaccess.thecvf.com/content_ICCV_2019/papers/He_Dynamic_Multi-Scale_Filters_for_Semantic_Segmentation_ICCV_2019_paper.pdf">[2019]</a></li>
+
+                <li>Ding et al. <b>Context Contrasted Feature and Gated Multi-scale Aggregation for Scene Segmentation.</b> <a href="https://openaccess.thecvf.com/content_cvpr_2018/papers/Ding_Context_Contrasted_Feature_CVPR_2018_paper.pdf">[2018]</a></li>
+
+                <li>He et al. <b>Adaptive Pyramid Context Network for Semantic Segmentation.</b> <a href="https://openaccess.thecvf.com/content_CVPR_2019/papers/He_Adaptive_Pyramid_Context_Network_for_Semantic_Segmentation_CVPR_2019_paper.pdf">[2019]</a></li>                
+            </ul>
+            </li>
+        </ul>
+        </li>
+
+        <li><b>Dilated Convolutions</b>
+        <ul>
+            <li>DeepLab <a href="https://arxiv.org/abs/1412.7062">[Chen et al. 2015]</a> and DeepLabv2 <a href="https://arxiv.org/abs/1606.00915">[Chen et al. 2016]</a> introduce two additional techniques in addition to the CRF postprocessing.
+            <ul>
+                <li>The first is the use of dilated (aka atrous) convolutions.</li>
+
+                <li>The second is the "Atrous Spatial Pyramid Pooling" (ASPP), which probes the input feature with filters at multiple sampling rates and effective field of views.</li>
+            </ul>
+            </li>
+
+            <li>DeepLabv3 uses an encoder-decoder with atrous separable convolutions <a href="https://arxiv.org/abs/1802.02611">[Chen et al. 2018]</a>.</li>
+        </ul>
+
+        <li><b>Attention</b></li>
+        <ul>
+            <li>Chen et al. (yes, this the Chen of DeepLab) are the first to use attention mechanism in semantic segmentation <a href="https://arxiv.org/abs/1511.03339">[Chen et al. 2016]</a>.</li>
+
+            <li>Huang et al. uses "reverse attention mechanism," which pays attention to areas that are not supposed to be in the target class, together with the normal attention mechanism. <a href="https://arxiv.org/abs/1707.06426">[2017]</a>.</li>
+
+            <li>Li et al. combines attention and feature pyramid <a href="https://arxiv.org/abs/1805.10180">[2018]</a>.</li>
+
+            <li>Fu et al. develops "dual attention," which uses two types of attention modules: one models interdepencies in the spatial dimension, and the other models interdependencies in the channel dimensions <a href="https://arxiv.org/abs/1809.02983">[2019]</a>.</li>
+
+            <li>Newer papers.
+            <ul>
+                <li>Yuan et al. <b>OCNet: Object Context Network for Scene Parsing.</b> <a href="https://arxiv.org/abs/1809.00916">[2021]</a></li>
+
+                <li>Li et al. <b>Expectation-Maximization Attention Networks for Semantic Segmentation.</b> <a href="https://arxiv.org/abs/1907.13426">[2019]</a></li>
+
+                <li>Huang et al. <b>CCNet: Criss-Cross Attention for Semantic Segmentation.</b> <a href="https://arxiv.org/abs/1811.11721">[2019]</a></li>
+
+                <li>Ren and Zemel. <b>End-to-End Instance Segmentation with Recurrent Attention.</b> <a href="https://arxiv.org/abs/1605.09410">[2017]</a></li>
+
+                <li>Zhao et al. <b>PSANet: Point-wise Spatial Attention Network for Scene Parsing.</b> <a href="https://hszhao.github.io/papers/eccv18_psanet.pdf">[2018]</a>.</li>
+
+                <li>Yu et al. <b>Learning a Discriminative Feature Network for Semantic Segmentation.</b> <a href="https://arxiv.org/abs/1804.09337">[2018]</a></li>
+
+                <li>Tao et al. <b>Hierarchical Multi-Scale Attention for Semantic Segmentation.</b> <a href="https://arxiv.org/abs/2005.10821">[2020]</a></li>
+            </ul>
+            </li>
+        </ul>
+        </li>
+
+        <li><b>Adversarial Training</b>
+        <ul>
+            <li>Luc et al. first uses adversarial training to solve semantic segmentation <a href="https://arxiv.org/abs/1611.08408">[2016]</a>.</li>
+
+            <li>There are a number of works that use adversarial training to do semi-supervised training. However, I'm not that interested in semi-supervised learning because of the kind of data that I have.</li>
+
+            <li>Xue et al. proposes a GAN with multi-scale L1 loss for medical image segmentation <a href="https://arxiv.org/abs/1706.01805">[2017]</a>.</li>
+        </ul>
+        </li>
+    </ul>
+    
+    <hr>
+    <h2>4 &nbsp; Long et al. (CVPR 2015)</h2>
+
+    <ul>
+        <li>This seems to be the first paper that uses deep CNNs to perform segmantic segmentation.</li>
+
+        <li>The general approach is to adapt CNNs trained to do image classfication for image segmentation.
+        <ul>
+            <li>The paper chooses VGG-16 as the CNN to adapt.</li>
+        </ul>
+        </li>
+
+        <li>The first step in doing so is to view all fully-connected layers as $1\times 1$ convolutional layers.</li>
+
+        <li>After the first step, the paper says that it removes the last layer that produces a 1000-way prediction, and replaces it with a $1 \times 1$ convolution that produces the right number of classes. (21 for the Pascal VOC dataset.)</li>        
+
+        <li>Now, things start to not make sense. The paper claims that this produces an feature tensor whose side length is 32x less than the original image. This, however, does not make sense because the convolution after the last pooling layer <a href="https://github.com/shelhamer/fcn.berkeleyvision.org/blob/1305c7378a9f0ab44b2c936f4d60e4687e3d8743/voc-fcn16s/net.py#L52">has size 7 and does not have any padding</a>.
+        <ul>
+            <li>The only way for this to work is to add padding at the last convolution or just use the output of the last pooling steps without using the last convolution.</li>
+        </ul>
+        </li>
+
+        <li>Assuming that we cut out all the convolutions after the last pooling layer, the paper does the following.
+        <ol>
+            <li>It passes the output of the last 3 pooling layers to new $1\times1$ convolutional layers to get tensors whose side lengths are 32x, 16x, and 16x smaller than the original image.</li>
+
+            <li>It them combines the outputs together, upsampling the 32x tensor with a deconvolution and add the result to the 16x image. It agains upsamples the result and add it to the 8x image, producing a 8x output.</li>
+        </ol>
+        A diagram of the network is given below.
+        <p align="center"><img src="fcn.jpg" width="800"></p>
+        Here, $C$ is the number of classes, $H$ is the image height, and $W$ is the image width.
+        </li>
+
+        <li>Note, again, that the prediction produced by this paper is 8x smaller (in side length) than the image size.
+        <ul>
+            <li>We will see that, for most of the works discussed here, the outputs are small in size than the input.</li>
+        </ul>
+        </li>
+    </ul>
+    
+    <hr>
+    <h2>5 &nbsp; The DeepLab Family</h2>
+
+    <ul>
+        <li>The DeepLab family is the brain child of <a href="http://liangchiehchen.com/">Liang-Chieh Chen</a>, who started working on it in 2015 and made 3 incrementals to it up to 2018. The last version is called <a href="https://arxiv.org/abs/1802.02611">DeepLabv3+</a>.</li>
+
+        <li>Like Long et al.'s paper, the idea is also to repurpose CNNs trained for image classification. It thus must solve the problem that the output resolution is low.</li>
+
+        <li>The DeepLab family 
+        <ol>
+            <li>sets the strides of pooling layers to 1, and</li>
+            <li>replaces some convolutions in the original network with atrous convolutions (aka dilated convolution)</li>
+        </ol>
+        to increase output resolution. In constrast, Long et al. uses after-the-fact deconvolution to do so.
+        </li>
+    </ul>
+
+    <hr>
+    <div class="page-header"></div>
+    <p>Last modified: 2021/09/11</p>    
+</div>
+
+<script type="text/javascript">
+$.bigfoot();
+</script>
+
+</body>
+</html>
+

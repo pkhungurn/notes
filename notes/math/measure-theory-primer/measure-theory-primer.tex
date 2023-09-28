@@ -1,0 +1,1893 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+\usepackage{verbatim}
+\usepackage{hyperref}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\def\sc#1{\dosc#1\csod}
+\def\dosc#1#2\csod{{\rm #1{\small #2}}}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\Dee}{\mathrm{D}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\Var}{\mathrm{Var}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\ves}[1]{\boldsymbol{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+\newcommand{\ov}[1]{\overline{#1}}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+\title{A Primer on Measure Theory}
+\author{Pramook Khungurn}
+
+\begin{document}
+\maketitle
+
+This is a primer on measure theory and Lebesgue integration. The materials are taken from Bartle's ``The Elements Of Integration And Lebesgue Measure'' \cite{Bartle:1995}, Billingsley's ``Probability and Measure'' \cite{Billingsley:1995}, and Hunter's note on measure theory \cite{Hunter:2011}.
+
+\section{Introduction}
+
+\begin{itemize}
+  \item Why do we care about measure theory and Lebesgue integration?
+  \begin{itemize}
+    \item They expand the class of functions for which integrations are defined compared to what can be achieved by Riemann integration.
+    
+    \item Theorems relating to the intechange of limits and integrals are valid under less stringent conditions (again, compared to Reimann integration).
+    
+    \item In particular, the dominated convergence theorem \footnote{\url{https://en.wikipedia.org/wiki/Dominated_convergence_theorem}} is a very powerful tool. For examples, it can be use to easily show that
+    \begin{align*}
+      \lim_{n \rightarrow \infty} \int_{0}^\infty \frac{e^{-nx}}{\sqrt{x}}\, \dee x = 0
+    \end{align*}
+    and
+    \begin{align*}
+        \frac{\dee}{\dee x} \int_{0}^\infty x^2 e^{-tx}\, \dee x = -\int_0^\infty x^3 e^{-tx}\, \dee x.
+    \end{align*}
+    
+    \item Measure theory is the foundation of modern probability theory, and the dominated convergence theorem shows up everywhere in it.
+  \end{itemize}
+  
+  \item How is Lebesgue integration different from Reimann integration?
+  \begin{itemize}
+    \item Riemann integrals are defined in terms of approximating a function with constant functions over intevals.
+    
+    \item An {\bf interval} is a subset of the real line which is of one of the following forms:
+    \begin{align*}
+        [a,b] &= \{ x \in \Real: a \leq x \leq b \}, \\
+        [a,b) &= \{ x \in \Real: a \leq x < b \}, \\
+        (a,b] &= \{ x \in \Real: a < x \leq b \}, \\
+        (a,b) &= \{ x \in \Real: a < x < b \}.
+    \end{align*}
+    The real number $a$ and $b$ are said to be the {\bf endpoints} of the interval, and $b-a$ is the {\bf length} of the interval.
+      
+    \item A {\bf step function} $\varphi$ is a linear combination of a finite number of characteristic functions of intevals.
+    \begin{align*}
+        \varphi(x) = \sum_{i=1}^n c_j \chi_{E_j}(x)
+    \end{align*}
+    where $c_j \in \Real$ and each $E_j$ is an interval with endpoints $a_j$ and $b_j$. 
+
+    \item The integral of a step function $\varphi$ is defined to be $$ \int \varphi = \sum_{i=1}^n c_j(b_j - a_j).$$
+    
+    \item If $f$ is a bounded function on $[a,b]$, then the {\bf Reimann integral} is defined to the limit of the integrals of step functions that approximate $f$.
+    
+    \item The {\bf lower Rieman integral} is defined to be the supremum of integrals of all step functions $\phi$ such that $\phi(x) \leq f(x)$ for all $x \in [a,b]$ and $\phi(x) = 0$ for all $x \not\in [a,b]$.
+  \end{itemize}
+
+  \item The Lebesgue integral is defined similarly, with some differences.
+  \begin{itemize}
+    \item Intervals are replaced by a larger collection of sets (called {\bf measurable sets}).
+    
+    \item The notion of ``length'' is generalize to the notation of {\bf measure}.
+    \begin{itemize}
+      \item Here, the measure is a function $\mu$ that maps a set of a non-negative real number.
+    \end{itemize}
+    
+    \item The step function is replaced by the {\bf simple function}, which is a finite linear combination of characteristic functions of measurable sets.
+    \begin{align*}
+        \varphi(x) = \sum_{j=1}^n c_j \chi_{E_j}(x)
+    \end{align*}
+    where each $E_j$ is a measurable set. The integral of $\phi$ is defined to be
+    \begin{align*}
+        \int \varphi = \sum_{j=1}^n c_j \mu(E_j).
+    \end{align*}
+
+    \item If $f$ is a non-negative function defined on $\Real$, then the {\bf Lebesgue integral} of $f$ is the supremum of all simple functions $\phi$ such that $\phi(x) \leq f(x)$ for all $x \in \Real$.
+    \begin{itemize}
+      \item This notation can later be generalized to functions taking both signs.
+    \end{itemize}    
+  \end{itemize}
+
+  \item When studying integration, it is convenient to work with the {\bf extended real number system} $\overline{\Real} = \Real \cup \{-\infty, \infty\}$.
+  \begin{itemize}
+    \item For any $x \in \Real$, we have that $-\infty < x < \infty$.
+    \item We say that the length of the real line is $\infty$.
+    \item We define the supremum of non-empty set of real numbers which does not have an upper bound to be $\infty$, and the infemum of the a non-empty set of real numbers which does not have a lower bound to be $-\infty$.
+    \begin{itemize}
+      \item In this way, all non-empty sets of real numbers (or subsets of $\overline{\Real}$) have unique supremums and infemums.
+    \end{itemize}
+    \item The arithematic operations between the infiniites and real numbers are as follows:
+    \begin{align*}
+        (\pm \infty) + (\pm \infty) = x + (\pm \infty) = (\pm \infty) + x &= \pm \infty \\
+        (\pm \infty) (\pm \infty) &= +\infty \\
+        (\pm \infty) (\mp \infty) &= -\infty \\        
+        (\pm \infty) x = x (\pm \infty) &= \begin{cases}
+            \pm \infty, & \mbox{if } x > 0, \\
+            0, &\mbox{if } x = 0, \\
+            \mp \infty, & \mbox{if } x < 0
+        \end{cases}        
+    \end{align*}
+    for any (finite) real number $x$.
+    \item Note that we do not define $(\pm \infty) - (\pm \infty)$. We also do not define quotients when the denominators are $\pm \infty$.  
+  \end{itemize}
+  
+  \item If $(x_n)$ is a sequence of extended real numbers, define the {\bf limit superior} and {\bf limit inferior} by
+  \begin{align*}
+      \limsup_{n \rightarrow \infty}\ x_n &= \lim_{n \rightarrow \infty} \Big( \sup_{m \geq n} x_m \Big) = \inf_{n} \Big( \sup_{m \geq n} x_m \Big) \\
+      \liminf_{n \rightarrow \infty}\ x_n &= \lim_{n \rightarrow \infty} \Big( \inf_{m \geq n} x_m \Big) = \sup_{n} \Big( \inf_{m \geq n} x_m \Big).
+  \end{align*}
+  If the limit superior and limit inferere of a sequence both exist and are equal, then the {\bf limit} of the sequence exists and is equal to that value.
+\end{itemize}
+
+\section{Sigma-Algebras and Measures}
+
+\subsection{Basic Definitions}
+
+\begin{itemize}
+  \item Let us denote the power set of set $X$ with $\mcal{P}(X)$.
+  
+  \item A $\sigma$-algebra is the domain upon which we define measures. It is a collection of sets with some nice properties.
+  
+  \begin{definition}    
+    A {\bf $\sigma$-algebra} (or a {\bf $\sigma$-field}) on a set $X$ is a collection $\mcal{X} \in \mcal{P}(X)$ of subsets of $X$, called {\bf measurable sets}, such that the following properties hold.
+    \begin{enumerate}
+      \item $\emptyset, X \in \mcal{X}$.
+      \item It is closed under complementation: if $A \in \mcal{X}$, then $A^c = X - A \in \mcal{X}$.
+      \item It is closed under countable unions: if $(A_n)$ is a sequence of sets in $\mcal{X}$, then $\bigcup_{n=1}^\infty A_n \in \mcal{X}.$
+    \end{enumerate}
+  \end{definition}
+
+  \item We can show that a $\sigma$-algebra is closed under countable intersections as well. To see this, we note that $A_n^c \in \mcal{X}$ for all $n \in \mathbb{N}$, and so $\bigcup_{i=1}^\infty A_n^c \in \mcal{X}$  
+  As result, $\big( \bigcup_{i=1}^\infty A_n^c \big)^c \in \mcal{X}.$
+  Applying de Morgan's law, we have that
+  $\bigcap_{i=1}^\infty A_n = \big( \bigcup_{i=1}^\infty A_n^c \big)^c  \in \mcal{X}.$  
+
+  \item \begin{definition}
+    A measurable space $(X, \mcal{X})$ is a non-empty set $X$ equipped with a $\sigma$-algebra $\mcal{X}$ on $X$.
+  \end{definition}  
+
+  \item \begin{definition}
+  Let $\mcal{A}$ be a non-empty collection of subsets of $X$. The {\bf $\sigma$-algebra generated by $\mcal{A}$}, denoted by $\sigma(\mcal{A})$ is the smallest $\sigma$-algebra that contains $\mcal{A}$. In other words,
+  \begin{align*}
+    \sigma(\mcal{A}) = \bigcap\Big\{\tilde{\mcal{A}} \subseteq \mcal{P}(X) : \mcal{A} \subseteq \tilde{\mcal{A}} \mbox{ and $\tilde{\mcal{A}}$ is a $\sigma$-algebra}\Big\}.
+  \end{align*}
+  \end{definition}
+
+  \item \begin{definition}\label{def:borel-algebra}
+    The {\bf Borel algebra} is the $\sigma$-algebra $\mcal{B}$ generated by all the open intervals $(a,b)$ in $\Real$. Any set in $\mcal{B}$ is called a {\bf Borel set}.
+  \end{definition}
+
+  \item Observe that we can write any open interval $(a,b)$ as a countable unions of closed intervals:
+  \begin{align*}    
+    (a,b) = \bigcup_{n \geq N}^\infty \bigg[ a + \frac{1}{n}, b - \frac{1}{n} \bigg]
+  \end{align*}
+  where $N$ is an integer such that $b - a - \frac{2}{N} > 0$. As a result, $\mcal{B}$ is also generated by the collection of close intervals $[a,b]$ in $\Real$. The same is also true for half-open intervals of the form $(a,b]$ and $[a,b)$.
+  
+  \item Let $X$ be the set $\overline{\Real}$ of extended real numbers. If $E$ is a Borel set, then define
+  \begin{align*}
+    E_1 &= E \cup \{ \infty \} \\
+    E_2 &= E \cup \{ -\infty \} \\
+    E_3 &= E \cup \{ -\infty, \infty \}
+  \end{align*}
+  Let $\overline{\mcal{B}}$ the collection of all sets $E$, $E_1$, $E_2$, and $E_3$ as $E$ varies over $\mcal{B}$. We have that $\overline{B}$ is a $\sigma$-algebra, and it is called the {\bf extended Borel algebra}.  
+
+  \item A ``measure'' encapsulates the notion of length, area, volume, mass, etc. of a set.
+  
+  \begin{definition}
+    Let $(X, \mcal{X})$ be a measurable space. A {\bf measure} is a function $\mu: \mcal{X} \rightarrow [0, \infty]$ with the following properties.
+    \begin{enumerate}
+      \item $\mu(\emptyset) = 0$.
+      \item $\mu$ is {\bf countably additive}. That is, for a sequence $(E_n)$ of disjoint sets, it holds that
+      \begin{align*}
+        \mu\bigg( \bigcup_{n=1}^\infty E_n \bigg) = \sum_{n=1}^\infty \mu(E_n).
+      \end{align*}
+    \end{enumerate}
+  \end{definition}
+  
+  \item If $\mu(E) < \infty$ for all $E \in \mcal{X}$, we say that $\mu$ is {\bf finite}.
+  
+  \item A {\bf probability measure} is a finite measure with $\mu(X) = 1$.
+  
+  \item If there exists a sequence $(E_n)$ of sets in $\mcal{X}$ with $\bigcup_{i=1}^\infty E_n = X$ and such that $\mu(E_n) < \infty$ for all $n$, then we say that $\mu$ is {\bf $\sigma$-finite}.
+  
+  \item Here is an example of a measure that is $\sigma$-finite but not finite. Let $X = \mathbb{N}$, and $\mcal{X} = \mcal{P}(\mathbb{N})$. Define $\mu(E)$ to be the number of elements in $E$ with the convention that $\mu(E) = \infty$ when $E$ is infinite. Obviously, $\mu(\mathbb{N}) = \infty$. However, $\mathbb{N} = \{ 1 \} \cup \{ 2 \} \cup \dotsb$, and $\mu(\{ n \}) = 1$ for all $n \in \mathbb{N}$. The measure $\mu$ is called the {\bf counting measure} on $\mathbb{N}$.
+
+  \item \begin{lemma} \label{lemma:proper-difference-measure}
+    Let $\mu$ be a measure defined on a $\sigma$-algebra $\mcal{X}$. Let $E, F \in \mcal{X}$ be such that $E \subseteq F$, then $\mu(E) \leq \mu(F)$. If $\mu(E) < \infty$, then $\mu(F - E) = \mu(F) - \mu(E)$.
+  \end{lemma}
+
+  \begin{proof}
+    Since $F = E \cup (F - E)$ and $E \cap (F - E) = \emptyset$, it follows that
+    \begin{align*}
+        \mu(F) = \mu(E) + \mu(F - E).
+    \end{align*}
+    Because $\mu(F - E) \geq 0$, it follows that $\mu(F) \geq \mu(E)$. If $\mu(E) < \infty$, we can subtract from both sides of the equation.
+  \end{proof}
+
+  \item A sequence of sets $(E_n)$ is {\bf increasing} if $E_n \subseteq E_{n+1}$ for all $n$.
+  
+  \item A sequence of sets $(E_n)$ is {\bf decreasing} if $E_{n} \supseteq E_{n+1}$ for all $n$.
+  
+  \item \begin{lemma} \label{lemma:increasing-decreasing-limit}
+  If $(E_n)$ is an increasing sequence of measurable sets, then
+  \begin{align*}
+      \mu\bigg( \bigcup_{n=1}^\infty E_n \bigg) = \lim_{n\rightarrow \infty} \mu(E_n).
+  \end{align*}
+  If $(E_n)$ is a decreasing sequence of measurable sets and $\mu(E_1) < \infty$, then
+  \begin{align*}
+    \mu\bigg( \bigcap_{n=1}^\infty E_n \bigg) = \lim_{n\rightarrow \infty} \mu(E_n).
+  \end{align*}
+  \end{lemma}
+
+  \begin{proof}
+    Let $(E_n)$ be increasing. Set $F_0 = E_1$, and $F_n = E_{n+1} - E_n$ for all $n \geq 1$. We have that $(F_n)$ is a sequence of disjoint sets. So,
+    \begin{align*}
+      \mu \bigg( \bigcup_{n=1}^\infty E_n \bigg)
+      = \mu \bigg( \bigcup_{n=0}^\infty F_n \bigg)
+      = \sum_{n=0}^\infty \mu(F_n)
+    \end{align*}
+    Also because $E_n = \bigcup_{i=0}^n F_i$, we have that
+    \begin{align*}
+        \mu(E_n) = \sum_{i=0}^n \mu(F_i).
+    \end{align*}
+    So,
+    \begin{align*}
+      \mu \bigg( \bigcup_{n=1}^\infty E_n \bigg)
+      = \sum_{n=0}^\infty \mu(F_n)
+      = \lim_{n \rightarrow \infty} \sum_{i=0}^n \mu(F_i)
+      = \lim_{n \rightarrow \infty} \mu(E_n).
+    \end{align*}
+
+    Next, let $(E_n)$ be decreasing and $\mu(E_1) < \infty$. Let $F_n = E_1 - E_n$. We have that $(F_n)$ is increasing and $\mu(F_n) = \mu(E_1) - \mu(E_n)$. If follows that
+    \begin{align*}
+      \mu\bigg( \bigcup_{n=1}^\infty F_n \bigg) 
+      = \lim_{n \rightarrow \infty} \mu(F_n) 
+      = \lim_{n \rightarrow \infty} \mu(E_1) - \mu(E_n)
+      = \mu(E_1) - \lim_{n \rightarrow \infty} \mu(E_n)
+    \end{align*}
+    Now, 
+    \begin{align*}
+      \bigcap_{n=1}^\infty E_n
+      &= E_1 - \bigcup_{n=1}^\infty F_n
+    \end{align*}
+    So,
+    \begin{align*}
+      \mu\bigg( \bigcap_{n=1}^\infty E_n \bigg)
+      &= \mu(E_1) - \mu\bigg( \bigcup_{n=1}^\infty F_n \bigg) 
+      = \mu(E_1) - \bigg( \mu(E_1) - \lim_{n \rightarrow \infty} \mu(E_n) \bigg)
+      = \lim_{n \rightarrow \infty} \mu(E_n)
+    \end{align*}
+    are required. 
+  \end{proof}
+
+  \item \begin{definition}
+    A {\bf measure space} is a triple $(X, \mcal{X}, \mu)$ where $X$ is a non-empty set, $\mcal{X}$ is a $\sigma$-algebra on $X$, and $\mu$ is a measure on $\mcal{X}$.
+  \end{definition}
+
+  \item \begin{definition}
+    In a measure space $(X, \mcal{X}, \mu)$, a set $N \in \mcal{X}$ is set to be of {\bf measure zero} or a {\bf null set} if $\mu(N) = 0$. A property that holds on $N^c$ is said to hold {\bf $\mu$-almost everywhere}. In the context where $\mu$ is clear, we says that a property holds just {\bf almost everywhere}.
+  \end{definition}
+
+  \item For examples, we say that two functions $f$ and $g$ are equal almost everywhere if $f(x) = g(x)$ for all $x \not\in N$ where $N$ is a set of measure zero. We also say that a sequence of functions $(f_n)$ converges almost everywhere in $X$ if $\lim_{n \rightarrow \infty} f_n(x)$ exists for all $x \not\in N$.
+  
+  \item \begin{definition}
+    A measure space $(X, \mcal{X}, \mu)$ is {\bf complete} if every subset of a set of measure zero is measureable.
+  \end{definition}
+
+  \item \begin{theorem}
+    Let $(X, \mcal{X}, \mu)$ be a measure space. Define $(X, \overline{\mcal{X}}, \overline{\mu})$ by
+    \begin{align*}
+      \overline{\mcal{X}} = \{ A \cup M : A \in \mcal{X}, M \subseteq N \mbox{ where } N \in \mcal{X} \mbox{ and } \mu(N) = 0 \}
+    \end{align*}
+    and 
+    \begin{align*}
+      \overline{\mu}(A \cup M) = \mu(A).
+    \end{align*}
+    Then, $(X, \overline{\mcal{X}}, \overline{\mu})$ is a complete measure space such that $\mcal{X} \subseteq \overline{X}$ and $\overline{\mu}$ is the unique extension of $\mu$ to $\overline{X}$.
+  \end{theorem}
+
+  \begin{proof}[Proof (sketch)]
+    The hardest bit of the proof is to show that $\overline{\mcal{X}}$ is close under complementation. Let $A \in \mcal{X}$, $N \in \mcal{X}$ be a set of measure zero, and $M \subseteq N$. We have that $(A \cup M)^c = A^c \cap M^c$. Because $M^c = N^c \cup (N - M)$, we have that
+    \begin{align*}
+      (A \cup M)^c = A^c \cap M^c = A^c \cap ( N^c \cup (N-M) ) = (A^c \cap N^c) \cup (A^c \cap (N-M)).
+    \end{align*}
+    We note that $A^c \cap N^c \in \mcal{X}$ and $A^c \cap (N - M) \subseteq N$, so $(A \cup M)^C \in \overline{\mcal{X}}$. The other parts of the proof seems straightforward, and we refer to \cite{Hunter:2011} for a longer proof sketch.
+  \end{proof}
+\end{itemize}
+
+\subsection{Why Do We Need the Sigma-Algebra?}
+
+\begin{itemize}
+  \item Why is the $\sigma$-algebra necessary? In other words, why do we care to limit ourselves to only some subsets of $\mcal{P}(X)$? It turns out that we can arrive at contradictions if we want to define measures on all subsets.
+  
+  \item Suppose that we want to define a probability measure $\mu$ on the set $[0,1)$ such that we define $\mu$ for all subsets of $X$. Then, there exists a set $A$ where the measure cannot consistenly be defined. 
+  
+  To construct this set, we first partition the elements of $[0,1)$ into equivalent classes. Let $x \in [0,1)$, we let $[x] = \{ y \in [0,1) : (y-x) \bmod 1 \in \mathbb{Q} \cap [0,1) \}$ be the equivalence class containing $x$. Consider the collection $\{ [x] : x \in [0,1) \}$ of equivalent classes. By the axiom of choice, we can construct the set $A$ that contains exactly one element from each equivalent class.
+
+  Let $x \in [0,1)$. Then, $x \in [y]$ for some $y \in [0,1)$, and $y - x \in \mathbb{Q}$. Let $T_{q}(A) = \{ (x + q) \bmod 1 : x \in A \}$ be a circlically translated copy of $A$ by $q$. We have that there exists one $q \in \mathbb{Q} \cap [0,1)$ such that $x \in T_q(A)$. As a result, $[0,1) = \bigcup_{q \in \mathbb{Q} \cap [0,1)} T_q(A)$.
+
+  Moreover, we have that $T_{q}(A) \cap T_{r}(A) = \emptyset$ for any $q \neq r \in \mathbb{Q} \cap [0,1)$. To see this, let there be $x$ such that $x \in T_q(A)$ and $x \in T_r(A)$. Then, $(x+q) \bmod 1 \in A$ and $(x+r) \bmod 1 \in A$. Note that $(x+q) \bmod 1$ and $(x+r) \bmod 1$ must belong in the same equivalent class, say $[y]$ where $y \in A$. Since both numbers are in $A$, it must be that $(x+q) \bmod 1 = (x+r) \bmod 1 = y$. So, $q = r$.
+
+  A sensible probability measure should be translation invariant. In other words, it is natural to require that $\mu(T_q(A)) = A$ for all $q$. 
+
+  Then, we run into a problem. What value should we assign to $\mu(A)$? If $\mu(A) = 0$, we have that $1 = \mu([0,1)) = \sum_{q \in \mathbb{Q} \cap [0,1)} \mu(T_q(A)) = 0.$ However, if $\mu(A) > 0$, then $\mu([0,1)) = \infty$. In both cases, we cannot make $\mu([0,1)) = 1$.
+
+  \item In general, this problem crops up a lot as a consequence of the Banach--Tarski paradox.\footnote{\url{https://en.wikipedia.org/wiki/Banach\%E2\%80\%93Tarski_paradox}}
+
+  \item To avoid this problem, we have to forego one of the nice things: the axiom of choice, the requirement that the measure is invariant to translations, or the fact that we can define measures on all subsets. The approach taken by the math world is to choose the last by limitting the sets we can define measures on to those in a $\sigma$-algebra.
+\end{itemize}
+
+\subsection{Pi-Systems and Lambda-Systems}
+
+\begin{itemize}
+  \item We take a detour to explore structures that are related to the $\sigma$-algebra that will be useful in further studies.
+  
+  \item \begin{definition}
+    A collection of sets $\mcal{A} \subseteq \mcal{P}(X)$ is a $\pi$-system if it is closed under finite intersections. In other words, if $A, B \in \mcal{A}$, then $A \cap B \in \mcal{A}$.
+  \end{definition}
+
+  \item \begin{definition}
+    A collection of sets $\mcal{A} \subseteq \mcal{P}(X)$ is a $\lambda$-system it satisfies the following properties.
+    \begin{enumerate}
+      \item $X \in \mcal{A}$.
+      \item It is closed under complementation. That is, $A \in \mcal{A}$ implies $A^c \in \mcal{A}$.
+      \item It is closed under countable disjoint unions. That is, if $(A_n)$ is a sequence of disjoint sets in $\mcal{A}$, then $\bigcup_{i=n}^\infty A_n \in \mcal{A}$.
+    \end{enumerate}
+  \end{definition}
+
+  \item Note that the $\pi$-system and the $\sigma$-system both have weaker conditions than that of the $\sigma$-algebra.  
+  
+  \item \begin{lemma} \label{lemma:lambda-closure-under-proper-differences}
+    A $\lambda$-system is closed under proper set differences. In other words, 
+    If $\mcal{A}$ is a $\lambda$-system, $A, B \in \mcal{A}$ and $A \subseteq B$, then $B-A \in \mcal{A}$.
+  \end{lemma}
+
+  \begin{proof}
+    We have that $B^c \in \mcal{A}$, and $A \cap B^c = \emptyset$. As a result, $A \cup B^c \in \mcal{A}$ and so is $(A \cup B^c)^c = B-A$.
+  \end{proof}
+
+  \item \begin{lemma}
+    A collection $\mcal{A} \subseteq \mcal{P}(X)$ that is both a $\pi$-system and a $\lambda$-system is a $\sigma$-algebra.
+  \end{lemma}
+
+  \begin{proof}
+    We only need to show that $\mcal{A}$ is closed under countable (general) unions. Let $(A_n)$ be a sequence of sets in $\mcal{A}$. Let $B_n = A_n \cap A_{n-1}^c \cap A_{n-2}^c \cap \dotsb A_1^c$. We have that $B_n \in \mcal{A}$ because it is formed by finite intersections. Moreover, the $B_n$'s are disjoint from one other, so $\bigcup_{n=1}^\infty B_n = \bigcup_{n=1}^\infty A_n$ is a member of $\mcal{A}$ as well.
+  \end{proof}
+
+  \item \begin{definition}
+    Let $\mcal{A} \subseteq \mcal{P}(X)$ be a collection of sets. The {\bf $\lambda$-system generated by $\mcal{A}$}, denoted by $\lambda(\mcal{A})$ is the smallest $\lambda$-system that contains $\mcal{A}$. In other words,
+    \begin{align*}
+      \lambda(\mcal{A}) = \bigcap \bigg\{ \mcal{L} \subseteq \mcal{P}(X): \mbox{$\mcal{L}$ is a $\lambda$-system and $\mcal{A} \subseteq \mcal{L}$} \bigg\}.
+    \end{align*}.
+  \end{definition}
+
+  \item Note that since a $\sigma$-algebra is a $\lambda$-system, we have that $\lambda(\mcal{A}) \subseteq \sigma(\mcal{A})$ for all $\mcal{A} \subseteq \mcal{P}(X)$.
+
+  \item The following theorem goes in the opposite direction and is useful in proving many uniqueness theorems.
+  
+  \begin{theorem}[Dynkin's $\pi$--$\lambda$ theorem] \label{theorem:dynkin-lambda-pi}
+    If $\mcal{A}$ is a $\pi$-system, $\mcal{B}$ is a $\lambda$-system, and $\mcal{A} \subseteq B$, then $\sigma(\mcal{A}) \subseteq \mcal{B}$.
+  \end{theorem}
+
+  \begin{proof}
+    We will show that $\lambda(\mcal{A})$ is a $\sigma$-algebra. If this is the case, then $\sigma(\mcal{A}) \subseteq \lambda(\mcal{A}) \subseteq \mcal{B}$, and the theorem holds.
+
+    By the last lemma, it is sufficient to show that $\lambda(\mcal{A})$ is closed under intersection. Doing this is rather convoluted. First, for any $A \subseteq X$, define $$\mcal{G}_A = \{ B \subseteq X : A \cap B \in \mcal{\lambda}(\mcal{A}) \}.$$
+    We will show that, if $A \in \lambda(\mcal{A})$, then $\mcal{G}_A$ is a $\lambda$-system. 
+
+    To see this, we first note that $X \in \mcal{G}_A$ because $A \cap X = A \in \lambda(\mcal{A})$. 
+    
+    Next, we show that $\mcal{G}_A$ is closed under complementation. Let $B \in \mcal{G}_A$. We have that $A \cap B \in \lambda(\mcal{A})$ Because $A \cap B \subseteq A$, it follows from Lemma~\ref{lemma:lambda-closure-under-proper-differences} that $A - (A \cap B) = A \cap B^c \in \lambda(\mcal{A})$. Hence, $B^c \in \mcal{G}_A$.
+
+    Next, we show that $\mcal{G}_A$ is closed under countable disjoin unions. Let $B = \bigcup_{n=1}^\infty B_n$ where each $B_n \in \mcal{G}_A$. We have that $A \cap B_n \in \lambda(\mcal{A})$ for all $n$, and so is $\bigcup_{n=1}^\infty (A \cap B_n) = A \cap \cup_{n=1}^\infty B_n = A \cap B$. Hence, $B = \bigcup_{n=1}^\infty B_n$.
+
+    We have now established that $A \in \lambda(\mcal{A})$ $\implies$ $\mcal{G}_A$ is a $\lambda$-system.
+
+    We shall now show that $A \in \mcal{A} \implies \lambda(\mcal{A}) \subseteq \mcal{G}_A$. To see this, let $B \in \mcal{A}$. It follows that $A \cap B \in \mcal{A}$ because $\mcal{A}$ is a $\pi$-system. Because $\mcal{A} \subseteq \lambda(\mcal{A})$, it follows that $A \cap B \in \lambda(\mcal{A})$. In other words, $B \in \mcal{G}_A$, and so $\mcal{A} \subseteq \mcal{G}_A$. Because $A \in \mcal{A} \subseteq \lambda(\mcal{A})$, it follows that $\mcal{G}_A$ is a $\lambda$-system that contains $\mcal{A}$. Thus, $\lambda(\mcal{A}) \subseteq \mcal{G}_A$.
+
+    Now,
+    \begin{align*}
+      A \in \mcal{A} &\implies \lambda(\mcal{A}) \subseteq \mcal{G}_A \\
+      A \in \mcal{A} &\implies (B \in \lambda(\mcal{A}) \implies B \in \mcal{G}_A) \\
+      (A \in \mcal{A}) \wedge (B \in \lambda(\mcal{A})) &\implies B \in \mcal{G}_A.
+    \end{align*}
+    Because $B \in \mcal{G}_A$ iff $A \in \mcal{G}_B$, it follows that:
+    \begin{align*}
+      (A \in \mcal{A}) \wedge (B \in \lambda(\mcal{A})) &\implies A \in \mcal{G}_B \\
+      B \in \lambda(\mcal{A}) &\implies (A \in \mcal{A} \implies A \in \mcal{G}_B) \\
+      B \in \lambda(\mcal{A}) &\implies \mcal{A} \subseteq \mcal{G}_B.
+    \end{align*}
+    Because $\mcal{G}_B$ is a $\lambda$-system, it follows that $\lambda(\mcal{A}) \subseteq \mcal{G}_B$. So, 
+    \begin{align*}
+      B \in \lambda(\mcal{A}) \implies \lambda(\mcal{A}) \subseteq \mcal{G}_B.
+    \end{align*}
+    Hence,    
+    \begin{align*}      
+      A \in \lambda(\mcal{A}) \wedge B \in \lambda(\mcal{A}) 
+      &\implies A \in \lambda(\mcal{A}) \wedge \lambda(\mcal{A}) \subseteq \mcal{G}_B \\
+      A \in \lambda(\mcal{A}) \wedge B \in \lambda(\mcal{A})
+      &\implies A \in \mcal{G}_B \\
+      A \in \lambda(\mcal{A}) \wedge B \in \lambda(\mcal{A}) 
+      &\implies A \cap B \in \lambda(\mcal{A}) \\
+      A, B \in \lambda(\mcal{A}) 
+      &\implies A \cap B \in \lambda(\mcal{A}).
+    \end{align*}    
+    It follows that $\lambda(A)$ is a $\pi$-system, and thus a $\sigma$-algebra.
+  \end{proof}
+  
+  \item It follows that, if $\mcal{A}$ is a $\pi$-system, then $\lambda(\mcal{A}) = \sigma(\mcal{A})$.
+  
+  \item Here's an application of the Dynkin's theorem.
+  
+  \begin{theorem}
+    Let $\mu_1$ and $\mu_2$ be two finite measures on $\sigma(\mcal{A})$ where $\mcal{A} \subseteq \mcal{P}(X)$ is a $\pi$-system that contains $X$. If they agree on $\mcal{A}$, then they also agree on $\sigma(\mcal{A})$.
+  \end{theorem}
+
+  \begin{proof}
+    Let $\mcal{E} = \{ E \in \sigma(\mcal{A}) : \mu_1(E) = \mu_2(E) \}$. We will show that $\mcal{E}$ is a $\lambda$-system. If so, it follows that $\sigma(\mcal{A}) \subseteq \mcal{E}$, and we would be done.
+
+    By the assumption of the theorem, $X \in \mcal{A}$, so $\mu_1(X) = \mu_2(X)$. Thus, $X \in \mcal{E}$.
+
+    Next, let $E \in \mcal{E}$. We have that $$\mu_1(E^c) = \mu_1(X - E) = \mu_1(X) - \mu_1(E) = \mu_2(X) - \mu_2(E) = \mu_2(X - E) = \mu_2(E^c).$$ As a result, $E^c \in \mcal{E}$. (Note that we can do this because the measure is finite, so we can apply Lemma~\ref{lemma:proper-difference-measure}.) 
+
+    Lastly, let $(E_n)$ be a sequence of disjoint sets in $\mcal{E}$, and let $E = \bigcup_{n=1}^\infty E_n$. It follows that
+    \begin{align*}
+      \mu_1(E)
+      = \mu_1\bigg( \bigcup_{n=1}^n E_n \bigg)
+      = \sum_{n=1}^\infty \mu_1(E_n)
+      = \sum_{n=1}^\infty \mu_2(E_n)
+      = \mu_2\bigg( \bigcup_{n=1}^n E_n \bigg)
+      = \mu_2
+    \end{align*}
+    So, $E \in \mcal{E}$ as well.
+  \end{proof}  
+\end{itemize}
+
+\subsection{Algebras and Monotone Classes}
+
+\begin{itemize}
+  \item In this section, we take another detour on a structure that is similar to the $\sigma$-algebra and a theorem about it that is similar to the Dynkin's $\pi$-$\lambda$ theorem.
+  
+  \item \begin{definition}
+    A family $\mcal{A}$ of subsets of a set $X$ is said to be an {\bf algebra} or a {\bf field} on $X$ if the following properties are satisfied.
+    \begin{enumerate}
+      \item $\emptyset, X \in \mcal{A}$.
+      \item If $E \in \mcal{A}$, then $E^c = X-E \in \mcal{A}$.
+      \item If $E_1, E_2, \dotsc, E_n \in \mcal{A}$, then $\bigcup_{i=1}^n E_i \in \mcal{A}$.
+    \end{enumerate}
+  \end{definition}  
+
+  \item Note that an algebra is a $\pi$-system because $A \cap B = (A^c \cup B^c)^c$. However, it is not a $\lambda$-system.
+
+  \item \begin{definition}
+    A class $\mcal{M}$ of subsets of $X$ is called a {\bf monotone class} if it is closed under the  formation of monotone unions and intersections. In other words,
+    \begin{itemize}
+      \item If $A_1, A_2, \dotsc \in \mcal{M}$ and $A_i \subseteq A_{i+1}$ for all $i$, then $\bigcup_{i=1}^\infty A_i \in \mcal{M}$, amd
+      \item If $A_1, A_2, \dotsc \in \mcal{M}$ and $A_i \supseteq A_{i+1}$ for all $i$, then $\bigcap_{i=1}^\infty A_i \in \mcal{M}$.
+    \end{itemize}
+  \end{definition}
+
+  \item Note that a $\sigma$-algebra is a monotone class because it is already closed under arbitrary countable unions and intersections.  
+  
+  \item \begin{lemma} \label{lemma:monotone-algebra-is-sigma-algebra}
+    Let $\mcal{A}$ be a subset of $\mcal{P}(X)$. If $\mcal{A}$ is both an algebra and a monotone class, then it is a $\sigma$-algebra.
+  \end{lemma}
+
+  \begin{proof}
+    We only have to show that $\mcal{A}$ is closed under arbitrary countable unions. Let $(A_n)$ be a sequence of sets in $\mcal{A}$. Define $B_n = \bigcup_{i=1}^n A_i$. We have that $B_n \in \mcal{A}$ for all $n$ because $\mcal{A}$ is an algebra. Moreover, because $B_n \subseteq B_{n+1}$ for all $n$, it follows that $\bigcup_{n=1}^\infty B_n \in \mcal{A}$ because $\mcal{A}$ is a monotone class. Because $\bigcup_{n=1}^\infty A_n = \bigcup_{n=1}^\infty B_n$, we have that $\bigcup_{n=1}^\infty A_n \in \mcal{A}$ too, so $\mcal{A}$ is a $\sigma$-algebra.
+  \end{proof}
+
+  \item \begin{definition}
+    Let $\mcal{A}$ be a subset of $\mcal{P}(X)$. The {\bf monotone class generated by $\mcal{A}$}, denoted by $m(\mcal{A})$, is intersection of all monotone classes that contains $\mcal{A}$. That is,
+    \begin{align*}
+      m(\mcal{A}) = \bigcap \{ \mcal{M} : \mcal{M}\mbox{ is a monotone class and }\mcal{A} \subseteq \mcal{M} \}.
+    \end{align*}
+  \end{definition}
+
+  \item \begin{theorem}[Halmos's monotone class lemma] \label{theorem:monotone-class}
+    Let $\mcal{A}$ be an algebra and $\mcal{M}$ be a monotone class. Then, $\mcal{A} \subseteq \mcal{M}$ implies $\sigma(\mcal{A}) \subseteq \mcal{M}$. In particular, $\sigma(\mcal{A}) = m(\mcal{A})$.
+  \end{theorem}  
+  
+  \begin{proof}
+    Since $\mcal{A} \subseteq \sigma(\mcal{A})$ and $\sigma(\mcal{A})$ is a monotone class that contains $\mcal{A}$, it follows that $m(\mcal{A}) \subseteq \sigma(\mcal{A})$. As a result, it suffices to show that $\sigma(\mcal{A}) \subseteq m(\mcal{A})$. For this, it suffices to show that $m(\mcal{A})$ is an algebra (which will imply that it is a $\sigma$-algebra according to Lemma~\ref{lemma:monotone-algebra-is-sigma-algebra}).
+
+    {\bf (Two basic sets)} Because $\mcal{A} \subseteq m(\mcal{A})$, it follows that $\emptyset$ and $\X$ are both in $m(\mcal{A})$.
+
+    {\bf (Closure under complementation)} Consider $\mcal{G} = \{ A : A^c \in m(\mcal{A}) \}$. Because $m(\mcal{A})$ is a monotone class, it follows that $\mcal{G}$ is a monotone class as well. It follows that $m(\mcal{A}) \subseteq \mcal{G}$. This means that, for any $A \in m(\mcal{A})$, it means that $A \in \mcal{G}$, which means that $A^c \in m(\mcal{A})$. As a result, $m(\mcal{A})$ is closed under complementation.
+
+    {\bf (Closure under finite union)} Define $\mcal{G}_1 = \{ A : A \cup B \in m(\mcal{A})\mbox{ for all } B \in \mcal{A} \}$. We have that $\mcal{G}_1$ is a monotone class. To see this, suppose that $(A_n)$ is an increasing sequence of sets in $\mcal{G}_1$. It follows from definition that $(A_n \cup B)$ is also an increasing sequence of sets in $m(\mcal{A})$. As a result, $$\bigcup_{n=1}^\infty (A_n \cup B) = \Big( \bigcup_{n=1}^\infty A_n \Big) \cup B \in m(\mcal{A}),$$
+    which implies that $\bigcup_{n=1}^\infty A_n \in \mcal{G}_1$. The condition involving countable monotone intersections can be shown similarly. 
+    
+    Because $\mcal{A}$ is an algebra, it follows that
+    \begin{align*}
+      A \in \mcal{A} \wedge B \in \mcal{A} &\implies A \cup B \in \mcal{A}.
+    \end{align*}
+    Because $\mcal{A} \subseteq m(\mcal{A})$, we can also say that
+    \begin{align*}
+      A \in \mcal{A} \wedge B \in \mcal{A} &\implies A \cup B \in m(\mcal{A}) \\
+      A \in \mcal{A} &\implies \Big( B \in \mcal{A} \implies A \cup B \in m(\mcal{A}) \Big) \\
+      A \in \mcal{A} &\implies \forall_{B \in \mcal{A}} [ A \cup B \in m(\mcal{A}) ], \\
+      A \in \mcal{A} &\implies A \in \mcal{G}_1.
+    \end{align*}
+    In other words, $\mcal{A} \subseteq \mcal{G}_1$. Because $\mcal{G}_1$ is a monotone class and $\mcal{G}_1$ contains $\mcal{A}$, it follows that $m(\mcal{A}) \subseteq \mcal{G}_1$.
+    Now,
+    \begin{align*}
+      m(\mcal{A}) \subseteq \mcal{G}_1 
+      &\equiv A \in m(\mcal{A}) \implies A \in \mcal{G}_1 \\
+      &\equiv A \in m(\mcal{A}) \implies \forall_{B \in \mcal{A}} [ A \cup B \in m(\mcal{A})] \\
+      &\equiv A \in m(\mcal{A}) \implies \Big( B \in \mcal{A} \implies A \cup B \in m(\mcal{A}) \Big) \\
+      &\equiv A \in m(\mcal{A}) \wedge B \in \mcal{A} \implies A \cup B \in m(\mcal{A}).
+    \end{align*}
+    
+    Define $\mcal{G}_2 = \{ B: A \cup B \in m(\mcal{A})\mbox{ for all }A \in m(\mcal{A})\}$. It follows from the above statement that $\mcal{A} \subseteq \mcal{G}_2$. Moreover, we can show again that $\mcal{G}_2$ is a monotone class by repeating the same argument we used for $\mcal{G}_1$. As a result, $m(\mcal{A}) \subseteq \mcal{G}_2$. In other words,
+    \begin{align*}
+      B \in m(\mcal{A}) &\implies B \in \mcal{G}_2 \\
+      B \in m(\mcal{A}) &\implies \forall_{A \in m(\mcal{A})} [A \cup B \in m(\mcal{A})] \\
+      B \in m(\mcal{A}) &\implies \Big( A \in m(\mcal{A}) \implies A \cup B \in m(\mcal{A}) \Big) \\
+      A \in m(\mcal{A}) \wedge B \in m(\mcal{A}) &\implies A \cup B \in m(\mcal{A}),
+    \end{align*}
+    which means that $m(\mcal{A})$ is closed under finite unions. So, $m(\mcal{A})$ is an algebra.
+  \end{proof}
+\end{itemize}
+
+\section{Lebesgue Measures}
+
+The Lebesgue measure on $\Real$ is a measure that corresponds to the notion of ``length'' on the real line. We will construct it in this section.
+
+\subsection{Length as a Premeasure}
+
+\begin{itemize}  
+  \item The natural notion of {\bf length} can be defined as follows.
+  \begin{itemize}
+    \item Let $\ell$ denote the length function.
+    \item The length of the half-open interval $(a,b]$ is defined to be $b - a$. 
+    \item The lengths of $(-\infty, b]$, $(a, +\infty)$, and $(-\infty, \infty)$ are defined to be $\infty$.
+    \item The length of the union of a finite number of disjoint sets of intervals of these forms is defined to be the sum of the corresponding lengths.
+    \begin{align*}
+      \ell \bigg( \bigcup_{i=1}^n (a_i, b_n] \bigg) = \sum_{i=1}^n (b_i - a_i).
+    \end{align*}  
+  \end{itemize}
+
+  \item Let $\mcal{F}$ be the collection of subsets of $\Real$ that contains all intervals of the forms
+  \begin{align}
+    (a,b], (-\infty,b], (a,\infty), (\infty,\infty) \label{half-open-intervals-spec}, 
+  \end{align} and all the finite unions of such intervals.  
+
+  \item By the notion above, we have that $\ell$ is a function of signature $\mcal{F} \rightarrow [0,\infty]$. However, we cannot claim that it is a measure (1) we have not defined how to deal with countable unions of such intervals yet, and (2) we have not identified the $\sigma$-algebra upon which it acts.
+  
+  \item Furthermore, we cannot claim that $\mcal{F}$ is a $\sigma$-algebra. However, $\mcal{F}$ is an algebra.
+  
+  \item \begin{lemma} \label{lemma:f-is-algebra}
+    $\mcal{F}$ is an algebra on $\Real$.
+  \end{lemma}
+  
+  \begin{proof} We have that:    
+  \begin{itemize}
+    \item $\emptyset \in \mcal{F}$ because $\emptyset = \{ x : 1 < x \leq 1 \} = (1,1]$.
+    \item $\Real = (-\infty, \infty) \in \mcal{F}$ by definition.
+    \item $\mcal{F}$ is closed under complementation.
+    \begin{itemize}
+      \item $(-\infty,b]^c = (b,\infty) \in \mcal{F}$.
+      \item $(a,\infty)^c = (-\infty,a] \in \mcal{F}$.
+      \item $(a,b]^c = (\infty,a] \cup (b,\infty) \in \mcal{F}$.
+      \item $\emptyset$ and $(-\infty,\infty)$ are in $\mcal{F}$.
+    \end{itemize}
+    \item $\mcal{F}$ is closed under finite unions by definition.
+  \end{itemize}
+  \end{proof}
+
+  \item We now turn back to the length function $\ell$. It turns out that we can show that it has more nice properties that are worthy of being encapsulated with an abstraction.
+
+  \item \begin{definition}
+    Let $\mcal{A}$ be an algebra on $X$. A {\bf premeasure} on $\mcal{A}$ is an extended real valued function $\mu$ defined on $\mcal{A}$ that satisfies the following properties.
+    \begin{enumerate}
+      \item $\mu(\emptyset) = 0$.
+      \item $\mu(E) \geq 0$ for all $E \in \mcal{A}$.
+      \item If $(E_n)$ is any disjoint sequence of sets in $\mcal{A}$ such that $\bigcup_{i=n}^\infty E_n$ belongs to $\mcal{A}$, then
+      \begin{align*}
+        \mu\bigg( \bigcup_{n=1}^\infty E_n \bigg) = \sum_{n=1}^\infty \mu(E_n).
+      \end{align*}
+    \end{enumerate}
+  \end{definition}  
+
+  \item \begin{lemma} \label{lemma:length-is-premeasure}
+    The length function $\ell$ is a premeasure on $\mcal{F}$.
+  \end{lemma}
+
+  \begin{proof}
+    First, $\ell(\emptyset) = \ell((1,1]) = 1 - 1 = 0$.
+
+    Second, if $E \in \mcal{F}$, then $\mcal{E}$ is a finite union of intervals of the forms in \eqref{half-open-intervals-spec}. We can subdivide these intervals into disjoint pieces, and the length of the union is the sum of the length of the individual pieces, each of which is non-negative. So, we have that $\mu(E) \geq 0$.
+
+    Lastly, suppose that $(E_n)$ is a sequence of disjoint sets in $\mcal{F}$ such that $\bigcup_{i=n}^\infty E_n$ is also in $\mcal{F}$. Note that $\bigcup_{i=n}^\infty E_n$ is a finite union of intervals, so we can again partition them into disjoint pieces, each of which is of a form in \eqref{half-open-intervals-spec}. Each piece is now a union of a countable collection of disjoint elements of $\mcal{F}$. WLOG, we may treat each of the $E_n$'s as an interval which is disjoint from any other. Our goal now would be to show that the lengths of the constituent intervals add up to the length of the piece.
+
+    A piece can be any of the 4 types. We will only deal with the $(a,b]$ type in this proof as the proof of other types are similar. Suppose, then, that
+    \begin{align*}
+      (a,b] = \bigcup_{j=1}^\infty (a_j, b_j]
+    \end{align*}
+    where the intervals are disjoint. Consider the first $n$ intervals. We may assume that
+    \begin{align*}
+      a \leq a_1 < b_1 \leq a_2 < b_2 \leq \dotsb \leq a_n < b_n \leq b.
+    \end{align*}
+    We have that
+    \begin{align*}
+      \sum_{i=1}^n \ell((a_i, b_i]) = \sum_{i=1}^n (b_i - a_i) \leq b_n - a_1 \leq b-a = \ell((a,b]).
+    \end{align*}
+    Because $n$ is arbitrary, we have that    
+    \begin{align*}
+      \sum_{i=1}^\infty \ell((a_i, b_i]) \leq \ell((a,b]).
+    \end{align*}
+
+    For the other direction, let $\varepsilon > 0$ be arbitrary. Let $(\varepsilon_j)$ be a sequence of positive numbers with $\sum \varepsilon_j < \varepsilon / 2$. Consider the interval $I_j = (a_j - \varepsilon_j, b_k + \varepsilon_j)$. The collection $\{I_j\}$ of open sets is a cover of the interval $[a,b]$. Since $[a,b]$ is compact, it has a finite subcover, say, $I_1$, $I_2$, $\dotsc$, $I_m$. By reordering and discarding some intervals, we may assume that
+    \begin{align*}
+      a_1 - \varepsilon_1 &< a \\
+      b &< b_m + \varepsilon_m \\
+      a_j - \varepsilon_j &< b_{j-1} + \varepsilon_{j-1}.
+    \end{align*}
+    If follows that
+    \begin{align*}
+      b - a 
+      \leq (b_m + \varepsilon_m) - (a_1 - \varepsilon_1) 
+      \leq \sum_{j=1}^m [(b_j + \varepsilon_j) - (a_j - \varepsilon_j) ]
+      \leq \varepsilon + \sum_{j=1}^m (b_j - a_j) 
+      \leq \varepsilon + \sum_{j=1}^\infty (b_j - a_j).
+    \end{align*}
+    Since $\varepsilon > 0$ is arbitrary, it follows that
+    \begin{align*}
+      \ell((a,b]) \leq \sum_{i=1}^\infty \ell((a_i, b_i]).
+    \end{align*}
+    As a result, $\ell((a,b]) = \sum_{i=1}^\infty \ell((a_i, b_i])$.
+
+    Combining the results of all cases, we can conclude that $\ell$ is countably additive in $\mcal{F}$.
+  \end{proof}
+\end{itemize}
+
+\subsection{Length as an Outer Measure}
+
+\begin{itemize}
+  \item The good news is that, given a premeasure $\mu$ on an algebra $\mcal{A}$, we can show that $\mu$ can be extended to a measure on a $\sigma$-algebra.
+  \begin{itemize}
+    \item In other words, there exist a $\sigma$-algebra $\mcal{A}^*$ containing $\mcal{A}$ and a measure $\mu^*$ defined on $\mcal{A}^*$ such that $\mu^*(E) = \mu(E)$ for all $E \in \mcal{A}$. 
+  \end{itemize}
+  As a result, we can extend our $\ell$ so that it becomes a measure on a $\sigma$-algebra.
+
+  \item The way to extend a premeasure $\mu$ is as follows.
+  \begin{definition}
+    Given a premeasure $\mu$ defined on an algebra $\mcal{A}$ on set $X$, define $\mu^*: \mcal{P}(\ve{X}) \rightarrow [0,\infty]$ to be
+    \begin{align*}
+      \mu^*(B) = \inf \bigg\{ \sum_{j=1}^\infty \mu(E_j) : (E_j) \in \mathfrak{C}(B) \bigg\}
+    \end{align*}
+    where $\mathfrak{C}(B)$ is the set of all sequences $(E_j)$ of sets in $\mcal{A}$ such that $B \subseteq \bigcup_{j=1}^\infty E_j$.
+  \end{definition}
+  
+  \item The following lemma is useful for proving other results
+  
+  \begin{lemma} \label{lemma:epsilon-cover}
+    For any set $B \subseteq X$ and any real number $\varepsilon > 0$, there exists a sequence $(E_j) \in \mathfrak{C}(B)$ such that $\sum_{j=1}^\infty \mu(E_j) \leq \mu^*(B) + \varepsilon$.
+  \end{lemma}
+
+  \begin{proof}
+    Suppose that the lemma is false. Then, there exists $\varepsilon > 0$ such that, for all $(E_j) \in \mathfrak{C}(B)$, it must be the case that $\sum_{j=1}^\infty \mu(E_j) > \mu^*(B) + \varepsilon$. It follows that $\mu^*(B) + \varepsilon$ is a lower bound of $\{ \sum \mu(E_j) : E_j \in \mathfrak{C}(B) \}$. So,
+    \begin{align*}
+      \mu^*(B) = \inf \bigg\{ \sum_{j=1}^\infty \mu(E_j) : (E_j) \in \mathfrak{C}(B) \bigg\}
+      \geq \mu^*(B) + \varepsilon,
+    \end{align*}
+    and we have arrived at a contradiction.
+  \end{proof}
+
+  \item \begin{lemma} \label{lemma:mu-prime-property}
+    The function $\mu^*$ has the following properties.
+    \begin{enumerate}
+      \item[(a)] $\mu^*(\emptyset) = 0$.
+      \item[(b)] $\mu^*(B) \geq 0$ for any $B \subseteq X$.
+      \item[(c)] If $A \subseteq B$, then $\mu^*(A) \leq \mu^*(B)$.
+      \item[(d)] If $A \in \mcal{A}$, then $\mu^*(A) = \mu(A)$.
+      \item[(e)] If $(B_n)$ is a sequence of subsets of $X$, then
+      \begin{align*}
+        \mu^*\bigg( \bigcup_{n=1}^\infty B_n \bigg) \leq \sum_{i=1}^\infty \mu^*(B_n).
+      \end{align*}
+    \end{enumerate}
+  \end{lemma}
+
+  \begin{proof}
+    Let us call a sequence $(E_j) \in \mathfrak{C}(B)$ a {\emph cover} of $B$.
+
+    For (b), recall that $\mu$ is a measure, so $\mu(E_j) \geq 0$ for all $j$. Hence, $\sum \mu(E_j) \geq 0$ for any sequence $(E_j)$. As a result, $\mu^*(B) = \inf\{ \sum \mu(E_j) : (E_j) \in \mathfrak{C}(\emptyset) \} \geq 0$.
+
+    For (a), note that the sequence $(\emptyset, \emptyset, \dotsc)$ is a cover of $\emptyset$, so $\mu^*(\emptyset) = \inf\{ \sum \mu(E_j) : (E_j) \in \mathfrak{C}(\emptyset) \} \leq 0.$ However, from (b), we have that $\mu^*(\emptyset) \geq 0$, so $\mu^*(\emptyset) = 0$.
+
+    For (c), let $A \subseteq B$. Let $(E_j) \in \mathfrak{C}(B)$. We have that $A \subseteq B \subseteq \bigcup E_j$, so $(E_j) \in \mathfrak{C}(A)$ too. It follows that $\mathfrak{C}(A) \supseteq \mathfrak{C}(B)$, which implies that
+    \begin{align*}
+      \bigg\{ \sum \mu(E_j) : (E_j) \in \mathfrak{C}(A) \bigg\} \supseteq \bigg\{ \sum \mu(E_j) : (E_j) \in \mathfrak{C}(B) \bigg\},
+    \end{align*}
+    and so
+    \begin{align*}
+      \mu^*(A) = \inf\bigg\{ \sum \mu(E_j) : (E_j) \in \mathfrak{C}(A) \bigg\} \leq \inf\bigg\{ \sum \mu(E_j) : (E_j) \in \mathfrak{C}(B) \bigg\} = \mu^*(B).
+    \end{align*}
+
+    For (d), let $A \in \mcal{A}$. We have that $\{A, \emptyset, \emptyset, \dotsc)$ is a cover of $A$. As a result,
+    \begin{align*}
+      \mu^*(A) \leq \mu(A) + \mu(\emptyset) + \mu(\emptyset) + \dotsb = \mu(A).
+    \end{align*}
+    Let $(E_j)$ be a cover of $A$. We have that $A = \bigcup (A \cap E_j)$. Because $\mu$ is a measure,
+    \begin{align*}
+      \mu(A) \leq \sum_{j=1}^\infty \mu(A \cap E_j) \leq \sum_{j=1}^\infty \mu(E_j).
+    \end{align*}
+    It follows that $\mu(A) \leq \inf\{ \sum \mu(E_j) : (E_j) \in \mathfrak{C}(A) \} = \mu^*(A)$. Hence, $\mu(A) = \mu^*(A)$.
+
+    For (e), let $\varepsilon > 0$ be arbitrary. For each $n$, apply Lemma~\ref{lemma:epsilon-cover} to choose a sequence $(E_{nk})$ of sets in $\mcal{A}$ such that $(E_{nk})$ covers $B_n$ and
+    \begin{align*}
+      \sum_{k=1}^\infty \mu(E_{nk}) \leq \mu^*(B_n) + \frac{\varepsilon}{2^n}.
+    \end{align*}
+    Since $\{ E_{nk}: n, k \in \mathbb{N} \}$ is a countable collection from $\mcal{A}$ whose union contains $\bigcup B_n$, it follows that
+    \begin{align*}
+      \mu^*\bigg( \bigcup_{n=1}^\infty B_n \bigg)
+      \leq \sum_{n=1}^\infty \sum_{k=1}^\infty \mu(E_{nk}) \leq \varepsilon + \sum_{k=1}^\infty \mu^*(B_n).
+    \end{align*}
+    Since $\varepsilon$ can be arbitrarily small, we have that Property (e) holds.
+  \end{proof}
+
+  \item \begin{definition}
+    An {\bf outer measure} $\mu^*$ on a set $X$ is a function $\mu^*: \mcal{P}(X) \rightarrow [0,\infty]$ such that the following properties hold.
+    \begin{enumerate}
+      \item $\mu^*(\emptyset) = 0$.
+      \item If $E \subseteq F \subseteq X$, then $\mu^*(E) \leq \mu^*(F)$.
+      \item $\mu^*$ is {\bf countably subadditive}. In other words, if $\{ E_i \subseteq X : i \in \mathbb{N} \}$ is a countable collection of subsets of $X$, then
+      \begin{align*}
+          \mu^*\bigg( \bigcup_{i=1}^\infty E_i \bigg) \leq \sum_{i=1}^\infty \mu^*(E_i).
+      \end{align*}
+    \end{enumerate}
+  \end{definition}
+
+  \item Lemma~\ref{lemma:mu-prime-property} shows that $\mu^*$ is an outer measure on $X$ if $\mu$ is a premeasure on an algebra $\mcal{A}$ on $X$. The outer measure $\mu^*$ is called the {\bf outer measured generated by} $\mu$.  
+\end{itemize}
+
+\subsection{Measure from Outer Measure}
+
+\begin{itemize}
+  \item $\mu^*$ is defined for arbitrary subsets of $X$, so it is also defined on countable unions of subsets of $X$ as well. However, it is not yet a fully fledged measure because we cannot yet find a $\sigma$-algebra on which it is countably additive on.
+  
+  \item The following criterion is used to classify members of such a $\sigma$-algebra.
+  
+  \begin{definition}
+    A subset $E$ of $X$ is said to be {\bf $\mu^*$-measurable} if
+    $$ \mu^*(A) = \mu^*(A \cap E) + \mu^*(A \cap E^c) $$
+    for every subset $A$ of $X$.
+  \end{definition}
+
+  \item A $\mu^*$-measurable set $E$ splits any set $A$ into pieces whose output measures add up to the outer measure of $A$. In other words, a set is $\mu^*$-measurable if it splits other sets in a ``nice'' way.
+  
+  \item \begin{theorem}[Carath\'{e}odory's extension theorem] \label{theorem:caratheodory} Let $\mu^*$ be an outer measure on $X$. The collection of $\mu^*$-measurable sets is a $\sigma$-algebra on $X$. Moreover, $\mu^*$ is a measure on this collection.
+  \end{theorem}
+
+  \begin{proof} Let $\mcal{X}^*$ denote the set of $\mu^*$-measurable sets on $X$. We shall show that $\mcal{X}^*$ is a $\sigma$-algebra, and $\mu^*$ is a measure on it.
+
+    {\bf ($\infty, X \in \mcal{X}^*$)} Because $\mu^*$ is a premeasure, we have that $\mu^*(\emptyset) = 0$. For any set $A \subseteq X$, we have that
+    \begin{align*}
+      \mu^*(A) = \mu^*(\emptyset) + \mu^*(A) = \mu^*(A \cap \emptyset) + \mu^*(A \cap X).
+    \end{align*}
+    Because $\emptyset$ and $X$ are complements of each other, it follows that they are $\mu^*$-measurable and so belong to $\mcal{X}^*$.
+
+    {\bf (Closure under complementation)} Let $E$ be a $\mu^*$-measurable set. It follows that
+    \begin{align*}
+      \mu^*(A) = \mu^*(\emptyset) + \mu^*(A \cap E) = \mu^*(A \cap E^c)
+    \end{align*}
+    This implies that $E^c$ is also $\mu^*$-measurable.
+
+    {\bf (Closure under finite unions)} This step is required to show closure under countable union. Suppose that $E$ and $F$ are $\mu^*$-measurable. Let $A \subseteq X$. We need to show that
+    \begin{align*}
+      \mu^*(A) = \mu^*(A \cap (E \cup F)) + \mu^*(A \cap (E \cup F)^c).
+    \end{align*}
+    Because $A = (A \cap (E \cup F)) \cup (A \cap (E \cup F)^c)$ and $\mu^*$ is subadditive, we have that
+    \begin{align*}
+      \mu^*(A) \leq \mu^*(A \cap (E \cup F)) + \mu^*(A \cap (E \cup F)^c).
+    \end{align*}
+    Thus, it remains to show that $\mu^*(A) \geq \mu^*(A \cap (E \cup F)) + \mu^*(A \cap (E \cup F)^c)$. Because $E$ is $\mu^*$-measurable, we have that
+    \begin{align*}
+      \mu^*(A) &= \mu^*(A \cap E) + \mu^*(A \cap E^c).
+    \end{align*}
+    Since both $A \cap E$ and $A \cap E^c$ are subsets of $X$ and $B$ is $\mu^*$-measurable, we have
+    \begin{align*}
+      \mu^*(A \cap E) &= \mu^*(A \cap E \cap F) + \mu^*(A \cap E \cap F^c) \\
+      \mu^*(A \cap E^c) &= \mu^*(A \cap E^c \cap F) + \mu^*(A \cap E^c \cap F^c).
+    \end{align*}
+    As a result,
+    \begin{align*}
+      \mu^*(A) &= \mu^*(A \cap E \cap F) + \mu^*(A \cap E \cap F^c) + \mu^*(A \cap E^c \cap F) + \mu^*(A \cap E^c \cap F^c) \\
+      &= \mu^*(A \cap E \cap F) + \mu^*(A \cap E \cap F^c) + \mu^*(A \cap E^c \cap F) + \mu^*(A \cap (E \cup F)^c).
+    \end{align*}
+    Because $E \cup F = (E \cap F) \cup (E \cap F^c) \cup (E^c \cap F)$, we have that
+    \begin{align*}
+      A \cap (E \cup F) = (A \cap E \cap F) \cup (A \cap E \cap F^c) \cup (A \cap E^c \cap F).
+    \end{align*}
+    So,
+    \begin{align*}
+      \mu^*(A \cap (E \cup F)) \leq \mu^*(A \cap E \cap F) \cup \mu^*(A \cap E \cap F^c) \cup \mu^*(A \cap E^c \cap F).
+    \end{align*}
+    Thus,
+    \begin{align*}
+      \mu^*(A) 
+      &= \mu^*(A \cap E \cap F) + \mu^*(A \cap E \cap F^c) + \mu^*(A \cap E^c \cap F) + \mu^*(A \cap (E \cup F)^c)\\
+      &\geq \mu^*(A \cap (E \cup F)) + \mu^*(A \cap (E \cup F)^c).
+    \end{align*}
+    It follows that $\mu^*(A) = \mu^*(A \cap (E \cup F)) + \mu^*(A \cap (E \cup F)^c)$, and so $E \cup F$ is also measurable.
+
+    {\bf (Closure under finite intersections)} We briefly mention that closure under complementation and closure under finite union implies closure under complementation. This is a consequence of de Morgan's law: $E \cap F = (E^c \cup F^c)^c$.
+
+    {\bf (Closure under disjoint countable unions implies closure under countable unions)} We need to show closure under countable union. However, it suffices to only show that $\bigcup E_j$ is measurable for all sequences $(E_j)$ where the sets are measurable and disjoint. To see this, let $F_j$ denote the union of the first $j$ sets: $$F_j = \bigcup_{i=1}^j E_j,$$ and let $G_0 = E_1$ and $G_j = F_{j+1} - F_j = F_{j+1} \cap F_j^c$ for $j \geq 1$. It follows that, $G_j$ is measurable for all $j$ because $\mcal{X}^*$ is closed under finite unions and intersections. Moreover, the $G_j$'s are disjoint, and
+    \begin{align*}
+      \bigcup_{j=1}^\infty E_j = \bigcup_{j=0}^\infty G_j.
+    \end{align*}
+    Hence, the measurability of $\bigcup_{j=0}^\infty G_j$ imples the measurability of $\bigcup_{j=1}^\infty E_j$.
+
+    {\bf (Finite additivity)} In order to establish closure under countable unions, it is useful to show that $\mu^*$ is additive for finite disjoint unions. Let $E$ and $F$ be any disjoint measurable sets. Because $E$ is measurable, we have that
+    \begin{align*}
+      \mu^*(E \cup F) 
+      &= \mu^*((E \cup F) \cap E) + \mu^*((E \cup F) \cap E^c) 
+      = \mu^*(E) + \mu^*((E \cup F) - E)
+      = \mu^*(E) + \mu^*(F).
+    \end{align*}
+
+    {\bf (Closure under disjoint countable unions)} Let $(E_j)$ be a sequence of disjoint measurable sets. Let
+    \begin{align*}
+      F_j &= \bigcup_{i=1}^j E_j, & F &= \bigcup_{i=1}^\infty E_j.
+    \end{align*}
+    We need to show show that, for any set $A \subseteq X$, it is true that $\mu^*(A) = \mu^*( A \cap F ) + \mu^*( A \cap F^c)$. Because $\mu^*$ is subadditive, we already know that $\mu^*(A) \leq \mu^*( A \cap F ) + \mu^*( A \cap F^c )$. So, we only need to show that $\mu^*(A) \geq \mu^*( A \cap F) + \mu^*( A \cap F^c)$.
+
+    For any $j$, we have that $F_j$ is measurable because of closure under finite unions. So
+    \begin{align*}
+      \mu^*(A) 
+      &= \mu^*(A \cap F_j) + \mu^*(A \cap F_j^c) \\
+      &= \mu^*\bigg( A \cap \bigcup_{i=1}^j E_i\bigg) + \mu^*(A \cap F_j^c) \\
+      &= \mu^*\bigg( \bigcup_{i=1}^n ( A \cap E_i) \bigg) + \mu^*(A \cap F_j^c).
+    \end{align*}
+    Because $A \cap E_1$, $A \cap E_2$, $\dotsc$, and $A \cap E_j$ are mutually disjoint, we have that
+    \begin{align*}
+      \mu^*(A)
+      &= \sum_{i=1}^j \mu^*( A \cap E_j) + \mu^*(A \cap F_j^c).
+    \end{align*}
+    Moreover, because $F_j \subseteq F$, it follows that $A \cap F_j^c \supseteq A \cap F^c$. Hence, $\mu^*(A \cap F_j^c) \geq \mu^*(A \cap F^c)$. Thus,
+    \begin{align*}
+      \mu^*(A)
+      &\geq \sum_{i=1}^j \mu^*( A \cap E_i) + \mu^*(A \cap F^c).
+    \end{align*}
+    Taking the limit as $j \rightarrow \infty$, we have that
+    \begin{align*}
+      \mu^*(A) 
+      &\geq \sum_{i=1}^\infty \mu^*( A \cap E_i) + \mu^*(A \cap F^c) \\
+      &\geq \mu^*\bigg( \bigcup_{i=1}^\infty (A \cap E_i) \bigg) + \mu^*(A \cap F^c) \\
+      &= \mu^*\bigg( A \cap \bigcup_{i=1}^\infty E_i \bigg) + \mu^*(A \cap F^c) \\
+      &= \mu^*( A \cap F) + \mu^*(A \cap F^c),
+    \end{align*}
+    which implies that $F$ is $\mu^*$-measurable.
+    
+    {\bf (Countable additivity)} In the proof of closure under countable union, we established that
+    \begin{align*}
+      \mu^*(A) 
+      &\geq \sum_{i=1}^\infty \mu^*( A \cap E_i) + \mu^*(A \cap F^c) \\
+      &\geq \mu^*\bigg( \bigcup_{i=1}^\infty (A \cap E_i) \bigg) + \mu^*(A \cap F^c) \\
+      &= \mu^*( A \cap F) + \mu^*(A \cap F^c) \\
+      &\geq \mu^*(A).
+    \end{align*}
+    Therefore, it must be the case that
+    \begin{align*}
+      \sum_{i=1}^\infty \mu^*( A \cap E_i) + \mu^*(A \cap F^c) 
+      &= \mu^*\bigg( \bigcup_{i=1}^\infty (A \cap E_i) \bigg) + \mu^*(A \cap F^c),
+    \end{align*}
+    and this is true for any set $A \subseteq X$. Taking $A = F$, we have that
+    \begin{align*}
+      \sum_{i=1}^\infty \mu^*( F \cap E_i) + \mu^*(F \cap F^c) 
+      &= \mu^*\bigg( \bigcup_{i=1}^\infty (F \cap E_i) \bigg) + \mu^*(F \cap F^c) \\
+      \sum_{i=1}^\infty \mu^*( E_i ) + \mu^*(\emptyset) 
+      &= \mu^*\bigg( \bigcup_{i=1}^\infty E_i \bigg) + \mu^*(\emptyset) \\
+      \sum_{i=1}^\infty \mu^*( E_i )
+      &= \mu^*\bigg( \bigcup_{i=1}^\infty E_i \bigg),
+    \end{align*}
+    which shows that $\mu^*$ is countably additive.
+  \end{proof}
+
+  \item In the proof of Theorem~\ref{theorem:caratheodory}, there is a useful fact that we will use later, so let us extract it into a lemma here.
+
+  \begin{lemma} \label{lemma:disjoint-sequence}
+    For any sequence of sets $(E_j)$ where each set belongs to an algebra $\mcal{A}$, there exists a sequence of disjoint sets $(H_j)$ such that, for each $j$, we have that $H_j \in \mcal{A}$, and $H_j \subseteq E_j$. Moreover,
+    \begin{align*}
+      \bigcup_{j=1}^\infty H_j = \bigcup_{j=1}^\infty E_j
+    \end{align*}    
+  \end{lemma}
+
+  \begin{proof}
+    Choose $H_j$ to be $G_{j-1}$ as defined in the proof of Theorem~\ref{theorem:caratheodory}. We have that all the properties we want have already been proven except for $H_j \subseteq E_j$. However, this should be clear because 
+    \begin{align*}
+    H_j = G_{j-1} = F_j \cap F_{j-1}^c = (E_j \cup F_{j-1}) \cap F_{j-1}^c = E_j \cap F_{j-1}^c \subseteq E_j.
+    \end{align*}
+    We are done.
+  \end{proof}
+
+  \item \begin{proposition} \label{proposition:caratheodory-completeness}
+    The measure space $(X, \mcal{X}^*, \mu^*)$ in Theorem~\ref{theorem:caratheodory} is complete.
+  \end{proposition}
+
+  \begin{proof}
+    Let $E$ be a $\mu^*$-measurable set of measure zero. Let $B \subseteq E$. We need to show that $B$ is also $\mu^*$-measurable, and that $\mu^*(B) = 0$. The latter statement is immediate because $\mu^*$ is subadditive.
+
+    Let $A \subseteq X$. First, $0 \leq \mu^*(A \cap B) \leq \mu^*(A \cap E) \leq \mu^*(E) = 0$, so $\mu^*(A \cap B) = 0$. Now,
+    \begin{align*}
+      A \cap B^c &\subseteq A \\
+      \mu^*(A \cap B^c) &\leq \mu^*(A) \\
+      \mu^*(A \cap B) + \mu^*(A \cap B^c) &\leq \mu^*(A).
+    \end{align*}
+    However, because $\mu^*$ is subadditive, we have that $\mu^*(A \cap B) + \mu^*(A \cap B^c) \geq \mu^*(A)$. It follows that $\mu^*(A \cap B) + \mu^*(A \cap B^c) = \mu^*(A)$, and $B$ is also $\mu^*$-measurable.
+  \end{proof}
+
+  \item \begin{theorem} \label{theorem:premeasure-to-measure}
+  Let $\mu$ be a premeasure on an algebra $\mcal{A}$ on $X$. Let $\mu^*$ be the outer measure generated by $\mu$, and let $\mcal{A}^*$ be the collection of $\mu^*$-measurable sets. Then, $\mcal{A} \subseteq \mcal{A}^*$, and $(X,\mcal{A}^*,\mu^*)$ is complete measure space with the property that $\mu^*(E) = \mu(E)$ for all $E \in \mcal{A}$.
+  \end{theorem}
+
+  \begin{proof}
+    That $\mu^*$ is a $\sigma$-algebra on $\mcal{A}^*$ follows from Theorem~\ref{theorem:caratheodory}. That $(X, \mcal{A}^*, \mu^*)$ is a complete measure space follows from Proposition~\ref{proposition:caratheodory-completeness}. That $\mu^*(E) = \mu(E)$ for all $E \in \mcal{A}$ follows from Lemma~\ref{lemma:mu-prime-property}. It remains to show that $\mcal{A} \subseteq \mcal{A}^*$.
+
+    Let $E \in \mcal{A}$. Let $A \subseteq X$. Let $(E_j)$ be a collection of sets in $\mcal{A}$ that covers $A$. According to Lemma~\ref{lemma:epsilon-cover}, we can choose $(E_j)$ so that
+    \begin{align*}
+      \sum_{j=1}^\infty \mu^*(E_j) = \sum_{j=1}^\infty \mu(E_j) \leq \mu^*(A) + \varepsilon
+    \end{align*}
+    for any arbitrary $\varepsilon > 0$. Because $(E_j)$ covers $A$, it follows that $(E_j \cap E)$ covers $A \cap E$, and $(E_j \cap E^c)$ covers $A \cap E^c$. As a result,
+    \begin{align*}
+      \mu^*(A \cap E) &\leq \sum_{j=1}^\infty \mu(E_j \cap E) = \sum_{j=1}^\infty \mu^*(E_j \cap E),\\
+      \mu^*(A \cap E^c) &\leq \sum_{j=1}^\infty \mu(E_j \cap E^c) = \sum_{j=1}^\infty \mu^*(E_j \cap E^c).
+    \end{align*}
+    Adding the above two inequalities, we have that
+    \begin{align*}
+      \mu^*(A \cap E) + \mu^*(A \cap E^c)
+      &\leq \sum_{j=1}^\infty \mu^*(E_j \cap E) + \sum_{j=1}^\infty \mu^*(E_j \cap E^c) \\
+      &= \sum_{j=1}^\infty \big[ \mu^*(E_j \cap E) + \mu^*(E_j \cap E^c) \big].
+    \end{align*}
+    Because $E_j \cap E$ and $E_j \cap E^c$ are disjoint, we have that
+    \begin{align*}
+      \mu^*(A \cap E) + \mu^*(A \cap E^c) 
+      &\leq \sum_{j=1}^\infty \big[ \mu^*(E_j \cap E) + \mu^*(E_j \cap E^c) \big] 
+      = \sum_{j=1}^\infty \mu(E_j)      
+      \leq \mu^*(A) + \varepsilon.
+    \end{align*}
+    As $\varepsilon$ is arbitrary, it follows that $\mu^*(A \cap E) + \mu^*(A \cap E^c) \leq \mu(A)$. Moreover, because $\mu^*$ is subadditive, we have that $\mu^*(A \cap E) + \mu^*(A \cap E^c) \geq \mu^*(A)$. It follows that $E$ is measurable, and $\mcal{A} \subseteq \mcal{A}^*$.
+  \end{proof}  
+
+  \item \begin{theorem}[Hahn's extension theorem] \label{theorem:hahn-extension}
+    If $\mu$ is a $\sigma$-finite premeasure on an algebra $\mcal{A}$, then $\mu^*$ is the unique extension of $\mu$ that is a measure on $\mcal{A}^*$.
+  \end{theorem}
+
+  \begin{proof}
+    Let $\nu$ be an extension of $\mu$ that is a measure on $\mcal{A}^*$. We have that $\nu(E) = \mu(E) = \mu^*(E)$ for all $E \in \mcal{A}$. We need to show that $\nu(E) = \mu^*(E)$ for all $E \in \mcal{A}^*$.
+
+    Let $E \subseteq \mcal{A}^*$. Let $(E_j)$ be a sequence of sets that covers $E$ such that $E_j \in \mcal{A}$ for all $j$. We have that
+    \begin{align*}
+      \nu(E) \leq \nu\bigg( \bigcup_{j=1}^\infty E_j \bigg) \leq \sum_{j=1}^\infty \nu(E_j) = \sum_{j=1}^\infty \mu(E_j).
+    \end{align*}
+    It follows that $\nu(E)$ is a lower bound of the set $\{ \sum \mu(E_j) : E_j \in \mathfrak{C}(E) \}$. As a result, $\nu(E) \leq \mu^*(E)$ for any $E \in \mcal{A}^*$.
+
+    Since $\mu$ is $\sigma$-finite, there exists a sequence $(E_j)$ with each $E_j \in \mcal{A}$ such that $\bigcup_j E_j = X$ and $\mu(E_j) = \mu^*(E_j) = \nu(E_j)$ is finite for all $j$. Applying Lemma~\ref{lemma:disjoint-sequence} to $(E_j)$, we have a disjoint sequence $(H_j)$ that covers $X$. Morever, $\mu(H_j) \leq \mu(E_j) < \infty$.
+    
+    For each $H_j$, we have that
+    \begin{align*}
+      \mu^*(H_j) &= \nu(H_j) && (H_j \in \mcal{A}) \\
+      \mu^*((H_j \cap E) \cup (H_j \cap E^c)) &= \nu((H_j \cap E) \cup (H_j \cap E^c)) && \\
+      \mu^*(H_j \cap E) + \mu^*(H_j \cap E^c) &= \nu(H_j \cap E) + \nu(H_j \cap E^c) && \mbox{(both $\mu^*$ and $\nu$ are additive)}
+    \end{align*}
+    Because $\mu^*(H_j \cap E) \geq \nu(H_j \cap E)$ and $\mu^*(H_j \cap E^c) \geq \nu(H_j \cap E^c)$, the equality can hold only if $\mu^*(H_j \cap E) = \nu(H_j \cap E)$ and $\mu^*(H_j \cap E^c) = \nu(H_j \cap E^c)$.
+
+    Lastly,
+    \begin{align*}
+      \mu^*(E) 
+      &= \mu^*(E \cap X) 
+      = \mu^*\bigg( E \cap \bigcup_{j=1}^\infty H_j \bigg)
+      = \mu^*\bigg( \bigcup_{j=1}^\infty (E \cap H_j) \bigg)
+      = \sum_{j=1}^\infty \mu^*(E \cap H_j).      
+    \end{align*}
+    Similarly,
+    \begin{align*}
+      \nu(E) &= \sum_{j=1}^\infty \nu(E \cap H_j).      
+    \end{align*}
+    Because we just show that $\mu^*(H_j \cap E) = \nu(H_j \cap E)$ for all $j$, it follows that $\mu^*(E) = \nu(E)$.
+  \end{proof}
+\end{itemize}
+
+\subsection{Lebesgue Measure on the Real Line}
+
+\begin{itemize}
+  \item Recall that the length function $\ell$ is defined on $\mcal{F}$, the collection of all finite unions of intervals of the form
+  \begin{align*}
+      (a,b], (-\infty,b], (a,\infty), (-\infty,\infty),      
+  \end{align*}
+  We have that $\mcal{F}$ is an algebra (Lemma~\ref{lemma:f-is-algebra}) and $\ell$ is a premeasure on it (Lemma~\ref{lemma:length-is-premeasure}).
+
+  \item We can apply Theorem~\ref{theorem:caratheodory} to generate a measure space $(\Real, \mcal{F}^*, \ell^*)$, which is complete by construction (Proposition~\ref{proposition:caratheodory-completeness}). Moreover, $\ell$ is $\sigma$-finite because the real line can be covered by intervals of length 1. Thus, by Theorem~\ref{theorem:hahn-extension}, $\ell^*$ is the only extension of $\ell$ on $\mcal{F}^*$.
+  
+  \item The elements of the $\sigma$-algebra $\mcal{F}^*$ are called the {\bf Lebesgue measurable sets}. The measure $\ell^*$ is called the {\bf Lebesgue measure} on $\Real$.
+  
+  \item The smallest $\sigma$-algebra containing $\mcal{F}$ is the Borel algebra $\mcal{B}$.The restriction of Lebesgue measure to the Borel sets is called the {\bf Borel measure}. 
+  
+  \item Because $\mcal{B} \subseteq \mcal{F}^*$, we have that $\mcal{F}^*$ is more extensive than $\mcal{B}$ because it contains more sets. However, they can be practically ignored.
+
+  \begin{proposition}
+    Let $A$ be a Lebesgue measurable subset of $\Real$. There exists a Borel measurable subset $B$ of $\Real$ such that $A \subseteq B$, and $\ell^*(B - A) = 0$.
+  \end{proposition}
+
+  \begin{proof}
+    Let $A$ be a Lebesgue measurable subset of $\Real$. Let us assume for now that $\ell^*(A)$ is finite. For arbitrary $\varepsilon > 0$ and for each $n \in \mathbb{N}$, let $(E_{n,j})$ be a sequence of sets in $\mcal{F}$ such that $(E_{n,j})$ covers $A$ and $\sum \ell(E_{n,j}) \geq \ell^*(A) + \varepsilon/n$. Let $B_n = \bigcup E_{n,j}$. We have that $B_n$ is a Borel set because it is a countable union of intervals. Moreover, $\ell^*(B_n) \leq \sum \ell(B_{n,j}) \leq \ell^*(A) + \varepsilon/n$. Take $B = \bigcap_{n=1}^\infty B_n$. We have that $B$ is a Borel set because it is a countable intersection of Borel sets. We also have that $A \subseteq B$ because each $B_n$ covers $A$. Moreover, let $B'_n = \bigcup_{i=1}^n B_i$. We have that $\ell^*(B'_1)$ is finite, and the sequence $B'_n$ is decreasing, and $\ell^*(B'_n) \leq \ell^*(B_n) \leq \mu^*(A) + \varepsilon / n$ By Lemma~\ref{lemma:increasing-decreasing-limit}, we have that 
+    \begin{align*}
+    \ell^*(B) = \lim_{n \rightarrow \infty} \ell^*(B'_n) \leq \lim_{n \rightarrow \infty} \ell^*(B_n) \leq \lim_{n\rightarrow \infty} \bigg( \ell^*(A) + \frac{\varepsilon}{n} \bigg) = \ell^*(A).
+    \end{align*}
+    However, because $A \subseteq B$, it follows that $\ell^*(B) \geq \ell^*(A)$, and thus $\ell^*(B) = \ell^*(A)$. Because $\ell^*(B)$ is finite, it follows that $\ell^*(B - A) = \ell^*(B) - \ell^*(A) = 0$.
+
+    Let us now remove the assumption that $\ell^*(A)$ is finite. Let $A_k = A \cap [k,k+1)$ for any $n \in \mcal{Z}$. We have that the $A_k$'s are disjoint. Moreover $\ell^*(A_k) \leq \ell^*([k,k+1)) = 1$. Because $A_k$ is finite, there exists a Borel set $B_k$ such that $A_k \subseteq B_k$ and $\ell^*(B_k) = \ell^*(A_k)$ and $\ell^*(B_k - A_k) = 0$. Take $B = \bigcup_{k=-\infty}^\infty B_k$. It follows that $B$ is a Borel set because it is a countable union of Borel sets. Moreover, $A \subseteq B$ obviously. Lastly, $B-A = \bigcap_{k=-\infty}^\infty (B_k-A_k)$. Let $C_j = \bigcup_{k=-j}^j (B_j - A_j)$. We have that $C_j$ is an increasing sequence of sets. By Lemma~\ref{lemma:increasing-decreasing-limit},
+    \begin{align*}
+      \ell^*(B-A) = \ell^*\bigg( \bigcup_{j=0}^\infty C_j \bigg) = \lim_{j \rightarrow \infty} \ell^*(C_j) = 0.
+    \end{align*}
+    We are done.
+  \end{proof}
+\end{itemize}
+
+\subsection{Lebesgue Measures in Higher Dimensions}
+
+\begin{itemize}
+  \item Note that the construction in this section can be extended to $\Real^k$.
+  
+  \item Here, the length of intervals becomes the volume of ``rectangles'' of the form
+  \begin{align*}
+    I_1 \times I_2 \times \dotsb \times I_k
+  \end{align*}
+  where $I_j$ is an interval of the forms in \eqref{half-open-intervals-spec}. The volume is then defined to be
+  \begin{align*}
+    v(I_1 \times I_2 \times \dotsb \times I_k) = \ell(I_1)\, \ell(I_2)\, \dotsb\, \ell(I_n).
+  \end{align*}
+
+  \item The measure generated in this way is called the {\bf Lebesgue measure on $\Real^k$}. There are also {\bf Borel measure on $\Real^k$} and {\bf Borel algebra on $\Real^k$}. All the results proved thus far do hold on them. 
+\end{itemize}
+
+\section{Measurable Functions}
+
+An important component of measure theory is the definition of integrals of functions and the study of their properties. Measurable functions are nice functions upon which integrals can be defined. 
+
+\subsection{Measurable Real-Valued Functions}
+
+\begin{itemize}
+  \item Consider a fixed measurable space $(X,\mcal{X})$.
+    
+  \item \begin{definition}
+    A function $f: X \rightarrow \Real$ is said to be {\bf $\mcal{X}$-measurable} (or simply {\bf measurable}) if, for every real number $\alpha$, the set $\{ x \in X : f(x) > \alpha \}$ is measurable (in other words, belongs to $\mcal{X}$).
+  \end{definition}
+
+  \item \begin{proposition}
+  For a function $f: X \rightarrow \Real$, the following statements are equivalent.
+  \begin{enumerate}
+    \item[(a)] For every $\alpha \in \Real$, the set $A_\alpha = \{ x \in X : f(x) > \alpha \}$ belongs to $\mcal{X}$.
+    \item[(b)] For every $\alpha \in \Real$, the set $B_\alpha = \{ x \in X : f(x) \leq \alpha \}$ belongs to $\mcal{X}$.
+    \item[(c)] For every $\alpha \in \Real$, the set $C_\alpha = \{ x \in X : f(x) \geq \alpha \}$ belongs to $\mcal{X}$.
+    \item[(d)] For every $\alpha \in \Real$, the set $D_\alpha = \{ x \in X : f(x) < \alpha \}$ belongs to $\mcal{X}$. 
+  \end{enumerate}
+  \end{proposition}
+
+  \begin{proof}
+    Because $A_\alpha = B^c_\alpha$, we have that (a) and (b) are equivalent. The same can be said for (c) and (d).
+
+    We will now show that (a) implies (c). Let $\alpha \in \Real$. Consider the sequence $(A_{a-1/n})$ for $n \in \mathbb{N}$, all of which belongs to $\mcal{X}$ because of (a). So, there countable intersection $\bigcap_{n=1}^\infty A_{\alpha-1/n} = C$ also belongs to $\mcal{X}$.
+
+    Next, we will show that (c) implies (a). This is a result of the fact that $A_\alpha = \bigcup_{n=1}^\infty C_{\alpha + 1/n}$.
+  \end{proof}
+
+  \item A constant function $f(x) = c$ is measurable. This is because, if $c \leq \alpha$, then ${x \in X: f(x) > \alpha} = \emptyset$. On the other hand, if $c > \alpha$, then ${x \in X: f(x) > \alpha} = X$.
+  
+  \item If $E \in \mcal{X}$, then the {\bf characteristic function} $\chi_E$, defined by
+  \begin{align*}
+    \chi_E(X) = \begin{cases}
+      1, & x \in E \\
+      0, & x \not\in E
+    \end{cases},
+  \end{align*}
+  is measureable. This is because $\{ x \in X : \chi_E(x) > \alpha \}$ is either $X$, $E$, or $\emptyset$ depending on whether $\alpha$ is $[1,\infty)$, $[0,1)$ or $(-\infty,0)$, respectively.
+
+  \item If $X = \Real$, and $\mcal{X}$ is the Borel algebra $\mcal{B}$, then any continuous function $f: \Real \rightarrow \Real$ is Borel measurable. This is because $(\alpha,\infty)$ is an open set, so $f^((\alpha,\infty)) = \{ x \in \Real : f(x) > \alpha \}$ is open as well. (This is a fact from real analysis.)
+  
+  \item If $X = \Real$ and $\mcal{X} = \mcal{B}$, then any monotone function is Borel measurable. This is because the set   $\{ x \in \Real : f(x) > \alpha \}$ are of the form $\{ x \in \Real : x > \beta \}$ or $\{ x \in \Real : x \geq \beta \}$ or $\Real$ or $\emptyset$, all of which are Borel measurable.
+  
+  \item \begin{lemma}
+    Let $f$ and $g$ be measurable real-valued functions and let $c$ be a real number. Then the functions
+    \begin{align*}
+      cf,\ f^2,\ f+g,\ fg,\ |f|,\ 1/f, \min(f,g), \max(f,g)
+    \end{align*}
+    are also measurable. For the case of $1/f$, we assume that $f(x) \neq 0$ for all $x$.
+  \end{lemma}
+
+  \begin{proof}
+    {\bf (a)} If $c = 0$, then $cf$ is a constant function and so is measurable. If $c > 0$, then $$\{x \in X : c f(x) > \alpha\} = \{x \in X : f(x) > \alpha / c\}.$$ The RHS is measurable, so $cf$ is measurable. The case where $c < 0$ can be handled similarly.
+
+    {\bf (b)} If $\alpha < 0$, then $\{x \in X : (f(x))^2 > \alpha\} = X \in \mcal{X}$. If $\alpha \geq 0$, then 
+    $$\{x \in X : (f(x))^2 > \alpha\} 
+    = \{x \in X : f(x) > \sqrt{a} \} \cup \{x \in X : f(x) < -\sqrt{a} \}.$$
+    Both sets on the RHS are measurable, so $f^2$ is measurable.
+
+    {\bf (c)} We have that
+    \begin{align*}
+      \{ x \in X : f(x) + g(x) < \alpha \} = \bigcup_{q+r < b; q, r \in \mathbb{Q}} \{x \in X : f(x) < q\} \cap \{ x \in X : g(x) < r \}
+      .
+    \end{align*}
+    The RHS is a countable union of measurable sets. Hence, $f + g$ is measurable.
+
+    {\bf (d)} $fg$ is measurable because $fg = \frac{1}{2}[(f+g)^2 - f^2 - g^2]$.
+
+    {\bf (e)} If $\alpha < 0$, then $\{ x \in X : f(x) > 0 \} = X$, which is measurable. If $\alpha \geq 0$, then
+    \begin{align*}
+      \{ x \in X : |f(x)| > \alpha \} = \{ x \in X : f(x) < -\alpha \} \cup \{ x \in X : f(x) < \alpha \}.
+    \end{align*}
+    Both sets on the RHS are measurable. As a result, $|f|$ is measurable.
+
+    {\bf (f)} If $f(x) \neq 0$ for all $x$, we have that
+    \begin{align*}
+      \{x \in X : 1/f(x) < \alpha\} = \begin{cases}
+        \{ x \in X: 1/b < f(x) < 0 \} & \mbox{if } b < 0, \\
+        \{ x \in X: f(x) < 0 \} & \mbox{if } b = 0,\\
+        \{ x \in X: f(x) < 0 \} \cup \{ x \in X : f(x) > 1/\alpha \} & \mbox{if } b > 0.
+      \end{cases}
+    \end{align*}
+    In all cases, the RHS is a measurable set. It follows that $1/f$ is also measurable if $f(x) \neq 0$ for all $x$.
+
+    {\bf (g) and (h)} We have that
+    \begin{align*}
+      \{x \in X : \min(f,g)(x) < \alpha\} &= \{ x \in X: f(x) < \alpha \} \cup \{ x \in X: g(x) < \alpha \}, \\
+      \{x \in X : \max(f,g)(x) < \alpha\} &= \{ x \in X: f(x) < \alpha \} \cap \{ x \in X: g(x) < \alpha \}.
+    \end{align*}
+    So $\min(f,g)$ and $\max(f,g)$ are measurable.
+  \end{proof}
+
+  \item \begin{definition}
+    For any function $f: X \rightarrow \Real$, let $f^+$ and $f^-$ be non-negative functions defined by:
+    \begin{align*}
+      f^+(x) &= \max(f(x), 0) & f^-(x) &= \max(-f(x),0).
+    \end{align*}
+    We call $f^+$ the {\bf positive part} of $f$, and $f^-$ the {\bf negative part}.
+  \end{definition}
+
+  \item It should be clear that, if $f$ is measurable, then $f^+$ and $f^-$ are also measurable.
+\end{itemize}
+
+\subsection{Measurable Extended Real-Valued Functions}
+
+\begin{itemize}
+  \item Working with functions with extended real values makes it more convenience to work with limits of sequences of functions.
+  
+  \item \begin{definition}
+    An extended real-valued function on $X$ is $\mcal{X}$-measurable if ${x \in X: f(x) > \alpha} \in \mcal{X}$ for all $\alpha \in \Real$. The collection of extended real-valued $\mcal{X}$-measurable functions is denoted by $M(X,\mcal{X})$.
+  \end{definition}
+
+  \item If $f \in M(X,\mcal{X})$, then
+  \begin{align*}
+    \{x \in X : f(x) = \infty\} &= \bigcap_{n=1}^\infty \{ x \in X : f(x) > n\} \\
+    \{x \in X : f(x) = -\infty\} &= \bigcap_{n=1}^\infty \{ x \in X : f(x) < -n\},
+  \end{align*}
+  so these sets are also in $\mcal{X}$ automatically.
+
+  \item \begin{lemma}
+    An extended real-valued function $f$ is measurable if and only if (1) the sets
+    \begin{align*}
+      A &= \{x \in X : f(x) = \infty\}, \\
+      B &= \{x \in X : f(x) = -\infty\}
+    \end{align*}
+    are measurable, and (2) the real-valued function $f_1$ defined by
+    \begin{align*}
+      f_1(x) = \begin{cases}
+        f(x), & x \in A \cup B, \\
+        0, & x \not\in A \cup B
+      \end{cases}
+    \end{align*}
+    is measurable.
+  \end{lemma}
+
+  \begin{proof}
+    TODO
+  \end{proof}
+
+  \item The consequence to the last lemma and the lemmas in the last section is that, if $f$ is $M(X,\mcal{X})$, then the functions 
+  \begin{align*}
+    cf, f^2, |f|, f^{+}, f^{-}
+  \end{align*}
+  are also in $M(X,\mcal{X})$.
+
+  \item For $cf$, we use the convention that $0(\pm\infty) = 0$.
+  
+  \item For $f+g$, note that the sum is not well-defined when $f(x)$ and $g(x)$ are infinities with different signs.
+  
+  \item \begin{lemma}
+  Let $(f_n)$ be a sequence of functions in $M(X, \mcal{X})$. Define
+  \begin{align*}
+    f(x) &= \inf_{n \geq 1}\ \{ f_n(x) \}, \\
+    F(x) &= \sup_{n \geq 1}\ \{ f_n(x) \}, \\
+    f^*(x) &= \liminf_{n \rightarrow \infty}\ \{ f_n(x) \}, \\
+    F^*(x) &= \limsup_{n \rightarrow \infty}\ \{ f_n(x) \}.
+  \end{align*}
+  Then $f$, $F$, $f^*$, $F^*$ all belong to $M(X, \mcal{X})$.
+  \end{lemma}
+
+  \begin{proof}
+    TODO
+  \end{proof}
+
+  \item \begin{corollary}
+    If $(f_n)$ is a sequence in $M(X, \mcal{X})$ which converges to $f$ on $X$, then $f$ is also in $M(X, \mcal{X})$.
+  \end{corollary}
+
+  \begin{proof}
+    We have that $f(x) = \lim f_n(x) = \liminf f_n(x)$.
+  \end{proof}
+
+  \item \begin{lemma} \label{lemma:integral-is-monotone}
+    If $f, g \in M(X, \mcal{X})$, then $fg \in M(X, \mcal{X})$ too.
+  \end{lemma}
+
+  \begin{proof}
+    TODO
+  \end{proof}
+
+  \item The following lemma establishes the fact that a measurable non-negative function can be approximated by an increasing sequence of functions, all of which takes on a finite number of real values.
+  
+  \begin{lemma} \label{lemma:approximation-by-simple-functions}
+    If $f$ is non-negative function in $M(X,\mcal{X})$, then there exists a sequence $(\varphi_n)$ in $M(X, \mcal{X})$ such that:
+    \begin{enumerate}
+      \item[(a)] $0 \leq \varphi_n(x) \leq \varphi_{n+1}(x)$ for all $x \in X$ and $n \in \mathbb{N}$.
+      \item[(b)] $f(x) = \lim \varphi_n(x)$ for each $x \in X$.
+      \item[(c)] Each $\varphi_n$ has only a fininte number of real values.
+    \end{enumerate}
+  \end{lemma}
+
+  \begin{proof}
+    TODO
+  \end{proof}
+\end{itemize}
+
+\section{Integration}
+
+\begin{itemize}
+  \item In this section, we consider a fixed measure space $(X, \mcal{X}, \mu)$.
+  
+  \item Denote the set of all $\mcal{X}$-measurable functions by $M = M(X,\mcal{X})$. Denote the set of all non-negative $\mcal{X}$-measurable functions by $M^+ = M^+(X,\mcal{X})$.
+  
+  \item \begin{definition}
+    A real-valued function is {\bf simple} if it has only a finite number of values.
+  \end{definition}
+
+  \item A simple measurable function $\varphi$ can be represented by
+  \begin{align*}
+    \varphi = \sum_{j=1}^n a_j \chi_{E_j}
+  \end{align*}
+  where $a_j \in \Real$, and $\chi_{E_j}$ is the characteristic function fo a set $E_j$ in $\mcal{X}$.
+
+  \item The {\bf standard representation} is the representation where the $a_j$'s are distinct, and the $E_j$'s are disjoint, non-empty subsets of $X$. Moreover, we require that $X = \bigcup_{j=1}^n E_j$.
+
+  \item \begin{definition}
+    If $\varphi$ is a simple function in $M^+(X,\mcal{X})$ with the standard representation $\varphi = \sum a_j \chi_{E_j}$, we define the {\bf integral} of $\varphi$ with respect to $\mu$ to be the extended real number
+    \begin{align*}
+      \int \varphi\, \dee\mu = \sum_{j=1}^n \alpha_j\, \mu(E_j).
+    \end{align*}
+  \end{definition}  
+
+  \item Note that the value of the integral is always well defined because all the $a_j$'s are positive, so we never encounter an expression of the form $\infty + (-\infty)$.
+  
+  \item \begin{lemma}
+    If $\varphi$ and $\psi$ are simple functions in $M^+(X,\mcal{X})$ and $c \geq 0$, then
+    \begin{align*}
+      \int c\varphi\, \dee\mu &= c \int \varphi\, \dee\mu, \\
+      \int (\varphi + \psi) \, \dee\mu &= \int \varphi\, \dee\mu + \int \psi\, \dee\mu.
+    \end{align*}
+  \end{lemma}
+
+  \begin{proof}
+    TODO
+  \end{proof}
+
+  \item \begin{lemma}
+  Let $\varphi$ be a simple function in $M^+(X, \mcal{X})$. For each $E \in \mcal{X}$, define $\lambda(E)$ to be
+  \begin{align*}
+    \lambda(E) = \int \varphi\, \chi_{E}\, \dee\mu.
+  \end{align*}
+  Then, $\lambda$ is a measure on $\mcal{X}$.
+  \end{lemma}
+
+  \begin{proof}
+    TODO
+  \end{proof}
+
+  \item \begin{definition}
+    If $f$ belongs to $M^+(X, \mcal{X})$, define the {\bf (Lebesgue) integral of $f$ with respect to $\mu$} to be the extended real number
+    \begin{align*}
+      \int f\, \dee\mu = \sup \bigg\{ \int \varphi\, \dee\mu\ \bigg| \ \varphi \in M^+(X,\mcal{X})\mbox{ is simple, and } \varphi(x) \leq f(x)\mbox{ for all }x \in S \bigg\}
+    \end{align*}
+    For any $E \in \mcal{X}$, define the {\bf (Lebesgue) integral of $f$ over $E$ with respect to $\mu$} to be the extended real number
+    \begin{align*}
+        \int_E f\, \dee \mu = \int f\chi_E\, \dee\mu.
+    \end{align*}
+  \end{definition}
+
+  \item \begin{lemma}
+    If $f,g \in M^+(X,\mcal{X})$, then
+    $\int f\, \dee\mu \leq \int g\, \dee\mu.$    
+  \end{lemma}
+
+  \begin{proof}
+    TODO
+  \end{proof}
+
+  \item \begin{lemma}
+    If $f \in M^+(X,\mcal{X})$, $E,F \in \mcal{X}$, and $E \subseteq F$, then    
+    $\int_E f\, \dee\mu \leq \int_F f\, \dee\mu.$    
+  \end{lemma}
+
+  \begin{proof}
+    TODO
+  \end{proof}
+
+  \item \begin{theorem}[Monotone Convergence Theorem] If $(f_n)$ is a monotonically increasing sequence of functions in $M^+(X,\mcal{X})$ which converges to $f$, then
+  \begin{align*}
+    \int f\, \dee\mu = \lim_{n \rightarrow \infty} \int f_n\, \dee\mu.
+  \end{align*}
+  \end{theorem}
+
+  \begin{proof}
+    TODO
+  \end{proof}
+
+  \item \begin{corollary}
+    If $f$ belongs to $M^+(X,\mcal{X})$ and $c \geq 0$, then $cf \in M^+(X,\mcal{X})$, and $$\int cf\, \dee\mu = c \int f\, \dee\mu.$$
+  \end{corollary}
+
+  \begin{proof}
+    TODO
+  \end{proof}
+
+  \item \begin{corollary}
+    If $f$ and $g$ belong to $M^+(X,\mcal{X})$, then $f + g \in M^+(X,\mcal{X})$, and $$\int (F+g)\, \dee\mu = \int f\, \dee\mu + \int g\, \dee\mu.$$
+  \end{corollary}
+
+  \begin{proof}
+    TODO
+  \end{proof}
+
+  \item \begin{theorem}[Fatou's Lemma]
+    If $(f_n)$ is a sequence of functions in $M^+(X, \mcal{X})$, then
+    \begin{align*}
+      \int \Big(\liminf_{n \rightarrow \infty} f_n\Big)\, \dee\mu \leq \liminf_{n \rightarrow \infty} \int f_n\, \dee\mu.
+    \end{align*}
+  \end{theorem}
+
+  \begin{proof}
+    TODO
+  \end{proof}
+
+  \item \begin{corollary} \label{corollary:measure-from-integral}
+    If $f$ belongs to $M^+(X,\mcal{X})$, and $\lambda$ is defined on $\mcal{X}$ by 
+    \begin{align*}
+      \lambda(E) = \int_{E} f\, \dee\mu,
+    \end{align*}
+    then $\lambda$ is a measure.
+  \end{corollary}
+
+  \begin{proof}
+    TODO
+  \end{proof}
+
+  \item \begin{corollary}
+    Let $f$ belong to $M^+(X, \mcal{X})$. Then, $f(x) = 0$ $\mu$-almost everyone on $X$ if and only if $\int f\, \dee\mu = 0$.
+  \end{corollary}
+
+  \begin{proof}
+    TODO
+  \end{proof}
+
+  \item \begin{corollary}
+    Let $f$ belong to $M^+(X, \mcal{X})$, and let $\lambda$ be defined as in Corollary~\ref{corollary:measure-from-integral}. Then, the measure $\lambda$ is absolutely continuous with respect to $\mu$ in the sense that if $E \in \mcal{X}$, then $\mu(E) = 0$, then $\lambda(E) = 0$.
+  \end{corollary}
+
+  \begin{proof}
+    TODO
+  \end{proof}
+
+  \item \begin{corollary}
+    If $(f_n)$ is a monotonically increasing sequence of functions in $M^+(X,\mcal{X})$ which converges $\mu$-almost everywhere on $X$ to a function $f$ in $M^+(X,\mcal{X})$, then
+    \begin{align*}
+      \int f\, \dee\mu = \lim_{n \rightarrow \infty} \int f_n\, \dee\mu.
+    \end{align*}
+  \end{corollary}
+
+  \begin{proof}
+    TODO
+  \end{proof}
+
+  \item \begin{corollary}
+    If $(g_n)$ be a sequence of functions in $M^+(X,\mcal{X})$, then
+    \begin{align*}
+      \int \bigg( \sum_{n=1}^\infty g_n \bigg)\, \dee\mu = \sum_{n=1}^\infty \bigg( \int g_n\, \dee\mu \bigg).
+    \end{align*}
+  \end{corollary}
+
+  \begin{proof}
+    TODO
+  \end{proof}
+\end{itemize}
+
+\section{Integrable Functions}
+
+\begin{itemize}
+  \item \begin{definition}
+    The collection $L = L(X,\mcal{X},\mu)$ of {\bf integrable functions} consists of all real-valued $\mcal{X}$-measurable functions $f$ defined on $X$, such that both the positive and negative parts ($f^+$ and $f^-$) of $f$ have finite integrals with respective to $\mu$.
+  \end{definition}
+
+  \item \begin{definition}
+    If $f \in L(X,\mcal{X},\mu)$, the {\bf integral of $f$ with respect to $\mu$} is defined to be
+    \begin{align*}
+      \int f \, \dee\mu = \int f^+\, \dee\mu + \int f^-\, \dee\mu.
+    \end{align*}
+    If $E \in \mcal{X}$, define 
+    \begin{align*}
+      \int_E f \, \dee\mu = \int_E f^+\, \dee\mu + \int_E f^-\, \dee\mu.
+    \end{align*}
+  \end{definition}
+
+  \item \begin{definition}
+    Let $\mcal{X}$ be a $\sigma$-algebra on a set $X$. A function $\mu: \mcal{X} \rightarrow 
+    \Real$ is said to be a {\bf charge} on $\mcal{X}$ if the following properties are satisfied.
+    \begin{enumerate}
+      \item $\mu(\emptyset) = 0$.
+      \item $\mu$ is countably additive. This is, for a sequence $(E_n)$ of disjoint sets, it holds that
+      \begin{align*}
+        \mu\bigg( \bigcup_{n=1}^\infty E_n \bigg) = \sum_{n=1}^\infty \mu(E_n).
+      \end{align*}
+    \end{enumerate}
+  \end{definition}
+
+  \item The difference between a charge and a measure is that a measure is always non-negative, but a charge can be negative. Moreover, a charge cannot take infinite values.
+  
+  \item \begin{lemma} \label{lemma:charge-from-integrable-function}
+    If $f$ belongs to $L$, and $\lambda(E) = \int_E f\, \dee\mu$, then $\lambda$ is a charge.
+  \end{lemma}
+
+  \begin{proof}
+    TODO
+  \end{proof}
+
+  \item The function $\lambda$ defined as in the above lemma is often called the {\bf indefinite integral of $f$ with respect to $\mu$}.
+  
+  \item Since $\lambda$ is a charge, if $(E_n)$ is a disjoint sequence of sets in $\mcal{X}$ whose union is $E$, then
+  \begin{align*}
+    \int_E f\, \dee\mu = \sum_{n=1}^\infty \int_{E_n} f\, \dee\mu.
+  \end{align*}
+  In other words, {\bf the indefinite integral of a function in $L$ is countably additive}.
+
+  \item \begin{theorem} \label{theorem:absolute-integrability}
+    A measurable function $f$ belongs fo $L$ if and only if $|f|$ belons to $L$. Moreover,
+    \begin{align*}
+      \bigg| \int f\, \dee\mu \bigg| \leq \int |f|\, \dee\mu.
+    \end{align*}
+  \end{theorem}
+
+  \begin{proof}
+    $f$ belongs to $L$ if and only if $f^+$ and $f^-$ belong to $M^+$. Now, we have that $|f|^+ = |f| = f^+ + f^-$, and $|f|^- = 0$. Hence, $|f|$ also belongs to $L$. The converse can be proven in a similar fasion. Moreover,
+    \begin{align*}
+      \bigg| \int f\, \dee\mu \bigg| 
+      = \bigg| \int f^+\, \dee\mu - \int f^-\, \dee\mu \bigg|
+      \leq  \int f^+\, \dee\mu + \int f^-\, \dee\mu
+      = \int |f|\, \dee\mu
+    \end{align*}
+    as required.
+  \end{proof}
+
+  \item \begin{corollary}
+    If $f$ is measurable, $g$ is integrable, and $|f| \leq |g|$, then $f$ is integrable, and $$\int |f|\, \dee\mu \leq \int |g|\, \dee\mu.$$
+  \end{corollary}
+
+  \begin{proof}
+    First, we have that $|f| \in M^+$, so $\int |f|\, \dee\mu$ is well defined. Moreover, we know that it has a finite value because we can apply Lemma~\ref{lemma:integral-is-monotone} to $|f|$ and $|g|$ to conclude that $\int |f|\,\dee\mu \leq \int |g|\,\dee\mu$. Now, we can apply Theorem~\ref{theorem:absolute-integrability} to conclude that $f$ is also integrable.
+  \end{proof}
+
+  \item \begin{theorem}
+    A constant multiple $cf$ and a sum $f+g$ of integrable functions are integrable, and the integrals are given by:
+    \begin{align*}
+      \int cf\, \dee\mu &= c \int f\,\dee\mu,\\
+      \int (f+g)\, \dee\mu &= \int f\,\dee\mu + \int g\,\dee\mu.
+    \end{align*}
+  \end{theorem}
+
+  \begin{proof}
+    TODO
+  \end{proof}
+
+  \item \begin{theorem}[Lebesgue dominated convergence theorem]
+    Let $(f_n)$ be a sequence of integrable functions which converges almost everywhere to a real-valued measurable function $f$. If there exists an integrable function $g$ such that $|f_n| \geq g$  for all $n$, then $f$ in integrable and
+    \begin{align*}
+      \int f\,\dee\mu = \lim_{n\rightarrow \infty} f_n \dee\mu.
+    \end{align*}
+  \end{theorem}
+
+  \begin{proof}
+    TODO
+  \end{proof}  
+\end{itemize}
+
+\section{Integrals That Involve Limits}
+
+\begin{itemize}
+  \item In this section, let $f$ denote a function with signature $X \times [a,b] \rightarrow \Real$. Also, assume that $f(x,t)$ is $\mcal{X}$-measurable for each $t \in [a,b]$.
+  
+  \item \begin{corollary}
+    Suppose that, for some $t_0$ in $[a,b]$, we have that
+    \begin{align*}
+      f(x,t_0) = \lim_{t \rightarrow t_0} f(x,t)
+    \end{align*}
+    for each $x \in X$, and that there exists an integrable function $g$ such that $|f(x,t)| \leq g(x)$. Then,
+    \begin{align*}
+      \int f(x,t_0)\, \dee\mu(x) = \lim_{t \rightarrow t_0} \int f(x,t)\, \dee\mu(x).
+    \end{align*}
+  \end{corollary}
+
+  \begin{proof}
+    Just apply the dominated convergence theorem.
+  \end{proof}
+
+  \item \begin{corollary}
+    Let the function $t \mapsto f(x,t)$ be continuous on $[a,b]$ for all $x \in X$. If there is an integrable function $g$ on $X$ such that $|f(x,t)| \leq g(x)$, then the function $F$ defined by
+    \begin{align*}
+      F(t) = \int f(x,t)\, \dee\mu(x)
+    \end{align*}
+    is continuous for $t \in [a,b]$.
+  \end{corollary}
+
+  \begin{proof}
+    Apply the last corollary.
+  \end{proof}
+  
+  \item \begin{corollary}
+    Suppose that for some $t_0 \in [a,b]$, the function $x \mapsto f(x,t_0)$ is integrable on $X$. Suppose that $\partial f / \partial t$ exists on $X \times [a,b]$. Moreover, let there be an integrable function $g$ on $X$ such that
+    \begin{align*}
+      \bigg| \frac{\partial f}{\partial t}(x,t) \bigg| \leq g(x).
+    \end{align*}
+    Then, the function $$F(t) = \int f(x,t)\, \dee\mu(x)$$ is differentiable on $[a,b]$, and
+    \begin{align*}
+      \frac{\dee F}{\dee t} (t) = \frac{\dee}{\dee t} \int f(x,t)\, \dee\mu(x) = \int \frac{\partial f}{\partial t}(x,t)\, \dee\mu(x).
+    \end{align*}
+  \end{corollary}
+
+  \begin{proof}
+    TODO
+  \end{proof}
+
+  \item \begin{corollary}
+    Let the function $t \mapsto f(x,t)$ be continuous on $[a,b]$ for all $x \in X$. Let there be an integrable function $g$ on $X$ such that $|f(x,t)| \leq g(x)$. Let $F(t) = \int f(x,t)\, \dee\mu(x).$ We have that
+    \begin{align*}
+      \int_a^b F(t)\, \dee t 
+      = \int_a^b \bigg( \int f(x,t)\, \dee\mu(x) \bigg)\, \dee t
+      = \int \bigg( \int_a^b f(x,t)\, \dee t \bigg)\, \dee\mu(x)
+    \end{align*}
+    where the integrals with respect to $t$ are Reimann integrals.
+  \end{corollary}
+
+  \begin{proof}
+    TODO
+  \end{proof}
+\end{itemize}
+
+\section{Product Measures and Double Integrals}
+
+\begin{itemize}
+  \item In this section, we show that the Cartesian product of two measurable spaces can be made into a measurable space in a natural fashion.
+  
+  \item Note that this gives us another way to construct a measure on $\Real^k$.
+  \begin{itemize}
+    \item If we force the measure to agree on rectangles, though, the measure would agree with the Lebesgue measure on the Borel sets in $\Real^k$ by the Hahn's extension theorem.
+  \end{itemize}
+  
+  \item \begin{definition}
+    If $(X,\mcal{X})$ and $(Y,\mcal{Y})$ are measurable spaces, then the set of the form $A \times B$ with $A \in \mcal{X}$ and $B \in \mcal{B}$ are called a {\bf measurable rectangle} or simply {\bf rectangle} in $Z = X \times Y$. Let $\mcal{Z}_0$ denote the set of all finite unions of rectangles in $Z$.
+  \end{definition}
+
+  \item It can be shown that each element of $\mcal{Z}_0$ can be written as a finite union of disjoin rectangles in $Z$. (Just use the inclusion--exclusion principle.)
+  
+  \item \begin{lemma}
+    The collection $\mcal{Z}_0$ is an algebra on $Z$.
+  \end{lemma}
+
+  \begin{proof}
+    {\bf ($\emptyset \in \mcal{Z}_0$)} We have that $\emptyset \in \mcal{X}$ and $\emptyset \in \mcal{Y}$. So, $\emptyset = \emptyset \times \emptyset \in \mcal{Z}_0$.
+
+    {\bf ($Z \in \mcal{Z}_0$)} Since $X \in \mcal{X}$ and $Y \in \mcal{Y}$, we have that $Z = X \times Y \in \mcal{Z}_0$.
+
+    {\bf (Closure under complementation)} If $C \in \mcal{Z}_0$, then $C = A \times B$ for some $A \in \mcal{X}$ and $B \in \mcal{Y}$. It follows that $C^c = (A^c \times B) \cup (A \times B^c) \cup (A^c \times B^c)$, which is a finite unions of rectangles in $Z$, so $C^c \in \mathcal{Z}_0$.
+
+    Closure under finite union follows from definition of $\mathbb{Z}_0$.
+  \end{proof}
+
+  \item \begin{definition}
+    Let $(X,\mcal{X})$ and $(Y,\mcal{Y})$ be measurable spaces. Let $\mcal{Z} = \mcal{X} \times \mcal{Y}$ denote the $\sigma$-algebra of subsets of $Z = X \times Y$  generated by rectangles $A \times B$ with $A \in \mcal{X}$ and $B \in \mcal{Y}$. A set in $\mcal{Z}$ is called a {\bf $\mcal{Z}$-measurable set} or as a {\bf measurable subset} of $Z$.
+  \end{definition}
+
+  \item \begin{theorem}[Product measure theorem]
+    Let $(X, \mcal{X}, \mu)$ and $(Y, \mcal{Y}, \nu)$ be measure spaces. There exists a measure $\pi$ defined on $\mcal{Z} = \mcal{X} \times \mcal{Y}$ with
+    \begin{align*}
+      \pi(A \times B) = \mu(A)\, \nu(B)
+    \end{align*}
+    for all $A \in \mcal{X}$ and $B \in \mcal{Y}$. If the measure is $\sigma$-finite, then then it is unique. The measure $\pi$ is called the {\bf product} of $\mu$ and $\nu$.
+  \end{theorem}
+
+  \begin{proof}
+    TODO
+  \end{proof}
+
+  \item \begin{definition} If $E$ is a subset of $Z = X \times Y$, and $x \in X$, then the {\bf $x$-section} of $E$ is the set $$E_x = \{y \in Y :  (x,y) \in E \}.$$ Similary, the {\bf $y$-section} is the set $$E^y = \{ x \in X : (x,y) \in E \}.$$ 
+  \end{definition}
+  
+  \item \begin{lemma}
+    If $E$ is a measurable subset of $E$, then every section of $E$ is measurable. 
+  \end{lemma}
+
+  \begin{proof}
+    TODO
+  \end{proof}
+
+  \item \begin{definition}
+    For any $f: Z \rightarrow \overline{\Real}$, and $x \in X$, the {\bf $x$-section} of $f$ is the function $f_x$ defined on $Y$ as $$f_x(y) = f(x,y)$$ for all $y \in Y$. The {\bf $y$-section} is defined as $$f^y(x) = f(x,y)$$ for all $x \in X$.
+  \end{definition}
+
+  \item \begin{lemma}
+    If $f: Z \rightarrow \overline{\Real}$ is a measurable function, then every section of $f$ is measurable.
+  \end{lemma}
+
+  \begin{proof}
+    TODO
+  \end{proof}  
+
+  \item \begin{lemma}
+    Let $(X,\mcal{X},\mu)$ and $(Y, \mcal{Y}, \nu)$ be $\sigma$-finite measure spaces. If $E \in \mcal{Z} = \mcal{X} \times \mcal{Y}$, then the; functions defined by
+    \begin{align*}
+      f(x) &= \nu(E_x),\\
+      g(y) &= \mu(E^y)
+    \end{align*}
+    are measurable and
+    \begin{align*}
+      \int_X f\, \dee\mu = \pi(E) = \int_Y g\, \dee \nu.
+    \end{align*}
+  \end{lemma}
+
+  \begin{proof}
+    TODO. This requires the monotone class theorem (Theorem~\ref{theorem:monotone-class}).
+  \end{proof}  
+
+  \item \begin{theorem}[Tonelli's theorem]
+    Let $(X,\mcal{X},\mu)$ and $(Y, \mcal{Y}, \nu)$ be $\sigma$-finite measure spaces. Let $\pi$ be the product of $\mu$ and $\nu$, which is a measure on $\mcal{Z} = \mcal{X} \times \mcal{Y}$. Let $F: Z \rightarrow \overline{\Real}$ be a non-negative measurable function. Then, the functions defined on $X$ and $Y$ by
+    \begin{align*}
+      f(x) &= \int_Y F_x\, \dee\nu, \\
+      g(y) &= \int_X F^y\, \dee\mu
+    \end{align*}
+    are measurable. Moreover,
+    \begin{align*}
+      \int_X f\, \dee\mu = \int_Z F\, \dee\pi = \int_Y g\,\dee\nu.
+    \end{align*}
+    Equivalently,
+    \begin{align*}
+      \int_X \bigg( \int_Y F_x\, \dee\nu \bigg)\, \dee\mu = \int_Z F\, \dee\pi = \int_Y \bigg( \int_X F^y\, \dee\mu \bigg)\,\dee\nu.
+    \end{align*}
+  \end{theorem}
+
+  \begin{proof}
+    TODO. This requires the monotone class theorem (Theorem~\ref{theorem:monotone-class}).
+  \end{proof} 
+
+  \item \begin{theorem}[Fubini's theorem]
+    Let $(X,\mcal{X},\mu)$ and $(Y, \mcal{Y}, \nu)$ be $\sigma$-finite measure spaces. Let $\pi$ be the product of $\mu$ and $\nu$, which is a measure on $\mcal{Z} = \mcal{X} \times \mcal{Y}$. Let $F: Z \rightarrow \Real$ be an integrable function with respect to $\pi$. Then, the extended real value functions defined almost everywhere by
+    \begin{align*}
+      f(x) &= \int_Y F_x\, \dee\nu, \\
+      g(y) &= \int_X F^y\, \dee\mu
+    \end{align*}
+    have finite integrals. Moreover,
+    \begin{align*}
+      \int_X f\, \dee\mu = \int_Z F\, \dee\pi = \int_Y g\,\dee\nu.
+    \end{align*}
+    Equivalently,
+    \begin{align*}
+      \int_X \bigg( \int_Y F_x\, \dee\nu \bigg)\, \dee\mu = \int_Z F\, \dee\pi = \int_Y \bigg( \int_X F^y\, \dee\mu \bigg)\,\dee\nu.
+    \end{align*}
+  \end{theorem}
+
+  \begin{proof}
+    TODO
+  \end{proof}
+\end{itemize}
+
+\section{Signed Measures and Their Decompositions}
+
+\begin{itemize}
+  \item \begin{definition}
+    Let $(X,\mcal{X})$ be a measurable space. A function $\lambda: \mcal{X} \rightarrow \overline{\Real}$ is said to be a {\bf signed measures} if the following conditions are satisfied.
+    \begin{enumerate}
+      \item[(a)] $\lambda(\emptyset) = 0$.
+      \item[(b)] $\lambda$ attains at most one of the values $\infty$ and $-\infty$.
+      \item[(c)] $\lambda$ is countably additive. In other words, if $(A_n)$ is a sequence of disjoint sets in $\mcal{X}$, then
+      \begin{align*}
+        \lambda\bigg( \bigcup_{n=1}^\infty A_n \bigg) = \sum_{n=1}^\infty \mu(A_n).
+      \end{align*}
+    \end{enumerate}
+  \end{definition}
+
+  \item The condition (b) is introduced to avoid undefined quantities such as $\infty - \infty$.
+
+  \item A signed measure is very similar to a charge, but it can take an infinite value while a charge cannot. Note that a charge is a signed measure, but not the other way around.
+    
+  \item It can be shown that, if $(E_n)$ is an increasing sequence of sets in $\mcal{X}$, then
+  \begin{align*}
+    \lambda\bigg( \bigcup_{n=1}^\infty E_n \bigg) = \lim_{n \rightarrow \infty} \lambda(E_n).
+  \end{align*}
+  Similarly, if $(F_n)$ is a decreasing sequence of sets in $\mcal{X}$, then
+  \begin{align*}
+    \lambda\bigg( \bigcap_{n=1}^\infty F_n \bigg) = \lim_{n \rightarrow \infty} \lambda(F_n).
+  \end{align*}
+
+  \item \begin{definition}
+    Let $\lambda$ be a signed measure on $(X,\mcal{X})$. A set $P$ in $\mcal{X}$ is said to be {\bf positive} with respect to $\lambda$ if $\lambda(E \cap P) \geq 0$ for any $E \in \mcal{X}$. A set $N \in \mcal{X}$ is said to be {\bf negative} with respect to $\lambda$ if $\lambda(E \cap N) \leq 0$ for all $E \in \mcal{X}$. A set $M \in \mcal{X}$ is said to be a {\bf null set} for $\lambda$ if $\lambda(E \cap M) = 0$ for all $E \in \mcal{X}$.
+  \end{definition}
+
+  \item It can be shown that a measurable subset of a positive set is positive, and the union of two positive sets is also positive.
+  
+  \item \begin{theorem}[Hahn decomposition theorem]
+    If $\lambda$ is a signed measure on $\mcal{X}$, then there exist sets $P$ and $N$ in $\mcal{X}$ with $X = P \cup N$, $P \cap N = \emptyset$, and such that $P$ is positive and $N$ is negative with respect to $\lambda$.
+  \end{theorem}
+
+  \begin{proof}
+    TODO
+  \end{proof}
+
+  \item A pair $(P,N)$ of measurable sets in the above theorem is said to form a {\bf Hahn decomposition} of $X$ with respect to $\lambda$.
+  
+  \item In general, Hahn decompositions are not unique. In fact, if $M$ is a null set for $\lambda$, then $(P \cup M, N - M)$ and $(P - M, N \cup M)$ are also Hahn decompositions of $X$ w.r.t $\lambda$.
+  
+  \item \begin{lemma} \label{lemma:equivalence-of-hahn-decompositions}
+    If $(P_1, N_1)$ and $(P_2, N_2)$ are Hahn decompositions of $X$ w.r.t $\lambda$, and $E \in \mcal{X}$, then
+    \begin{align*}
+      \lambda(E \cap P_1) &= \lambda(N \cap P_2), \\
+      \lambda(E \cap N_1) &= \lambda(N \cap N_2).
+    \end{align*}
+  \end{lemma}
+
+  \begin{proof}
+    TODO
+  \end{proof}
+
+  \item \begin{definition}
+    Let $\lambda$ be a signed measure on $\mcal{X}$, and let $(P,N)$ be a Hahn decomponent w.r.t $\lambda$. The {\bf positive} and {\bf negative variations} of $\lambda$ are the non-negative measures $\lambda^+$, $\lambda^-$ defined by:
+    \begin{align*}
+      \lambda^+(E) &= \lambda(E \cap P), \\
+      \lambda^-(E) &= -\lambda(E \cap N).
+    \end{align*}
+    The {\bf total variation} of $\lambda$, denoted by $|\lambda|$, is defined as:
+    \begin{align*}
+      |\lambda|(E) = \lambda^+(E) + \lambda^-(E).
+    \end{align*}
+  \end{definition}
+
+  \item By Lemma~\ref{lemma:equivalence-of-hahn-decompositions}, the positive and negative variations are well defined and do not depend on the particular choice of Hahn decomposition.
+  
+  \item We also have that
+  \begin{align*}
+    \lambda(E) = \lambda^+(E) - \lambda^-(E),
+  \end{align*}
+  and this result is encapsulated in the following theorem.
+
+  \begin{theorem}[Jordan decomposition theorem]
+    If $\lambda$ is a signed measure on $\mcal{X}$, then there exists measures $\lambda^+$ and  $\lambda^-$ on $\mcal{X}$, at least one of which is finite, such that the following conditions are satisifed.
+    \begin{enumerate}
+      \item[(a)]  $\lambda = \lambda^+ - \lambda^-$. 
+      \item[(b)] There exists sets $M$ and $N$ such that $M \cup N = X$, $M \cap N = \emptyset$, $\lambda^+(N) = 0$, and $\lambda^-(M) = 0$.
+      \item[(c)] If $\lambda = \mu - \nu$ where $\mu$ and $\nu$ are measures, then $\mu(E) \geq \lambda^+(E)$ and $\nu(E) \geq \lambda^-(E)$.
+    \end{enumerate}    
+  \end{theorem}
+
+  \begin{proof}
+    TODO
+  \end{proof}
+
+  \item Let $f$ be an integrable function with respect to a measure $\mu$ on $\mcal{X}$. We can define
+  \begin{align*}
+    \lambda(E) = \int_E f\, \dee\mu.
+  \end{align*}
+  Lemma~\ref{lemma:charge-from-integrable-function} tells us that $\lambda$ is a charge.
+
+  \item \begin{lemma}
+    If $f \in L(X,\mcal{X},\mu)$ and $\lambda(E) = \int_E f\, \dee\mu$, then $\lambda^+$, $\lambda^-$ and $|\lambda|$ are given by:
+    \begin{align*}
+      \lambda^+(E) = \int_E f^+\, \dee\mu, \qquad 
+      \lambda^-(E) = \int_E f^-\, \dee\mu, \qquad 
+      |\lambda|(E) = \int_E |\lambda|\, \dee\mu.
+    \end{align*}
+  \end{lemma}  
+
+  \begin{proof}
+    TODO
+  \end{proof}
+\end{itemize}
+
+\section{Radon--Nikodym Theorem}
+
+\begin{itemize}
+  \item From Corollary~\ref{corollary:measure-from-integral}, we can create a measure $\lambda$ from a non-negative extended real-valued measurable function $f$ by integrating with respect to an existing measure.
+  
+  \item The Radon--Nikodym theorem is the converse of the above corollary. It indicates when a measure $\lambda$ can be expressed as an integration of a function $f$ with respect to $\mu$. Hence, it is useful in defining probability density functions.
+  
+  \item A necessary and sufficient condition for the theorem to hold is given below.
+  \begin{definition}
+    A measure $\lambda$ on $\mcal{X}$ is said to be {\bf absolutely continuous} with respect to a measure $\mu$ on $\mcal{X}$ if $\lambda(E) = 0$ for all set $E \in \mcal{X}$ such that $\mu(E) = 0$. In this case, we write $\lambda \ll \mu$. A signed measure $\lambda$ is {\bf absolsution continuous} with respect to a signed measure $\mu$ if the total variation $|\lambda|$ is absolutely continuous with respect to $|\mu|$.
+  \end{definition}
+
+  \item \begin{lemma}
+    Let $\lambda$ and $\mu$ be finite measures on $\mcal{X}$. Then, $\lambda \ll \mu$ if and only if, for every $\varepsilon > 0$, there exists a $\delta(\varepsilon) > 0$ such that $\lambda(E) < \varepsilon$ for all $E$ such that $\mu(E) < \delta(\varepsilon)$.
+  \end{lemma}
+
+  \begin{proof}
+    TODO
+  \end{proof}
+
+  \item \begin{theorem}[Random--Nikodym theorem]
+    Let $\lambda$ and $\mu$ be $\sigma$-finite measures defined on $\mcal{X}$, and suppose that $\lambda$ is absolutely continous with respect to $\mu$. Then, there exists a function $f \in M^+(X,\mcal{X})$ such that 
+    \begin{align*}
+      \lambda(E) = \int_E f\, \dee\mu.
+    \end{align*}
+    Moreover, the function $f$ is uniquely determined $\mu$-almost everywhere.
+  \end{theorem}
+
+  \begin{proof}
+    TODO
+  \end{proof}
+
+  \item The function $f$ above is often called the {\bf Random--Nikodym derivative} of $\lambda$ with respective to $\mu$, and it is denoted by $\dee \lambda / \dee \mu$.
+  
+\end{itemize}
+
+\bibliographystyle{apalike}
+\bibliography{measure-theory-primer}  
+\end{document}

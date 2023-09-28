@@ -1,0 +1,299 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+\usepackage{verbatim}
+\usepackage{hyperref}
+\usepackage{algorithm}
+\usepackage{clrscode3e}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\Dee}{\mathrm{D}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\Var}{\mathrm{Var}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\ves}[1]{\boldsymbol{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+\newcommand{\ov}[1]{\overline{#1}}
+\newcommand{\N}{\mathcal{N}}
+\newcommand{\data}{\mathrm{data}}
+\newcommand{\SNR}{\mathrm{SNR}}
+
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+\title{Score-based Generative Modeling in Latent Space}
+\author{Pramook Khungurn}
+
+\begin{document}
+\maketitle
+
+This note is written as I read the paper ``Score-based Generative Modeling in Latent Space'' by Vahdat \etal~\cite{Vahdat:2021}.
+
+\section{Introduction}
+
+\begin{itemize}
+  \item This paper presents an interesting approach to generative modeling. It is a combination of a variational autoencoder (VAE) and a denoising diffusion generative model (DDPM) or a score-based model (SGM).
+  
+  \item The paper starts with a VAE that is already quite good, the NVAE \cite{Vahdat:2021:NVAE}, and try to make it better by combining it with a diffusion model.
+  
+  \item For a VAE, the latent code $\ve{z}$ is ideally supposed to be distributed according to a prior distribution $p(\ve{z})$, which we typically take to be the Gaussian distribution $\mcal{N}(\ve{0},I)$.
+  
+  \item Nevertheless, the distribution of latent codes that the VAE decoder can decode well is the distribution $\{ \ve{z}: \ve{x} \sim p_{\data}, \ve{z} \sim q_{\ves{\phi}}(\ve{z}|\ve{x}) \}$ where $q_{\ves{\phi}}$ is the VAE encoder. This distribution might not agree with $\mcal{N}(\ve{0},I)$ even though we have optimized the VAE as best as we can.
+  
+  \item The idea of the paper is to transform $\mcal{N}(\ve{0},I)$ into $\{ \ve{z}: \ve{x} \sim p_{\data}, \ve{z} \sim q_{\ves{\phi}}(\ve{z}|\ve{x}) \}$ with a diffusion model.
+  
+  \item The approach is called ``latent score-based generative model'' (LSGM) because, to generate a sample, we use a diffusion model (aka a score-based model) to sample a VAE latent code. Then, we use the VAE decoder to generate a real data item.
+  
+  \item In this write-up, I will not follow the paper that closely. This is because I don't like the way it formulates diffusion model, which uses the SDE in Song \etal's 2021 paper \cite{Song:2021}. I'd rather use the VDM formulation \cite{Kingma:2021}, which I'm more familiar with.
+\end{itemize}
+
+\section{Background}
+
+\begin{itemize}
+  \item VAE and DDPM are similar.
+  \begin{itemize}
+    \item To generate a data sample, they both sample a {\bf latent code} from a prior distribution.
+    
+    \item Then, they transform the latent code to a real data sample through some kind of process.
+  \end{itemize}
+
+  \item We shall call the process that goes from a latent code to a real data sample the ``backward process.'' The other way around is the ``forward process''.
+  
+  \item The backward process is denoted by the probability function $p$,\\ 
+  and the forward process the probabiliy function $q$.
+
+  \item We denote a real data sample with $\ve{x}$. We assume that it is a member of $\Real^D$, which we call the {\bf ambient space}. A data item is distributed according to the data distribution $p_{\data}$.
+  
+  \item We denote a latent code with $\ve{z}$. It is a member of the {\bf latent space} $\Real^d$.
+\end{itemize}
+
+\subsection{Variational Autoencoder}
+
+\begin{itemize}
+  \item For a VAE, we have that $d < D$ in general.
+  
+  \item The backward process.
+  \begin{itemize}
+    \item Sample $\ve{z}$ according to the prior distribution $p(\ve{z})$, which we generally take to be $\mcal{N}(\ve{0},I)$.
+    
+    \item Use the VAE decoder to sample $\ve{x}$ given $\ve{z}$.
+    
+    \item So,
+    \begin{align}
+      p(\ve{x}, \ve{z}) &= p(\ve{x}|\ve{z}) p(\ve{z}) \notag \\      
+      p(\ve{x}) &= \int p(\ve{x}|\ve{z}) p(\ve{z})\, \dee\ve{z}. \label{eqn:vae-p-x}
+    \end{align}
+  \end{itemize}
+
+  \item The forward process.
+  \begin{itemize}
+    \item Sample $\ve{x}$ according to $p_{\data}$.
+    \begin{itemize}
+      \item For convenience, we shall denote $p_{\data}$ with $q$, so $p_{\data}(\ve{x}) = q(\ve{x})$.
+    \end{itemize}
+    \item Use the encoder to sample $\ve{z}$ given $\ve{x}$.
+    \item Symbolically,
+    \begin{align*}
+      q(\ve{x},\ve{z}) = q(\ve{z}|\ve{x}) q(\ve{x}).
+    \end{align*}
+  \end{itemize}
+
+  \item We model the encoder with a neural network with parameters $\ves{\phi}$. Typically, this network has two functions $\ves{\mu}_{\ves{\phi}}(\ve{x})$ and $\ves{\sigma}_{\ves{\phi}}(\ve{x})$, and the distribution it models is given by
+  \begin{align*}
+    q_{\ves{\phi}}(\ve{z}|\ve{x}) = \mcal{N}(\ve{z}; \ves{\mu}_{\ves{\phi}}(\ve{x}), \diag(\ves{\sigma}^2_{\ves{\phi}}(\ve{x}))).
+  \end{align*}
+
+  \item We model the decoder with a neural network with parameters $\ves{\psi}$. The network only has one function $\ves{\mu}_{\ves{\psi}}(\ve{z})$. The distribution it models is given by
+  \begin{align*}
+    p_{\ves{\psi}}(\ve{x}|\ve{z}) = \mcal{N}(\ve{x};\ves{\mu}_{\ves{\psi}}(\ve{z}), \sigma_E^2 I)
+  \end{align*}
+  where $\sigma_E$ is a hyperparameter.
+
+  \item To optimize the network, we seek to minimize the negative log-likelihood
+  \begin{align*}
+    &E_{\ve{x} \sim q(\ve{x})} [-\log p(\ve{x})] & \\    
+    &= - E_{\ve{x} \sim q(\ve{x})} \bigg[ \log \int p_{\ves{\psi}}(\ve{x}|\ve{z}) p(\ve{z})\, \dee\ve{z} \bigg] 
+    & (\mbox{Equation~\ref{eqn:vae-p-x}})
+    \\
+    &= - E_{\ve{x} \sim q(\ve{x})} \bigg[ \log \int q_{\ves{\phi}}(\ve{z}|\ve{x}) \frac{p_{\ves{\psi}}(\ve{x}|\ve{z}) p(\ve{z})}{q_{\ves{\phi}}(\ve{z}|\ve{x})} \, \dee\ve{z} \bigg] 
+    & (\mbox{importance sampling})
+    \\
+    &= - E_{\ve{x} \sim q(\ve{x})} \bigg[ \log E_{\ve{z} \sim q_{\ves{\phi}}(\ve{z}|\ve{x})} \bigg[ \frac{p_{\ves{\psi}}(\ve{x}|\ve{z}) p(\ve{z})}{q_{\ves{\phi}}(\ve{z}|\ve{x})} \bigg] \bigg] 
+    & (\mbox{integral to expectation})
+    \\
+    &\geq  - E_{\ve{x} \sim q(\ve{x})} \bigg[ E_{\ve{z} \sim q_{\ves{\phi}}(\ve{z}|\ve{x})} \bigg[ \log \frac{p_{\ves{\psi}}(\ve{x}|\ve{z}) p(\ve{z})}{q_{\ves{\phi}}(\ve{z}|\ve{x})} \bigg] \bigg]
+    & (\mbox{Jensen's inquality}) \\
+    &= - E_{\ve{x} \sim q(\ve{x}), \ve{z} \sim q_{\ves{\phi}}(\ve{z}|\ve{x})} \big[ \log p_{\ves{\psi}}(\ve{x}|\ve{z}) - \log q_{\ves{\phi}}(\ve{z}|\ve{x}) + \log p(\ve{z}) \big].
+    & 
+  \end{align*}  
+  
+\end{itemize}
+
+\subsection{Variational Diffusion Model}
+
+\begin{itemize}
+  \item We follow the treatment of Kingma \etal~\cite{Kingma:2021}, which is summarized in one of my notes \cite{KhungurnVDM}.
+  
+  \item For a diffusion model, $D = d$.
+  
+  \item The forward process starts with a data item $\ve{x}$ sampled from $p_{\data}(\ve{x}) = q(\ve{x})$.
+  
+  \item We then scale $\ve{x}$ down and add noise to it. This process is a continous process that runs from time $t = 0$ to $t = 1$. At time $t$, the noised data item is denoted by $\ve{z}_t$. The distribution of $\ve{z}_t$ is given by:
+  \begin{align*}
+    q(\ve{z}_t|\ve{x}) = \mcal{N}(\ve{z}_t; \alpha_t \ve{x}, \sigma_t^2 I).
+  \end{align*}
+  The functions $\alpha_t$ and $\sigma_t$ are together called the {\bf noise schedule} of the diffusion process. The process is governed by the following stochastic differential equation:
+  \begin{align*}
+    \dee \ve{z}_t = 
+    \frac{\alpha_t'}{\alpha_t} \ve{z}_t\, \dee t + 
+    \sqrt{2 \sigma_t \bigg( \sigma_t' - \frac{\alpha_t'}{\alpha_t} \bigg)}\, \dee\ve{W}.
+  \end{align*}
+
+  \item We require that $\alpha_t^2 + \sigma_t^2 = 1$ for all $t \in [0,1]$. So, we are using the variance preserving formulation.
+  
+  \item The {\bf signal-to-noise ratio} at time $t$, denoted by $\mrm{SNR}(t)$, is defined as:
+  \begin{align*}
+    \mrm{SNR}(t) = \frac{\alpha_t^2}{\sigma_t^2}.
+  \end{align*}
+\end{itemize}
+
+\section{Method}
+
+\begin{itemize}
+  \item The paper refers to the method it proposes as the {\bf latent score-based generative model} (LSGM).
+  
+  \item The method contains the following components.
+  \begin{itemize}
+    \item An encoder $q_{\ves{\phi}}(\ve{z}_0|\ve{x})$.
+    \item A diffusion model $p_{\ves{\theta}}(\ve{z}_0)$, which acts as the prior distribution.
+    \item A decoder $p_{\ves{\psi}}(\ve{x}|\ve{z}_0)$
+  \end{itemize}
+
+  \item To train the whole system, we would like to minimize the log-likelihood:
+  \begin{align*}
+    &E_{\ve{x} \sim p_{\data}} [-\log p(\ve{x})] \\
+    &\leq E_{\ve{x} \sim p_{\data}} \bigg[
+      E_{\ve{z}_0 \sim q_{\ves{\phi}}(\ve{z}_0|\ve{x})}[-\log p_{\ves{\psi}}(\ve{x}|\ve{z}_0)]
+      + \mrm{KL}(q_{\ves{\phi}}(\ve{z}_0|\ve{x})\| p_{\ves{\theta}}(\ve{z}_0)) 
+    \bigg] \\
+    &= E_{\ve{x} \sim p_{\data}, \ve{z}_0 \sim q_{\ves{\phi}}(\ve{z}_0|\ve{x})}
+    \Big[-\log p_{\ves{\psi}}(\ve{x}|\ve{z}_0) + \log q_{\ves{\phi}}(\ve{z}_0|\ve{x}) - \log p_{\ves{\theta}}(\ve{z}_0)\Big].
+  \end{align*}
+  The second line comes from the standard evidence lower-bound derivation found in VAE papers \cite{KhungurnVAE}:
+  \begin{align*}
+    -\log p(\ve{x}) \leq E_{\ve{z}_0 \sim q_{\ves{\phi}}(\ve{z}_0|\ve{x})}[-\log p_{\ves{\psi}}(\ve{x}|\ve{z}_0)]
+    + \mrm{KL}(q_{\ves{\phi}}(\ve{z}_0|\ve{x})\| p_{\ves{\theta}}(\ve{z}_0)).
+  \end{align*}
+  The third line just expanding the KL divergence into its constituent parts:
+  \begin{align*}
+    \mrm{KL}(q_{\ves{\phi}}(\ve{z}_0|\ve{x})\| p_{\ves{\theta}}(\ve{z}_0)) 
+    &= E_{\ve{z}_0 \sim q_{\ves{\phi}}(\ve{z}_0|\ve{x})}\bigg[ \log \frac{q_{\ves{\phi}}(\ve{z}_0|\ve{x})}{p_{\ves{\theta}}(\ve{z}_0)} \bigg]
+    = E_{\ve{z}_0 \sim q_{\ves{\phi}}(\ve{z}_0|\ve{x})}\Big[ \log q_{\ves{\phi}}(\ve{z}_0|\ve{x})- \log p_{\ves{\theta}}(\ve{z}_0) \Big].
+  \end{align*}
+
+  \item Now, the paper went on at a great length to find an expression for the cross entropy term $$E_{\ve{z}_0 \sim q_{\ves{\phi}}(\ve{z}_0|\ve{x})}\Big[ - \log p_{\ves{\theta}}(\ve{z}_0) \Big].$$ However, we will refer to the derivation in the ``Variational Diffusion Models'' paper by Kingma \etal~\cite{Kingma:2021, KhungurnVDM} as a shortcut.
+  
+  \item To apply the shortcut, we need to reinterpret the notations.
+  \begin{itemize}
+    \item We will use $q$ to denote the ``forward'' process. The forward process now has three steps.
+    \begin{itemize}
+      \item Sample $\ve{x} \sim p_{\data}$.
+      \item Sample the latent code $\ve{z}_0$ corresponding to $\ve{x}$: $\ve{z}_0 \sim q(\ve{z}_0|\ve{x})$.
+      \begin{itemize}
+        \item This process is modeled with the encoder $q_{\ves{\phi}}$.
+      \end{itemize}
+      \item Run the diffusion process forward in time to obtain $\ve{z}_1$ from $\ve{z}_0$: $\ve{z}_1 \sim q(\ve{z}_1|\ve{z}_0)$.
+      \begin{itemize}
+        \item The paramaters of the forward process is the noise schedule $\alpha_t$ and $\sigma_t$. 
+        \item We assume that $\alpha_t^2 + \sigma_t^2 = 1$; i.e., the variance preserving formuation. 
+        \item We do this so that we can use the derivation in the Kingma \etal\ paper.
+        \item Note, however, that the Vahdat \etal\ paper is not limited to the variance preserving formulation.
+      \end{itemize}
+    \end{itemize}
+
+    \item The backward process is denoted by $p$. It also has three steps.
+    \begin{itemize}
+      \item Sample $\ve{z}_1$ according to $p(\ve{z}_1)$, which is an isotropic Gaussian distribution.
+      \item Run the diffusion process backward to obtain $\ve{z}_0$ from $\ve{z}_1$: $\ve{z}_0 \sim p(\ve{z}_0|\ve{z}_1)$.
+      \begin{itemize}
+        \item This part is modeled by the diffusion model $p_{\ves{\theta}}$.
+      \end{itemize}
+      \item Sample a data item in the ambient space $\ve{x}$ from the latent code $\ve{z}_0$: $\ve{x} \sim p(\ve{x}|\ve{z}_0)$.
+      \begin{itemize}
+        \item This is modeled by the decoder $p_{\ves{\psi}}$.
+      \end{itemize}
+    \end{itemize}    
+  \end{itemize}
+
+  \item In practice, however, we will not run the diffusion process from exactly $t = 0$ to $t = 1$. Instead, we will run it from $t_{\min} \gtrapprox 0$ to $t_{\max} \lessapprox 1$. The reason for this is so that, for any time in the interval $[t_{\min}, t_{\max}]$, the {\bf signal-to-noise ratio} (SNR) $\frac{\alpha_t^2}{\sigma_t^2}$  is finite.
+  
+  \item So, in practice, the backward process is as follows.
+  \begin{itemize}
+    \item Sample $\ve{z}_{t_{\max}}$ according to $p(\ve{z}_{t_{\max}})$, which we shall approximate with $\mcal{N}(\ve{0}, \sigma_{t_{\max}}^2 I)$.
+    \item Run the diffusion process backward to obtain $\ve{z}_{t_{\min}}$ from $\ve{z}_{t_{\max}}$.
+    \item Use $\ve{z}_{t_{\min}}$ as an approximation for $\ve{z}_0$, and then sample the data item in the ambient space $\ve{x} \sim p(\ve{x}|\ve{z}_{t_{\min}})$.
+  \end{itemize}
+
+  \item Using the variational lower bound in \cite{KhungurnVDM}, we have that
+  \begin{align*}
+    -\log p(\ve{z}_0) 
+    &\leq \mrm{KL}(q(\ve{z}_1|\ve{z}_0)\| p(\ve{z}_{t_{\max}})) + E_{\ve{z}_{t_{\min}} \sim q(\ve{z}_{t_{\min}}|\ve{z}_0)} \big[-\log p(\ve{z}_0|\ve{z}_{p_{t_{\min}}})\big] + \mcal{L}_{\infty}(\ve{z}_0).
+  \end{align*}
+  If we choose $t_{\min}$ to be low enough and $t_{\max}$ high enough, the first two terms chould be negligible. So,
+  \begin{align*}
+    -\log p(\ve{z}_0) 
+    &\lessapprox \mcal{L}_{\infty}(\ve{z}_0) \\
+    &= \frac{1}{2} E_{\ves{\xi} \sim \mcal{N}(\ve{0}, I)} \bigg[ \int_{\mrm{SNR}_{\min}}^{\mrm{SNR}_{\max}} \| \ve{z}_0 - \hat{\ve{z}}_{\ves{\theta}}(
+      \underbrace{\alpha_{t(v)}\ve{z}_0 + \sigma_{t(v)} \ves{\xi}}_{\ve{z}_{t(v)}}
+      , t(v)) 
+    \big\|^2  \, \dee v \bigg] \\
+    &= \frac{1}{2} E_{\ves{\xi} \sim \mcal{N}(\ve{0}, I), v \sim \mcal{U}([\mrm{SNR}_{\min}, \mrm{SNR}_{\max}])} \Big[ \big\|
+    \ve{z}_0 - \hat{\ve{z}}_{\ves{\theta}}(
+      \alpha_{t(v)}\ve{z}_0 + \sigma_{t(v)} \ves{\xi}, t(v))
+    \big\|^2 \Big]
+  \end{align*}
+  where $\hat{\ve{z}}_{\ves{\theta}}$ is a neural network that predicts the denoised latent code $\ve{z}_0$ from the noised latent code $\ve{z}_t$, and $t(v)$ is the function that computes the time $t$ from the SNR $v$.
+
+  \item So, the overall loss that we want to minimize is:
+  \begin{align*}
+    E_{\ve{x} \sim p_{\data}, \ve{z}_0 \sim q_{\ves{\phi}(\ve{z}_0|\ve{x})}}
+  \end{align*}
+\end{itemize}
+
+\bibliographystyle{alpha}
+\bibliography{ddpm-in-latent-space}  
+\end{document}

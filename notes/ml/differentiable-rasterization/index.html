@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>Differentiable Rasterization</title>
+
+    <!-- Bootstrap -->
+    <link href="../../../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../../../css/theme.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+      TeX: { equationNumbers: {autoNumber: "AMS"} } 
+    });
+    </script>
+    <script type="text/javascript"
+            src="../../../MathJax/MathJax.js?config=TeX-AMS_HTML-full">
+    </script>
+
+    <script type="text/javascript" src="../../../js/jquery-3.4.1.min.js"></script>    
+    <script type="text/javascript" src="../../../js/bigfoot.min.js"></script>    
+
+    <link rel="stylesheet" type="text/css" href="../../../css/bigfoot-default.css">    
+
+</head>
+<body>
+<div class="container">
+    <span style="visibility: hidden;">
+        \(
+        \def\sc#1{\dosc#1\csod}
+        \def\dosc#1#2\csod{{\rm #1{\small #2}}}
+
+        \newcommand{\dee}{\mathrm{d}}
+        \newcommand{\Dee}{\mathrm{D}}
+        \newcommand{\In}{\mathrm{in}}
+        \newcommand{\Out}{\mathrm{out}}
+        \newcommand{\pdf}{\mathrm{pdf}}
+        \newcommand{\Cov}{\mathrm{Cov}}
+        \newcommand{\Var}{\mathrm{Var}}
+
+        \newcommand{\ve}[1]{\mathbf{#1}}
+        \newcommand{\mrm}[1]{\mathrm{#1}}
+        \newcommand{\etal}{{et~al.}}
+        \newcommand{\sphere}{\mathbb{S}^2}
+        \newcommand{\modeint}{\mathcal{M}}
+        \newcommand{\azimint}{\mathcal{N}}
+        \newcommand{\ra}{\rightarrow}
+        \newcommand{\mcal}[1]{\mathcal{#1}}
+        \newcommand{\X}{\mathcal{X}}
+        \newcommand{\Y}{\mathcal{Y}}
+        \newcommand{\Z}{\mathcal{Z}}
+        \newcommand{\x}{\mathbf{x}}
+        \newcommand{\y}{\mathbf{y}}
+        \newcommand{\z}{\mathbf{z}}
+        \newcommand{\tr}{\mathrm{tr}}
+        \newcommand{\sgn}{\mathrm{sgn}}
+        \newcommand{\diag}{\mathrm{diag}}
+        \newcommand{\Real}{\mathbb{R}}
+        \newcommand{\sseq}{\subseteq}
+        \newcommand{\ov}[1]{\overline{#1}}
+        \)
+    </span>
+
+    <br>
+    <h1>Differentiable Rasterization</h1>
+    <hr>
+
+    <p>At the point I started writing this note, the news about <a href="https://papers.nips.cc/paper/9156-learning-to-predict-3d-objects-with-an-interpolation-based-differentiable-renderer">Nvidia's NeurIPS 2019 paper</a> have made it to <a href="https://gizmodo.com/nvidia-taught-an-ai-to-instantly-generate-fully-texture-1840323132?fbclid=IwAR1glw5wMaBKhDbvu__z4WjVBw_PiA6kbyGSeYLE_kG-gea5vu1p-WhoS0E">the mass media</a>. They have successfully extracted fully textured meshes from single photographs. While the results are not detailed or accurate enough for media production, THIS IS A BIG DEAL. I feel this is a watershed moment where 3D modeling will become automatic. It is thus imparative to study it as soon as possible as it will definitely become important for future research and survival.</p>
+
+    <p>The Nvidia paper relies on the ability to render 3D models and, at the same time, compute the gradients of the rendered images with respect to the model parameters. As with normal rendering, there are two main algorithms for differentiable renderings: ray tracing and the graphics pipeline. Differentiable ray/path tracing are being actively developed by the graphics community; for example, by Tzu-Mao Li <a href="#fn_li_2018_0">[Li et al., 2018]</a> and Wenzel's group <a href="#fn_nimier-david_2019_0">[Nimer-David et al. 2019]</a> <a href="#fn_loubet_2019_0">[Loubet et al. 2019]</a>.</p>
+
+    <div class="footnotes">
+        <ul>
+            <li class="footnote" id="fn_li_2018_0">
+                <p align="left">
+                    Tzu-Mao Li, Miika Aittala, Frédo Durand, Jaakko Lehtinen. 
+                    <b>Differentiable Monte Carlo Ray Tracing through Edge Sampling.</b>
+                    SIGGRAPH Asia 2018.
+                    <a href="https://people.csail.mit.edu/tzumao/diffrt/">[Project]</a>
+                </p>
+            </li>
+            <li class="footnote" id="fn_nimier-david_2019_0">
+                <p align="left">
+                     Merlin Nimier-David, Delio Vicini, Tizian Zeltner, and Wenzel Jakob.
+                     <b>Mitsuba 2: A Retargetable Forward and Inverse Renderer.</b>
+                     SIGGRAPH Asia 2019.
+                     <a href="https://rgl.epfl.ch/publications/NimierDavidVicini2019Mitsuba2">[Project]</a>
+                </p>
+            </li>
+            <li class="footnote" id="fn_loubet_2019_0">
+                <p align="left">
+                     Guillaume Loubet, Nicolas Holzschuch, and Wenzel Jakob.
+                     <b>Reparameterizing discontinuous integrands for differentiable rendering.</b>
+                     SIGGRAPH Asia 2019.
+                    <a href="https://rgl.epfl.ch/publications/Loubet2019Reparameterizing">[Project]</a> 
+                </p>
+            </li>
+        </ul>
+    </div>
+
+    <p>However, I know first hand that ray tracing is seriously a slow process. So, I'd like to study the other algorithm, rasterization, first. There are 4 main papers that deal with this subject:</p>
+
+    <ul>
+        <li>
+            Loper and Black's <b>OpenDR: An Appproximate Differentiable Renderer.</b> (EECV 2014) <a href="http://files.is.tue.mpg.de/black/papers/OpenDR.pdf">[PDF]</a>
+        </li>
+        <li>
+            Kato et al.'s <b>Neural 3D Mesh Renderer.</b> (CVPR 2018) <a href="http://openaccess.thecvf.com/content_cvpr_2018/papers/Kato_Neural_3D_Mesh_CVPR_2018_paper.pdf">[PDF]</a>
+        </li>
+        <li>
+            Liu et al.'s <b>Soft Rasterizer: A Differentiable Renderer for Image-based 3D Reasoning.</b> (ICCV 2019) <a href="https://arxiv.org/abs/1904.01786">[arXiv]</a>
+        </li>
+        <li>
+            Chen et al.'s <b>Learning to Predict 3D Objects with an Interpolation-based Differentiable Renderer.</b> (NeurIPS 2019) <a href="https://papers.nips.cc/paper/9156-learning-to-predict-3d-objects-with-an-interpolation-based-differentiable-renderer">[Paper]</a> (This is the Nvidia paper.)
+        </li>
+    </ul>
+
+    <p>In this note, I will try to explain to myself the last 3 papers. I will look at the code to clarify any points that I do not understand by just reading the papers alone.</p>
+
+    <h2>Kato et al. (CVPR 2018)</h2>
+    <hr>
+
+    <ul>
+        <li>
+            The fundamental problem of getting gradients of rasterized image is that rasterization involves discrete operations.
+
+            <ul>
+                <li>
+                    Whether a pixel is covered by a triangle is a strictly binary operation, and so the gradient is zero almost everywhere except at the decision boundary.
+                </li>
+            </ul>
+        </li>
+
+        <li>
+            All papers, then, must propose a way to compute the gradients that have more support and are more continuous.
+        </li>
+
+        <li>
+            For Kato et al.'s paper, a 3D mesh consists of a set of vertices $\{  \ve{v}_1^o, \ve{v}_2^o, \dotsc, \ve{v}_{N_v}^o \}$ and $\{ \ve{f}_1, \ve{f}_2, \dotsc, \ve{f}_{N_f} \}$. Here: 
+            <ul>                
+                <li>$N_v$ is the number of vertices.</li>
+                <li>$N_f$ is the number of faces.</li>
+                <li>The superscript $o$ stands for "object space."</li>
+                <li>$\ve{v}_i^o \in \Real^3$ represents the object space position of the $i$th vertex.</li>
+                <li>$\ve{f}_j \in \mathbb{N}^3$ represents the indices of the three vertices of the $j$th triangle face.</li>
+            </ul>
+        </li>
+
+        <li>To render an object, each vertex $\ve{v}^o_i$ in object space is transformed into a position in screen space $\ve{v}^s_i \in \Real^2$. This transformation is fully differentiable.</li>
+
+        <li>Given $\{ \ve{v}_i^s \}$ and $\{ \ve{f}_j \}$, we sample the pixels and decide whether it falls into the triangle or not. Since this decision is a discrete operation, the color is not differentiable.</li>        
+    </ul>
+
+    <h3>Approximate Gradient</h3>
+
+    <ul>
+        <li>Consider a single vertex $\ve{v}_i = \ve{v}_i^s \in \Real^2$. Let $x_i$ denote the $x$-coordinate of the vertex.</li>
+
+        <li>We are interested in a pixel with color $P_j$ and how it varies with $x_i$. That is, we think of $P_j$ as a function $I_j(x_i)$. We wish to approximate $\partial I_j(x_i) / \partial x_i$.</li>
+    </ul>
+
+    <h4>Pixel is outside a triangle.</h4>
+    <ul>
+        <li>Suppose first that $P_j$ is outside the face. Let $x_0$ be the current value of $x_i$. Let us assume that, if $x_i$ moves from $x_0$ to the right to $x_1$, the center of the pixel $P_j$ goes into the triangle. At this point, the color $I_j(x_i)$ suddenly turns to $I_{ij}$.</li>
+
+        <li>Let $\delta_i^x$ be the distance traveled by $x_i$. That is, $\delta_i^x = x_1 - x_0.$ </li>
+
+        <li>Let $\delta_i^I$ be the change in color: $\delta_j^I = I_j(x_0) - I_j(x_1).$</li>
+
+        <li>We can see that the partial derivative $\frac{\partial I_j(x_i)}{\partial x_i}$ is zero almost everywhere because $I_j$ suddenly changes.</li>
+
+        <li>The paper replaces the sudden change with a gradual change between $x_0$ and $x_1$ using linear interpolation. That is, $$ \frac{\partial I_j}{\partial x_i} = \frac{\delta_j^I}{\delta_i^x} $$ when $x_i$ goes from $x_0$ to $x_1$.</li>
+
+        <li>What should the derivative at $x_0$ be? The paper propose using the gradient of the loss $\delta_j^P$ that is back-propagated to $P_j$ to decide the value.
+            <ul>
+                <li>If $\delta_j^P$ is positive, it means that increasing $P_j$ would increase the loss. So, to minimize the loss, then $P_j$ should be come darker.</li>
+
+                <li>If $\delta_j^P$ is negative, it means that increasing $P_j$ would decrease the loss. So, to minimize the loss, then $P_j$ should be brighter.</li>
+            </ul>
+        </li>
+
+        <li>Now, consider the sign of $\delta_j^I$.
+            <ul>
+                <li>If $\delta_j^I > 0$, $P_j$ becomes brighter by moving $x_i$ from $x_0$ to $x_1$.</li>
+
+                <li>If $\delta_j^I < 0$, $P_j$ becomes darker by moving $x_i$ from $x_0$ to $x_1$.</li>
+            </ul>
+        </li>
+
+        <li>As a result, the gradient should not flow if $\delta_j^P \delta_j^I \geq 0$. This covers two cases:
+            <ul>
+                <li>$\delta_j^P \geq 0$ ($P_j$ should be darker) and $\delta_j^I \geq 0$ ($P_j$ will be brighter if $x_i$ moves to $x_1$).</li>
+
+                <li>$\delta_j^P \leq 0$ ($P_j$ should be brighter) and $\delta_j^I \leq 0$ ($P_j$ will be darker if $x_i$ moves to $x_1$).</li>
+            </ul>
+        </li>
+
+        <li>So, we may define the derivative at $x_i = x_0$ as:
+            \begin{align*}
+            \frac{\partial I_j(x_i)}{\partial x_i} \Bigg|_{x_i = x_0}
+            &= \begin{cases}
+            \delta_j^I / \delta_i^x,
+            & \delta_j^P \delta_j^I < 0 \\
+            0,
+            & \delta_j^P \delta_j^I \geq 0
+            \end{cases}
+            \end{align*}
+        </li>
+
+        <li>Note that the above computation only concerns the gradient. The forward rasterization is still discrete.</li>
+
+        <li>The derivative with respect to $y_i$ can be derived in the same way.</li>
+
+        <li>Lastly, if it is not possible to move $x_i$ so that the triangle would cover $P_j$, then we define $\partial I_j(x_i) / \partial x_i$ to be $0$.</li>
+    </ul>
+
+    <h4>Pixel is inside a triangle.</h4>
+
+    <ul>
+        <li>Now, consider the case where $P_j$ is inside the triangle.</li>
+
+        <li>Again, assume now that $x_i = x_0$. Assume also that
+            <ul>
+                <li>If we move $x_i$ to the left to $x_1^a$, then $P_j$ would cease to be inside the triangle. At that point, the color changes to $I_{ij}^b$.</li>
+
+                <li>If we move $x_i$ to the right to $x_1^b$, then $P_j$ would cease to be inside the triangle. At that point, the color changes to $I_{ij}^a$.</li>
+            </ul>
+            (Note: The $a$, $b$ super/subscripting might be confusing. It is, however, consistent in the sense that $a$ is always on the left side, and $b$ is always on the right side.)
+        </li>
+
+        <li>
+            Let:
+            \begin{align*}
+                \delta_j^{I^a} &= I_j(x_1^a) - I_j(x_0) \\
+                \delta_j^{I^b} &= I_j(x_1^b) - I_j(x_0) \\
+                \delta_x^a &= x_1^a - x_0 \\
+                \delta_x^b &= x_1^b - x_0.
+            \end{align*}
+            We can now define the gradients as follows:
+            \begin{align*}
+                \frac{\partial I_j(x_i)}{\partial x_i}
+                = \begin{cases}
+                \delta_j^{I^a} / \delta_x^a, & x_1^a \leq x_i < x_0 \\
+                \delta_j^{I^b} / \delta_x^b, & x_0 < x_i \leq x_1^b
+                \end{cases}
+            \end{align*}
+            For the case where $x_i = x_0$, we have:
+            \begin{align*}
+                \frac{\partial I_j(x_i)}{\partial x_i} \Bigg|_{x_i=x_0}
+                &= \frac{\partial I_j(x_i)}{\partial x_i} \Bigg|_{x_i=x_0}^a 
+                   + \frac{\partial I_j(x_i)}{\partial x_i} \Bigg|_{x_i=x_0}^b \\
+                \frac{\partial I_j(x_i)}{\partial x_i} \Bigg|_{x_i=x_0}^a
+                &= \begin{cases}
+                    \delta_j^{I^a} / \delta_x^a, & \delta_j^P \delta_j^{I^a} < 0 \\
+                    0, & \delta_j^P \delta_j^{I^a} \geq 0
+                \end{cases} \\
+                \frac{\partial I_j(x_i)}{\partial x_i} \Bigg|_{x_i=x_0}^b
+                &= \begin{cases}
+                    \delta_j^{I^b} / \delta_x^b, & \delta_j^P \delta_j^{I^b} < 0 \\
+                    0, & \delta_j^P \delta_j^{I^b} \geq 0
+                \end{cases}.
+            \end{align*}
+        </li>
+    </ul>
+
+    <h3>Rasterization of Multiple Faces</h3>
+
+    <ul>
+        <li>The rasterization only renders the front-most face for each pixel.</li>
+        
+        <li>In the backward pass, the renderer computes the points on each triangle that the pixel $P_j$ would cross if the position $x_i$ were to move. (There's one point in the case when $P_j$ is outside the triangle and two points when $P_j$ is inside the triangle.) If any of these points are not drawn because they are occluded, the renderer would not compute the gradient.</li>
+    </ul>
+
+    <h3>Texturing</h3>
+
+    <ul>
+        <li>One of the more puzzling thing about this paper is that it uses a texture cube of size $s_t \times s_t \times s_t$ instead of a texture image. Each triangle has its own texture cube.</li>
+
+        <li>Even more puzzling is the way texture coordinate is computed. The paper uses "centroid coordinate system," which I have never heard of before. The map goes like this: if $\ve{p}$ can be expressed as $w_1 \ve{v}_1 + w_2 \ve{v}_2 + w_3 \ve{v}_3$, then the texture coordinate of $\ve{p}$ is $(w_1, w_2, w_3)$. It does look like barycentric coordinates, and if it is barycentric coordinates, then you don't need the whole three dimensions of textures.
+        </li>
+    </ul>
+
+    <h3>Lighting and Shading</h3>
+
+    <ul>
+        <li>The triangles all have a simple ambient+diffuse shading model.</li>
+
+        <li>The scene is illuminated by a single light source.</li>
+
+        <li>The paper does not give sufficient details on how the gradients of these parameters are computed, nor does it details how the pixel intensity gradient calculation would be computed in light of the shading calculation.</li>
+    </ul>
+
+    <h3>Overall Computation</h3>
+
+    <ul>
+        <li>To compute the gradient for each pixel, one has to loop through all the triangles. For each triangle, one has to go through the three vertices and their two coordinates.</li>
+
+        <li>In the paper, the authors optimized a shape that starts from an isotropic sphere of $642$ vertices. Only the coordinates are moved. The topology does not change.</li>
+    </ul>
+
+    <h2>Liu et al. (ICCV 2019)</h2>
+    <hr>
+
+    <ul>
+        <li>The paper claims that previous works (Kato et al. included) are hacky. The forward pass is the same as the standard graphics pipeline while the backward pass uses hand-crafted gradients that are not real gradients of the forward function.</li>
+
+        <li>The paper instead propose a forward pass that is truly differentiable.</li>
+
+        <li>The trick is to turn all operations that are not differentiable to ones that are:
+            <ul>
+                <li>The test of whether a pixel is inside a triangle or not is changed to a soft test based on the distance between the pixel and the triangle.</li>
+
+                <li>The depth test is changed to an operation similar to softmax where the weights are computed based on the $z$-coordinate.</li>
+            </ul>
+        </li>
+    </ul>
+
+    <h3>Soft Rasterization Pipeline</h3>
+
+    <ul>
+        <li>The input to the rasterizer are as follows:
+            <ul>
+                <li>$\ve{P}$ is the camera transformation.</li>
+                <li>$\ve{L}$ is the lighting in the scene.</li>
+                <li>$\ve{M}$ is the triangle mesh.</li>
+                <li>$\ve{A}$ is the per-vertex appearance parameters (including color, material properties, etc.)</li>
+            </ul>
+        </li>
+
+        <li>From the input, the rasterizer can calculate:
+            <ul>
+                <li>$\ve{N}$: the normal vector at fragment</li>
+                <li>$\ve{C}$: the color of each fragment</li>
+                <li>$\ve{U}$: the image-space coordinate of each vertex</li>
+                <li>$\ve{Z}$: the view-dependent depth of each fragment</li>
+            </ul>
+        </li>
+
+        <li>The problem is that the final pixel values are not differentiable with respect to $\ve{U}$ and $\ve{Z}$ due to the rasterization operation.</li>
+
+        <li>To make the whole rasterization operation differentiable, the paper proposes compute the color in two steps:
+            <ul>
+                <li>First, a probability map $\mathcal{D}_j$ is computed for every triangle $f_j$ (where $f$ stands for "face"). The maps gives the probability that a given pixel is inside $f_j$.</li>
+                <li>Then, the color maps and the probability maps are aggregated with an aggregate function $\mathcal{A}(\cdot)$.</li>
+            </ul>
+        </li>
+    </ul>
+
+    <h4>Probability Map Computation</h4>
+
+    <ul>
+        <li>Consider pixel $p_i$, we define the probability map $\mathcal{D}_j^i$ that indicates the probability that $p_i$ is inside $f_j$ as follows:
+            \begin{align*}
+                \mathcal{D}_j^i = \mathrm{sigmoid}\bigg( \delta_j \cdot \frac{d^2(i,j)}{\sigma} \bigg).
+            \end{align*}
+        </li>
+        Here,
+        <ul>
+            <li>$\sigma$ is the positive scalar that controls the sharpness of the probability map. The less $\sigma$ is, the sharper the map. The paper sets $\sigma = 10^{-4}$.</li>
+
+            <li>$\delta_j^i$ is the sign indicator: $\delta_j^i = 1$ if $p_i \in f_j$ and $-1$ otherwise.</li>
+
+            <li>$d(i,j)$ is the distance from $p_j$ to the closest edge of $f_j$. The paper uses the Euclidean distance.</li>
+        </ul>
+    </ul>
+
+    <h4>Aggregation Function</h4>
+
+    <ul>
+        <li>For each triangle $f_j$, we can compute the color map $C_j$ by interpolating the colors of the three vertices (i.e., Gourad shading). For pixels that are outside the triangle, the colors are computed by clipping the barycentric coordinates to the $[0,1]$ range.</li>
+
+        <li>The aggregation function $\mathcal{A}$ merges the color maps $\{ C_j \}$ based on $\{ \mathcal{D}_j \}$ and the depth map $\{ z_j \}$.</li>
+
+        <li>There are two variants of the aggregation function:
+            <ul>
+                <li>$\mathcal{A}_S$ is used when one wants to reimplement the standard graphics pipeline.</li>
+                <li>$\mathcal{A}_O$ is used when one only wants to generated the silhoutte images. Here, we don't care about shading. We only care about whether a pixel is occupied by a triangle or not.</li>
+            </ul>
+        </li>f
+
+        <li>
+            For $\mathcal{A}_S$, we set the color $I^i$ of Pixel $p_i$ as:
+            \begin{align*}
+                I^i 
+                = \mathcal{A}_S(\{C_j\}, \{ \mathcal{D}_j \}, \mathcal{z_j})
+                = w_b^i C_b + \sum_j w_j^i C_j^i.
+            \end{align*}
+            Here, $C_b$ is the background color. The weights $w_j^i$ satisfies $w_b^i + \sum_j w_j^i = 1$ and are given by:
+            \begin{align*}
+                w_j^i = \frac{\mathcal{D}_j^i \exp(z_j^i/\gamma)}{\exp(\epsilon/\gamma) + \sum_k \mathcal{D}_k^i \exp(z_k^i/\gamma) }
+            \end{align*} 
+            where 
+            <ul>
+                <li>$z_j^i$ denotes the normalized inverse depth of the point on $f_j$ whose projection is $p_i$;</li>
+                <li>$\epsilon$ is a small constant for the background color;</li>
+                <li>$\gamma$ controls the sharpness of the operation.</li>
+            </ul>
+            The paper sets $\gamma = 10^{-4}$ Naturally, we have from the above definition that:
+            \begin{align*}
+                w_j^b = \frac{\exp(\epsilon/\gamma)}{\exp(\epsilon/\gamma) + \sum_k \mathcal{D}_k^i \exp(z_k^i/\gamma) }.
+            \end{align*} 
+        </li>
+
+        <li>
+            For $\mathcal{A}_O$, we define it as:
+            \begin{align*}
+                I^i = \mathcal{A}_O(\{ \mathcal{D}_j \}) = 1 - \prod_j (1 - \mathcal{D}_j^i).
+            \end{align*}
+        </li>
+
+        <li>Honestly, I do like this approach much more than Kato et al.'s paper.</li>
+    </ul>
+
+    <h2>Chen et al. (NeurIPS 2019)</h2>
+    <hr>
+
+    <ul>
+        <li>They call their approach DIB-R.</li>
+
+        <li>Rasterization is a combination of:
+            <ul>
+                <li>local interpolation and</li>
+                <li>global aggregation.</li>
+            </ul>
+        </li>
+
+        <li>The paper classify pixels into two types:
+            <ul>
+                <li><b>Foreground pixels</b> are covered by at least one face.  A foreground pixel's value as a weighted interpolation of relevant vertex attributes of the face that encloses it.</li>
+
+                <li><b>Background pixels</b> are not covered by any face. A background pixel is still participates in the rasterization process. Its value is defined through a distance-based aggregation process of global face interformation. This allows the gradients from background pixels to be propagated to parameters of all faces.</li>
+            </ul>
+        </li>
+
+        <li>The paper can optimize the parameters of an initial sphere mesh to match conditioning inputs. This allows it to perform both shape and texture recovery from images.</li>
+    </ul>
+
+    <h3>DIB-R: Differentiable Interpolation-based Renderer</h3>
+
+    <ul>
+        <li>In a graphics pipeline, there are three main types of shaders: vertex, rasterization, and fragment shaders.</li>
+
+        <li>Operations of vertex and fragment shaders are mainly differentiable. The rasterization shader is not differentiable.</li>
+    </ul>
+
+    <h4>Foreground Pixels</h4>
+
+    <ul>
+        <li>Consider a foreground pixel that is covered by one or more faces.</li>
+
+        <li>First, the depth test is performed to identified the face that should cover this pixel.</li>
+
+        <li>Let us say that the pixel value is $\ve{p}_i$. It is covered by face $f_j$ with vertices $\ve{v}_0$, $\ve{v}_1$, and $\ve{v}_2$. Moreover, let us suppose that each vertex has an associated scalar value, and let us call them $u_0$, $u_1$, and $u_2$.</li>
+
+        <li>The interpolated value $I_i$ of the pixel is given by interpolating with the barycentric coordinates:
+            $$I_i = w_0 u_0 + w_1 u_1 + w_2 u_2.$$
+            where the weights $w_k$ are computed using a differentiable function $\Omega_k$ as
+            $$w_k = \Omega_k(\ve{v}_0, \ve{v}_1, \ve{v}_2, \ve{p}_i).$$
+            The paper provides a differentiable reformulation of $\Omega_k$ in its supplementary material.
+        </li>
+    </ul>
+
+    <h4>Background Pixels</h4>
+        
+    <ul>
+        <li>The paper defines a distance-related probability $A_{i'}^j$, that softly assignes Face $f_j$ to Pixel $p_{i'}$ as:
+            \begin{align*}
+                A_{i'}^j = \exp\bigg( - \frac{ d(p_{i'}, f_j ) }{\delta} \bigg)
+            \end{align*}
+            where $d(p_{i'}, f_j)$ is the distance between $p_{i'}$ and $f_j$, and $\delta$ is a hyperparameter that controls the smoothness of the probability. (The more the softer.)
+        </li>
+
+        <li>
+            The probabilisitic influence of all faces to a particular pixel is defined as:
+            \begin{align*}
+                A_{i'} = 1 - \prod_j (1 - A_{i'}^j).
+            \end{align*}
+            This value indicates how much the pixel is covered by a face. In other words, this is the alpha channel.
+        </li>
+
+        <li>
+            Thus, the only background pixel errors that can be propagated back to the mesh parameters are alpha channel errors. That is, the feedback through background pixels are for coverage, not color. 
+        </li>
+    </ul>
+
+    <h3>My Thoughts</h3>
+
+    <ul>
+        <li>This paper seems to be simpler and more efficient than the Liu et al. paper. However, I liked Liu et al. paper better because it's very clean, and there's no hack.</li>
+    </ul>
+    <hr>
+    <div class="page-header"></div>
+    <p>Last modified: 2019/12/11</p>    
+</div>
+
+<script type="text/javascript">
+$.bigfoot();
+</script>
+
+</body>
+</html>

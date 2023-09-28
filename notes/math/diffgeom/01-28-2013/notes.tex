@@ -1,0 +1,284 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{epstopdf}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+
+\newtheorem{lemma}{Lemma}[section]
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\likelihood}{\mathcal{L}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\new}{\mathrm{new}}
+\newcommand{\Arg}{\mathrm{Arg\,}}
+\newcommand{\Log}{\mathrm{Log\,}}
+\newcommand{\RE}{\mathrm{Re\,}}
+\newcommand{\IM}{\mathrm{Im\,}}
+\newcommand{\Res}{\mathrm{Res}}
+\newcommand{\pv}{\mathrm{p.v.}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+
+\title{Differential Geometry Notes of 01/28/2013}
+\author{Pramook Khungurn}
+
+\begin{document}
+	\maketitle
+
+  \section{Continuity} % (fold)
+  \label{sec:continuity}
+
+  \begin{itemize}
+    \item A {\bf ball} in $\Real^n$ with center $p_0 = (x_1^0, x_2^0, \dotsc, x_n^0)$ and radius $\epsilon > 0$ is the set
+    \begin{align*}
+      B_\epsilon(p_0) = \{ (x_1, \dotsc, x_n) \in \Real^n : (x_1 - x_1^0)^2 + \dotsb + (x_n - x_n^0)^2 < \epsilon^2 \}.
+    \end{align*}
+
+    \item The set $U \subseteq \Real^n$ is an {\bf open set} if for each $p \in U$ there exists a ball $B_\epsilon(p) \subseteq U$.
+
+    \item An open set $\Real^n$ containing a point $p \in \Real^n$ is a {\bf neighborhood} of $p$.
+
+    \item Let $U$ be an open set. A map $F : U \subseteq \Real^n \ra \Real^m$ is {\bf continuous} at $p \in U$ if given $\epsilon > 0$, there exists $\delta > 0$ such that $$ F(B_\delta(p)) \subseteq B_\epsilon(F(p)).$$
+    We say that $F$ is continuous in $U$ is it is continuous at any point $p$ in $U$.
+
+    \item \begin{proposition}
+      Let $U$ be an open set. $F : U \subseteq \Real^n \ra \Real^m$ is continuous if and only if each component function $f_i : U \subseteq \Real^n \ra \Real$ for $i = 1, 2, \dotsc, m$ is continuous.
+    \end{proposition}
+
+    \item \begin{proposition}
+      A map $F : U \subseteq \Real^n \ra \Real^m$ is continuous at $p \in U$ if and only if, given a neighborhood $V$ of $F(p)$ in $\Real^m$, there exists a neighborhood $W$ of $p$ in $\Real^n$ such that $F(W) \subseteq V$.
+    \end{proposition}
+
+    \item \begin{proposition}
+      Let $F: U \subseteq \Real^n \ra \Real^m$ and $G:V \subseteq \Real^m \ra \Real^k$ be continuous maps, where $U$ and $V$ are open sets such that $F(U) \subseteq V$. Then $G \circ F: U \subseteq \Real^n \ra \Real^k$ is a continuous map.
+    \end{proposition}
+
+    \item Let $F: A \subseteq \Real^n \ra \Real^m$, where $A$ is an arbitrary set in $\Real^n$ (not an open set like $U$). We say that $F$ is {\bf continuous} in $A$ if there exists an open set $U \subseteq \Real^n$ and $A \subseteq U$ and a continuous $\bar F : U \ra \Real^n$ such that the restriction of $\bar F$ to $A$ is $F$.
+
+    \item We say that a continuous map $F: A \subseteq \Real^n \ra \Real^n$ is a {\bf homeomorphism} onto $F(A)$ if $F$ is one-to-one and the inverse $F^{-1}: F(A) \subseteq \Real^n \ra \Real^n$ is continuous. 
+
+    We say that $A$ and $F(A)$ are {\bf homeomorphic sets}.
+
+    \item \begin{proposition}
+      Let $f : [a,b] \ra \Real$ be a continuous function defined on the closed interval $[a,b]$. Assume that $f(a)$ and $f(b)$ have opposite signs. Then, there exists a point $c \in (a,b)$ such that $f(c) = 0$.
+    \end{proposition}
+
+    \item \begin{proposition}
+      Let $f : [a,b] \ra \Real$ be a continuous function. Then, $f$ reaches its maximum and minimum in $[a,b]$; that is, there exists $x_1, x_2 \in [a,b]$ such that $f(x_1) \leq f(x) \leq f(x_2)$ for all $x \in [a,b]$.
+    \end{proposition}
+
+    \item \begin{proposition}[Heine--Borel Theorem]
+      Let $[a,b]$ be a closed interval and let $I_\alpha, \alpha \in A,$ be a collection of open interval in $[a,b]$ such that $\bigcup_\alpha I_\alpha = [a,b]$. Then, it is possible to choose a finite number $I_{k_1}, I_{k_2}, \dotsc, I_{k_n}$ of $I_\alpha$ such that $\bigcup I_{k_i} = I$ for $i = 1, 2, \dotsc, n$.
+    \end{proposition}
+  \end{itemize}  
+  % section continuity (end)
+
+  \section{Differentiability in $\Real^n$} % (fold)
+  \label{sec:differentiability_in_}
+  
+  \begin{itemize}
+    \item Let $f: U \subseteq \Real \ra \Real$. The {\bf derivative} $f'(x_0)$ of $f$ at $x_0 \in U$ is the limit (when it exists)
+    \begin{align*}
+      f'(x_0) = \lim_{h \ra 0} \frac{f(x_0+h) - f(x_0)}{h}.
+    \end{align*}
+
+    \item If $f$ has derivatives at all points of neighborhood $V$ of $x_0$, we can consider the derivative of $f':V \ra \Real$ at $x_0$, which is called the {\bf second derivative} $f''(x_0)$ of $f$ at $x_0$. We can define the derivative of higher order in a similar manner.
+
+    \item We say that $f$ is {\bf differentiable} at $x_0$ if it has continous derivatives of all orders at $x_0$.\\
+    We say that $f$ is {\bf differentiable} in $U$ if it is differentiable at all points in $U$.
+
+    \item Let $F: U \subseteq \Real^2 \ra \Real$. The {\bf partial derivative} of $f$ with respect to $x$ at $(x_0,y_0) \in U$, denoted by $(\partial f / \partial x)(x_0, y_0)$ is the derivative at $x_0$ for the function of one variable $x \mapsto f(x,y_0)$.
+
+    The partial derivative with respect $y$ is defined similarly.
+
+    \item The {\bf second partial derivatives} at $(x_0,y_0)$ are:
+    \begin{align*}
+      \frac{\partial}{\partial x} \bigg( \frac{\partial f }{\partial x} \bigg) &= \frac{\partial^2 f}{\partial x^2} &
+      \frac{\partial}{\partial x} \bigg( \frac{\partial f }{\partial y} \bigg) &= \frac{\partial^2 f}{\partial x\, \partial y} \\
+      \frac{\partial}{\partial y} \bigg( \frac{\partial f }{\partial x} \bigg) &= \frac{\partial^2 f}{\partial y\, \partial x} &
+      \frac{\partial}{\partial y} \bigg( \frac{\partial f }{\partial y} \bigg) &= \frac{\partial^2 f}{\partial y^2}.
+    \end{align*}    
+    Partial derivatives of higher order are defined similarly.
+
+    \item We say that $f$ is {\bf differentiable} at $(x_0,y_0)$ if it has continuous partial derivatives of all orders at $(x_0,y_0)$.
+    We say that $f$ is differentiable in $U$ if it is differentiable at all points in $U$.  
+
+    \item When $f$ is differentiable, the partial derivatives of $f$ are independent of the order in which they are performed; that is,
+    \begin{align*}
+      \frac{\partial^2 f}{\partial x\, \partial y} &= \frac{\partial^2 f}{\partial y\, \partial x}, &
+      \frac{\partial^3 f}{\partial x^2\, \partial y} &= \frac{\partial^3 f}{\partial x\, \partial y\, \partial x}, &
+      \mbox{etc.}
+    \end{align*}
+
+    \item We sometimes denote the partial derivatives with the following notations:
+    \begin{align*}
+      f_x &= \frac{\partial f}{\partial x} &
+      f_{xx} &= \frac{\partial^2 f}{\partial x^2} &
+      f_{xy} &= \frac{\partial^2 f}{\partial x\, \partial y} &
+      f_{yy} &= \frac{\partial^2 f}{\partial y^2}
+    \end{align*}
+
+    \item The definitions of partial derivatives for $f: U \subseteq \Real^n \ra \Real$ can be similarly defined as the 2D case.
+
+    \item Partial derivatives obey the {\bf chain rule}.
+
+    For example, if $x = x(u,v)$, $y = y(u,v)$, and $z = z(u,v)$ are real differentiable functions in $U \sseq \Real^2$, and $f(x,y,z)$ is a real differential function in $\Real^3$, then the partial derivative of $f$ with respect to $u$ is given by:
+    \begin{align*}
+      \frac{\partial f}{\partial u} = \frac{\partial f}{\partial x} \frac{\partial x}{\partial u} + \frac{\partial f}{\partial y} \frac{\partial y}{\partial u} + \frac{\partial f}{\partial z} \frac{\partial z}{\partial u}.
+    \end{align*}
+
+    \item We say that the function $F : U \sseq \Real^n \ra \Real^m$ where
+    \begin{align*}
+      f(x_1, \dotsc, x_n) = (f_1(x_1, \dotsc, x_n), \dotsc, f_m(x_1, \dotsc, x_n))
+    \end{align*}
+    is {\bf differentiable} at $(x_1, \dotsc, x_n)$ if all of its component functions are differentiable at $(x_1, \dotsc, x_n)$.
+
+    We say that $F$ is differentiable in $U$ if it is differentiable at all points in $U$.
+
+    \item When $n = 1$, we have that $F$ define a {\bf differentiable curve} in $\Real^n$.
+
+    \item A {\bf tangent} vector to a differentiable curve $\alpha: U \sseq \Real \ra \Real^m$ at $t_0 \in U$ is the vector
+    \begin{align*}
+      \alpha'(t_0) = (\alpha_1'(t_0), \dotsc, \alpha_m'(t_0)).
+    \end{align*}
+
+    \item Given a vector $w \in \Real^m$ and a point $p \in U \sseq \Real^n$, we can always find a differentiable curve $alpha : (-\epsilon, \epsilon) \ra U$ with $\alpha(0) = p$ and $\alpha'(0) = w$. This is done simply by taking $\alpha(t) = p + wt$.
+
+    \item \begin{definition}
+      Let $F: U \sseq \Real^n \ra \Real^m$ be a differentiable map. To each $p \in U$, we associate a linear map 
+      $\dee F_p: \Real^n \ra \Real^m$ (that is, an $m \times n$ matrix) which is called the {\bf differential} of $F$ at $p$, which is defined as follows.
+
+      Let $w \in \Real^n$ and let $\alpha : (-\epsilon, \epsilon): \Real \ra \Real^n$ be a differentiable curve such that $\alpha(0) = p$ and $\alpha'(0) = w$. By the chain rule, the function $\beta = F \circ \alpha : \Real \ra \Real^m$ is also differentiable. We define
+      \begin{align*}
+        \dee F_p(w) = \beta'(0).
+      \end{align*}
+    \end{definition}
+
+    \item \begin{proposition}
+      $\dee F_p$ is well-defined. That is, the value of $\dee F_p(w)$ does not depend on the particular choice of the curve $\alpha$.
+    \end{proposition}    
+    \begin{proof}
+      Let 
+      \begin{align*}
+        F(x_1, \dotsc, x_n) = (f_1(x_1, \dotsc, x_n), \dotsc, f_m(x_1, \dotsc, x_n)),
+      \end{align*}
+      and
+      \begin{align*}
+        \alpha(t) = (\alpha_1(t), \dotsc, \alpha_n(t)).
+      \end{align*}
+      As a result,
+      \begin{align*}
+        \beta(t) = (F \circ \alpha)(t) 
+        = \begin{bmatrix}
+          f_1(\alpha_1(t), \alpha_2(t), \dotsc, \alpha_n(t))\\
+          f_2(\alpha_1(t), \alpha_2(t), \dotsc, \alpha_n(t))\\
+          \vdots\\
+          f_M(\alpha_1(t), \alpha_2(t), \dotsc, \alpha_n(t))\\
+        \end{bmatrix}.
+      \end{align*}
+      So,
+      \begin{align*}
+        \beta'(0) = \bigg[\frac{\dee}{\dee t}(F \circ \alpha) \bigg]_{t = 0}
+        &= \begin{bmatrix}
+          \big[\frac{\dee}{\dee t} f_1(\alpha_1(t), \alpha_2(t), \dotsc, \alpha_n(t)) \big]_{t=0}\\
+          \big[\frac{\dee}{\dee t} f_2(\alpha_1(t), \alpha_2(t), \dotsc, \alpha_n(t)) \big]_{t=0}\\
+          \vdots\\
+          \big[\frac{\dee}{\dee t} f_M(\alpha_1(t), \alpha_2(t), \dotsc, \alpha_n(t)) \big]_{t=0}\\
+        \end{bmatrix}\\
+        &= \begin{bmatrix}
+          \big[ \frac{\partial f_1}{\partial x_1}\big]_{x_1=\alpha_1(0)} + \dotsb + \big[ \frac{\partial f_1}{\partial x_n}\big]_{x_n=\alpha_n(0)} \alpha_n'(0) \\
+          \big[ \frac{\partial f_2}{\partial x_1}\big]_{x_1=\alpha_1(0)} + \dotsb + \big[ \frac{\partial f_2}{\partial x_n}\big]_{x_n=\alpha_n(0)} \alpha_n'(0) \\
+          \vdots\\
+          \big[ \frac{\partial f_m}{\partial x_1}\big]_{x_1=\alpha_1(0)} + \dotsb + \big[ \frac{\partial f_m}{\partial x_n}\big]_{x_n=\alpha_n(0)} \alpha_n'(0)
+        \end{bmatrix}\\
+        &= \begin{bmatrix}
+          \frac{\partial f_1}{\partial x_1} & \frac{\partial f_1}{\partial x_2} & \cdots & \frac{\partial f_1}{\partial x_n}\\
+          \frac{\partial f_2}{\partial x_1} & \frac{\partial f_2}{\partial x_2} & \cdots & \frac{\partial f_2}{\partial x_n}\\
+          \vdots & \vdots & \ddots & \vdots\\
+          \frac{\partial f_m}{\partial x_1} & \frac{\partial f_m}{\partial x_2} & \cdots & \frac{\partial f_m}{\partial x_n}
+        \end{bmatrix}_{x=p}
+        \begin{bmatrix}
+          \alpha'_1(0)\\
+          \alpha'_2(0)\\
+          \vdots\\
+          \alpha'_n(0)
+        \end{bmatrix}\\
+        &= \begin{bmatrix}
+          \frac{\partial f_1}{\partial x_1} & \frac{\partial f_1}{\partial x_2} & \cdots & \frac{\partial f_1}{\partial x_n}\\
+          \frac{\partial f_2}{\partial x_1} & \frac{\partial f_2}{\partial x_2} & \cdots & \frac{\partial f_2}{\partial x_n}\\
+          \vdots & \vdots & \ddots & \vdots\\
+          \frac{\partial f_m}{\partial x_1} & \frac{\partial f_m}{\partial x_2} & \cdots & \frac{\partial f_m}{\partial x_n}
+        \end{bmatrix}_{x=p} w,
+      \end{align*}
+      and the matrix on the RHS is $\dee F_p$.
+    \end{proof}
+
+    \item The matrix $[ \partial f_i / \partial x_j ]$ where $i = 1, 2, \dotsc, m$ and $j = 1, 2, \dotsc, n$ is called the {\bf Jacobian matrix} of $F$ at $p$. When $n = m$, this is a square matrix and its determinatn is called the {\bf Jacobian determinant}, which is usually denoted by:
+    \begin{align*}
+      \det \bigg( \frac{\partial f_i}{\partial x_j} \bigg) = \frac{\partial(f_1, \dotsc, f_n)}{\partial(x_1, \dotsc, x_n)}.
+    \end{align*}
+
+    \item \begin{proposition}[Chain rule for maps]
+      Let $F: U \sseq \Real^n \ra \Real^m$ and $G : V \sseq \Real^m \ra \Real^k$ be differentiable maps, where $U$ and $V$ are open sets and $F(U) \sseq V$. Then, $G \circ F = U \ra \Real^k$ is a differentiable map, and
+      \begin{align*}
+        \dee (G \circ F)_p = \dee G_{F(p)} \circ \dee F_p.
+      \end{align*}
+    \end{proposition}
+
+    \item We say that an open set $U \sseq \Real^n$ is {\bf connected} if given two points $p, q \in U$, there exists a continuous map $\alpha: [a,b] \ra U$ such that $\alpha(a) = p$ and $\alpha(b) = q$.
+
+    \item \begin{proposition}
+      Let $f : U \sseq \Real^n \ra \Real$ be a differentiable map defined on a connected open subset $U$ of $\Real^n$. Assume that $\dee f_p: \Real^n \ra \Real$ is zero at every point $p \in U$. Then $f$ is constant on $U$.
+    \end{proposition}
+
+    \begin{proof}
+      Let $p \in U$, and let $B_\delta(p) \sseq U$ be an open ball around $p$ inside $U$. Any point $q \in B_\delta(p)$ can be joined to $p$ by the straight line $\beta : [0, 1] \ra B_\delta(p)$ where $\beta(t) = (1-t)p + tq$. Since $U$ is open, we expand $\beta$'s domain to $(0-\epsilon, 1+\epsilon)$. Now, we consider $f \circ \beta: (0-\epsilon, 1+\epsilon) \ra \Real$ is a function defined on open interval. We have that
+      \begin{align*}
+        \dee(f \circ \beta)_t = (\dee f \circ \dee \beta)_t = 0
+      \end{align*}
+      because $\dee f_p$ is zero at every point $p$. Because $\dee (f \circ \beta)_t$ is a $1 \times 1$ matrix whose entry is simply $\dee (f \circ \beta) / \dee t$, we have that the derivative is $0$. This means that $f \circ \beta$ is constant. So, $f(p) = f(\beta(0)) = f(\beta(1)) = f(q)$. Thus, because $p$ and $q$ are arbitrary, $f$ is constant in $B_\delta(U)$.
+
+      Next, we need to show that $f(p) = f(q)$ for any two points $p, q$ in $U$. Since $U$ is connected, there is a connected curve $\alpha : [a,b] \ra U$ that joints $p$ and $q$. By the first part of the proof, for reach $t \in [a,b]$, there exists an open interval $I_t$ such that $f \circ \alpha$ is constant. Note also that $\bigcap_t I_t = [a,b]$. By the Heine--Borel theorem, we can choose a finite number of open intervals $I_1, I_2, \dotsc, I_k$ that covers $[a,b]$. By renumbering the intervals, we can assume that consecutive intervals overlap. This implies that $f$ is constant over the union of all intervals. Therefore, $f(p) = f(q)$, and we are done.
+    \end{proof}
+
+    \item \begin{proposition}[Inverse Function Theorem]
+      Let $F : U \sseq \Real^n \ra \Real^n$ be a differentiable mapp and suppose that at $p \in U$ the differential $\dee F_p: \Real^a \ra \Real^n$ is invertible. Then, there exists a neighborhood $V$ of $p$ in $U$ and a neighborhood $W$ of $F(p)$ in $\Real^n$ such that $F: V \Real W$ has a differentiable inverse $F^{-1} : W \ra V$.
+    \end{proposition}
+
+    \item A differentiable map $F: V \sseq \Real^n \ra W \sseq \Real^n$, where $V$ and $W$ are open sets, is called a {\bf diffeomorphism} of $V$ with $W$ if $F$ has a differentiable inverse.
+  \end{itemize}
+ 
+  % section differentiability_in_ (end)
+  
+\end{document}

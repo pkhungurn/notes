@@ -1,0 +1,111 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{epstopdf}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\likelihood}{\mathcal{L}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\new}{\mathrm{new}}
+\newcommand{\Arg}{\mathrm{Arg\,}}
+\newcommand{\Log}{\mathrm{Log\,}}
+\newcommand{\RE}{\mathrm{Re\,}}
+\newcommand{\IM}{\mathrm{Im\,}}
+\newcommand{\Res}{\mathrm{Res}}
+\newcommand{\pv}{\mathrm{p.v.}}
+\newcommand*{\horzbar}{\rule[.5ex]{2.5ex}{0.5pt}}
+\newcommand{\Real}{\mathbb{R}}
+
+\title{Distance Between Skew Lines}
+\author{Pramook Khungurn}
+
+\begin{document}
+	\maketitle
+
+  \begin{itemize}
+    \item Suppose there are two lines.\\
+    The first one is given by the function $\ell_0(\lambda_0) = \ve{p}_0 + \lambda_0 \ve{q}_0$.\\
+    The second one is given by the function $\ell_0(\lambda_1) = \ve{p}_1 + \lambda_1 \ve{q}_1$.\\
+    Here, $\ve{p}_0 = (p_0^x, p_0^y, p_0^z) \in \Real^3$. The same notion is used for the other points and vectors.
+
+    \item We would like to find a pair of $\lambda_0$ and $\lambda_1$ such that the distance squared 
+    \begin{align*}    
+      F(\lambda_1,\lambda_2) = \| \ell_0(\lambda_0) - \ell_1(\lambda_1) \|^2
+    \end{align*}
+    between the point $\ell_0(\lambda_0)$ and $\ell_1(\lambda_1)$ is minimal.
+
+    \item Now,
+    \begin{align*}
+      & F(\lambda_0, \lambda_1)\\
+      &= \| \ve{p}_0 - \ve{p}_1 + \lambda_0 \ve{q}_0 - \lambda_1 \ve{q}_1 \|^2\\
+      &= (\ve{p}_0 - \ve{p}_1 + \lambda_0 \ve{q}_0 - \lambda_1 \ve{q}_1)^T(\ve{p}_0 - \ve{p}_1 + \lambda_0 \ve{q}_0 - \lambda_1 \ve{q}_1)\\
+      &= (\ve{p}_0 - \ve{p}_1)^T(\ve{p}_0 - \ve{p}_1) + 2\lambda_0 (\ve{p_0} -\ve{p}_1)^T \ve{q}_0 - 2 \lambda_1 (\ve{p}_0 - \ve{p}_1)^T \ve{q}_1 - 2\lambda_0 \lambda_1 \ve{q}_0^T\ve{q}_1 + \lambda_0^2 \ve{q}_0^T \ve{q}_0 + \lambda_1^2 \ve{q}_1^T \ve{q}_1
+    \end{align*}
+    So,
+    \begin{align*}
+      \frac{\partial F}{\partial \lambda_0} &= 2(\ve{p}_0 - \ve{p}_1)^T \ve{q}_0 - 2 \lambda_1 \ve{q}_0^T \ve{q}_1 + 2\lambda_0 \ve{q}_0^T \ve{q}_0\\
+      \frac{\partial F}{\partial \lambda_1} &= 2(\ve{p}_0 - \ve{p}_1)^T \ve{q}_1 - 2 \lambda_0 \ve{q}_0^T \ve{q}_1 + 2\lambda_1 \ve{q}_1^T \ve{q}_1.
+    \end{align*}
+    Setting both partial derivatives to zero, we have the system of linear equations:
+    \begin{align*}
+      \begin{bmatrix}
+        \ve{q}_0^T \ve{q}_0 & - \ve{q}_0^T \ve{q_1}\\
+        -\ve{q}_0^T \ve{q}_1 &  \ve{q}_1^T \ve{q_1}
+      \end{bmatrix}
+      \begin{bmatrix}
+        \lambda_0\\
+        \lambda_1
+      \end{bmatrix}
+      =
+      \begin{bmatrix}
+        -(\ve{p}_0 - \ve{p}_1)^T \ve{q}_0\\
+        -(\ve{p}_0 - \ve{p}_1)^T \ve{q}_1
+      \end{bmatrix}
+    \end{align*}
+    So, by Cramer's rule:
+    \begin{align*}
+      \lambda_0 &= \frac{-\|\ve{q}_1\|^2 (\ve{p}_0 - \ve{p}_1)^T \ve{q}_0 - (\ve{q_0}^T \ve{q}_1)[(\ve{p}_0 - \ve{p}_1)^T \ve{q}_1]}{\| \ve{q}_0\|^2 \| \ve{q}_1 \|^2 - (\ve{q}_0^T \ve{q}_1)^2}\\
+      \lambda_1 &= \frac{-\|\ve{q}_0\|^2 (\ve{p}_0 - \ve{p}_1)^T \ve{q}_1 - (\ve{q_0}^T \ve{q}_1)[(\ve{p}_0 - \ve{p}_0)^T \ve{q}_0]}{\| \ve{q}_0\|^2 \| \ve{q}_1 \|^2 - (\ve{q}_0^T \ve{q}_1)^2}
+    \end{align*}
+
+    \item The minimum distance is given by:
+    \begin{align*}
+      \bigg| \frac{\ve{q}_0 \times \ve{q}_1 }{\| \ve{q}_0 \times \ve{q}_1 \|} \cdot (\ve{p}_0 - \ve{p}_1) \bigg|
+    \end{align*}
+  \end{itemize}
+  
+\end{document}

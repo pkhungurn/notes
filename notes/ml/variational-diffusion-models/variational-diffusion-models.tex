@@ -1,0 +1,949 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+\usepackage{verbatim}
+\usepackage{hyperref}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\Dee}{\mathrm{D}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\Var}{\mathrm{Var}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\ves}[1]{\boldsymbol{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+\newcommand{\ov}[1]{\overline{#1}}
+\newcommand{\N}{\mathcal{N}}
+\newcommand{\data}{\mathrm{data}}
+\newcommand{\SNR}{\mathrm{SNR}}
+
+\title{Variational Diffusion Models}
+\author{Pramook Khungurn}
+
+\begin{document}
+\maketitle
+
+This note is written as I read the paper ``Variational Diffusion Models'' by Kingma \etal.~\cite{Kingma:2021}.
+
+\section{Introduction}
+
+\begin{itemize}
+  \item The paper lists two contributions.
+  
+  \item First, it proposes a new family of diffusion-based generative models.
+  \begin{itemize}
+    \item It incorporate Fourier features.
+    \item It can joinly optimize the noise schedule together with the rest of the model.
+    \item It can be easily casted to continuous time settings.
+  \end{itemize}
+
+  \item Second, it contributes new theoretical understanding of diffusion-based generative models.
+  \begin{itemize}
+    \item Derive a simple expression of the variational lower bound (VLB) in terms of the signal-to-noise ratio.
+    \item Prove a new invariance in the continuous time setting.
+    \item Show that various diffusion models in literature are equivalent up to a trivial time-dependent rescaling of the data.
+  \end{itemize}
+
+  \item The end result is that the authors got a model that achieved SOTA log likelihood at the time.
+  \begin{itemize}
+    \item However, FID score was not the best when compared to other models, so the method might not lead to the best looking images.
+    
+    \item Their model is also large, deep, and kind of impossible to train if you don't have enough resource.
+  \end{itemize}
+\end{itemize}
+
+\section{Model}
+
+\begin{itemize}
+  \item A data item is represented by $\ve{x} \in \Real^d$.
+  
+  \item The data distribution is denoted by $p(\ve{x})$, which we want to model.
+\end{itemize}
+
+\subsection{Forward Time Diffusion Process}
+
+\begin{itemize}
+  \item We start with a data item $\ve{x}$ sampled according to $p(\ve{x})$.
+  
+  \item We define a sequence increasingly noisy versions of $\ve{x}$, which we call the {\bf latent variables} $\ve{z}_t$.
+  \begin{itemize}
+    \item Here, $t$ runs from $t=0$ (least noisy) to $t=1$ (most noisy).
+  \end{itemize}
+
+  \item The distribution of the latent variable $\ve{z}_t$ conditioned on $\ve{x}$ is given by
+  \begin{align}
+    q(\ve{z}_t|\ve{x}) = \N(\ve{z}_t ; \alpha_t \ve{x}, \sigma_t^2 I) \label{eq:zt-given-x}
+  \end{align}
+  where $\alpha_t$ and $\sigma^2_t$ are strictly positive scalar-valued functions of $t$.
+
+  \item We also assume that $\alpha_t$ and $\sigma_t$ are smooth.
+  \begin{itemize}
+    \item In other words, they have continuous first derivatives with respect to $t$, and the derivatives are finite.
+  \end{itemize}  
+
+  \item Define the {\bf signal-to-noise radio (SNR)} to be
+  \begin{align*}
+    \SNR(t) = \alpha_t^2 / \sigma_t^2.
+  \end{align*}
+  
+  \item The SNR should be monotonically decreating in time.
+  \begin{itemize}
+    \item In other words, $t > s$ implies $\SNR(t) < \SNR(s)$.
+    \item This formalizes the notion that, as $t$ increases, the latent variable should become noisier.
+  \end{itemize}  
+
+  \item In the original DDPM paper \cite{Ho:2020}, we have that $\alpha_t = \sqrt{1 - \sigma_t^2}$.
+  \begin{itemize}
+    \item So, $\alpha_t^2 + \sigma_t^2 = 1$ for all $t$.
+    \item As a result, we call such a model {\bf variance preserving}.
+  \end{itemize}
+
+  \item In the paper by Song \etal\ on the SDE formulation of score-based models \cite{Song:2020:SDE}, we have a model where $\alpha_t = 1$ for all $t$.
+  \begin{itemize}
+    \item As $t \rightarrow 1$, $\sigma_t^2$ must increase in order for the SNR to decrease.
+    \item This means that $\alpha_t^2 + \sigma_t^2 = 1 + \sigma_t^2$, which increase as $t$ increase.
+    \item As a result, we call such a model {\bf variance exploding}.
+    \item In fact, the SDE for such a model is calle the variance-exploding SDE (VE-SDE).
+  \end{itemize}
+  
+  \item We also require that the forward time process also satisfies the following properties.
+  \begin{enumerate}
+    \item For any $0 \leq s < t \leq 1$, we have that
+    \begin{align}
+      q(\ve{z}_t | \ve{z}_s) = \N(\ve{z}_t ; \alpha_{t|s}\ve{z}_s; \sigma^2_{t|s} I) \label{eq:zt-given-zs}
+    \end{align}
+    where $\alpha_{t|s} = \alpha_t / \alpha_s$ and $\sigma^2_{t|s} = \sigma_t^2 - \alpha^2_{t|s} \sigma^2_{s}.$
+
+    \item The joint distribution $(\ve{z}_s, \ve{z}_t, \ve{z}^{u})$ for any $0 \leq s < t < u \leq 1$ is Markov. In other words,
+    \begin{align*}
+      q(\ve{z}_u|\ve{z}_t, \ve{z}_s) = q(\ve{z}_u|\ve{z}_t).
+    \end{align*}    
+  \end{enumerate}
+
+  \item We want the model to be consistent. In other words, it should be the case that
+  \begin{itemize}
+    \item \eqref{eq:zt-given-x} should be consistent with \eqref{eq:zt-given-zs}, and
+    \item \eqref{eq:zt-given-zs} should be consistent with itself.
+  \end{itemize}
+  This is indeed the case, and the proofs can be found in Appendix~\ref{sec:model-properties}.
+
+  \item It can be shown that, for any $0 \leq s < t \leq 1$, we have that
+  \begin{align*}
+    q(\ve{z}_s|\ve{z}_t, \ve{x}) = \N(\ve{z}_s; \ves{\mu}_Q(\ve{z}_t, \ve{x}; s, t), \sigma^2_Q(s,t) I )
+  \end{align*}
+  where
+  \begin{align*}
+    \sigma_Q^{2}(s,t) & = \sigma_{t|s}^2 \sigma_s^2 / \sigma_t^2, \\
+    \ves{\mu}_Q(\ve{z}_t, \ve{x}; s, t) &= \frac{\alpha_{t|s}\sigma_s^2}{\sigma_t^2} \ve{z}_t + \frac{\alpha_s \sigma_{t|s}^2}{\sigma_t^2} \ve{x}.
+  \end{align*}
+  See a proof also in Appendix~\ref{sec:model-properties}.
+\end{itemize}
+
+\subsection{Noise Schedule}
+
+\begin{itemize}
+  \item In works such as \cite{Ho:2020}, the nosie schedule has a fixed form.
+  
+  \item The paper proposes learning the noise schedule through the parameterization
+  \begin{align*}
+    \sigma_t^2 = \mrm{sigmoid}(\gamma_{\ves{\eta}}(t)) = \frac{1}{1 + \exp(-\gamma_{\ves{\eta}}(t))}
+  \end{align*}
+  where $\gamma_{\ves{\eta}}(t)$ is a monotonic neural network with parameter $\ves{\eta}$.
+  
+  \item The specification of $\gamma_{\ves{\eta}}(t)$.
+  \begin{itemize}
+    \item It has 3 linear layers with weights that are restricted to be positive.
+    
+    \item Let us call the layers $l_1$, $l_2$, and $l_3$. Then,
+    \begin{align*}
+      \gamma_{\ves{\eta}}(t) := l_1(t) + l_3(\phi(l_2(l_1(t))))
+    \end{align*}
+    where $\phi$ is the sigmoid function.
+
+    \item $l_2$ has 1024 outputs while other layers have only a single output.
+  \end{itemize}
+
+  \item The paper fixes $\alpha_t = \sqrt{1 - \sigma_t^2}$, subscribing to the variance-perserving camp.
+  \begin{itemize}
+    \item However, we will show later that variance-preserving models and variance-exploding models are equivalent.    
+  \end{itemize}
+
+  \item We now have that
+  \begin{align*}
+    \alpha_t^2 
+    &= 1 - \sigma_t^2 
+    = 1 - \frac{1}{1 + \exp(-\gamma_{\ves{\eta}}(t))}
+    = \frac{\exp(-\gamma_{\ves{\eta}}(t))}{1 + \exp(-\gamma_{\ves{\eta}}(t))}
+    = \frac{1}{1 + \exp(\gamma_{\ves{\eta}}(t))} \\
+    &= \mrm{sigmoid}(-\gamma_{\ves{\eta}}(t)), \\
+    \SNR(t)
+    &= \frac{\alpha^2_t}{\sigma^2_t}
+    = \frac{\exp(-\gamma_{\ves{\eta}}(t))}{1 + \exp(-\gamma_{\ves{\eta}}(t))} (1 + \exp(-\gamma_{\ves{\eta}}(t))) \\
+    &= \exp(-\gamma_{\ves{\eta}}(t)).
+  \end{align*}
+\end{itemize}
+
+\subsection{Reverse Time Generative Process}
+
+\begin{itemize}
+  \item The generative model is defined by inverting the forward time process.
+  
+  \item It samples a sequence of latent variables $\ve{z}_t$ with time running backward from $t = 1$ to $t = 0$.
+
+  \item The model can be defined in the discrete time and continuous time setting. We will discuss the discrete time setting first.
+  
+  \item Definitions for the discrete time settings.
+  \begin{itemize}
+    \item Let $T$ be a positive integer. 
+    \item We split the time interval $[0,1]$ into $T$ segments, each with width $\tau = 1/T$.
+    \item Define $s(i) = (i-1)/T$ and $t(i) = i/T$.
+    \item The generative model for data item $\ve{x}$ is given by:
+    \begin{align*}
+      p(\ve{x}) = \int_{z} p(\ve{z}_1) p(\ve{x}|\ve{z}_0) \prod_{i=1}^T p(\ve{z}_{s(i)}|\ve{z}_{t(i)})\, \dee\ve{z}.
+    \end{align*}
+    Here, $\ve{z}$ denotes $(\ve{z}_0, \ve{z}_{1/T}, \ve{z}_{2/T}, \dotsc, \ve{z}_1)$.
+  \end{itemize}
+
+  \item With the variance preserving setting and sufficiently small $\SNR(1)$, we have that $q(\ve{z}_1|\ve{x}) \approx \N(\ve{z}_1 ; \ve{0}, I)$. So, we can model the marginal distribution of $\ve{z}_1$ with $\N(\ve{0},I)$. In other words,
+  \begin{align*}
+    p({\ve{z}_1}) = \N(\ve{z}_1; \ve{0}, I).
+  \end{align*}
+
+  \item For $p(\ve{x}|\ve{z}_0)$, the paper factors the terms into independent components. Let the $i$th component of $\ve{x}$ and $\ve{z}_0$ be denoted by $x_i$ and $z_{0,i}$, respectively. We set
+  \begin{align*}
+    p(\ve{x}|\ve{z}_0) = \prod_{i=1}^d p(x_i|z_{0,i})
+  \end{align*}
+  and 
+  \begin{align*}
+    p(x_i | z_{0,i}) = \frac{q(z_{0,i}|x_i)}{\sum_{x=0}^{255} q(z_{0,i}| x)}
+  \end{align*}
+  taking into account that each $x_{i}$ is an 8-bit pixel value. The last equation is just applying Bayes' rule assuming that each pixel value is equally likely.
+
+  \item Lastly, we choose
+  \begin{align*}
+    p(\ve{z}_s|\ve{z}_t) = q(\ve{z}_t |\ve{z}_t, \ve{x} = \hat{\ve{x}}_{\ves{\theta}}(\ve{z}_t; t)).
+  \end{align*}
+  This is the same as $q(\ve{z}_s;\ve{z}_t, \ve{x})$ we discussed in the last section but the sampled data $\ve{x}$ is replaced by a {\bf denoising model} $\hat{\ve{x}}_{\ves{\theta}}(\ve{z}_t, t)$ that predicts $\ve{x}$ from $\ve{z}_t$. 
+  
+  \item To be more concrete, we can also rewrite $p(\ve{z}_s | \ve{z}_t)$ as
+  \begin{align*}
+    p(\ve{z}_s|\ve{z}_t) 
+    &= \N(\ve{z}_s; \ves{\mu}_{\ves{\theta}}(\ve{z}_t; s, t), \sigma_Q^2(s,t) I)
+  \end{align*}
+  where
+  \begin{align*}
+    \ves{\mu}_{\ves{\theta}}(\ve{z}_t; s, t)
+    &= \ves{\mu}_Q(\ve{z}_t, \hat{\ve{x}}_{\ves{\theta}}(\ve{z}_t; t); s, t)
+    = \frac{\alpha_{t|s} \sigma_s^2}{\sigma_t^2} \ve{z}_t + \frac{\alpha_s \sigma_{t|s}^2}{\sigma_t^2} \hat{\ve{x}}_{\ves{\theta}}(\ve{z}_t; t).
+  \end{align*}
+
+  \item The mean of the backward step $\ves{\mu}_{\ves{\theta}}(\ve{z}_t; s, t)$ can also be written as
+  \begin{align*}
+    \ves{\mu}_{\ves{\theta}}(\ve{z}_t; s, t)
+    &= \frac{1}{\alpha_{t|s}} \ve{z}_t - \frac{\sigma^2_{t|s}}{\alpha_{t|s}\sigma_t} \hat{\ves{\xi}}_{\ves{\theta}}(\ve{z}_t;t) 
+    = \frac{1}{\alpha_{t|s}} + \frac{\sigma_{t|s}^2}{\alpha_{t|s}} \ve{s}_{\ves{\theta}}(\ve{z}_t; t)
+  \end{align*}
+  where
+  \begin{align*}
+    \hat{\ves{\xi}}_{\ves{\theta}}(\ve{z}_t;t) = \frac{\ve{z}_t - \alpha_t \hat{\ve{x}}_{\ves{\theta}}(\ve{z}_t;t)}{\sigma_t}
+  \end{align*}
+  is the {\bf noise prediction model} that predicts that Gaussian noise $\ves{\xi} \sim \N(0,I)$ that is used to make $\ve{z}_t = \alpha_t \ve{x} + \sigma_t \ves{\xi}$, and
+  \begin{align*}
+    \ve{s}_{\ves{\theta}}(\ve{z}_t;t) = -\frac{\hat{\ves{\xi}}_{\ves{\theta}}(\ve{z}_t; t)}{\sigma_t}
+  \end{align*}
+  is the {\bf score model} that predicts the score $\nabla \log q(\ve{z}_t)$ from $\ve{z}_t$.
+
+  \item Moreover, we can simplify $\ves{\mu}_{\ves{\theta}}(\ve{z}_t; s, t)$ and $\sigma^2_Q(s,t)$ further:
+  \begin{align*}
+    \ves{\mu}_{\ves{\theta}}(\ve{z}_t; s, t) 
+    &= \frac{\ve{z}_t + \sigma_t \mrm{expm1}( \gamma_{\ves{\eta}}(s) - \gamma_{\ves{\eta}}(t)) \hat{\ves{\xi}}_{\ves{\theta}}(\ve{z}_t; t)}{\alpha_{t|s}} \\
+    \sigma_Q^2(s,t) &= -\sigma_s^2 \mrm{expm1}(\gamma_{\ves{\eta}}(s) - \gamma_{\ves{\eta}}(t))
+  \end{align*}
+  where $\mrm{expm1}(u) = e^u - 1$.\footnote{In numerical software packages such as NumPy, Torch, and JAX, $\mrm{expm1}$ is available as a function because the straightforward computation is not very accurate and numerically stable.} See the proof at Proposition~\ref{thm:backward-process-simplification} in Appendix~\ref{sec:model-properties}.
+\end{itemize}
+
+\subsection{Noise Prediction Model}
+
+\begin{itemize}
+  \item Following Ho \etal~\cite{Ho:2020}, the paper trains the noise prediction model $\hat{\ves{\xi}}_{\ves{\theta}}(\cdot; \cdot)$.
+  
+  \item The relationship between $\hat{\ves{\xi}}_{\ves{\theta}}(\cdot; \cdot)$ and $\hat{\ve{x}}_{\ves{\theta}}(\cdot; \cdot)$ is as follows:
+  \begin{align*}
+    \hat{\ve{x}}_{\ves{\theta}}(\ve{z}_t; t)
+    &= \frac{\ve{z}_t - \sigma_t \hat{\ves{\xi}}_{\ves{\theta}}(\ve{z}_t; t) }{\alpha_t}.
+  \end{align*}
+
+  \item The paper uses an architecture similar to that of Ho \etal with a number of modifications. The modification that they want to highlight the most is the use of Fourier features \cite{Tancik:2020}.
+  \begin{itemize}
+    \item The paper optimizes the network for likelihood, which is sensitive to the exact pixel values. So, it needs to capture all the fine details in the data.
+    
+    \item To do so, the authors propose adding a set of Fourier features to the input of the noise prediction model.
+    \begin{itemize}
+      \item Let $\ve{x}$ be the original data, scaled to the range $[-1,1]$, and let $\ve{z}_t$ be a latent code. 
+      
+      \item They concatenate to $\ve{z}_t$ channels $\sin(2^n \pi \ve{z}_t)$ and $\cos(2^n \pi \ve{z}_t)$ where $n$ runs over a range of integers from $n_{\min}$ to $n_{\max}$, and then they feed the concatenated tensor to the noise prediction model.
+    \end{itemize}
+    
+    \item Including the features led to large improvements in log-likelihood, especially when combined with learned noise schedule. In particular, it allows the network to learn with much higher value of $\SNR_{\max}$ (i.e., much lower value for $\sigma_0^2$) than without.
+    
+    \item The authors got the best results with $n_{\min} = 7$ and $n_{\max} = 8$.
+    \begin{itemize}
+      \item This is quite surprising because it's just only 4 more channels.
+      
+      \item The author says lower frequencies can be learned from $\ve{z}$ itself, and high frequencies are simply not present or irrelevant for likelihood.    
+    \end{itemize}    
+  \end{itemize}
+  
+  \item Other modifications include:
+  \begin{itemize}
+    \item The paper's network does not perform nay downsampling or upsampling. The tensors remain at the original input resolution.
+    
+    \item The network is deeper than ones used by Ho \etal\ in \cite{Ho:2020}.
+    \begin{itemize}
+      \item For the CIFAR10 and the $32\times32$ ImageNet datasets, the authors uses U-Nets with depth of $32$ in the downsampling and upsampling (which are not actually performed).
+    
+      \item For the $64\times64$  ImageNet dataset, they double the depth!
+    \end{itemize}
+    
+    \item Intead of taking time $t$ as input to the noise prediction model, they feed a scaled version of $\gamma_{\ves{\eta}}(t)$ as input to the network. The scaling is done in such a way that the value is in the range $[0,1]$.
+    
+    \item Apart from the attention block that connects the upward and downard branches of the U-Net in \cite{Ho:2020}, the authors remove all attention blocks from the model.
+    
+    \item The model use dropout of rate $0.1$.
+    
+    \item The authors optimized the model with the AdamW algorithm \cite{Loshchilov:2017}. The settings are as follows.
+    \begin{itemize}
+      \item Learning rate of $2 \times 10^{-4}$.
+      \item $\beta_1 = 0.9, \beta_2 = 0.99$.
+      \item Weight decay coefficient of $0.01$.
+    \end{itemize}    
+    
+    \item The model weights are accumulated with exponential moving average with decay rate of $0.9999$.
+  \end{itemize}
+\end{itemize}
+
+\subsection{Variational Lower Bound}
+
+\begin{itemize}
+  \item We train the model by trying to minimize the variational lower bound of the log likelihood. This is given by
+  \begin{align*}
+    -\log p(\ve{x})
+    \leq \mrm{VLB}(\ve{x})
+    = \underbrace{D_{KL}(q(\ve{x}_1|x) \| p(\ve{z_1}))}_{\mbox{prior loss}}
+    + \underbrace{E_{\ve{z}_0 \sim q(\ve{z}_0|x)}[-\log p(\ve{x}|\ve{z}_0)]}_{\mbox{reconstruction loss}}
+    + \underbrace{\mcal{L}_T(\ve{x})}_{\mbox{diffusion loss}}.
+  \end{align*}
+  You can find how to derive the above expression in another note of mine \cite{Khungurn:2022b}.
+
+  \item The prior loss and the reconstruction loss can be estimated using standard techniques.
+  
+  \item The diffusion loss depends on the number of time steps $T$, and we will discuss it in the next sections.
+\end{itemize}
+
+\section{Discrete-Time Model}
+
+\begin{itemize}
+  \item In case of finite $T$, the diffusion loss is
+  \begin{align*}
+    \mcal{L}_T(\ve{x})
+    &= \sum_{i=1}^T E_{\ve{z}_{t(i)} \sim q(\ve{z}_{t(i)}|\ve{x})} \big[
+    D_{KL}
+    (
+      q( \ve{z}_{s(i)} | \ve{z}_{t(i)}, \ve{x} ) 
+      \| 
+      p(\ve{z}_{s(i)} | \ve{z}_{t(i)})
+    )
+    \big].
+  \end{align*}
+
+  \item We can simplify the diffusion loss to
+  \begin{align*}
+    \mcal{L}_T(\ve{x})
+    &= \frac{T}{2} E_{\ves{\xi} \sim \mcal{N}(\ves{0},I), i \sim \mcal{U}\{1:T\}} \Big[ \big(\SNR(s(i)) - \SNR(t(i))\big) \| \ve{x} - \hat{\ve{x}}_{\ves{\theta}}(\ve{z}_{t(i)}; t(i)) \|^2 \Big].
+  \end{align*}
+  where $\ve{z}_{t(i)} = \alpha_{t(i)} \ve{x} + \sigma_{t(i)}\ves{\xi}$. See the proof in Proposition~\ref{thm:diffusion-loss-snr-finite} of Appendix~\ref{sec:model-properties}. 
+  
+  \item Another expression is for the loss is given by
+  \begin{align*}
+    \mcal{L}_T(\ve{x})
+    &= \frac{T}{2} 
+    E_{\ves{\xi} \sim \mcal{N}(\ves{0},I), i \sim \mcal{U}\{1:T\}} \Big[ 
+      \mrm{expm1}\big(\gamma_{\ves{\eta}}(t(i)) - \gamma_{\ves{\eta}}(s(i)) \big) \| \ve{\xi} - \hat{\ve{\xi}}_{\ves{\theta}}(\ve{z}_{t(i)}; t(i)) \|^2 \Big].
+  \end{align*}
+  See Proposition~\ref{thm:diffusion-loss-expm1-finite} in Appendix~\ref{sec:model-properties} for the proof.
+
+  \item Note that the rewritten loss contains explicit dependencies on $\ves{\theta}$ and $\ves{\eta}$. So, if we optimize it, we optimize both the noise prediction model and the noise schedule.
+  \begin{itemize}
+    \item This is different from the simplified loss in \cite{Ho:2020}, which can only be used to optimize the noise prediction model.
+    
+    \item It is also much simpler than the loss in Nichol and Dhariwal \cite{Nichol:2021}, which treats the loss for the noise prediction model and the loss for the noise schedule differently.
+  \end{itemize}
+
+  \item The paper also observes that more timesteps are always better in terms of minimizing the loss value.
+  \begin{itemize}
+    \item Imagine you graph $\SNR(t)$ versus $\| \ve{x} - \hat{\ve{x}}_{\ves{\theta}}(\ve{z}_t;t) \|^2$ where $\SNR(t)$ goes from $0$ (much noise) to $1$ (no noise).
+    
+    \item You would have that, when $\hat{\ve{x}}_{\ves{\theta}}$ is good enough, the graph would be descreasing as you go from $\SNR(t) = 0$ to $\SNR(t) = 1$. This is simply because it is easier to denoise an image when there is less noise in the image.
+    
+    \item Now, we can interpret $\SNR(s) - \SNR(t)$ as the with of an interval, and $\| \ve{x} - \hat{\ve{x}}_{\ves{\theta}}(\ve{z}_t;t) \|^2$ as the height of the graph at the beginning of the interval in the graph above.
+    
+    \item So, the discrete time diffusion loss is an upper Riemann sum approximation of an integral of a strictly decreasing function.
+    
+    \item This implies that more time steps leads to a more accurate upper bound, which is lower.
+    
+    \item See Figure 2 in the paper for an illustation.
+  \end{itemize} 
+\end{itemize}
+
+\section{Continuous-Time Model}
+
+\begin{itemize}
+  \item We now take $T \rightarrow \infty$. The limit of $\mcal{L}_T(\ve{x})$ is given by
+  \begin{align*}
+    \mcal{L}_{\infty}(\ve{x}) 
+    &= -\frac{1}{2} E_{\ves{\xi} \sim \mcal{N}(\ve{0},I)} \bigg[ \int_0^1 \SNR'(t) \| \ve{x} - \hat{\ve{x}}_{\ves{\theta}}(\ve{z}_t; t) \|^2 \, \dee t \bigg] \\
+    &= -\frac{1}{2} E_{\ves{\xi} \sim \mcal{N}(\ve{0},I), t \sim \mcal{U}(0,1)} \big[ \SNR'(t) \| \ve{x} - \hat{\ve{x}}_{\ves{\theta}}(\ve{z}_t; t) \|^2 \big] \\
+    &= \frac{1}{2} E_{\ves{\xi} \sim \mcal{N}(\ve{0},I), t \sim \mcal{U}(0,1)} \big[ \gamma_{\ves{\eta}}'(t) \| \ves{\xi} - \hat{\ves{\xi}}_{\ves{\theta}}(\ve{z}_t; t) \|^2 \big]
+  \end{align*}
+  where $\SNR'(t) = \dee \SNR(t) / \dee t$ and $\gamma_{\ves{\eta}}'(t) = \dee \gamma_{\ves{\theta}}(t) / \dee t$. Note that the last equality is not trivial, and its proof can be found in Appendix~\ref{sec:model-properties}.
+
+  \item The signal-to-noise function $\SNR(t)$ is invertible because it is monotonically decreasing. So, we can perform a change of variable with $v = \SNR(t)$. This gives
+  \begin{align*}
+    \mcal{L}_{\infty}(\ve{x}) 
+    &= -\frac{1}{2} E_{\ves{\xi} \sim \mcal{N}(\ve{0},I)} \int_0^1 \SNR'(t) \| \ve{x} - \hat{\ve{x}}_{\ves{\theta}}(\ve{z}_t; t) \|^2\, \dee t \\
+    &= -\frac{1}{2} E_{\ves{\xi} \sim \mcal{N}(\ve{0},I)} \bigg[ \int_{\SNR_{\max}}^{\SNR_{\min}} \| \ve{x} - \hat{\ve{x}}_{\ves{\theta}}(\ve{z}_{\SNR^{-1}(v)}; \SNR^{-1}(v)) \|^2\, \dee v \bigg] \\
+    &= \frac{1}{2} E_{\ves{\xi} \sim \mcal{N}(\ve{0},I)} \bigg[ \int_{\SNR_{\min}}^{\SNR_{\max}} \| \ve{x} - \hat{\ve{x}}_{\ves{\theta}}(\ve{z}_{\SNR^{-1}(v)}; \SNR^{-1}(v)) \|^2\, \dee v \bigg]
+  \end{align*}
+  where $\SNR_{\min} = \SNR(1)$ and $\SNR_{\max} = \SNR(0)$.
+  
+  \item The above equation shows us that the only effect the function $\alpha(t)$ and $\sigma(t)$ have on the diffusion loss is the value of $\SNR(t)$ at endpoints $t = 0$ and $t = 1$. The loss value is invarient to the shape of the function $\SNR(t)$ between $t = 0$ and $t = 1$.
+  
+  \item Moreover, the distribution $p(\ve{x})$ defined by the generative model is also invariant to the specification of the diffusion model.
+  \begin{itemize}
+    \item Let $p^A(\ve{x})$ denote the distribution defined by the combination of $\alpha_t^A$, $\hat{\sigma}_t^A$, and $\ve{x}_{\ves{\theta}}^A$. \\
+    Let $p^B(\ve{x})$ be defined similarly for $\alpha_t^B$, $\sigma_t^B$, and $\hat{\ve{x}}_{\ves{\theta}}^B$.\\
+    We require that both distributions have the same values of $\SNR_{\min}$ and $\SNR_{\max}$.
+
+    \item Then, we can show that $p^A(\ve{x}) = p^B(\ve{x})$ if $\hat{\ve{x}}_{\ves{\theta}}^A(\ve{z}_t, t) = \hat{\ve{x}}^A_{\ves{\theta}}((\alpha^A_t/\alpha_t^B)\ve{z}_t, t)$. Moreover, the distribution of all latents $\ve{z}_t$ is the same up to scaling.
+
+    \item Hence, all models that satisfies the following mild conditions are equivalent (up to scaling).
+    \begin{itemize}
+      \item $\alpha_t$ and $\sigma_t$ are positive scalar value functions.
+      \item $\SNR(t) = \alpha_t^2 / \sigma_t^2$ is monotonically decreasing in $t$.
+      \item $q(\ve{z}_t|\ve{x}) = \N(\ve{z}_t; \alpha_t \ve{x}, \sigma_t^2 I)$.
+      \item For all $0 \leq s < t \leq 1$, it is true that $q(\ve{z}_t|\ve{z}_s) = \N(\ve{z}_t; \alpha_{t|s}\ve{z}_s, \sigma^2_{t|s} I)$.
+      \item The forward process is Markov. That is, for any $0 \leq s < t < u \leq 1$, it follows that $q(\ve{z}_u|\ve{z}_t, \ve{z}_s) = q(\ve{z}_u|\ve{z}_t)$.
+      \item $\SNR(0)$ and $\SNR(1)$ are fixed constants that agree with other models.
+    \end{itemize}
+    
+    \item This means that the models based on the variance-exploding SDE and variance-preserving SDE in \cite{Song:2020:SDE} are equivalent in continuous time up to time-dependent scaling factors.
+  \end{itemize}  
+
+  \item The equivalence between diffusion models continues to hold even if the loss is weighted and of the form:
+  \begin{align*}
+  \mcal{L}_{\infty}(\ve{x}, w) &= \frac{1}{2} E_{\ves{\xi} \sim \mcal{N}(\ve{0},I)} \bigg[ \int_{\SNR_{\min}}^{\SNR_{\max}} w(v) \| \ve{x} - \hat{\ve{x}}_{\ves{\theta}}(\ve{z}_{\SNR^{-1}(v)}; \SNR^{-1}(v)) \|^2\, \dee v \bigg]
+  \end{align*}
+
+  \item Optimization of $\mcal{L}_{\infty}$ requires a lot of care. The paper has the details on how to compute the gradient of the loss in its appendix.
+  \begin{itemize}
+    \item We will not cover it now because I've become tired of reading.
+  \end{itemize}
+\end{itemize}
+
+\section{Summary}
+
+\begin{itemize}
+  \item The paper gives a new formulation of the DDPM that deals with the noise schedule in a systematic way.
+  \begin{itemize}
+    \item It yields a loss function that can be used to optimize both the noise prediction model and the noise schedule in one go.
+    
+    \item It also shows that diffusion models that can be formulated in the paper's framework are equivalent up to scaling if the $\SNR_{\min}$ and $\SNR_{\max}$ match.
+  \end{itemize}
+
+  \item While the theoretical component of the paper is certainly valuable, I double whether the proposed new model architecture and losses are practical.
+  \begin{itemize}
+    \item The paper's model is very deep and hard to train.
+    \item The loss is still quite complicated and require a lot of care, especially in the continuous-time setting.
+    \item In the end, the architecture and the loss are designed to get better likelihood, not image quality as measured by FID scores.
+  \end{itemize}
+\end{itemize}
+
+\appendix
+
+\section{Gaussian Identities}
+
+\begin{itemize}
+  \item Many of these identities come from a lecture note by Marc Toussaint \cite{Toussaint:2011}.
+  
+  \item A multivariate Gaussian with mean $\ves{\mu}$ and covariance matrix $\Sigma$, denoted by $\N(\ves{\mu},\Sigma)$ is the distribution:
+  \begin{align*}
+  \N(\ve{x}; \ves{\mu}, \Sigma) = \frac{1}{(\det 2\pi\Sigma)^{1/2}} \exp\bigg(-\frac{1}{2} (\ve{x}-\ves{\mu})^T \Sigma^{-1} (\ve{x}-\ves{\mu}) \bigg).
+  \end{align*}
+  It is defined only if the covariance matrix is positive definite.  
+  
+  \item \begin{proposition} \label{thm:gaussian-linear-transform}
+    For any invertible matrix $A$ and any vector $\ve{b}$, we have that
+    \begin{align*}
+    \N(A\ve{x} + \ve{b}; \ves{\mu}, \Sigma) = \frac{1}{|\det A|} \N(\ve{x}, A^{-1}(\ves{\mu} - \ve{b}), A^{-1}\Sigma A^{-T}).
+    \end{align*}
+  \end{proposition}
+
+  \begin{proof}
+    \begin{align*}
+    \N(\ve{x}; \ves{\mu}, \Sigma) 
+    &= \frac{1}{(\det 2\pi\Sigma)^{1/2}} \exp\bigg(-\frac{1}{2} (A\ve{x} + \ve{b} -\ves{\mu})^T \Sigma^{-1} (A\ve{x} + \ve{b} -\ves{\mu}) \bigg) \\
+    &= \frac{1}{(\det 2\pi\Sigma)^{1/2}} \exp\bigg(-\frac{1}{2} (A\ve{x} + \ve{b} -\ves{\mu})^T A^{-T} A^T \Sigma^{-1} A A^{-1} (A\ve{x} + \ve{b} -\ves{\mu}) \bigg) \\
+    &= \frac{1}{(\det 2\pi\Sigma)^{1/2}} \exp\bigg(-\frac{1}{2} (\ve{x} - A^{-1}(\ves{\mu} - \ve{b}))^T (A^{-1} \Sigma A^{-T})^{-1} (\ve{x} + A^{-1}(\ves{\mu} - \ve{b})) \bigg) \\
+    &= \frac{1}{(\det AA^T)^{1/2}} \frac{1}{ (\det A^{-1}A^{-T})^{1/2} (\det 2\pi\Sigma)^{1/2}} \\
+    & \qquad \exp\bigg(-\frac{1}{2} (\ve{x} - A^{-1}(\ves{\mu} - \ve{b}))^T (A^{-1} \Sigma A^{-T})^{-1} (\ve{x} + A^{-1}(\ves{\mu} - \ve{b})) \bigg) \\
+    &= \frac{1}{|\det A|} \frac{1}{ (\det 2\pi A^{-1}\Sigma A^{-T})^{1/2}} \\
+    & \qquad \exp\bigg(-\frac{1}{2} (\ve{x} - A^{-1}(\ves{\mu} - \ve{b}))^T (A^{-1} \Sigma A^{-T})^{-1} (\ve{x} + A^{-1}(\ves{\mu} - \ve{b})) \bigg) \\
+    &= \frac{1}{|\det A|} \N(\ve{x}, A^{-1}(\ves{\mu} - \ve{b}), A^{-1}\Sigma A^{-T})
+    \end{align*}
+    as required.
+  \end{proof}  
+
+  \item \begin{corollary} \label{thm:gaussian-linear-transformation-scalar-ver}
+    if $a \in \Real$ and $\ve{b} \in \Real^d$ is a vector, then
+    \begin{align*}
+      \N(a\ve{x} + \ve{b}; \ves{\mu}, \Sigma)
+      &= \frac{1}{|a|^d} \N\bigg(\ve{x}; \frac{\ves{\mu} - \ve{b}}{a}, \frac{\Sigma}{a^2}\bigg).
+    \end{align*}
+  \end{corollary}
+
+  \item \begin{proposition} \label{thm:gaussian-product}
+    \begin{align*}
+      \N(\ve{x};\mu_1, \Sigma_1) \N(\ve{x};\mu_2, \Sigma_2) = \N(\mu_1; \mu_2, \Sigma_1 + \Sigma_2) \N(\ve{x}; \mu_3, \Sigma_3)
+  \end{align*}
+  where
+  \begin{align*}
+  \mu_3 &= \Sigma_2(\Sigma_1 + \Sigma_2)^{-1} \mu_1 + \Sigma_1(\Sigma_1 + \Sigma_2)^{-1} \mu_2, \\
+  \Sigma_3 &= \Sigma_1 (\Sigma_1 + \Sigma_2)^{-1} \Sigma_2.
+  \end{align*}
+  \end{proposition}
+
+  We will not prove this proposition. It looks painful.
+
+  \item \begin{proposition} \label{thm:gaussian-kl}
+    Let $\ves{\mu}_1, \ves{\mu}_2 \in \Real^d$ and $\Sigma_1, \Sigma_2 \in \Real^{d\times d}$ be positive definite matrices. We have that
+    \begin{align*}
+      D_{KL}(\mathcal{N}(\ves{\mu}_1, \Sigma_1)\, \|\, \mathcal{N}(\ves{\mu}_2, \Sigma_2))
+      &= \frac{1}{2} \bigg( \log \frac{\det \Sigma_2}{\det \Sigma_1} + \tr(\Sigma_2^{-1}\Sigma_1) + (\ves{\mu}_2 - \ves{\mu}_1)^T \Sigma_2^{-1} (\ves{\mu}_2 - \ves{\mu}_1) - d \bigg).
+    \end{align*}
+  \end{proposition}
+  \begin{proof}
+    See other sources. We will not prove this.
+  \end{proof}
+
+  \item \begin{corollary} \label{thm:gaussian-kl-spherical}
+    \begin{align*}
+      D_{KL}(\mathcal{N}(\ves{\mu}_1, \sigma_1^2 I)\, \|\, \mathcal{N}(\ves{\mu}_2, \sigma_2^2 I))
+      &= \frac{1}{2} \bigg( 
+        \frac{\| \ves{\mu}_2 - \ves{\mu}_1 \|^2}{\sigma_2^2}          
+        + 2d(\log |\sigma_2| - \log |\sigma_1|)
+        + d \frac{\sigma_1^2}{\sigma_2^2} 
+        - d
+        \bigg).
+    \end{align*}
+  \end{corollary}
+
+  \begin{proof}
+    Applying Proposition~\ref{thm:gaussian-kl}, we have that
+    \begin{align*}
+      & D_{KL}(\mathcal{N}(\ves{\mu}_1, \sigma_1^2 I)\, \|\, \mathcal{N}(\ves{\mu}_2, \sigma_2^2 I)) \\
+      &= \frac{1}{2} \bigg(  \log \frac{\det (\sigma_2^2 I)}{\det (\sigma_1^2 I)}  + \tr( (\sigma_2^2 I)^{-1}\sigma_1^2 I ) + (\ves{\mu}_2 - \ves{\mu}_1)^T (\sigma_2^2 I)^{-1} (\ves{\mu}_2 - \ves{\mu}_1) - d  \bigg) \\
+      &= \frac{1}{2} \bigg(  
+        \log \frac{\sigma_2^{2d}}{\sigma_1^{2d}}  
+        + \tr\Big( \frac{\sigma_1^2}{\sigma_2^2} I \Big) 
+        + \frac{\| \ves{\mu}_2 - \ves{\mu}_1 \|^2}{\sigma_2^2}
+        - d  \bigg) \\
+      &= \frac{1}{2} \bigg( 
+        2d(\log \sigma_2 - \log \sigma_1)
+        + d \frac{\sigma_1^2}{\sigma_2^2} 
+        + \frac{\| \ves{\mu}_2 - \ves{\mu}_1 \|^2}{\sigma_2^2}
+        - d
+        \bigg) \\
+        &= \frac{1}{2} \bigg( 
+          \frac{\| \ves{\mu}_2 - \ves{\mu}_1 \|^2}{\sigma_2^2}          
+          + 2d(\log |\sigma_2| - \log |\sigma_1|)
+          + d \frac{\sigma_1^2}{\sigma_2^2} 
+          - d
+          \bigg)
+    \end{align*}
+    as required.
+  \end{proof}
+\end{itemize}
+
+\pagebreak
+
+\section{Proofs of Model Properties} \label{sec:model-properties}
+
+\begin{itemize}
+\item \begin{proposition} \label{thm:zt-x-consistency}
+  The property in Equation \eqref{eq:zt-given-x} is consistent with the property in Equation \eqref{eq:zt-given-zs}. In other words, for any $0 \leq s < t \leq 1$, it holds that
+  \begin{align*}
+    q(\ve{z}_t | \ve{x}) = \int q(\ve{z}_t|\ve{z}_s) q(\ve{z}_s|\ve{x})\, \dee \ve{z}_s.
+  \end{align*}
+\end{proposition}
+
+\begin{proof}
+\begin{align*}
+  &\int q(\ve{z}_t|\ve{z}_s) q(\ve{z}_s|\ve{x})\, \dee \ve{z}_s \\
+  &= \int \N(\ve{z}_t ; \alpha_{t|s}\ve{z}_s, \sigma^2_{t|s} I) \N(\ve{z}_s ; \alpha_s \ve{x}, \sigma_s^2 I) \, \dee \ve{z}_s\\
+  &= \int \N(\alpha_{t|s}\ve{z}_s ; \ve{z}_t, \sigma^2_{t|s} I) \N(\ve{z}_s ; \alpha_s \ve{x}, \sigma_s^2 I) \, \dee \ve{z}_s\\
+  &= \int \frac{1}{\alpha_{t|s}^d} \N\bigg(\ve{z}_s ; \frac{\ve{z}_t}{\alpha_{t|s}}, \frac{\sigma^2_{t|s}}{\alpha_{t|s}^2} I\bigg) \N(\ve{z}_s ; \alpha_s \ve{x}, \sigma_s^2 I) \, \dee \ve{z}_s& (\mbox{Corollary }\ref{thm:gaussian-linear-transformation-scalar-ver}) \\
+  &= \int \frac{1}{\alpha_{t|s}^d} \N\bigg( \frac{\ve{z}_t}{\alpha_{t|s}} ; \alpha_s \ve{x}, \Big( \frac{\sigma_{t|s}^2}{\alpha_{t|s}^2} + \sigma_s^2 \Big) I \bigg) \N(\ve{z}_s ; \ves{\mu}_3, \Sigma_3) \, \dee \ve{z}_s& (\mbox{Proposition }\ref{thm:gaussian-product}) \\
+  &= \frac{1}{\alpha_{t|s}^d} \N\bigg( \frac{\ve{z}_t}{\alpha_{t|s}} ; \alpha_s \ve{x}, \Big( \frac{\sigma_{t|s}^2}{\alpha_{t|s}^2} + \sigma_s^2 \Big) I \bigg) \int \N(\ve{z}_s ; \ves{\mu}_3, \Sigma_3) \, \dee \ve{z}_s\\
+  &= \frac{1}{\alpha_{t|s}^d} \N\bigg( \frac{\ve{z}_t}{\alpha_{t|s}} ; \alpha_s \ve{x}, \Big( \frac{\sigma_{t|s}^2}{\alpha_{t|s}^2} + \sigma_s^2 \Big) I \bigg) \\
+  &= \N\bigg( \ve{z}_t ; \alpha_{t|s} \alpha_s \ve{x}, ( \sigma_{t|s}^2 + \alpha_{t|s}^2 \sigma_s^2 ) I \bigg) & (\mbox{Corollary }\ref{thm:gaussian-linear-transformation-scalar-ver}) \\
+  &= \N\bigg( \ve{z}_t ; \frac{\alpha_t}{\alpha_s} \alpha_s \ve{x}, ( \sigma_t^2 - \alpha_{t|s}^2 \sigma_s^2 + \alpha_{t|s}^2 \sigma_s^2 ) I \bigg) \\
+  &= \N\bigg( \ve{z}_t ; \alpha_t \ve{x}, \sigma_t^2  I \bigg) \\
+  &= q(\ve{z}_t | \ve{x})
+\end{align*}
+as required.
+\end{proof}
+
+\pagebreak 
+\item \begin{proposition}
+  The property in Equation~\ref{eq:zt-given-zs} is consistent with itself. In other words, for any $0 \leq s < t < u \leq 1$, it holds that
+  \begin{align*}
+    q(\ve{z}_u|\ve{z}_s) = \int q(\ve{z}_u|\ve{z}_t) q(\ve{z}_t|\ve{z}_s)\, \dee \ve{z}_t.
+  \end{align*}
+\end{proposition}
+\begin{proof}
+\begin{align*}
+  &\int q(\ve{z}_u|\ve{z}_t) q(\ve{z}_t|\ve{z}_s)\, \dee \ve{z}_t \\
+  &= \int q(\ve{z}_u; \alpha_{u|t}\ve{z}_t, \sigma_{u|t}^2 I ) q(\ve{z}_t; \alpha_{t|s}\ve{z}_s, \sigma_{t|s}^2 I )\, \dee\ve{z}_t \\
+  &= \int q(\alpha_{u|t}\ve{z}_t; \ve{z}_u, \sigma_{u|t}^2 I ) q(\ve{z}_t; \alpha_{t|s}\ve{z}_s, \sigma_{t|s}^2 I )\, \dee\ve{z}_t \\
+  &= \int \frac{1}{\alpha_{u|t}^2} q\bigg(\ve{z}_t; \frac{\ve{z}_u}{\alpha_{u|t}}, \frac{\sigma_{u|t}^2}{\alpha_{u|t}^2} I \bigg) q(\ve{z}_t; \alpha_{t|s}\ve{z}_s, \sigma_{t|s}^2 I )\, \dee\ve{z}_t & (\mbox{Corollary~\ref{thm:gaussian-linear-transformation-scalar-ver}})\\
+  &= \frac{1}{\alpha_{u|t}^2} q\bigg(\frac{\ve{z}_u}{\alpha_{u|t}}; \alpha_{t|s}\ve{z}_s, \Big( \frac{\sigma_{u|t}^2}{\alpha_{u|t}^2} + \sigma_{t|s}^2 \Big) I \bigg) & (\mbox{same reasoning as Proposition~\ref{thm:zt-x-consistency}})\\
+  &= q\big(\ve{z}_u; \alpha_{u|t}\alpha_{t|s}\ve{z}_s, ( \sigma_{u|t}^2 + \alpha_{u|t}^2 \sigma_{t|s}^2 ) I \big)\\
+  &= q\big(\ve{z}_u; \alpha_{u|s}\ve{z}_s, \big( (\sigma_u^2 - \alpha_{u|t}^2 \sigma_t^2) + \alpha_{u|t}^2 (\sigma_t^2 - \alpha_{t|s}^2 \sigma_s^2) \big) I \big) \\
+  &= q\big(\ve{z}_u; \alpha_{u|s}\ve{z}_s, ( \sigma_u^2 - \alpha_{u|t}^2 \sigma_t^2 + \alpha_{u|t}^2 \sigma_t^2 - \alpha_{u|t}^2 \alpha_{t|s}^2 \sigma_s^2) I \big) \\
+  &= q\big(\ve{z}_u; \alpha_{u|s}\ve{z}_s, ( \sigma_u^2 - \alpha_{u|s}^2 \sigma_s^2) I \big) \\
+  &= q\big(\ve{z}_u; \alpha_{u|s}\ve{z}_s, \sigma_{u|s}^2 I \big) \\
+  &= q(\ve{z}_u|\ve{z}_s)
+\end{align*}
+as required.
+\end{proof}
+
+\item \begin{proposition}
+  For any $0 \leq s < t \leq 1$, we have that
+  \begin{align*}
+    q(\ve{z}_s|\ve{z}_t, \ve{x}) = \N(\ve{z}_s; \ves{\mu}_Q(\ve{z}_t, \ve{x}; s, t), \sigma^2_Q(s,t) I )
+  \end{align*}
+  where
+  \begin{align*}
+    \sigma_Q^{2}(s,t) &= \sigma_{t|s}^2 \sigma_s^2 / \sigma_t^2, \\
+    \ves{\mu}_Q(\ve{z}_t, \ve{x}; s, t) &= \frac{\alpha_{t|s}\sigma_s^2}{\sigma_t^2} \ve{z}_t + \frac{\alpha_s \sigma_{t|s}^2}{\sigma_t^2} \ve{x}.
+  \end{align*}
+\end{proposition}
+
+\begin{proof}
+  By Baye's rule,
+  \begin{align*}
+    q(\ve{z}_s|\ve{z}_t, \ve{x}) 
+    &= \frac{q(\ve{z}_t | \ve{z}_s, \ve{x}) q(\ve{z}_s|\ve{x})}{q(\ve{z}_t|\ve{x})}
+    = \frac{q(\ve{z}_t | \ve{z}_s) q(\ve{z}_s|\ve{x})}{q(\ve{z}_t|\ve{x})}.
+  \end{align*}
+  The last equality follows from the fact that we require $q$ to be Markov: $q(\ve{z}_t|\ve{z}_s,\ve{x}) = q(\ve{z}_t|\ve{z}_s)$. Now, we apply Proposition~\ref{thm:gaussian-product} to get
+  \begin{align*}
+    q(\ve{z}_t | \ve{z}_s) q(\ve{z}_s|\ve{x})
+    &= \N(\ve{z}_t; \alpha_{t|s} \ve{z}_s, \sigma^2_{t|s} I) \N(\ve{z}_s; \alpha_s \ve{x},  \sigma_s^2 I) \\
+    &= \N(\alpha_{t|s} \ve{z}_s; \ve{z}_t, \sigma^2_{t|s} I) \N(\ve{z}_s; \alpha_s \ve{x},  \sigma_s^2 I) \\
+    &= \frac{1}{\alpha_{t|s}^d} \N\bigg(\ve{z}_s ; \frac{\ve{z}_t}{\alpha_{t|s}}, \frac{\sigma^2_{t|s}}{\alpha_{t|s}^2} I\bigg) \N(\ve{z}_s ; \alpha_s \ve{x}, \sigma_s^2 I) \\
+    &= q(\ve{z}_t|\ve{x}) \N(\ve{z}_s; \ves{\mu}_3, \Sigma_3).
+  \end{align*}
+  where $\ves{\mu}_3$ and $\Sigma_3$ are as described in the statement of Proposition~\ref{thm:gaussian-product}. The $q(\ve{z}_t|\ve{x})$ comes from the reasoning we used in the proof of Proposition~\ref{thm:zt-x-consistency}. So, it turns out that
+  \begin{align*}
+    q(\ve{z}_s|\ve{z}_t, \ve{x}) &= \frac{q(\ve{z}_t|\ve{x}) \N(\ve{x}_s; \ves{\mu}_3, \Sigma_3)}{q(\ve{z}_t|\ve{x})} = \N(\ve{z}_s; \ves{\mu}_3, \Sigma_3).
+  \end{align*}
+  So, what is left for us to do is to compute $\ves{\mu}_3$ and $\Sigma_3$ and see if the results agree with $\ves{\mu}_Q(\ve{z}_t,\ve{x}; s, t)$ and $\sigma_Q^2(s,t) I$. 
+  
+  We have that $\ves{\mu}_1 = \ve{z}_t / \alpha_{t|s}$, $\Sigma_1 = (\sigma_{t|s}^2 / \alpha_{t|s}^2) I$, $\ves{\mu}_2 = \alpha_s \ve{x}$, and $\Sigma_2 = \sigma_s^2 I$, so
+  \begin{align*}
+    \ves{\mu_3} 
+    &= \Sigma_2(\Sigma_1 + \Sigma_2)^{-1} \ves{\mu}_1 + \Sigma_1 (\Sigma_1 + \Sigma_2)^{-1} \ves{\mu}_2 \\ 
+    &= \frac{\sigma_s^2}{\sigma_{t|s}^2/\alpha_{t|s}^2 + \sigma_s^2} \frac{\ve{z}_t}{\alpha_{t|s}} + \frac{\sigma_{t|s}^2 / \alpha^2_{t|s}}{\sigma_{t|s}^2 / \alpha^2_{t|s} + \sigma_s^2} \alpha_s \ve{x} \\
+    &= \frac{\alpha_{t|s} \sigma_s^2}{\sigma_{t|s}^2/\alpha_{t|s} + \alpha_{t|s}\sigma_s^2} \frac{\ve{z}_t}{\alpha_{t|s}} + \frac{\sigma_{t|s}^2 }{\sigma_{t|s}^2  + \alpha_{t|s}^2 \sigma_s^2} \alpha_s \ve{x} \\
+    &= \frac{\alpha_{t|s} \sigma_s^2}{\sigma_{t|s}^2 + \alpha_{t|s}^2 \sigma_s^2} \ve{z}_t + \frac{\sigma_{t|s}^2 }{\alpha_s \sigma_{t|s}^2  + \alpha_{t|s}^2 \sigma_s^2} \ve{x} \\
+    &= \frac{\alpha_{t|s} \sigma_s^2}{\sigma_t^2 - \alpha_{t|s}^2 \sigma_s^2 + \alpha_{t|s}^2 \sigma_s^2} \ve{z}_t + \frac{\alpha_s \sigma_{t|s}^2 }{ \sigma_t^2 - \alpha_{t|s}^2 \sigma_s^2 + \alpha_{t|s}^2 \sigma_s^2} \ve{x} \\
+    &= \frac{\alpha_{t|s} \sigma_s^2}{\sigma_t^2} \ve{z}_t + \frac{\alpha_s \sigma_{t|s}^2 }{ \sigma_t^2 } \ve{x} \\
+    &= \ves{\mu}_Q(\ve{z}_t, \ve{x}; s, t).
+  \end{align*}
+  Moreover,
+  \begin{align*}
+    \Sigma_3 
+    &= \Sigma_1 (\Sigma_1 + \Sigma_2)^{-1} \Sigma_2 
+    = \frac{\sigma_{t|s}^2}{\alpha_{t|s}^2} \bigg( \frac{\sigma_{t|s}^2}{\alpha_{t|s}^2} + \sigma_s^2 \bigg)^{-1} \sigma_s^2 I 
+    = \frac{\sigma_{t|s}^2 \sigma_s^2}{\alpha^2_{t|s}(\sigma_{t|s}^2 / \alpha_{t|s}^2 + \sigma_s^2)} I 
+    = \frac{\sigma_{t|s}^2 \sigma_s^2}{\sigma_{t|s}^2  + \alpha_{t|s}^2 \sigma_s^2} I 
+    = \frac{\sigma_{t|s}^2 \sigma_s^2}{\sigma_t^2} I \\
+    &= \sigma^2_Q(s,t) I
+  \end{align*}
+  as required.
+\end{proof}
+
+\pagebreak 
+
+\item \begin{proposition}
+\begin{align*}
+  \ves{\mu}_{\ves{\theta}}(\ve{z}_t; s, t)
+  &= \frac{1}{\alpha_{t|s}} \ve{z}_t - \frac{\sigma_{t|s}^2}{\alpha_{t|s}\sigma_t} \hat{\ves{\xi}}_{\ves{\theta}}(\ve{z}_t; t)
+\end{align*}
+\end{proposition}
+
+\begin{proof}
+We have that
+\begin{align*}
+  \ves{\mu}_{\ves{\theta}}(\ve{z}_t; s, t)
+  &= \frac{\alpha_{t|s} \sigma_s^2}{\sigma_t^2} \ve{z}_t + \frac{\alpha_s \sigma_{t|s}^2}{\sigma_t^2} \hat{\ve{x}}(\ve{z}_t; t) \\
+  &= \frac{\alpha_{t|s} \sigma_s^2}{\sigma_t^2} \ve{z}_t + \frac{\alpha_s \sigma_{t|s}^2}{\sigma_t^2} \bigg( \frac{\ve{z}_t - \sigma_t \hat{\ves{\xi}}_{\ves{\theta}}(\ve{z}_t; t)}{\alpha_t} \bigg) \\
+  &= \bigg( \frac{\alpha_{t|s} \sigma_s^2}{\sigma_t^2} + \frac{\alpha_s \sigma_{t|s}^2}{\alpha_t \sigma_t^2} \bigg) \ve{z}_t - \frac{\alpha_s \sigma_t \sigma_{t|s}^2}{\alpha_t \sigma_t^2} \hat{\ves{\xi}}_{\ves{\theta}}(\ve{z}_t; t) \\
+  &= \frac{1}{\sigma_t^2} \bigg( \frac{\alpha_t \sigma_s^2}{\alpha_s} + \frac{\alpha_s \sigma_{t|s}^2}{\alpha_t} \bigg) \ve{z}_t - \frac{\alpha_s \sigma_{t|s}^2}{\alpha_t \sigma_t} \hat{\ves{\xi}}_{\ves{\theta}}(\ve{z}_t; t) \\
+  &= \frac{1}{\sigma_t^2} \bigg( \frac{\alpha_t^2 \sigma_s^2 + \alpha_s^2 \sigma_{t|s}^2}{\alpha_s \alpha_t} \bigg) \ve{z}_t - \frac{\sigma_{t|s}^2}{\alpha_{t|s} \sigma_t} \hat{\ves{\xi}}_{\ves{\theta}}(\ve{z}_t; t) \\
+  &= \frac{1}{\sigma_t^2} \bigg( \frac{\alpha_t^2 \sigma_s^2 + \alpha_s^2 (\sigma_t^2 - \alpha_{t|s}^2 \sigma_s^2)}{\alpha_s \alpha_t} \bigg) \ve{z}_t - \frac{\sigma_{t|s}^2}{\alpha_{t|s} \sigma_t} \hat{\ves{\xi}}_{\ves{\theta}}(\ve{z}_t; t) \\
+  &= \frac{1}{\sigma_t^2} \bigg( \frac{\alpha_t^2 \sigma_s^2 + \alpha_s^2 \sigma_t^2 - \alpha_{t}^2 \sigma_s^2}{\alpha_s \alpha_t} \bigg) \ve{z}_t - \frac{\sigma_{t|s}^2}{\alpha_{t|s} \sigma_t} \hat{\ves{\xi}}_{\ves{\theta}}(\ve{z}_t; t) \\
+  &= \frac{1}{\sigma_t^2} \frac{\alpha_s^2 \sigma_t^2}{\alpha_s \alpha_t} \ve{z}_t - \frac{\sigma_{t|s}^2}{\alpha_{t|s} \sigma_t} \hat{\ves{\xi}}_{\ves{\theta}}(\ve{z}_t; t) \\
+  &= \frac{\alpha_s }{\alpha_t} \ve{z}_t - \frac{\sigma_{t|s}^2}{\alpha_{t|s} \sigma_t} \hat{\ves{\xi}}_{\ves{\theta}}(\ve{z}_t; t) \\
+  &= \frac{1}{\alpha_{t|s}} \ve{z}_t - \frac{\sigma_{t|s}^2}{\alpha_{t|s} \sigma_t} \hat{\ves{\xi}}_{\ves{\theta}}(\ve{z}_t; t)
+\end{align*}
+as required.
+\end{proof}
+
+\item \begin{proposition} \label{thm:backward-process-simplification}
+\begin{align*}
+  \ves{\mu}_{\ves{\theta}}(\ve{z}_t; s, t) 
+  &= \frac{\ve{z}_t + \sigma_t \mrm{expm1}( \gamma_{\ves{\eta}}(s) - \gamma_{\ves{\eta}}(t)) \hat{\ves{\xi}}_{\ves{\theta}}(\ve{z}_t; t)}{\alpha_{t|s}} \\
+  \sigma_Q^2(s,t) &= -\sigma_s^2 \mrm{expm1}(\gamma_{\ves{\eta}}(s) - \gamma_{\ves{\eta}}(t))
+\end{align*}
+where $\mrm{expm1}(u) = e^u - 1$.
+\end{proposition}
+
+\begin{proof}
+First, we have that
+\begin{align*}
+  \ves{\mu}_{\ves{\theta}}(\ve{z}_t; s, t)
+  &= \frac{1}{\alpha_{t|s}} \ve{z}_t - \frac{\sigma_{t|s}^2}{\alpha_{t|s}\sigma_t} \hat{\ves{\xi}}_{\ves{\theta}}(\ve{z}_t; t)
+  = \frac{1}{\alpha_{t|s}} \bigg( \ve{z}_t - \frac{\sigma_{t|s}^2}{\sigma_t} \hat{\ves{\xi}}_{\ves{\theta}}(\ve{z}_t; t) \bigg).
+\end{align*}
+Now,
+\begin{align*}
+  \frac{\sigma_{t|s}^2}{\sigma_t} 
+  &= \frac{\sigma_t^2 - \alpha^2_{t|s}\sigma^2_s}{\sigma_t}
+  = \sigma_t - \frac{\alpha_t^2 \sigma_s^2}{\alpha_s^2 \sigma_t}
+  = \sigma_t \bigg( 1 - \frac{\alpha_t^2 \sigma_s^2}{\alpha_s^2 \sigma_t^2 } \bigg)  
+  = \sigma_t \bigg( 1 - \frac{(1 - \sigma_t^2) \sigma_s^2}{(1 - \sigma_s^2) \sigma_t^2 } \bigg)
+  = \sigma_t \bigg( 1 - \frac{(1 - \sigma_t^2) \sigma_s^2}{(1 - \sigma_s^2) \sigma_t^2 } \bigg) \\
+  &= \sigma_t \bigg( 1 - \frac{\sigma_t^{-2} - 1}{\sigma_s^{-2} -1} \bigg)
+  = \sigma_t \bigg( 1 - \frac{1 + \exp(-\gamma_{\ves{\eta}}(t)) - 1}{1 + \exp(-\gamma_{\ves{\eta}}(s)) -1} \bigg)
+  = \sigma_t \big( 1 - \exp(\gamma_{\ves{\eta}}(s) - \gamma_{\ves{\eta}}(t)) \big) \\
+  &= -\sigma_t \mrm{expm1}(\gamma_{\ves{\eta}}(s) - \gamma_{\ves{\eta}}(t)).
+\end{align*}
+So,
+\begin{align*}
+  \ves{\mu}_{\ves{\theta}}(\ve{z}_t; s, t)
+  &= \frac{\ve{z}_t + \sigma_t \mrm{expm1}( \gamma_{\ves{\eta}}(s) - \gamma_{\ves{\eta}}(t)) \hat{\ves{\xi}}_{\ves{\theta}}(\ve{z}_t; t)}{\alpha_{t|s}},
+\end{align*}
+and we are done with $\ves{\mu}_{\ves{\theta}}(\ve{z}_t; s, t)$.
+
+For $\sigma_Q^2(s,t)$, we have that
+\begin{align*}
+  \sigma_Q^2(s,t) 
+  &= \frac{\sigma_{t|s}^2\sigma_s^2}{\sigma_t^2}
+  = \frac{\sigma_s^2}{\sigma_t} \frac{\sigma_{t|s}^2}{\sigma_t}
+  = \frac{\sigma_s^2}{\sigma_t} \big( -\sigma_t \mrm{expm1}(\gamma_{\ves{\eta}}(s) - \gamma_{\ves{\eta}}(t)) \big) \\
+  &= -\sigma_s^2 \mrm{expm1}(\gamma_{\ves{\eta}}(s) - \gamma_{\ves{\eta}}(t))
+\end{align*}
+as required.
+\end{proof}
+
+\item \begin{proposition} \label{thm:diffusion-loss-snr-finite}
+  In the case of finite $T$, the diffusion loss $\mcal{L}_T(\ve{x})$ can be expressed as
+  \begin{align*}
+    \mcal{L}_T(\ve{x})
+    &= \frac{T}{2} E_{\ves{\xi} \sim \mcal{N}(\ves{0},I), i \sim \mcal{U}\{1:T\}} \Big[ \big(\SNR(s(i)) - \SNR(t(i))\big) \| \ve{x} - \hat{\ve{x}}_{\ves{\theta}}(\ve{z}_{t(i)}; t(i)) \|^2 \Big].
+  \end{align*}
+\end{proposition}
+
+\begin{proof}
+  Let us use $s$ and $t$ as shorthands for $s(i)$ and $t(i)$. We have that
+  \begin{align*}
+    q(\ve{z}_s | \ve{z}_t, \ve{x})
+    &= \mcal{N}(\ve{z}_s; \ves{\mu}_Q(\ve{z}_t, \ve{x}; s,t), \sigma^2_Q(s,t)),\\
+    p(\ve{z}_s | \ve{z}_t)
+    &= \mcal{N}(\ve{z}_s, \ves{\mu}_{\ves{\theta}}(\ve{z}_t; s, t), \sigma^2_Q(s,t)), \\
+    \ves{\mu}_Q(\ve{z}_t, \ve{x}; s,t) 
+    &= \frac{\alpha_{t|s}\sigma_s^2}{\sigma_t^2} \ve{z}_t + \frac{\alpha_s \sigma_{t|s}^2}{\sigma_t^2} \ve{x} \\
+    \ves{\mu}_{\ves{\theta}}(\ve{z}_t; s, t) 
+    &= \frac{\alpha_{t|s}\sigma_s^2}{\sigma_t^2} \ve{z}_t + \frac{\alpha_s \sigma_{t|s}^2}{\sigma_t^2} \hat{\ve{x}}_{\ves{\theta}}(\ve{z}_t; s, t), \\
+    \sigma_Q^2 
+    &= \sigma_{t|s}^2 \sigma_s^2 / \sigma_t^2.
+  \end{align*}
+  Applying Proposition~\ref{thm:gaussian-kl-spherical}, we have that
+  \begin{align*}
+    D_{KL}(
+      q(\ve{z}_s | \ve{z}_t, \ve{x})
+      \| p(\ve{z}_s | \ve{z}_t) )
+    &= \frac{1}{2 \sigma^2_Q(s,t)} \| \ves{\mu}_Q - \ves{\mu}_{\ves{\theta}} \|^2 
+    = \frac{\sigma_t^2}{2 \sigma_{t|s}^2 \sigma_s^2} \frac{\alpha_s^2 \sigma_{t|s}^4}{\sigma_t^4} 
+    \| \ve{x} - \hat{\ve{x}}_{\ves{\theta}}(\ve{z}_t; t) \|^2.
+  \end{align*}
+  Now,
+  \begin{align*}
+    \frac{\sigma_t^2}{2 \sigma_{t|s}^2 \sigma_s^2} \frac{\alpha_s^2 \sigma_{t|s}^4}{\sigma_t^4}
+    &= \frac{1}{2 \sigma_s^2} \frac{\alpha_s^2 \sigma_{t|s}^2}{\sigma_t^2}
+    = \frac{1}{2 \sigma_s^2} \frac{\alpha_s^2 (\sigma_t^2 - \alpha_{t|s}^2 \sigma_s^2)}{\sigma_t^2}
+    = \frac{1}{2} \frac{\alpha_s^2 \sigma_t^2 - \alpha_t^2 \sigma_s^2}{ \sigma_s^2 \sigma_t^2}
+    = \frac{1}{2} \bigg( \frac{\alpha_s^2}{\sigma_s^2} - \frac{\alpha_t^2}{\sigma_t^2} \bigg) \\
+    &= \frac{1}{2} \big( \SNR(s) - \SNR(t) \big).
+  \end{align*}
+  As a result,
+  \begin{align*}
+  D_{KL}(
+      q(\ve{z}_s | \ve{z}_t, \ve{x})
+      \| p(\ve{z}_s | \ve{z}_t) )
+  = \frac{1}{2} \big( \SNR(s) - \SNR(t) \big) \| \ve{x} - \hat{\ve{x}}_{\ves{\theta}}(\ve{z}_t; t) \|^2,
+  \end{align*}
+  and
+  \begin{align*}
+    \mcal{L}_T(\ve{x})
+    &= \sum_{i=1}^T E_{\ve{z}_t \sim q(\ve{z}_t|\ve{x})} [
+      D_{KL}(
+      q(\ve{z}_s | \ve{z}_t, \ve{x})
+      \| p(\ve{z}_s | \ve{z}_t) )
+    ] \\
+    &= \frac{1}{2} \sum_{i=1}^T E_{\ve{z}_t \sim q(\ve{z}_t|\ve{x})} \Big[ \big( \SNR(s) - \SNR(t) \big) \| \ve{x} - \hat{\ve{x}}_{\ves{\theta}}(\ve{z}_t; t) \|^2 \Big] \\
+    &= \frac{1}{2} \sum_{i=1}^T E_{\ves{\xi} \sim \mcal{N}(\ve{0}, I)} \Big[ \big( \SNR(s) - \SNR(t) \big) \| \ve{x} - \hat{\ve{x}}_{\ves{\theta}}(\ve{z}_t; t) \|^2 \Big] \\
+    &= \frac{T}{2} \sum_{i=1}^T E_{\ves{\xi} \sim \mcal{N}(\ve{0}, I), i \sim \mcal{U}\{1:T\}} \Big[ \big( \SNR(s) - \SNR(t) \big) \| \ve{x} - \hat{\ve{x}}_{\ves{\theta}}(\ve{z}_t; t) \|^2 \Big]
+  \end{align*}
+  as required.
+\end{proof}
+
+\item \begin{proposition} \label{thm:diffusion-loss-expm1-finite}
+  In the case of finite $T$, the diffusion loss $\mcal{L}_T(\ve{x})$ can be expressed as
+  \begin{align*}
+    \mcal{L}_T(\ve{x})
+    &= \frac{T}{2} 
+    E_{\ves{\xi} \sim \mcal{N}(\ves{0},I), i \sim \mcal{U}\{1:T\}} \Big[ 
+      \mrm{expm1}\big(\gamma_{\ves{\eta}}(t(i)) - \gamma_{\ves{\eta}}(s(i)) \big) \| \ve{\xi} - \hat{\ve{\xi}}_{\ves{\theta}}(\ve{z}_{t(i)}; t(i)) \|^2 \Big].
+  \end{align*}
+\end{proposition}
+
+\begin{proof}
+  The reasoning of this proposition is similar to the last one. We start with
+  \begin{align*}
+    D_{KL}(
+      q(\ve{z}_s | \ve{z}_t, \ve{x})
+      \| p(\ve{z}_s | \ve{z}_t) )
+    &= \frac{1}{2 \sigma^2_Q(s,t)} \| \ves{\mu}_Q - \ves{\mu}_{\ves{\theta}} \|^2 
+    = \frac{\sigma_t^2}{2 \sigma_{t|s}^2 \sigma_s^2} \frac{\sigma_{t|s}^4}{\alpha^2_{t|s} \sigma_t^2} 
+    \| \ves{\xi} - \hat{\ves{\xi}}_{\ves{\theta}}(\ve{z}_t; t) \|.
+  \end{align*}
+  We have that
+  \begin{align*}
+    \frac{\sigma_t^2}{2 \sigma_{t|s}^2 \sigma_s^2} 
+    \frac{\sigma_{t|s}^4}{\alpha^2_{t|s} \sigma_t^2}
+    &= \frac{1}{2 \sigma_s^2} 
+    \frac{\sigma_{t|s}^2}{\alpha^2_{t|s}}
+    = \frac{\alpha_s^2 (\sigma_t^2 - \alpha_{t|s}^2 \sigma_s^2)}{2\sigma_s^2 \alpha_t^2}
+    = \frac{\alpha_s^2 \sigma_t^2 - \alpha_t^2 \sigma_s^2}{2\alpha_t^2 \sigma_s^2} 
+    = \frac{1}{2} \bigg( \frac{\alpha_s^2 \sigma_t^2}{\alpha_t^2 \sigma_s^2} - 1 \bigg).
+  \end{align*}
+  In the proof of Proposition~\ref{thm:backward-process-simplification}, we showed that
+  \begin{align*}
+    \frac{\alpha_t^2 \sigma_s^2}{\alpha_s^2 \sigma_t^2}
+    &= \exp(\gamma_{\ves{\eta}}(s) - \gamma_{\ves{\eta}}(t)).
+  \end{align*}
+  As a result,
+  \begin{align*}
+    \frac{\alpha_s^2 \sigma_t^2}{\alpha_t^2 \sigma_s^2}
+    &= \exp(\gamma_{\ves{\eta}}(t) - \gamma_{\ves{\eta}}(s)).
+  \end{align*}
+  Hence,
+  \begin{align*}
+    \frac{\sigma_t^2}{2 \sigma_{t|s}^2 \sigma_s^2} 
+    \frac{\sigma_{t|s}^4}{\alpha^2_{t|s} \sigma_t^2}
+    &= \frac{1}{2} \big( \exp(\gamma_{\ves{\eta}}(t) - \gamma_{\ves{\eta}}(s)) - 1\big)
+    = \mrm{expm1}(\gamma_{\ves{\eta}}(t) - \gamma_{\ves{\eta}}(s)).
+  \end{align*}
+  We are done.
+\end{proof}
+
+\item \begin{proposition}
+\begin{align*}
+  \mcal{L}_{\infty}(\ve{x}) 
+  = \frac{1}{2} E_{\xi \sim \N(\ve{0},I), t \sim \mcal{U}(0,1)} \big[ \gamma_{\ve{\eta}}'(t) \| \ves{\xi} - \hat{\ves{\xi}}(\ve{z}_t; t) \|^2 \big]
+\end{align*}
+\end{proposition}
+
+\begin{proof}
+  First, we have that
+  \begin{align*}
+    \mcal{L}_{\infty}(\ve{x}) 
+    = -\frac{1}{2} E_{\xi \sim \N(\ve{0},I), t \sim \mcal{U}(0,1)} \big[ \SNR'(t) \| \ve{x} - \hat{\ve{x}}(\ve{z}_t; t) \|^2 \big].
+  \end{align*}
+  Because $\ve{z}_t = \alpha_t \ve{x} + \sigma_t \ves{\xi}$, we have that $\ve{x} = (\ve{z}_t - \sigma_t \ves{\xi}) / \alpha_t$. It follows that
+  \begin{align*}
+    \| \ve{x} - \hat{\ve{x}}_{\ves{\theta}}(\ve{z}_t ; t) \|^2
+    &= \bigg\| \frac{\ve{z}_t - \sigma_t \ves{\xi}}{\alpha_t} - \frac{\ve{z}_t - \sigma_t \hat{\ves{\xi}}_{\ves{\theta}}(\ve{z}_t; t)}{\alpha_t} \bigg\|^2
+    = \frac{\sigma_t^2}{\alpha_t^2} \|\ves{\xi} - \hat{\ves{\xi}}_{\ves{\theta}}(\ve{z}_t; t) \|^2
+    = \frac{1}{\SNR(t)} \|\ves{\xi} - \hat{\ves{\xi}}_{\ves{\theta}}(\ve{z}_t; t) \|^2.
+  \end{align*}
+  Now,
+  \begin{align*}
+    \frac{\SNR'(t)}{\SNR(t)}
+    &= \frac{\{ \exp(-\gamma_{\ves{\eta}}(t)) \}'}{\exp(-\gamma_{\ves{\eta}}(t))}
+    = - \frac{ \exp(-\gamma_{\ves{\eta}}(t)) }{\exp(-\gamma_{\ves{\eta}}(t))} \gamma_{\ves{\eta}}'(t)
+    = - \gamma_{\ves{\eta}}'(t).
+  \end{align*}
+  As a result,
+  \begin{align*}
+    \mcal{L}_{\infty}(\ve{x}) 
+    &= -\frac{1}{2} E_{\xi \sim \N(\ve{0},I), t \sim \mcal{U}(0,1)} \big[ \SNR'(t) \| \ve{x} - \hat{\ve{x}}(\ve{z}_t; t) \|^2 \big] \\
+    &= -\frac{1}{2} E_{\xi \sim \N(\ve{0},I), t \sim \mcal{U}(0,1)} \bigg[ \frac{\SNR'(t)}{\SNR(t)} \| \ves{\xi} - \hat{\ves{\xi}}(\ve{z}_t; t) \|^2 \bigg] \\
+    &= \frac{1}{2} E_{\xi \sim \N(\ve{0},I), t \sim \mcal{U}(0,1)} \big[ \gamma'_{\ves{\eta}}(t) \| \ves{\xi} - \hat{\ves{\xi}}(\ve{z}_t; t) \|^2 \big]
+  \end{align*}
+  as required.
+\end{proof}
+
+\end{itemize}
+
+
+\bibliographystyle{alpha}
+\bibliography{variational-diffusion-models}  
+\end{document}

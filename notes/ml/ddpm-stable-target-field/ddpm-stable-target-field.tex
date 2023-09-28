@@ -1,0 +1,296 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+\usepackage{verbatim}
+\usepackage{hyperref}
+\usepackage{algorithm}
+\usepackage{clrscode3e}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\Dee}{\mathrm{D}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\Var}{\mathrm{Var}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\ves}[1]{\boldsymbol{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+\newcommand{\ov}[1]{\overline{#1}}
+\newcommand{\N}{\mathcal{N}}
+\newcommand{\data}{\mathrm{data}}
+\newcommand{\SNR}{\mathrm{SNR}}
+
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+\title{Stable Target Field for Reduced Variance Score Estimation in Diffusion Models}
+\author{Pramook Khungurn}
+
+\begin{document}
+\maketitle
+
+This note was written as I read the paper ``Stable Target Field for Reduced Variance Score Estimation in Diffusion Models'' by Xu \etal~\cite{Xu:2023}.
+
+\section{Introduction}
+
+\begin{itemize}
+  \item This paper argues that the training objective of diffusion models, the {\bf denoising score matching (DSM)} objective, has large variance and leads to suboptimal performance.
+  
+  \item It proposes a generalized version of the objective, called te {\bf stable target field (STF)} objective, that reduces this noise.
+  \begin{itemize}
+    \item The idea is to include an additional {\bf reference batch} of examples that are used to calculted weighted conditional scores, which is then use as the target for the score matching objective.
+    
+    \item The new objective reduces variance but introduces bias.
+    
+    \item The bias vanishes as the reference batch size increases.
+  \end{itemize}
+
+  \item Results
+  \begin{itemize}
+    \item FID of $1.90$ on unconditional CIFAR-10 with the EDM settings \cite{Karras:2022}, an improvement from $1.97$.
+    \item FID improvement on other models such as the VE and VP models of \cite{Song:2021}.
+    \item Acceltation the training of the VE model on CIFAR-10 by $3.6\times$ with better FID score.    
+  \end{itemize}
+\end{itemize}
+
+\section{Background}
+
+\begin{itemize}
+  \item A data item is denoted by $\ve{x} \in \Real^d$.
+  
+  \item The data distribution is denoted by $p_0$.
+    
+  \item The forward process is governed by the SDE
+  \begin{align*}
+    \dee \ve{x} = \ve{f}(\ve{x}, t)\, \dee t + g(t)\, \dee\ve{w}
+  \end{align*}
+  where $t \in [0,T]$, $T > 0$, $\ve{f}: \Real^d \times [0,1] \rightarrow \Real^d$, $g: \Real \rightarrow \Real$, and $\ve{w} \in \Real^d$ is the standard Wiener process. 
+  
+  \item Taking the SDE into account, $\ve{x}$ is a now stochastic process, which means that $\ve{x}(t)$ is a random variable that depends on time.
+  \begin{itemize}
+    \item Let $p_t(\cdot)$ denotes the probability distribution of $\ve{x}(t)$.
+    \item We will also denote $\ve{x}(t)$ by $\ve{x}_t$.
+  \end{itemize}
+
+  \item According to \cite{Karras:2022}, we are mostly interested in the SDE where
+  \begin{align*}
+    \ve{f}(\ve{x},t) = f(t)\ve{x}
+  \end{align*}
+  where $f:\Real \rightarrow \Real$.
+  In this case, we can define
+  \begin{align*}
+    \alpha(t) &= \exp\bigg(\int_0^t f(u)\, \dee u\bigg), \\
+    \sigma(t) &= \sqrt{\int_0^t \frac{g(u)^2}{\alpha(u)^2}\, \dee u }.
+  \end{align*}
+  Then, we have that
+  \begin{align*}
+    p_{t|0}(\ve{x}|\ve{x}_0) = \mcal{N}(\ve{x}; \alpha(t)\ve{x}_0, \sigma^2(t) I )
+  \end{align*}
+
+  \item In a DDPM, we want to train a neural network $\ve{s}_{\ves{\theta}}(\ve{x}, t)$ to estimate the score $\nabla_{\ve{x}} \log p_t(\ve{x})$.
+  
+  \item The training objective is
+  \begin{align*}
+    \min_{\ves{\theta}} E_{\substack{t \sim q(t), \\ \ve{x}_0 \sim p_0, \\ \ve{x}_t \sim p_{t|0}(\cdot|\ve{x}_0)}} \big[ \sigma^2(t) \| \ve{s}_{\ves{\theta}}(\ve{x}_t, t) - \nabla_{\ve{x}_t} \log p_t(\ve{x}_t|\ve{x}_0) \|_2^2 \big]
+  \end{align*}
+  where $q_t$ is the distribution for time variable.
+\end{itemize}
+
+\section{Variance of Denoising Score Matching}
+
+\begin{itemize}
+  \item Fixing $t$, the denoising score-matching object becomes
+  \begin{align*}
+    \ell_{\mrm{DSM}}(\ves{\theta},t) &= \min_{\ves{\theta}} E_{\substack{\ve{x}_0 \sim p_0, \\ \ve{x}_t \sim p_{t|0}(\cdot|\ve{x}_0)}} \big[ \| \ve{s}_{\ves{\theta}}(\ve{x}_t, t) - \nabla_{\ve{x}_t} \log p_t(\ve{x}_t|\ve{x}_0) \|_2^2 \big] \\
+    &= \min_{\ves{\theta}} E_{\ve{x}_0 \sim p_0} \Big[ E_{\ve{x}_t \sim p_{t|0}(\cdot|\ve{x}_0)} \big[ \| \ve{s}_{\ves{\theta}}(\ve{x}_t, t) - \nabla_{\ve{x}_t} \log p_t(\ve{x}_t|\ve{x}_0) \|_2^2 \big] \Big].
+  \end{align*}
+  In this objective, we sample $\ve{x}_0$ before sampling $\ve{x}_t$.
+
+  \item We can, however, swap the order of sampling so that we sample $\ve{x}_t$ before sampling $\ve{x}_0$.
+  \begin{align*}
+    \ell_{\mrm{DSM}}(\ves{\theta},t) &= \min_{\ves{\theta}} E_{\ve{x}_t \sim p_t} \Big[ E_{\ve{x}_0 \sim p_{0|t}(\cdot|\ve{x}_t)} \big[  \| \ve{s}_{\ves{\theta}}(\ve{x}_t, t) - \nabla_{\ve{x}_t} \log p_t(\ve{x}_t|\ve{x}_0) \|_2^2 \big] \Big].
+  \end{align*}
+  Here, $\ve{s}_{\ves{\theta}}$ has a closed-form minimizer
+  \begin{align*}
+    \ve{s}^*_{\mrm{DSM}}(\ve{x}_t, t) = E_{p_{0|t}(\ve{x}_0|\ve{x}_t)} [ \nabla_{\ve{x}_t} \log p_t(\ve{x}_t|\ve{x}_0)] = \nabla_{\ve{x}_t} \log p_t(\ve{x}_t).
+  \end{align*}
+
+  \item What we have been doing is estimating $\nabla_{\ve{x}_t} \log p_t(\ve{x}_t)$ by sampling $\ve{x}_0$ according to $p_0$ and then $\ve{x}_t$ according to $p_{t|0}(\cdot|\ve{x}_0)$ and taking $\nabla_{\ve{x}_t} \log p_t(\ve{x}_t|\ve{x}_0)$ as a single-sample Monte Carlo estimate. 
+  
+  \item The above estimate can have high variance, especially when multiple data items in have comparable influences on $\ve{x}_t$. This can slow down convergence and degrades performance of the optimized $\ve{s}_{\ves{\theta}}$.
+  
+  \item The paper characterize the variation of the targets at difference times with the following metrics:
+  \begin{align*}
+    V_{\mrm{DSM}}(t) 
+    &= E_{\ve{x}_t \sim p_t} \big[ \tr(\Cov_{\ve{x}_0 \sim p_{0|t}(\cdot, \ve{x}_t)} [\nabla_{\ve{x}_t} \log p_{t|0}(\ve{x}_t|\ve{x}_0)]) \big] \\
+    &= E_{\ve{x}_t \sim p_t} \Big[ E_{\ve{x}_0 \sim p_{0|t}(\cdot|\ve{x}_t)} \big[ \| \nabla_{\ve{x}_t} \log p_{t|0}(\ve{x}_t|\ve{x}_0) - \nabla_{\ve{x}_t} \log p_t(\ve{x}_t) \|_2^2 \big] \Big] \\
+    &= E_{\ve{x}_0 \sim p_0} \Big[ E_{\ve{x}_t \sim p_{t|0}(\cdot|\ve{x}_0)} \big[ \| \nabla_{\ve{x}_t} \log p_{t|0}(\ve{x}_t|\ve{x}_0) - \nabla_{\ve{x}_t} \log p_t(\ve{x}_t) \|_2^2 \big] \Big].
+  \end{align*}
+
+  \item $V_{\mrm{DSM}}(t)$ is close to $0$ at $t = 0$, and it is low at $t = T$. It peaks somewhere between $t = 0$ and $t = T$.
+  \begin{itemize}
+    \item The location around where $V_{\mrm{DSM}}$ peaks is called the ``intermediate phase'' by the paper.
+    \item The behavior shows up for a toy dataset with 2 Gaussians and CIFAR-10.
+  \end{itemize}
+\end{itemize}
+
+\section{Stable Target Field}
+
+\begin{itemize}
+  \item The ideal target for score matching is given by
+  \begin{align*}
+    \nabla_{\ve{x}_t} \log p_t(\ve{x}_t) = E_{p_{0|t}(\ve{x}_0|\ve{x}_t)} \big[ \nabla_{\ve{x}_t} \log p_{t|0} (\ve{x}_t|\ve{x}_0) \big].
+  \end{align*}
+  
+  \item Since it is impractical to sample from $p_{0|t}(\cdot|\ve{x}_t)$ directly, we sample $\ve{x}_0$ with distribution $p_0$. Then, we estimate the score as:
+  \begin{align*}
+    \nabla_{\ve{x}_t} \log p_t(\ve{x}_t) \approx \frac{p_{0|t}(\ve{x}_0|\ve{x}_t)}{p_0(\ve{x}_0)} \nabla_{\ve{x}_t} \log p_{t|0} (\ve{x}_t|\ve{x}_0)
+  \end{align*}
+  If we do this $n$ times, the estimate becomes
+  \begin{align*}
+    \nabla_{\ve{x}_t} \log p_t(\ve{x}_t) \approx \frac{1}{n} \sum_{i=1}^n \frac{p_{0|t}(\ve{x}^{(i)}_{0}|\ve{x}_t)}{p_0(\ve{x}^{(i)}_0)} \nabla_{\ve{x}_t} \log p_{t|0} (\ve{x}_t|\ve{x}^{(i)}_{0}).
+  \end{align*}
+  However, there is one problem with the above formula: we do not know how to compute $p_{0|t}(\ve{x}^{(i)}_{0}|\ve{x}_t)$. This can be remedy by appealing to Bayes' rule:
+  \begin{align*}
+    \frac{p_{0|t}(\ve{x}^{(i)}_0|\ve{x}_t)}{p_0(\ve{x}_0^{(i)})} = \frac{p_{t|0}(\ve{x}_t|\ve{x}^{(i)}_0)}{p_t(\ve{x}_t)}.
+  \end{align*}
+  So,
+  \begin{align*}
+    \nabla_{\ve{x}_t} \log p_t(\ve{x}_t) \approx \frac{1}{n} \sum_{i=1}^n \frac{p_{t|0}(\ve{x}_t|\ve{x}^{(i)}_0)}{p_t(\ve{x}_t)} \nabla_{\ve{x}_t} \log p_{t|0} (\ve{x}_t|\ve{x}^{(i)}_{0}).
+  \end{align*}
+  Nevertheless, we do not know an efficient way to compute $p_t(\ve{x}_t)$, so we estimate it with:
+  \begin{align*}
+    p_t(\ve{x}_t) \approx \frac{1}{n} \sum_{j=1}^n p_{t|0}(\ve{x}_t|\ve{x}_0^{(j)}).
+  \end{align*}
+  As a result, the score estimate becomes
+  \begin{align*}
+    \nabla_{\ve{x}_t} \log p_t(\ve{x}_t) \approx \sum_{i=1}^n \frac{p_{t|0}(\ve{x}_t|\ve{x}^{(i)}_0)}{\sum_{j=1}^n p_{t|0}(\ve{x}_t|\ve{x}_0^{(j)})} \nabla_{\ve{x}_t} \log p_{t|0} (\ve{x}_t|\ve{x}^{(i)}_{0}).
+  \end{align*}
+  This estimate is called the {\bf stable target field (STF)}.
+
+  \item In practice, we same a reference batch $\mcal{B}_L = \{ \ve{x}^{(i)}_0 \}_{i=1}^n$ from $p_0^n$ (the probability of sampling $n$ samples from $p_0$). We then obtain $\ve{x}_t$ by corrupting the first element $\ve{x}^{(1)}_0$ from the batch. The new object is:
+  \begin{align*}
+    \ell_{\mrm{STF}}(\ves{\theta},t) = E_{\{ \ve{x}^{(i)}_0 \}_{i=1}^n \sim p_0^n} \Bigg[
+      E_{\ve{x}_t \sim p_{t|0}(\cdot|\ve{x}^{(1)}_0)} \bigg[
+        \Big\|
+          \ve{s}_{\ves{\theta}}(\ve{x}_t, t) - \sum_{i=1}^n \frac{p_{t|0}(\ve{x}_t|\ve{x}^{(i)}_0)}{\sum_{j=1}^n p_{t|0}(\ve{x}_t|\ve{x}_0^{(j)})} \nabla_{\ve{x}_t} \log p_{t|0} (\ve{x}_t|\ve{x}^{(i)}_{0})
+        \Big\|^2
+      \bigg]
+    \Bigg].
+  \end{align*}
+  
+  \item Because $p_{t|0}(\ve{x}_t|\ve{x}_0) = \mcal{N}(\alpha(t)\ve{x}_0, \sigma^2(t) I)$, we have that
+  \begin{align*}
+    p_t(\ve{x}_t|\ve{x}_0) \propto \exp\bigg( -\frac{\| \ve{x}_t - \alpha(t)\ve{x}_0 \|^2}{2\sigma^2(t)} \bigg).
+  \end{align*}
+  So,
+  \begin{align*}
+    \ell_{\mrm{STF}}(\ves{\theta},t) &= E_{\{ \ve{x}^{(i)}_0 \}_{i=1}^n \sim p_0^n} \Bigg[
+      E_{\ve{x}_t \sim p_{t|0}(\cdot|\ve{x}^{(1)}_0)} \bigg[ \\
+        &\qquad \qquad \Big\|
+          \ve{s}_{\ves{\theta}}(\ve{x}_t, t) - \frac{1}{\sigma_t^2} \sum_{i=1}^n \frac{ \exp(-\| \ve{x}_t - \alpha_t\ve{x}_0^{(i)} \|^2 /(2\sigma_t^2)) }{\sum_{j=1}^n \exp(-\| \ve{x}_t - \alpha_t\ve{x}_0^{(j)} \|^2 /(2\sigma_t^2))} (\alpha_t \ve{x}_0^{(i)} - \ve{x}_t)
+        \Big\|^2
+      \bigg]
+    \Bigg].
+  \end{align*}  
+
+  \item The final training object is $E_{t \sim q_t} [\lambda(t) \ell_{\mrm{STF}(\ves{\theta},t)}]$.
+  
+  \item In the real training algorithm, however, we do not work with only one $\ve{x}^{(1)}_0$. Instead, we sample a large reference batch $\mcal{B}_L$. From it, we subsample a small batch $\mcal{B}$. The size of the small batch size is the size of the batch in normal training.
+  
+  \item The full training algorithm is as follows.
+  \begin{itemize}
+    \item[] {\bf while} not satisfied {\bf do}
+    \item[] \begin{itemize}
+      \item[] Sample a large batch $\mcal{B}_L$ from the data distribution.
+      \item[] Sample a small batch $\mcal{B}$ from the large batch.
+      \item[] Sample times $t_1, t_2, \dotsc, t_{|\mcal{B}|}$ according to the distribution $q_t$.
+      \item[] Compute corrupted examples according to the times being applied to the corresponding elements in the small batch.
+      \item[] Compute the stable target field for each of the corrupted example in the small batch.
+      \item[] Calculate the loss and update the model parameters.
+    \end{itemize}
+    \item[] {\bf end while}
+  \end{itemize}  
+\end{itemize}
+
+\section{Theoretical Results}
+
+\begin{itemize}
+  \item Let
+  \begin{align*}
+    \ve{s}^*_{\mrm{STF}}(\ve{x}_t, t) = E_{\ve{x}^{(1)}_0 \sim p_{0|T}(\cdot|\ve{x}_t)} \Bigg[ 
+      E_{\{ \ve{x}^{(i)}_0 \}_{i=2}^n \sim p_0^{n-1}} \bigg[
+        \sum_{i=1}^n \frac{p_{t|0}(\ve{x}_t|\ve{x}^{(i)}_0)}{\sum_{j=1}^n p_{t|0}(\ve{x}_t|\ve{x}_0^{(j)})} \nabla_{\ve{x}_t} \log p_{t|0} (\ve{x}_t|\ve{x}^{(i)}_{0})
+      \bigg]      
+    \Bigg].
+  \end{align*}
+  This is the stable target field, which we optimize $\ve{s}_{\ves{\theta}}(\ve{x}_t, t)$ against.
+
+  \item \begin{theorem}
+    Let $t \in [0, T]$. Suppose $0 < \sigma_t < \infty$. Then,
+    \begin{align*}
+      \sqrt{n}(\ve{s}^*_{\mrm{STF}}(\ve{x}_t, t) - \nabla_{\ve{x}_t}\log p_t(\ve{x}_t)) \rightarrow \mcal{N}\bigg( \ve{0}, \frac{\Cov(\nabla_{\ve{x}_t}p_{t|0}(\ve{x}_t|\ve{x}_0)) }{p_t(\ve{x}_t)^2} \bigg)
+    \end{align*}
+    where the convergence is in distribution.
+  \end{theorem}
+  The theorem says that, as $n \rightarrow \infty$, we have that $\ve{s}^*_{\mrm{STF}}(\ve{x}_t, t)$ approaches $\nabla_{\ve{x}_t}\log p_t(\ve{x}_t)$.
+
+  \item Now, the variance of trace matric of the stable target field.
+  \begin{align*}
+    V_{\mrm{STF}}(t) = E_{\ve{x}_t \sim p_t} \Bigg[ \tr \bigg( \Cov_{\substack{ \ve{x}^{(1)}_0 \sim p_{0|t}(\cdot|\ve{x}_t),\\ \{ \ve{x}^{(i)}_0 \}_{i=2}^{n} \sim p_0^{n-1}}} \bigg( 
+      \sum_{i=1}^n \frac{p_{t|0}(\ve{x}_t|\ve{x}^{(i)}_0)}{\sum_{j=1}^n p_{t|0}(\ve{x}_t|\ve{x}_0^{(j)})} \nabla_{\ve{x}_t} \log p_{t|0} (\ve{x}_t|\ve{x}^{(i)}_{0})
+    \bigg) \bigg) \Bigg]
+  \end{align*}
+
+  \item \begin{theorem}
+    Let $t \in [0, T]$. Suppose $0 < \sigma_t < \infty$. Then,
+    \begin{align*}
+      V_{\mrm{STF}}(t) \leq \frac{1}{n-1} \bigg( V_{\mrm{DSM}}(t) + \frac{\sqrt{3}d}{\sigma_t^2} \sqrt{E_{\ve{x}_t \sim p_t}[D_f(p_0(\ve{x}_0)) \| p_{0|t}(\ve{x}_0|\ve{x}_t) ]}  \bigg) + O\bigg( \frac{1}{n^2} \bigg)
+    \end{align*}
+    where $D_f$ is an $f$-divergence with
+    \begin{align*}
+      f(y) = \begin{cases}
+        1/(y-1)^2, & y < 1.5 \\
+        8y/27 - 1/3, & y \geq 1.5
+      \end{cases}.
+    \end{align*}
+    When, $n \gg d$ and $p_{0|t}(\ve{x}_0|\ve{x}_t) \approx p_0(\ve{x}_0)$ for all $\ve{x}_t$, then $V_{\mrm{STf}}(t) \leq V_{\mrm{DSM}(t)}/(n-1)$ approximately.
+  \end{theorem}
+  The threorem says that the variance of the stable target field is smaller than the variance of denoising score matching. This happens when $t$ is large, which implies that $p_{0|t}(\ve{x}_0|\ve{x}_t) \approx p_0(\ve{x}_0)$.
+\end{itemize}
+
+\bibliographystyle{alpha}
+\bibliography{ddpm-stable-target-field}  
+\end{document}
