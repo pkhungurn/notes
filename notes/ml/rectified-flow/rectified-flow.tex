@@ -1,0 +1,354 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+\usepackage{verbatim}
+\usepackage{hyperref}
+\usepackage{algorithm}
+\usepackage{clrscode3e}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\Dee}{\mathrm{D}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\Var}{\mathrm{Var}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\ves}[1]{\boldsymbol{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+\newcommand{\ov}[1]{\overline{#1}}
+\newcommand{\N}{\mathcal{N}}
+\newcommand{\data}{\mathrm{data}}
+\newcommand{\SNR}{\mathrm{SNR}}
+
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+\title{Rectified Flow}
+\author{Pramook Khungurn}
+
+\begin{document}
+\maketitle
+
+Rectified flow \cite{Liu:2022:RectifiedFlow} is a new approach to generative modeling that is quite similar to diffusion models \cite{Ho:2020} but has a totally different formulation.
+
+\section{Generative Modeling Through the Optimal Transport Lense}
+
+\begin{itemize}
+  \item Generative modeling can be viewed generating data from noise.
+  \begin{itemize}
+    \item We have a distribution $\pi_{\data}$ that we want to sample from.
+    \item We also have a well-known distribution of noise, say $\mcal{N}(\ve{0},I)$.
+    \item We want to learn function $\ve{f}$ such that, if $\ve{Z} \sim \mcal{N}(\ve{0},I)$, then $\ve{X} = \ve{f}(\ve{Z}) \sim \pi_{\data}$.
+  \end{itemize}
+
+  \item This is a special case of transformations between two different probability density $\pi_0$ and $\pi_1$.
+  \begin{itemize}
+    \item Formally, this is the problem of finding a function $\ve{f}$ such that \\ $\ve{X}_1 = \ve{f}(\ve{X}_0) \sim \pi_1$ given that $\ve{X}_0 \sim \pi_0$.
+  \end{itemize}
+  
+  \item A related concept to transformations between densities are coupling of random variables.
+  \begin{itemize}
+    \item \begin{definition}
+      Let $\mu_1$ and $\mu_2$ be probability measures on the same measurable space $(\Omega, \mcal{F})$. A {\bf coupling} of $\mu_1$ and $\mu_2$ is a probability measure $\nu$ on the product space $(\Omega \times \Omega, \mcal{F} \times \mcal{F})$ such that the materials of $\nu$ coincide with $\mu_1$ and $\mu_2$. In other words,
+      \begin{align*}
+        \nu(A \times \Omega) &= \mu_1(A), \\
+        \nu(\Omega \times A) &= \mu_2(A)
+      \end{align*}
+      for all $A \in \mcal{F}$.
+    \end{definition}
+
+    \item Recall that a random variable is a function from $X: \Omega \rightarrow \Omega'$ where $(\Omega, \mcal{F})$ and $(\Omega', \mcal{F}')$ are measurable spaces. The {\bf law of} $X$, denoted by $\mu_X$, is the probability measure on $(\Omega', \mcal{F}')$ defined by $$\mu_X(B) = \mu(X^{-1}(B))$$ for all $B \in \mcal{F}'$.
+    
+    \item \begin{definition}
+      For two random variables taking values in $(\Omega, \mcal{F})$, a {\bf coupling of $X_1$ and $X_2$} is a joint random variable $(Y_1, Y_2)$ on $(\Omega \times \Omega, \mcal{F} \times \mcal{F})$ such that its law as a probability measure is a coupling of the laws of $X_1$ and $X_2$.
+    \end{definition}
+
+    \item Recall that the, for a random variable $X$, its probability density function is the function $\pi_X: \Omega' \rightarrow [0,\infty)$ such that, for all $B \in \mcal{F}'$, we have that
+    \begin{align*}
+      \mu_X(B) = \int_B \pi_X(x)\, \dee\mu'(x).
+    \end{align*}
+
+    \item For a joint random variable $(Y_1, Y_2)$, the marginal probability density functions are given by
+    \begin{align*}
+      \pi_{Y_1}(y_1) &= \int_{y_2 \in \Omega'} \pi_{(Y_1, Y_2)}(y_1, y_2)\, \dee\mu'(y_2) \\
+      \pi_{Y_2}(y_2) &= \int_{y_1 \in \Omega'} \pi_{(Y_1, Y_2)}(y_1, y_2)\, \dee\mu'(y_1).
+    \end{align*}
+    where $\pi_{(Y_1, Y_2)}(y_1, y_2)$ is the probability density of the joint distribution.
+
+    \item When $(Y_1, Y_2)$ is a coupling of $X_1$ and $X_2$, it follows that $\mu_{Y_1} = \mu_{X_1}$, $\pi_{Y_1} = \pi_{X_1}$,  $\mu_{Y_2} = \mu_{X_2}$, and $\pi_{Y_2} = \pi_{X_2}$, which is to say that all the marginal laws and distributions agree.
+  \end{itemize}
+
+  \item Finding transformations between two distributions is a special case of finding a coupling between random variables.
+  \begin{itemize}
+    \item Let us say that $\ve{X}_1 \in \Real^d$ is a random variable with density $\pi_{X_1} = \pi_1$, and $\ve{X}_2 \in \Real^d$ is another random variable with density $\pi_{X_2} = \pi_2$.
+  
+    \item Finding a transformation from $\pi_1$ to $\pi_2$ is equivalent to finding a coupling $(Y_1, Y_2)$ of $X_1$ and $X_2$ that is {\bf causal}. In other words, there is a function $\ve{f}: \Real^d \rightarrow \Real^d$ such that $Y_2 = \ve{f}(Y_1)$.
+  \end{itemize}
+
+  \item The {\bf optimal transport problem} is the task of finding a coupling $(Y_1, Y_2)$ of $X_1 \sim \pi_1$ and $X_2 \sim \pi_2$ that minimizes
+  \begin{align*}
+    E[c(Y_1 - Y_2)]
+  \end{align*}
+  for some cost function $c: \Real^d \rightarrow \Real$.
+
+  \item For the generative modeling task, the cost is not of primary concern, but it can give some desirable properties to be worked towards.
+\end{itemize}
+
+\section{Rectified Flow}
+
+\begin{itemize}
+  \item We return to the distribution transformation problem where we are given two empirical distributions $\pi_0$ and $\pi_1$.
+  
+  \item An idea that has been popular circa 2023 is create a stochastic process $\{ \ve{Z}(t) : 0 \leq t \leq 1 \}$ that is governed by an ODE
+  \begin{align} \label{eqn:transformation-ode}
+    \frac{\dee \ve{Z}}{\dee t} = \ve{v}(\ve{Z}, t) 
+  \end{align}
+  so that $\ve{Z}(0) \sim \pi_0$ and $\ve{Z}_1(1) \sim \pi_1$. If we can find this velocity field $\ve{v}(\ve{Z}, t)$, then we can generate samples according to $\pi_1$ by first sampling $\ve{Z}(0)$ according to $\pi_0$, then compute
+  \begin{align*}
+    \ve{Z}(1) = \ve{Z}(0) + \int_{0}^1 \ve{v}(\ve{Z}(t), t)\, \dee t,
+  \end{align*}
+  which can be approximated with any integration scheme. 
+  
+  \item The above idea is realized by the probability flow ODE formulation of score-based models \cite{Song:2021} and DDIM \cite{Song:DDIM:2020}. However, $\pi_0$ is fixed to the Gaussian distribution $\mcal{N}(\ve{0},I)$.
+  
+  \item The rectified flow appraoch starts at a stochastic process that has the right boudnary condition but doesn't quite work the way we wants.
+
+  \item Given two random variables $\ve{X}_0 \in \Real^d$ and $\ve{X}_1 \in \Real^d$, their {\bf linear interpolation} is a stochastic process $\{ \overline{\ve{X}}(t) : 0 \leq t \leq 1 \}$ where $\overline{\ve{X}} = (1-t)\ve{X}_0 + t\ve{X}_1.$ 
+  
+  \item If we require that $\ve{X}_0 \sim \pi_0$ and $\ve{X}_1 \sim \pi_1$, then $\overline{\ve{X}}(t)$ has the right boundary conditions. However, the problem with $\overline{\ve{X}}$ is that it is not causal. Given $\overline{\ve{X}}(0)$, we cannot find out which way $\overline{\ve{X}}(t)$ is going to evolve without knowing how to precisely sample the destination point from $\pi_1$. The velocity field in this case is not deterministic.
+  
+  \item However, suppose we have sampled the destination point $\ve{X}_1$. The path traces by $\overline{\ve{X}}(t)$ is a straight line in $\Real^d$. It's time derivative is a random variable given by
+  \begin{align*}
+    \dot{\overline{\ve{X}}} = \frac{\dee \overline{\ve{X}}}{\dee t} = \ve{X}_1 - \ve{X}_0.
+  \end{align*}
+  We have that $\overline{\ve{X}}_t$ is \emph{path-wise continuously differentiable}.
+
+  \item For a path-wise continously differentiable stochastic process like $\overline{\ve{X}}$, it is possible to define the notation of the ``expected velocity field.''
+  \begin{definition}
+    For a path-wise continuously differentiable stochatistic process $\{ \ve{X}(t) : 0 \leq t \leq 1 \}$, its {\bf expected velocity field} $\ve{v}^{\ve{X}}$, is defined as
+    \begin{align*}
+      \ve{v}^{\ve{X}}(t, \ve{x}) = E[\dot{\ve{X}}(t)\, |\, \ve{X}(t) = \ve{x} ].
+    \end{align*}
+    That is $\ve{v}^{\ve{X}}(t, \ve{x})$ is the expected value of the velocities of the paths that pass point $\ve{x}$ at time $t$.
+  \end{definition}
+
+  \item The idea is the rectified flow approach is this: use the expected velocity field $\ve{v}^{\overline{\ve{X}}}$ of the linear interpolation $\overline{\ve{X}}$ of $\ve{X}_0 \sim \pi_0$ and $\ve{X}_1 \sim \pi_1$ as the velocity field in Equation~\eqref{eqn:transformation-ode}. If you do this, the marginal distributions would be right.
+  
+  \item Now, let us defined precisely what a rectified flow is.
+  \begin{definition}
+    A path-wise continously differentiable stochastic process $\{ \ve{X}(t): 0 \leq t \leq 1 \}$ is {\bf rectifiable} if $\ve{v}^{\ve{X}}$ is locally bounded, and the solution of the integral equation below exists and is unique:
+    \begin{align*}
+      \ve{Z}(t) = \ve{X}(0) + \int_0^t \ve{v}^{\ve{X}}(u,\ve{Z}(u))\, \dee u.
+    \end{align*}
+    for all $t \in [0,1]$. In this case, the stochastic process $\{ \ve{Z}(t): 0 \leq t \leq 1 \}$ is called the {\bf rectified flow induced from} $\ve{X}$.
+  \end{definition}
+
+  \item Note that the rectified flow $\ve{Z}(t)$ is the unique solution to the following initial value problem:
+  \begin{align}
+    \ve{Z}(0) &\sim \ve{X}(0), \notag \\
+    \frac{\dee \ve{Z}(t)}{\dee t} &= \ve{v}^{\ve{X}}(t,\ve{Z}(t)). \label{eqn:recified-flow-ode}
+  \end{align}
+
+  \item \begin{theorem}
+    Let $\ve{X}$ be rectifiable, and $\ve{Z}$ be the rectified flow induced from $\ve{X}$. We have that the distributions of $\ve{Z}(t)$ and $\ve{X}(t)$ agree. In other words, $\pi_{\ve{Z}(t)} = \pi_{\ve{X}(t)}$ for all $t \in [0,1]$.
+  \end{theorem}
+
+  \begin{proof}
+    We think of the distributions $\ve{X}(t)$ and $\ve{Z}(t)$ as functions of signature $\Real \times \Real^d \rightarrow \Real$. In other words, $\pi_{\ve{X}}(t, \ve{x}) := \pi_{\ve{X}(t)}(\ve{x})$ and $\pi_{\ve{Z}}(t, \ve{x}) := \pi_{\ve{Z}(t)}(\ve{x}).$ We can show that these functions satisfy the {\bf continuity equation} \cite{ContinuityEquation},
+    \begin{align}
+      \frac{\partial \pi(t,\ve{x})}{\partial t} + \nabla \cdot (\ve{v}^{\ve{X}}(t, \ve{x}) \pi(t, \ve{x})) = 0, \label{eqn:continuity-equation}
+    \end{align}
+    which comes from fluid dynamics. Here, the function we want to solve for is $\pi$, ahd the divergence operator $\nabla \cdot$ only applies to the spatial dimensions and not the time dimension. The proof of this assertion is available in Lemma~\ref{thm:rectified-flow-and-continuity-equation} in the appendix.
+    
+    According to Theorem 9 from Ambrosio and Crippa \cite{Ambrosio:2006}, the solution to \eqref{eqn:continuity-equation} is unique if and only if the solution to the initial value problem \eqref{eqn:recified-flow-ode} is unique. However, the solution to \eqref{eqn:recified-flow-ode} is unique because we assumed that $\ve{X}$ is rectifiable. As a result, it follows that $\pi_{\ve{X}} = \pi_{\ve{Z}}$, which means that $\pi_{\ve{X}(t)} = \pi_{\ve{Z}(t)}$ for all $t \in [0,1]$.
+  \end{proof}
+
+  \item Suppose that the linear interpolation of $\overline{\ve{X}}(t)$ of $\ve{X}_0 \sim \pi_0$ and $\ve{X}_1 \sim \pi_1$ is rectifiable. Then, its rectified flow $\ve{Z}(t)$ has all the right marginal distributions. In particular, $\ve{Z}(0) \sim \pi_0$ and $\ve{Z}(1) \sim \pi_1$.
+  
+  \item To do generative modeling with rectified flow, we train a network $\ve{f}_{\ves{\theta}}(\cdot, \cdot)$ so that $\ve{f}_{\ves{\theta}}(t, \ve{x})$ approximates $\ve{v}^{\overline{\ve{X}}}(t, \ve{x})$. This can be done by minimizing the loss
+  \begin{align*}
+    \mcal{L}(\ves{\theta}) = E_{\substack{\ve{x}_0 \sim \pi_0,\\ \ve{x}_1 \sim \pi_1,\\ t \sim \mcal{U}([0,1])}} \Big[ \big\| \ve{f}_{\ves{\theta}}\big(t, (1-t)\ve{x}_0 + t \ve{x}_1\big) - (\ve{x}_1 - \ve{x}_0) \big\|^2 \Big].
+  \end{align*}
+  Then, to generate a sample from $\pi_1$, we first sample $\ve{x}_0 \sim \pi_0$, then we compute
+  \begin{align*}
+    \ve{x}_1 = \ve{x}_0 + \int_0^1 \ve{f}_{\ves{\theta}}(\ve{x}_t, t)\, \dee t
+  \end{align*}
+  with an integrator.
+
+  \item Rectified flow bears a lot of similarity to DDIM, but it is different in multiple ways.
+  \begin{itemize}
+    \item Its formulation is a lot simpler.
+    \item It does not have any hyperparameters related to how the two distributions are interpolated.
+    \begin{itemize}
+      \item Linear interpolation is chosen as the first case study. However, other types of interpolation is viable too as long as the paths are differentiable.
+    \end{itemize}
+    \item The starting distribution $\pi_0$ for rectified flow does not have to be a Gaussian distribution like in DDIM.
+  \end{itemize}
+\end{itemize}
+
+\appendix
+
+\section{Proofs}
+
+\begin{itemize}
+  \item \begin{lemma} \label{thm:rectified-flow-and-continuity-equation}
+    Let $\ve{X}$ be rectifiable, and $\ve{Z}$ be the rectified flow induced from $\ve{X}$. The distribution functions $\pi_{\ve{X}}$ and $\pi_{\ve{Z}}$ satisfy the continuity equation \eqref{eqn:continuity-equation}.
+  \end{lemma}
+  
+  \begin{proof}
+    Let $h: \Real^d \rightarrow \Real$ be a compactly supported differentiable function. We have that
+    \begin{align*}
+      \frac{\dee}{\dee t} E[h(\ve{X}(t))] = E\bigg[ \frac{\dee h(\ve{X}(t))}{\dee t} \bigg] = E\bigg[ \sum_{i=1}^d \frac{\partial h}{\partial x_i} \frac{\dee X_i}{\dee t} \bigg] = E[\nabla h(\ve{X}(t))^T \dot{\ve{X}}(t)].
+    \end{align*}
+    Here, $\nabla h$ denotes thes gradient vector $(\partial h/\partial x_1, \partial h /\partial x_2, \dotsc, \partial h / \partial x_d)$. Using the law of iterated expectation, we can replace $\dot{\ve{X}}(t)$ in the above equation with $\ve{v}^{\ve{X}}(t, \ve{X}(t)) = E[\dot{\ve{X}}\, |\, \ve{X}(t)]$. This gives
+    \begin{align*}
+      \frac{\dee}{\dee t} E[h(\ve{X}(t))] = E[\nabla h(\ve{Z}(t))^T \ve{v}^{\ve{X}}(t, \ve{X}(t))].
+    \end{align*}
+
+    We also have that $\ve{Z}(t)$ satisfies
+    \begin{align*}
+      \frac{\dee}{\dee t} E[h(\ve{Z}(t))] = E[\nabla h(\ve{X}(t))^T \ve{v}^{\ve{X}}(t, \ve{Z}(t))].
+    \end{align*}
+    The reasoning is the same as what we did for $\ve{X}(t)$ but simpler. This is because $\dot{\ve{Z}}(t) = \ve{v}^{\ve{X}}(t, \ve{X}(t))$ by construction.
+
+    Now, both $\ve{X}(t)$ and $\ve{Z}(t)$ are examples of random variables $\ve{Y}(t)$ that satisfy the equation 
+    \begin{align*}
+      \frac{\dee}{\dee t} E[h(\ve{Y}(t))] = E[\nabla h(\ve{Y}(t))^T \ve{v}^{\ve{X}}(t, \ve{Y}(t))]
+    \end{align*}
+    for any compactly supported differentiable function $h$. Setting $\ve{f}(t, \ve{y}) := \ve{v}^{\ve{X}}(t, \ve{y})$ and using Lemma~\ref{thm:continuity-equation}, we can conclude that the following equation must hold
+    \begin{align*}
+      \frac{\partial \pi_\ve{Y}(t, \ve{y})}{\dee t} + \nabla \cdot (\ve{v}^{\ve{X}}(t, x) \pi_{\ve{Y}}(t, \ve{y})) = 0,
+    \end{align*}
+    and we can substitute $\ve{Y}$ with either $\ve{X}$ or $\ve{Z}$. We are done.
+  \end{proof}
+
+  \item \begin{lemma} \label{thm:continuity-equation}
+    Let $\ve{f}: \Real \times \Real^d \rightarrow \Real^d$ be any differentiable time-dependent vector field, and $\ve{Y}(t)$ be a stochastic process with differentiable paths. Assume that, for any $h: \Real^d \rightarrow \Real$ be any any compactly supported differentiable function, we have that $$\frac{\dee}{\dee t} E[h(\ve{Y}(t))] = E[\nabla h(\ve{Y}(t))^T \ve{f}(t, \ve{Y}(t))].$$ Then, it holds that 
+    \begin{align} 
+      \frac{\partial \pi_\ve{Y}(t, \ve{y})}{\dee t} + \nabla \cdot (\ve{f}(t, x) \pi_{\ve{Y}}(t, \ve{y})) = 0 \label{eqn:continuity-equation-lemma}
+    \end{align} 
+    where $\pi_{Y}(t, \cdot)$ is defined to be the probability distribution $\pi_{\ve{Y}(t)}(\cdot)$.    
+  \end{lemma}
+
+  \begin{proof}
+    Let $h: \Real^d \rightarrow \Real$ be any any compactly supported differentiable function. We have that $\frac{\dee}{\dee t} E[h(\ve{Y}(t))] = E[\nabla h(\ve{Y}(t))^T \ve{f}(t, \ve{Y}(t))].$ This means that
+    \begin{align*}
+      \frac{\dee}{\dee t} E[h(\ve{Y}(t))] - E[\nabla h(\ve{Y}(t))^T \ve{f}(t, \ve{Y}(t))] = 0.
+    \end{align*}
+    Our task now is to rewrite the two terms above so that the equation becomes more similar to Equation~\ref{eqn:continuity-equation-lemma}.
+
+    First, using Lemma~\ref{thm:dhy-lemma}, we have that 
+    \begin{align*}
+      \frac{\dee}{\dee t} E[h(\ve{Y}(t))] = \int_{\Real^d} h(\ve{y}) \frac{\partial \pi_{\ve{Y}}(t, \ve{y})}{\partial t}\, \dee\ve{y}.
+    \end{align*}
+    Next, we have that
+    \begin{align*}
+      - E[\nabla h(\ve{Y}(t))^T \ve{f}(t, \ve{Y}(t))] 
+      &= - \int_{\Real^d} \nabla h(\ve{y})^T \ve{f}(t, \ve{y}) \pi_{\ve{Y}}(t,\ve{y}) \, \dee\ve{y}.
+    \end{align*}
+    Fixing $t$ and setting $\ve{F}(t,\ve{x}) := \ve{f}(t, \ve{y}) \pi_{\ve{Y}}(t,\ve{y})$, we can use Lemma~\ref{thm:h-divergence-lemma} to deduce that 
+    $$
+    - \int_{\Real^d} \nabla h(\ve{y})^T \ve{f}(t, \ve{y}) \pi_{\ve{Y}}(t,\ve{y}) \, \dee\ve{y}
+    = \int_{\Real^d} h(\ve{y}) \nabla \cdot (\ve{f}(t, \ve{y}) \pi_{\ve{Y}}(t,\ve{y})) \, \dee\ve{y}.
+    $$
+    These derivation gives
+    \begin{align}
+      \int_{\Real^d} h(\ve{y}) \frac{\partial \pi_{\ve{Y}}(t, \ve{y})}{\partial t}\, \dee\ve{y}
+      + \int_{\Real^d} h(\ve{y}) \nabla \cdot (\ve{f}(t, \ve{y}) \pi_{\ve{Y}}(t,\ve{y})) \, \dee\ve{y}
+      &= 0 \notag \\
+      \int_{\Real^d} h(\ve{y}) \bigg( \frac{\partial \pi_{\ve{Y}}(t, \ve{y})}{\partial t} + \nabla \cdot (\ve{f}(t, \ve{y}) \pi_{\ve{Y}}(t,\ve{y}))  \bigg)\, \dee\ve{y}
+      &= 0. \label{eqn:h-multiplied-continuity-equation}
+    \end{align}
+    Note that Equation~\ref{eqn:h-multiplied-continuity-equation} is true for all $h$ that is differentiable and compactly supported. This means that we can set $h$ to be an arbitrary narrow peak around any point $\ve{y} \in \Real^d$ of interest. Thus, if there is any point $\ve{y}$ around which $\frac{\partial \pi_{\ve{Y}}(t, \ve{y})}{\partial t} + \nabla \cdot (\ve{f}(t, \ve{y}) \pi_{\ve{Y}}(t,\ve{y})) \neq 0$, then Equation~\ref{eqn:h-multiplied-continuity-equation} would not hold. It follows that
+    \begin{align*}
+      \frac{\partial \pi_{\ve{Y}}(t, \ve{y})}{\partial t} + \nabla \cdot (\ve{f}(t, \ve{y}) \pi_{\ve{Y}}(t,\ve{y})) = 0
+    \end{align*}
+    as required.
+  \end{proof}
+
+  \item \begin{lemma} \label{thm:dhy-lemma}
+    For any compactly supported and continuous function $h: \Real^d \rightarrow \Real$, 
+    \begin{align*}
+      \frac{\dee}{\dee t} E[h(\ve{Y}(t))] = \int_{\Real^d} h(\ve{y}) \frac{\partial \pi_{\ve{Y}}(t,\ve{y})}{\partial t}\, \dee \ve{y}.
+    \end{align*}
+  \end{lemma}
+  \begin{proof}
+    We have that
+    \begin{align*}
+      \frac{\dee}{\dee t} E[h(\ve{Y}(t))]
+      &= \frac{\dee}{\dee t} \bigg( \int_{\Real^d} h(\ve{y}) \pi_{\ve{Y}}(t, \ve{y})\, \dee\ve{y} \bigg) \\
+      &= \lim_{\Delta t \rightarrow 0} \frac{1}{\Delta t} \bigg( \int_{\Real^d} h(\ve{y}) \pi_{\ve{Y}}(t+\Delta t, \ve{y})\, \dee\ve{y} - \int_{\Real^d} h(\ve{y}) \pi_{\ve{Y}}(t, \ve{y})\, \dee\ve{y} \bigg) \\
+      &= \int_{\Real^d} h(\ve{y}) \bigg( \lim_{\Delta t \rightarrow 0} \frac{\pi_{\ve{Y}}(t+\Delta t, \ve{y}) - \pi_{\ve{Y}}(t, \ve{y})}{\Delta t} \bigg)\, \dee\ve{y} \\
+      &= \int_{\Real^d} h(\ve{y}) \frac{\partial \mu_{\ve{Y}}(t, \ve{y})}{\partial t} \, \dee\ve{y}
+    \end{align*}
+    as required.
+  \end{proof}
+
+  \item \begin{lemma} \label{thm:h-divergence-lemma}
+    Let $h: \Real^d \rightarrow \Real$ be a compactly supported differentiable function. Let $\ve{F}: \Real^d \rightarrow \Real^d$ be a continuously differentiable vector field. We have that
+    \begin{align*}
+      \int_{\Real^d} h(\ve{y}) \nabla \cdot \ve{F}(\ve{y})\, \dee\ve{y} = - \int_{\Real^d} \nabla h(\ve{y})^T \ve{F}(\ve{y})\, \dee\ve{y}.
+    \end{align*}  
+  \end{lemma}
+  \begin{proof}
+    Let $H$ be the support of $h$. We have that $H$ is compact, and so it is closed and bounded. Expand $H$ to $\widetilde{H}$ such that $\widetilde{H}$ has a piecewise smooth boudnary $\partial\widetilde{H}$ such that $h(\ve{y}) = 0$ for all $y \in \partial\widetilde{H}$. 
+    
+    Define $\ve{G}(\ve{y}) := h(\ve{y}) \ve{F}(y)$. We have that $\ve{G}$ is a continuously differentiable vector field such that $\ve{G}(\ve{y}) = \ve{0}$ for all $\ve{y} \in (\Real^d - \widetilde{H}) \cup \partial\widetilde{H}$. We have that
+    \begin{align*}
+      \int_{\Real^d} \nabla \cdot \ve{G}(\ve{y}) \, \dee\ve{y} 
+      = \int_{\widetilde{H}} \nabla \cdot \ve{G}(\ve{y}) \, \dee\ve{y}
+      = \int_{\partial \widetilde{H}} \ve{G}(\ve{y}) \cdot \hat{\ve{n}}(\ve{y})\, \dee\ve{y}
+      = \int_{\partial \widetilde{H}} \ve{0} \cdot \hat{\ve{n}}(\ve{y})\, \dee\ve{y}
+      = 0.
+    \end{align*}
+    Here, $\hat{n}(\ve{y})$ denotes the unit normal vector to the boundary at $\ve{y}$. Note the equation $$\int_{\widetilde{H}} \nabla \cdot \ve{G}(\ve{y}) \, \dee\ve{y}
+    = \int_{\partial \widetilde{H}} \ve{G}(\ve{y}) \cdot \hat{\ve{n}}(\ve{y})\, \dee\ve{y} $$ is the divergence theorem.
+
+    So, we have that
+    \begin{align*}
+      0 
+      &= \int_{\Real^d} \nabla \cdot (h(\ve{y}) \ve{F}(\ve{y})) \, \dee\ve{y}  \\
+      &= \int_{\Real^d} \sum_{i=1}^d \frac{\partial (h F_i) }{\partial y_i} \, \dee\ve{y} \\
+      &= \int_{\Real^d} \sum_{i=1}^d \bigg( \frac{\partial h }{\partial y_i} F_i + h \frac{\partial F_i}{\partial i} \bigg) \, \dee\ve{y} \\
+      &= \int_{\Real^d} \sum_{i=1}^d \frac{\partial h }{\partial y_i} F_i \, \dee\ve{y} + \int_{\Real^d} h \frac{\partial F_i}{\partial i} \, \dee\ve{y} \\
+      &= \int_{\Real^d} \nabla h(\ve{y})^T \ve{F}(\ve{y})\, \dee y + \int_{\Real^d} \ve{h}(\ve{y}) \nabla \cdot \ve{F}(\ve{y}) \, \dee\ve{y}.
+    \end{align*}
+    It follows that $\int_{\Real^d} h(\ve{y}) \nabla \cdot \ve{F}(\ve{y})\, \dee\ve{y} = - \int_{\Real^d} \nabla h(\ve{y})^T \ve{F}(\ve{y})\, \dee\ve{y}$.    
+  \end{proof}
+\end{itemize}
+
+\bibliographystyle{alpha}
+\bibliography{rectified-flow}  
+\end{document}
