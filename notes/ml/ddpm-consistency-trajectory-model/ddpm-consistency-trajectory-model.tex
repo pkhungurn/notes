@@ -1,0 +1,392 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+\usepackage{verbatim}
+\usepackage{hyperref}
+\usepackage{algorithm}
+\usepackage{clrscode3e}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\Dee}{\mathrm{D}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\Var}{\mathrm{Var}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\ves}[1]{\boldsymbol{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+\newcommand{\ov}[1]{\overline{#1}}
+\newcommand{\N}{\mathcal{N}}
+\newcommand{\data}{\mathrm{data}}
+\newcommand{\SNR}{\mathrm{SNR}}
+
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+\title{Consistency Trajectory Models}
+\author{Pramook Khungurn}
+
+\begin{document}
+\maketitle
+
+This note is written as I read the ``Consistency Trajectory Models: Learning Probability Flow ODE Trajectory for Diffusion'' \cite{Kim:2023} paper.
+
+\section{Introduction}
+
+\begin{itemize}
+  \item Consistency trajectory model (CTM) is a follow-up work of consistency model \cite{Song:2023}.
+  
+  \item It is a generalization where it allows evaluating both the end point of a trajectory and the rate of change.
+  
+  \item There are two tricks used:
+  \begin{itemize}
+    \item Extending the model so that it has the start time $t$ and the end time $s$ for the trajectory.
+    \item Reparameterize the model so that it becomes something equilavent to the rate of change when $s \rightarrow t$.
+  \end{itemize}
+  The formulation is interesting.
+  
+  \item However, while the formulation is interesting, the training procedure is complicated and, IMHO, ugly. The paper piles losses after losses to improve the training results. These includes LPIPS and adversarial loss. The resulting improvement is marginal in CIFAR-10 and ImageNet 64, and the differences are so small that you might be able to attribute them initialization.
+\end{itemize}
+
+\section{Preliminary}
+
+\begin{itemize}
+  \item The forward process of a diffusion model is defined by the forward diffusion process.
+  \begin{align*}
+    \dee \ve{x}_t = \sqrt{2t}\, \dee\ve{w}_t
+  \end{align*}
+  with $\ve{x}_0 \sim p_{\data}$. This is the linear noise schedule use in the EDM paper \cite{Karras:2022}.
+
+  \item The backward process is modeled by the reverse-time SDE \cite{Anderson:1982}
+  \begin{align*}
+    \dee \ve{x}_t = - 2t \nabla \log p_t(\ve{x}_t)\, \dee t + \sqrt{2t}\, \dee \overline{\ve{w}}_t
+  \end{align*}
+  where $\dee \overline{\ve{w}}_t$ is the standard Weiner process whose time runs backward, and $p_t(\ve{x}_t)$ is the probability distribution of $\ve{x}_t$ according to the forward process. The backward process, of course, runs backward in time. It is initialized with $\ve{x}_T \sim p_T$.
+
+  \item The deterministic counterpart of the reverse-time ODE is the probability flow (PF) ODE:
+  \begin{align*}
+    \frac{\dee \ve{x}_t}{\dee t} = -t \nabla \log p_t(\ve{x}_t) = \frac{\ve{x}_t - E_{p_{t \rightarrow 0}(\ve{x}|\ve{x}_t)}[\ve{x}|\ve{x}_t]}{t}
+  \end{align*}
+  where $p_{t \rightarrow 0}(\ve{x}|\ve{x}_t)$ is the probability distribution of the solution of the reverse-time stochastic process from time $t$ to zero, initiated from $\ve{x}_t$. 
+  
+  \item The expression $E_{p_{t \rightarrow 0}(\ve{x}|\ve{x}_t)}[\ve{x}|\ve{x}_t]$ is referred to by the paper as the ``denoiser.'' By Tweedie's formula, we have that
+  \begin{align*}
+    E_{p_{t \rightarrow 0}(\ve{x}|\ve{x}_t)}[\ve{x}|\ve{x}_t] = \ve{x} + t^2 \nabla \log p_t(\ve{x}_t).
+  \end{align*}
+  
+  \item The denoiser is modeled by a neural network $D_{\ves{\phi}}$, which is trained with the denoising score matching loss:
+  \begin{align*}
+    \mcal{L}(\ves{\phi}) = E_{\substack{\ve{x}_0 \sim p_{\data}, \\ t \sim p_{\mrm{time}}, \\ \ve{x} \sim p_{0 \rightarrow t}(\ve{x}|\ve{x}_0)  }} \Big[ \| \ve{x}_0 - D_{\ves{\phi}}(\ve{x}, t) \|^2 \Big]
+  \end{align*}
+  where $p_{0 \rightarrow t}(\ve{x}|\ve{x}_t)$ is the conditional probability of the forward process that is initiated at a particular data point $\ve{x}_0$.
+
+  \item The empirical ODE that is used for sampling is given by
+  \begin{align*}
+    \frac{\dee \ve{x}_t}{\dee t} = \frac{\ve{x}_t - D_{\ves{\phi}}(\ve{x}_t, t)}{t}.
+  \end{align*}
+  Sampling thus involves computing the integral
+  \begin{align*}
+    \int_{T}^0 \frac{\dee \ve{x}_t}{\dee t}\, \dee t,
+  \end{align*}
+  which is equivalent to
+  \begin{align*}
+    \ve{x}_0 = \ve{x}_t + \int_T^0 \frac{\ve{x}_t - D_{\ves{\phi}}(\ve{x}_t,t)}{t}\, \dee t.
+  \end{align*}
+\end{itemize}
+
+\section{Method}
+
+\subsection{The Model}
+
+\begin{itemize}
+  \item CTM predicts both infinitestimal changes and intermediate points of the PF ODE.
+  
+  \item Let $G(\ve{x}_t, t, s)$ be the solution of the PF ODE from the initial condition $\ve{x}_t$ at time $t$ to the final time $s \leq t$
+  \begin{align*}
+    G(\ve{x}_t, t, s) := \ve{x}_t + \int_t^s \frac{\ve{x}_u - E_{p_{u \rightarrow 0}}[\ve{x}|\ve{x}_u]}{u}\, \dee u
+  \end{align*}
+
+  \item Now, we may rewrite $G$ with something closer to the DDIM update rule:
+  \begin{align*}
+    \ve{x}_s \approx \frac{\sigma_s}{\sigma_t} \ve{x}_t + \bigg(\alpha_s - \alpha_t \frac{\sigma_s}{\sigma_t} \bigg) E[\ve{x}|\ve{x}_t].
+  \end{align*}
+  In our case, $\sigma_t = t$ and $\alpha_t = 1$. So, the write would be something like this:
+  \begin{align*}
+    G(\ve{x}_t, t, s) =  \frac{s}{t}\ve{x}_t + \bigg(1 - \frac{s}{t} \bigg) \times \mathrm{something}.
+  \end{align*}
+  where the ``something'' should approach $E[\ve{x}|\ve{x}_t]$ as $s \rightarrow t$.
+  
+  \item The expression for ``something'' in this paper is as in the following lemma.
+  \begin{lemma}
+    Suppose that the score satisfies $\sup_{\ve{x}} \int_0^T \| \nabla \log p_u(\ve{x}) \|\, \dee u < \infty$. Then, $G(\ve{x}_t, t, s)$ can be expressed as:
+    \begin{align*}
+      G(\ve{x}_t, t, s) = \frac{s}{t}\ve{x}_t + \bigg( 1 - \frac{s}{t} \bigg) g(\ve{x}_t, t, s)
+    \end{align*}
+    where
+    \begin{align*}
+      g(\ve{x}_t, t, s) = \ve{x}_t + \frac{t}{t-s} \int_t^s \frac{\ve{x}_u - E_{p_{u \rightarrow 0}}[\ve{x}|\ve{x}_u]}{u}\, \dee u
+    \end{align*}
+    Here, $g$ satisfies:
+    \begin{itemize}
+      \item When $s = 0$, we have that $G(\ve{x}_t, t, 0) = g(\ve{x}_t, t, 0)$.
+      \item As $s \rightarrow t$, we have that $g(\ve{x}_t, t, s) \rightarrow E_{p_{t \rightarrow 0}(\ve{x}|\ve{x}_t)}[\ve{x}| \ve{x}_t]$.
+    \end{itemize}
+  \end{lemma}
+
+  \item CTM seeks to approximate the little $g$ function with a neural network $g_{\ves{\theta}}$ so that we have a neural network
+  \begin{align*}
+    G_{\ves{\theta}}(\ve{x}_t, t, s) := \frac{s}{t} \ve{x}_t + \bigg(1 - \frac{s}{t}\bigg)g_{\ves{\theta}}(\ve{x}_t, t, s).
+  \end{align*}
+  This parametermization gives $G_{\ves{\theta}}(\ve{x}_t, t, t) = \ve{x}_t$ for free, which helps with training stability.
+\end{itemize}
+
+\subsection{Training}
+
+\begin{itemize}
+  \item Our goal is to make sure that the neural network should match the groundtruth integrator $G$.
+  \begin{align*}
+    G_{\ves{\theta}}(\ve{x}_t, t, s) \sim G(\ve{x}_t, t, s)
+  \end{align*}
+  for any $s \leq t$. 
+
+  \item We don't have access directly to $G$. However, if we have a teacher diffusion model $D_{\ves{\phi}}$ we can approximate it with an ODE solver:
+  \begin{align}
+    G_{\ves{\theta}}(\ve{x}_t, s) \approx \textsc{Solver}(\ve{x}_t, t, s; \ves{\phi}). \label{eqn:global-consistency-matching}
+  \end{align}
+  
+  \item Equivalently, we can also instead relax the goal and try to match local consistency:
+  \begin{align}
+    G_{\ves{\theta}}(\ve{x}_t, t, s) \approx G_{\widetilde{\ves{\theta}}}(\textsc{Solver}(\ve{x}_t, t, t-\Delta; \ves{\phi}), t-\Delta t, s) \label{eqn:local-consistency-matching}
+  \end{align}
+  where $\Delta t \in [0, t-s]$ and $\widetilde{\ves{\theta}}$ is the slow varying parameters of $G$ computed by EMA:
+  \begin{align*}
+    \widetilde{\ves{\theta}}^{(k+1)} := \mu \widetilde{\ves{\theta}}^{(k+1)} + (1-\mu)\ves{\theta}.
+  \end{align*}
+  The paper says their models work well with $\mu = 0.999$ or $\mu = 0.9999$.
+
+  \item We note that the goals \eqref{eqn:global-consistency-matching} and \eqref{eqn:local-consistency-matching} can be summarized into one same goal the paper call ``soft matching'':
+  \begin{align}
+    G_{\ves{\theta}}(\ve{x}_t, t, s) \approx G_{\widetilde{\ves{\theta}}}(\textsc{Solver}(\ve{x}_t, t, u; \ves{\phi}), u, s) \label{eqn:soft-matching}
+  \end{align}
+  for any $u \in [t,s)$. This is because, when $u = s$, we have that $$G_{\ves{\theta}}(\textsc{Solver}(\ve{x}_t, t, s; \ves{\phi}), s, s) = \textsc{Solver}(\ve{x}_t, t, s; \ves{\phi})$$ by how $G_{\ves{\theta}}$ is parameterized.
+
+  \item We now need to turn the goal \eqref{eqn:soft-matching} into a loss function. The paper chooses to slap $G_{\widetilde{\ves{\theta}}}(\cdot, s, 0)$ to both sides of the equation.
+  \begin{align*}
+    \ve{x}_{\mrm{est}}(\ve{x}_t, t, s) &= G_{\mrm{sg}(\ves{\theta})}(G_{\ves{\theta}}(\ve{x}_t, t, s), t, s) \\
+    \ve{x}_{\mrm{target}}(\ve{x}_t, t, u, s) &= G_{\mrm{sg}(\ves{\theta})}(G_{\widetilde{\ves{\theta}}}(\textsc{Solver}(\ve{x}_t, t, u; \ves{\phi}), u, s), t, s) \\
+  \end{align*}
+  Then it computes some kind of distance between $\ve{x}_{\mrm{est}}$ and $\ve{x}_{\mrm{target}}$. The paper cites several reasons for this:
+  \begin{itemize}
+    \item The diffusion model here has the variance exploding formulation. If we compare the values at time $s$, the loss may overemphasize differences at large times because of the scale of the values.
+    
+    \item Values at time $s > 0$ are noisy. It is hard to use losses that are specialized to images such as perceptual loss, LPIPS, or adversarial loss on these values.    
+  \end{itemize}
+
+  \item So, to learn consistent trajectory, we use the following loss:
+  \begin{align*}
+    \mcal{L}_{\mrm{CTM}}(\ves{\theta}) = E_{\substack{\ve{x}_0 \sim p_{\data}, \\ t \in [0,T], \\ s \in [0,t], \\ u \in [s,t), \\ \ve{x}_t \sim p_{0 \rightarrow t}(\ve{x}_t|\ve{x}_0) }} \big[ d(\ve{x}_{\mrm{est}}(\ve{x}_t, t, s)), \ve{x}_{\mrm{target}}(\ve{x}_t, t, u, s) \big]
+  \end{align*}
+
+  \item Training with the above loss, however, might lead to inaccurate estimiation of $g_{\ves{\theta}}$ when $s$ approaches $t$ because its weight, $1 - s/t$ approaches $0$. To mitigate this problem, we use the fact that $g_{\ves{\theta}}$ should approximate $E[\ve{x}_0|\ve{x}_t]$ when $s = t$. This leads to the denoising score matching (DSM) loss:
+  \begin{align*}
+    \mcal{L}_{\mrm{DSM}}(\ves{\theta}) = E_{\substack{\ve{x}_0 \sim p_{\data}, \\ t \in [0,T], \\ \ve{x}_t \sim p_{0 \rightarrow t}(\ve{x}_t|\ve{x}_0) }} \big[  \| \ve{x}_0 - g_{\ves{\theta}}(\ve{x}_t, t, t) \|^2  \big].
+  \end{align*}
+
+  \item In order to enhance CTM's performance beyond the teacher $D_{\ves{\phi}}$, we can also slap adversarial loss on $\ve{x}_{\mrm{est}}$:
+  \begin{align*}
+    \mcal{L}_{\mrm{GAN}}(\ves{\theta}, \ves{\eta}) = E_{\ve{x}_0 \sim p_{\data}}\big[\log D_{\ves{\eta}}(\ve{x}_0)\big] +  E_{\substack{\ve{x}_0 \sim p_{\data}, \\ t \in [0,T], \\ \ve{x}_t \sim p_{0 \rightarrow t}(\ve{x}_t|\ve{x}_0) }} \big[  \log(1 - D_{\ves{\eta}}(\ve{x}_{\mrm{est}}(\ve{x}_t, t, 0)))  \big]
+  \end{align*}
+  where $D_{\ves{\eta}}$ is a discriminator network.
+
+  \item The overall loss function is given by
+  \begin{align*}
+    \mcal{L}(\ves{\theta},\ves{\eta}) = \mcal{L}_{\mrm{CTM}}(\ves{\theta}) +  \lambda_{\mrm{DSM}} \mcal{L}_{\mrm{DSM}}(\ves{\theta}) + \lambda_{\mrm{GAN}} \mcal{L}_{\mrm{GAN}}(\ves{\theta}, \ves{\eta}).
+  \end{align*}
+
+  \item The training algorithm is as follows:
+  \begin{itemize}
+    \item[] {\bf repeat}
+    \item[] \begin{itemize}
+      \item[] Sample $\ve{x} \sim p_{\data}$.
+      \item[] Sample $\ves{\xi} \sim \mcal{N}(\ve{0},I)$.
+      \item[] Sample $t \in [0,T]$, $s \in [0,T]$, and $u \in [s,t]$.
+      \item[] Calculate $\ve{x}_t \leftarrow \ve{x}_0 + \ves{\xi}$.
+      \item[] Calculate $\textsc{Solver}(\ve{x}_t, t, u; \ves{\phi})$.
+      \item[] Update $\ves{\theta} \leftarrow \ves{\theta} - \alpha \frac{\partial}{\partial \ves{\theta}} \mcal{L}(\ves{\theta}, \ves{\eta})$.
+      \item[] Update $\ves{\eta} \leftarrow \ves{\eta} + \alpha \frac{\partial}{\partial \ves{\theta}} \mcal{L}_{\mrm{GAN}}(\ves{\theta}, \ves{\eta})$.
+      \item[] Update $\widetilde{\ves{\theta}} \leftarrow \mu\widetilde{\ves{\theta}} + (1 - \mu)\ves{\theta}$.
+    \end{itemize}
+    \item[] {\bf until} converge
+  \end{itemize}
+  Here, $\alpha$ is the learning rate.
+\end{itemize}
+
+\subsection{Training from Scratch}
+
+\begin{itemize}
+  \item We can replace $D_{\ves{\phi}}(\ve{x}_t, t)$ with $\ve{g}_{\ves{\theta}}(\ve{x}_t, t, t)$.
+  
+  \item So, $\ve{x}_{\mrm{target}}$ now becomes $G_{\widetilde{\ves{\theta}}}(G_{\ves{\ves{\theta}}}(\textsc{Solver}(\ve{x}_t, t, u; \widetilde{\ves{\theta}}), u, s), s, 0).$
+\end{itemize}
+
+\subsection{Implementation Details}
+
+\begin{itemize}
+  \item Datasets: CIFAR-10 and ImageNet 64.
+
+  \item Hardware.
+  \begin{itemize}
+    \item CIFAR-10: Four V100 GPUS, each with 16G RAM.
+    \item ImageNet 64: Eight A100 GPUs, each with 40G RAM.
+  \end{itemize}
+  It seems that they used ABCI?
+
+  \item The paper parametermizes $g_{\ves{\theta}}$ with the EDM conditioning:
+  \begin{align*}
+    g_{\ves{\theta}(\ve{x}_t, t, s)} = \frac{\sigma_{\data}^2}{t^2 + \sigma_{\data}^2} \ve{x}_t + \frac{t \sigma_{\data}}{\sqrt{t^2 + \sigma_{\data}^2}} \mrm{NN}_{\ves{\theta}}(\ve{x}_t, t, s).
+  \end{align*}
+  where $\mrm{NN}_{\ves{\theta}}$ is a neural network, and $\sigma_{\data} = 0.5$. 
+  
+  \item I'm not so sure whether they scale $\ve{x}_t$ with $1/(t^2 + \sigma^2_{\data})$ like the EDM paper does. Maybe the authors just forgot to mention this.
+
+  \item $g_{\ves{\theta}}$ is initalized to the parameters of the teacher $D_{\ves{\phi}}$.
+    
+  \item Training has two phases based on whether the adversarial loss is used or not.
+  \begin{itemize}
+    \item For CIFAR-10, $\lambda_{\mrm{GAN}}$ is set to $0$ for the first 50K iterations. It then gratually increases $1$.
+    \item For ImageNet 64, $\lambda_{\mrm{GAN}}$ is set to $0$ for the first 10K iterations. It then gratually increases $1$.
+  \end{itemize}
+
+  \item Batch sizes for non-adversarial losses:
+  \begin{itemize}
+    \item CIFAR-10: 256
+    \item ImageNet 64: 2048
+  \end{itemize}
+
+  \item Batch sizes for adversarial loss:
+  \begin{itemize}
+    \item CIFAR-10: 64 in the first phase (16 for each GPU), and 44 in the second phase (11 for each GPU) after $\mcal{L}_{\mathrm{GAN}}$ is activate.
+    \item ImageNet 64: 128 in the first phase (16 for each GPU), and 88 in the second phase (11 for each GPU).
+  \end{itemize}
+
+  \item The paper uses LPIPS loss for the difference function $d$ in $L_{\mrm{CTM}}$.
+  
+  \item Sampling of $t$ and $s$ are based on $N$ discretized time steps used in the consistency model paper \cite{Song:2023}.
+  \begin{itemize}
+    \item For CIFAR-10, the paper sets $N = 18$.
+    \item For ImageNet 64, the paper sets $N = 40$.
+  \end{itemize}
+  
+  \item Evaluating the $\textsc{Solver}$ function.
+  \begin{itemize}
+    \item For CIFAR-10, the paper fixes the maximum number of ODE steps to 17.
+    \item For ImageNet 64, the paper fixes the maximum number of ODE steps to 20.
+  \end{itemize}
+  If we increase the number of maximum ODE steps, the results would be better. The paper does not specify what ODE solver it uses, but I would assume it's Heun's method.
+
+  \item $\mcal{L}_{\mrm{DSM}}$ calculation.
+  \begin{itemize}
+    \item For $50\%$ of the time, the samper sample $t$ from the EDM's original scheme $\log t \sim \mcal{N}(-1.2, 1.2^2)$.
+    \item For $50\%$ of the time, the paper samples $\xi \sim \mcal{U}([0,0.7])$, and then transforms it to $$t \leftarrow (\sigma_{\max}^{1/\rho} + \xi(\sigma_{\min}^{1/\rho} - \sigma_{\max}^{1/\rho}))^{\rho}.$$ So that the training can work on large times. Here, $\sigma_{\min} = 0.002$, $\sigma_{\max} = 80$, and $\rho = 7$.
+  \end{itemize}
+
+  \item $\mcal{L}_{\mrm{GAN}}$ calculation.
+  \begin{itemize}
+    \item Use two feature extractors.
+    \begin{itemize}
+      \item EfficientNet.
+      \item DeIT-base.
+    \end{itemize}
+    \item Before obtaining the features, upscale the images to $224 \times 224$ with bilinear interpolation.
+    \item Apply cross-channel mixing and cross-scale mixing like the StyleGAN-XL paper.
+    \item Cross-scale mixing results in a feature pyramid which has four different resolutions.
+    \item Hence, there are 8 discriminators: 4 for EfficientNet, and 4 for DeIT-base.
+  \end{itemize}
+
+  \item Learning reates
+  \begin{itemize}
+    \item CIFAR-10: $4 \times 10^{-4}$ for the generator and $2 \times 10^{-3}$ for the discriminators.
+    \item ImageNet 64: $8 \times 10^{-6}$ for the generator and $2 \times 10^{-3}$ for the discriminators.
+  \end{itemize}
+
+  \item EMA
+  \begin{itemize}
+    \item CIFAR-10: $\mu = 0.9999$
+    \item ImageNet 64: $\mu = 0.999$.
+  \end{itemize}
+
+  \item Training length:
+  \begin{itemize}
+    \item CIFAR-10: 100K iterations.
+    \item ImageNet 64: 30K iterations.
+  \end{itemize}
+\end{itemize}
+
+\section{Sampling}
+
+\begin{itemize}
+  \item CTM enables normal score evaluation through $\ve{g}_{\theta}(\ve{x}_t, t, t)$.
+  
+  \item CTM also enable long jumps using an algorithm called $\gamma$-sampling.
+  \begin{itemize}
+    \item Suppose the sampling time steps are $T = t_0 > t_1 > \dotsb > t_N = 0$.
+    \item We first sample $\ve{x}_{t_0} \sim \mcal{N}(0, \sigma_{\max}^2 I)$.
+    \item Suppose we have sampled $\ve{x}_{t_i}$.
+    \begin{itemize}
+      \item Use $G_{\ves{\theta}}(\ve{x}_{t_0}, t_0, \sqrt{1 - \gamma^2} t_1)$ to get a sample, overshooting $t_1$ by a little.
+      \item Then, we add $\gamma t_1 \ves{\xi}$ to the sample where $\xi \in \mcal{N}(\ve{0},I)$ to get back to the noise level at $t_1$.
+    \end{itemize}
+    \item We repeat the process until we get to $t_N = 0$. (Of course, we have to be careful of the boundary case.)
+  \end{itemize}
+\end{itemize}
+
+\section{Results}
+
+\begin{itemize}
+    \item CIFAR-10
+    \begin{itemize}
+      \item 1 NFE: 1.98 (unconditional), 1.73 (conditional), 2.39 (from scratch unconditional)
+      \item 2 NFEs: 1.87 (unconditional), 1.63 (conditional)      
+    \end{itemize}
+    \item ImageNet 64
+    \begin{itemize}
+      \item 1 NFE: 2.06
+      \item 2 NFEs: 1.90
+    \end{itemize}
+\end{itemize}
+
+\bibliographystyle{alpha}
+\bibliography{ddpm-consistency-trajectory-model}  
+\end{document}
