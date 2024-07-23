@@ -255,7 +255,7 @@ This note was written as I read the ``Flow Matching for Generative Modeling'' pa
   \begin{align*}
     u_t(x'|x_{\data}) 
     &= \bigg( \frac{x' - \mu_t(x_{\data})}{\sigma_t(x_{\data})} \bigg) \nabla_1 \sigma_t(x_{\data}) + \nabla_1 \mu_t(x_{\data}) \\
-    &= \frac{\nabla \sigma_t(x_{\data})}{\sigma_t(x_{\data})}(x' - \mu_t(x_{\data})) + \nabla_1 \mu_t(x_{\data}).
+    &= \frac{\nabla_1 \sigma_t(x_{\data})}{\sigma_t(x_{\data})}(x' - \mu_t(x_{\data})) + \nabla_1 \mu_t(x_{\data}).
   \end{align*}
 
   \item \begin{theorem}
@@ -266,7 +266,7 @@ This note was written as I read the ``Flow Matching for Generative Modeling'' pa
     \end{itemize}
     Then, the vector field
     \begin{align*}
-      u_t(x|x_{\data}) = \frac{\nabla \sigma_t(x_{\data})}{\sigma_t(x_{\data})}(x - \mu_t(x_{\data})) + \nabla_1 \mu_t(x_{\data})
+      u_t(x|x_{\data}) = \frac{\nabla_1 \sigma_t(x_{\data})}{\sigma_t(x_{\data})}(x - \mu_t(x_{\data})) + \nabla_1 \mu_t(x_{\data})
     \end{align*}
     generates the flow
     \begin{align*}
@@ -425,13 +425,41 @@ This note was written as I read the ``Flow Matching for Generative Modeling'' pa
 
   \item Variance-exploding case.
   \begin{itemize}
-    \item Given $x_{\data}$, we have that $p_t(x|x_1) = \mcal{N}(x; x_{\data}, \sigma_)$
+    \item Given $x_{\data}$, we have that $p_t(x|x_{\data}) = \mcal{N}(x; x_{\data}, \sigma_t^2 I )$ where $\sigma_1 = 0$ and $\sigma_0 \gg 1$. 
+    \item Hence, $\mu_t(x_{\data}) = x_{\data}$, and $\sigma_t(x_{\data})$ does not depend on $x_{\data}$.
+    \item As a resulit, the conditional vector field is given by
+    \begin{align*}
+      u_t(x|x_\data) = \frac{\sigma'_t}{\sigma_t} (x - x_{\data}).
+    \end{align*}
   \end{itemize}
 
-  \item Variance-preservin case
+  \item Variance-preserving case.
   \begin{itemize}
-    \item 
+    \item Given $x_{\data}$, we have that $p_t(x|x_{\data}) = \mcal{N}(x; \alpha_t x_{x_{\data}}, (1 - \alpha_t^2)I)$ where $\alpha_t: [0,1] \rightarrow \Real^{+} \cup \{ 0 \}$ is a real function such that $\alpha_0 = 0$ and $\alpha_1 = 1$.
+    
+    \item In other words, $\mu_t(x_{\data}) = \alpha_t x_{\data}$ and $\sigma_t(x_{\data}) = \sqrt{1-\alpha_t^2}$.
+    
+    \item The conditonal vector field is given by
+    \begin{align*}
+      u_t(x|x_{\data}) 
+      &= \frac{\{ \sqrt{1 - \alpha_t^2} \}' }{\sqrt{1-\alpha_t^2}} (x - \alpha_t x_{\data}) + \alpha_t' x_{\data} \\
+      &= \frac{-\alpha_t \alpha_t'}{1 - \alpha_t^2}(x - \alpha_t x_{\data}) + \alpha' x_{\data}.
+    \end{align*}
   \end{itemize}
+\end{itemize}
+
+\subsection{Optimal Transport Conditional Vector Fields}
+
+\begin{itemize}
+  \item We simply make $\mu_t$ and $\sigma_t$ linear functions of time.
+  \begin{align*}
+    \mu_t(x_{\data}) &= t x_{\data}, \\
+    \sigma_t(x_{\data}) &= 1 - (1-\sigma_{\min})t.
+  \end{align*}
+  This leads to the conditional vector field
+  \begin{align*}
+    u_t(x|x_{\data}) = \frac{-(1-\sigma_{min})}{1 - (1-\sigma_{\min}) t} (x - t x_{\data}) + x_{\data} = \frac{x_{\data} - (1-\sigma_{\min})x}{1 - (1-\sigma_{\min}) t}.
+  \end{align*}
 \end{itemize}
 
 \appendix
