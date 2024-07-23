@@ -46,6 +46,7 @@
 \newcommand{\Real}{\mathbb{R}}
 \newcommand{\sseq}{\subseteq}
 \newcommand{\ov}[1]{\overline{#1}}
+\newcommand{\data}{\mathrm{data}}
 
 \title{Flow Matching for Generative Modeling}
 \author{Pramook Khungurn}
@@ -74,16 +75,18 @@ This note was written as I read the ``Flow Matching for Generative Modeling'' pa
   
   \item A {\bf time-dependent vector field} is a function $v: [0,1] \times \Real^d \rightarrow \Real^d$.
   
-  \item Given a time dependent vector field $v$, its {\bf flow} is another vector field $\phi: [0,1] \times \Real^d \rightarrow \Real^d$ defined by the ordinary differential equation
-  \begin{align*}
-    \frac{\dee}{\dee t} \phi_t(x) = v_t(\phi_t(x))
-  \end{align*}
+  \item Given a time dependent vector field $v$, its {\bf flow} is another vector field $\phi: [0,1] \times \Real^d \rightarrow \Real^d$ defined by the differential equation
+  \begin{align}
+    \frac{\partial}{\partial t} \phi_t(x) = v_t(\phi_t(x)) \label{eqn:flow}
+  \end{align}
   and the initial condition $\phi_0(x) = x$.
   \begin{itemize}
     \item In other words, $\phi_t(x)$ is the position at time $t$ of the particle that starts at $x$ at time $0$ and follows the trajectory defined by taking $v$ as the time-dependent vector field.
+    
+    \item We say that $v_t$ {\bf generates} $\phi_t$.
   \end{itemize}
 
-  \item Chen \etal\ proposed the {\bf neural ordinary differential equation}model \cite{Chen:2019}. The idea is to model the vector field $v$ with a neural network $v_t(x;\theta)$. We then train it so that $\phi_1$ has the property that we want.
+  \item Chen \etal\ proposed the {\bf neural ordinary differential equation} model \cite{Chen:2019}. The idea is to model the vector field $v$ with a neural network $v_t(x;\theta)$. We then train it so that $\phi_1$ has the property that we want.
   \begin{itemize}
     \item If you want a refresher on neural ODE, then read my previous note on it \cite{Khungurn:neuralODE}.
   \end{itemize}
@@ -95,7 +98,7 @@ This note was written as I read the ``Flow Matching for Generative Modeling'' pa
   \end{itemize}
   Let us denote the probability density of $x'$ by $p_t$. It follows thet
   \begin{align}
-    p_t(x') = p_0(\phi_t^{-1}(x'))\, \det \bigg[ \frac{\partial \phi_t^{-1}}{\partial x}(x') \bigg].\label{eqn:cnf-prob-xform}
+    p_t(x') = p_0(\phi_t^{-1}(x'))\, \det \bigg[ \frac{\partial \phi_t^{-1}}{\partial x}(x') \bigg]. \label{eqn:cnf-prob-xform}
   \end{align}
   This is the standard formula for tranformation of probability distribution. You can find this in section 3.1 on my notes on the subject \cite{Khungurn:ProbXform}.
 
@@ -103,7 +106,7 @@ This note was written as I read the ``Flow Matching for Generative Modeling'' pa
   
   First, we note that $\phi_t(x) = q(t,x)$ is a function that maps a $(d+1)$-dimensional space to a $d$-dimensional space. So, we can treat it in the same way as a function of signature $\Real^{d+1} \ra \Real^d$. In other words, we can say that $\phi$ takes $d+1$ inputs. We can then divide the $d+1$ inputs into two blocks.
   \begin{itemize}
-    \item The first block is the first argument alone. Using Python slice notation, it is ``$1:2$.''. Using my ``chapter'' notation, it can be abbreviated as $\S 1$.
+    \item The first block is the first argument alone. Using Python slice notation, it is ``$1:2$.'' Using my ``chapter'' notation, it can be abbreviated as $\S 1$.
     
     \item The second block is the rest of the arguments. Using Python slice notation, it is ``$2:d+2$.'' Using my ``chapter'' notation, it can be abbreviate as $\S 2$.
   \end{itemize}
@@ -112,17 +115,24 @@ This note was written as I read the ``Flow Matching for Generative Modeling'' pa
     p_t(x') = p_0(\phi_t^{-1}(x'))\, \det \nabla_{\S 2} \phi^{-1}_t(x')
   \end{align*}
   or, to be even briefer
-  \begin{align*}
-    p_t(x') = p_0(\phi_t^{-1}(x'))\, | \nabla_{\S 2} \phi^{-1}_t(x') |
-  \end{align*}
+  \begin{align}
+    p_t(x') = p_0(\phi_t^{-1}(x'))\, | \nabla_{\S 2} \phi^{-1}_t(x') |. \label{eqn:cnf-prob-xform-my-notation}
+  \end{align}
 
-  \item Let $f: \Real^d \ra \Real$ and let $v: \Real^d \ra \Real^d$. A {\bf push-foward} (or a change of variable) of $f$ according to $v$ is a function of $g:\Real^d \ra \Real$ defined by
+  \item Note that we can rewrite Equation~\eqref{eqn:flow} using my notation as:
+  \begin{align}
+    \nabla_1 \phi_t(x) = v_t(\phi_t(x)). \label{eqn:flow-my-notation}
+  \end{align}
+
+  \item Let $f: \Real^d \ra \Real$ and let $v: \Real^d \ra \Real^d$. A {\bf push-forward} (or a change of variable) of $f$ according to $v$ is a function of $g:\Real^d \ra \Real$ defined by
   \begin{align*}
     g(y) = f(v^{-1}(y))\, |\nabla v^{-1}(y)|. 
   \end{align*}
   Here, $\nabla$ denotes the derivative operator, which gets you the Jacobian matrix. We denote the push-forward of $f$ according to $v$ as $[v]_* f$.
 
   \item In the context of the discussion so far, we have that $p_t = [\phi_t]_* p_0$.
+  
+  \item When a time-dependent vector field $v_t$ generetes a flow $\phi_t$ and when $p_t = [\phi_t]_* p_0$,\\ we says that $v_t$ {\bf generates} $p_t$.
   
   \item When we use a neural ODE to transform a probability distribution from one to another (i.e., transforming $p_0$ from $p_1$), we call the resulting model a {\bf continuous normalizing flow} model. 
 \end{itemize}
@@ -134,46 +144,336 @@ This note was written as I read the ``Flow Matching for Generative Modeling'' pa
 \begin{itemize}
   \item We want to use the above framework to transform a simple noise distribution $p_0 = p_{\mrm{noise}}$ to a data distribution $p_1 = p_{\mrm{data}}$.
   \begin{itemize}
-    \item $p_{\mrm{noise}}$ is typically a Gaussian distribution $p_0 = \mcal{N}(0,I)$.
+    \item $p_{\mrm{noise}}$ is typically a Gaussian distribution $p_{\mrm{noise}} = \mcal{N}(0,I)$.
     \item As in most ML settings, we do not have access to the density function $p_{\mrm{data}}$, but we only have samples from the distribution.
   \end{itemize}
 
   \item Suppose we know a probability path $p_t$ and a time-dependent vector field $u_t$ that has the following property:
   \begin{itemize}
     \item $p_0$ is the desired noise distribution, and $p_1$ is the desired data distribution.
-    \item $u_t$ is the vector field such that $p_t = [u_t]_* p_0$.
+    \item $u_t$ generates $p_t$.
   \end{itemize}
   Suppose again that we want to model $u_t$ with a neural network $v_t(x; \theta)$. Then, we may do it my minimizing the {\bf flow matching objective}:
-  \begin{align*}
-    \mcal{L}_{\mrm{FM}}(\theta) = E_{t ~ \mcal{U}([0,1]), x \sim p_t} \big[ \| u_t(x) - v_t(x; \theta) \|^2 \big].
-  \end{align*}
+  \begin{align}
+    \mcal{L}_{\mrm{FM}}(\theta) = E_{\substack{t \sim \mcal{U}([0,1]),\\ x \sim p_t(x)}} \big[ \| u_t(x) - v_t(x; \theta) \|^2 \big]. \label{eqn:flow-matching-loss}
+  \end{align}
 
   \item The flow maching objective is usable if we know $p_t$ and $u_t$ before hand. However, in our settings, we do not know anything about $u_t$, and we only know $p_0 = p_{\mrm{noise}}$ and $p_1 = p_{\mrm{data}}$ but nothing in between.
 \end{itemize}
 
-\subsection{Rewriting condtional paths and vector fields}
+\subsection{Special Case: Single Item Dataset}
 
 \begin{itemize}
-  \item We still do not know what $p_t$ exactly is, but let us engage in wishful thinking and try to dictate its form.
+  \item One of the difficulty we are facing right now is that $p_{\mrm{data}}$ can be quite complicated and that we only have access to its samples, not a function that can evaluate the density of sample from the distribution.
   
-  \item Let $x_1 \sim p_{\mrm{data}}$ be a data item. We look at the conditional probability density $p_t(x|x_1)$. Let us require that
-  \begin{enumerate}
-    \item $p_0(x|x_1) = p_{\mrm{noise}}(x)$, and
-    \item $p_1(x|x_1) = \mcal{N}(x; x_1, \sigma^2I)$ where $\sigma$ is a small number.
-  \end{enumerate}
+  \item So, let's start with a special case where the distribution can generate exactly one data item. Let us call this item $x_{\mrm{data}}$. 
+  \begin{itemize}
+    \item You know where this is going. We will later approximate $p_{\mrm{data}}$ as a mixture of the distributions of individual samples. So, stay tuned and work with this special case first.
+  \end{itemize}
+  
+  \item The distribution $p_{\mrm{data}}$ is given by $p_{\mrm{data}}  = \delta(x_{\mrm{data}})$ where $\delta$ is the Dirac delta function.
+  
+  \item We want to derive a vector field $u_t$ that generates a probability distribution $p_t$ so that (1) $p_0 = p_{\mrm{noise}} = \mcal{N}(0,I)$ and $p_1 = p_{\mrm{data}} = \delta(x_{\mrm{data}})$.
+  
+  \item Unfortunately, I don't think there is a finite-time process that can turn a Gaussian distribution into a delta distribution. So, we will settle for an approximation. We instead require that $$p_1 = \mcal{N}(x_{\mrm{data}}, \sigma_{\min}^2 I )$$ where $\sigma_{\min}$ is a small positive constant.
 
-  \item Now, we have that
+  \item Since $u_t$ and $p_t$ we shall derive is specific to $x_{\mrm{data}}$, we may write them as ``conditional'' vector field and probability density, using the notation $u_t(\cdot|x_{\mrm{data}})$ and $p_t(\cdot|x_{\mrm{data}})$.
+  \begin{itemize}
+    \item Of course, this will be used later when we approximate of $p_{\mrm{data}}$ as a mixture of single item distributions.
+  \end{itemize}
+
+  \item In other words, we want to find a time-dependent vector field $u_t(\cdot|x_{\data})$ that generates a probability path $p_t(\cdot|x_{\data})$ such that
+  \begin{itemize}
+    \item $p_0(x|x_{\mrm{data}}) = \mcal{N}(x; 0, I)$, and
+    \item $p_1(x|x_{\mrm{data}}) = \mcal{N}(x; x_{\data}, \sigma_{\min}^2 I)$.
+  \end{itemize}
+
+  \item We let $p_t(\cdot|x_{\data})$ take the form
+  \begin{align}
+    p_t(x|x_{\data}) = \mcal{N}(x;\mu_t(x_{\data}), \sigma_t(x_{\data})^2 I) \label{eqn:mu-sigma}
+  \end{align}
+  where $\mu: [0,1] \times \Real^d \ra \Real^d$ and $\sigma: [0,1] \times \Real \ra \Real^{+}.$ We will specify these two functions later, but there are many choises of them.
+
+  \item To satsify the requirement on $p_0$, it must be the case that
+  \begin{itemize}
+    \item $\mu_0(x_{\data}) = 0$ for all $x_{\data}$, and
+    \item $\sigma_0(x_{\data}) = 1$ for all $x_{\data}$.
+  \end{itemize}
+  Morever, to satisfy the requirment on $p_1$, it must be the case that
+  \begin{itemize}
+    \item $\mu_1(x_{\data}) = x_{\data}$ for all $x_{\data}$, and
+    \item $\sigma_1(x_{\data}) = \sigma_{\min}$ for all $x_{\data}$.
+  \end{itemize}
+
+  \item Now that we have specified the form of $p_t(\cdot|x_{\data})$, it is now time to figure out the vector field $u_t(\cdot|x_{\data})$ that generates it. 
+  
+  \item We do so by first specifying a flow $\psi_t$ such that $p_t(\cdot|x_{\data}) = [\psi_t]_* p_0(\cdot|x_{\data})$. Then, we can define $u_t$ according to the equation
   \begin{align*}
-    p_t(x) = \int p_t(x|x_1) p_{\mrm{data}}(x_1)\, \dee x_1.
+    \nabla_1 \psi_t(x) = u_t(\psi_t(x)| x_{\data}).
   \end{align*}
-  Moreover, if we choose $\sigma$ to be small enough, we would have that
+  In other words,
+  \begin{align}
+    u_t(x'| x_{\data}) = \nabla_1 \psi_t(\psi_t^{-1}(x')). \label{eqn:single-item-vector-field}
+  \end{align}
+
+  \item Now, let's specify $\psi_t$. We use a very simple flow:
   \begin{align*}
-    p_1(x) \approx p_{\mrm{data}}(x).
+    \psi_t(x) = \sigma_t(x_{\data}) x + \mu_t(x_{\data})
+  \end{align*}
+  Let's do some sanity check.
+  \begin{itemize}
+    \item At $t = 0$, we have that $\phi_0(x) = x$. So, $\phi_t$ satisfies the initial condition. The distribution $p_0$ is the distribution of $x$, which is $\mcal{N}(0,I)$ as required.
+    \item At $t = 1$, we have that $\phi_1(x) = \sigma_{\min} x + x_{\data}$. Because $x \sim \mcal{N}(0,I)$, we have that $p_1 \sim \mcal{N}(x_{\data}, \sigma_{\min}^2I)$ as required too.
+    \item At other values of $t$, we have that $\phi_t(x) = \sigma_t(x_{\data}) x + \mu_t(x_{\data})$. Again, because $x \sim \mcal{N}(0,I)$, we have that $\phi_t(x) \sim \mcal{N}(\mu_t{x_{\data}},\sigma_t(x_{\data})^2 I)$ as required again.
+  \end{itemize}
+
+  \item Let's derive $u_t(x'|x_{\data})$.
+  \begin{itemize}
+    \item First, we need to derive $\psi^{-1}_t(x')$. Let $x = \psi^{-1}_t(x')$. We have that
+    \begin{align*}
+      x' = \psi_t(x) = \sigma_{t}(x_{\data}) x + \mu_t(x_{\data}).
+    \end{align*}
+    So,
+    \begin{align*}
+      x = \frac{x' - \mu_t(x_{\data})}{\sigma_t(x_{\data})}.
+    \end{align*}
+    In other words,
+    \begin{align}
+      \psi^{-1}_t(x') = \frac{x' - \mu_t(x_{\data})}{\sigma_t(x_{\data})}. \label{eqn:single-item-flow-inverse}
+    \end{align}
+
+    \item Second, we need to derive the time-derivative $\nabla_1 \psi_t(x)$. This is also simple:
+    \begin{align}
+      \nabla_1 \psi_t(x) 
+      &= \frac{\partial}{\partial t} \big[ \sigma_t(x_{\data}) x + \mu_t(x_{\data}) \big] \notag \\
+      &= \bigg( \frac{\partial}{\partial t} \sigma_t(x_{\data}) \bigg) x + \frac{\partial}{\partial t} \mu_t(x_{\data}) \notag \\
+      &= x \nabla_1 \sigma_t(x_{\data}) + \nabla_1 \mu_t(x_{\data}). \label{eqn:single-item-time-deriv}
+    \end{align}
+  \end{itemize}
+
+  \item Substituting \eqref{eqn:single-item-flow-inverse} and \eqref{eqn:single-item-time-deriv} into \eqref{eqn:single-item-vector-field}, we have that
+  \begin{align*}
+    u_t(x'|x_{\data}) 
+    &= \bigg( \frac{x' - \mu_t(x_{\data})}{\sigma_t(x_{\data})} \bigg) \nabla_1 \sigma_t(x_{\data}) + \nabla_1 \mu_t(x_{\data}) \\
+    &= \frac{\nabla \sigma_t(x_{\data})}{\sigma_t(x_{\data})}(x' - \mu_t(x_{\data})) + \nabla_1 \mu_t(x_{\data}).
   \end{align*}
 
-  \item 
+  \item \begin{theorem}
+    Suppose that we are given the following functions.
+    \begin{itemize}
+      \item Let $\sigma: [0,1] \times \Real^d \ra \Real^+$ be a differentable function such that $\sigma_0(x) = 1$ and $\sigma_1(x) = \sigma_{\min}$ for all $x$.
+      \item Let $\mu: [0,1] \times \Real^d \ra \Real^d$ be a differentiable time-dependent vector field such that $\mu_0(x) = 0$ and $\mu_1(x) = x$ for all $x$.
+    \end{itemize}
+    Then, the vector field
+    \begin{align*}
+      u_t(x|x_{\data}) = \frac{\nabla \sigma_t(x_{\data})}{\sigma_t(x_{\data})}(x - \mu_t(x_{\data})) + \nabla_1 \mu_t(x_{\data})
+    \end{align*}
+    generates the flow
+    \begin{align*}
+      \phi_t(x) = \sigma_t(x_{\data}) x + \mu_t(x_{\data})
+    \end{align*}
+    and a probablity path $p_t(\cdot|x_{\data})$ such that that $$p_t(\cdot|x_{\data}) \sim \mcal{N}(\mu_t(x_{\data}), \sigma_t(x_{\data})^2 I)$$ for all $t$. In particular, we have that
+    \begin{enumerate}
+      \item $p_0(\cdot|x_{\data}) \sim \mcal{N}(0,I)$, and 
+      \item $p_1(\cdot|x_{\data}) \sim \mcal{N}(x_{\data}, \sigma_{\min}^2 I)$.      
+    \end{enumerate}
+    So, $u_t(\cdot|x_{\data})$ transforms a Gaussian noise distribution into an approximation of a single data distribution that only contains $x_{\data}$.
+  \end{theorem}
+\end{itemize}
 
+\subsection{From single item distribution to multi-item distribution}
 
+\begin{itemize}
+  \item Now, we get back to the case where $p_{\data}$ is not a distrbution that output only a single item.
+  
+  \item Using the law of total proability, we can define the {\bf marginal probability path} as
+  \begin{align}
+    p_t(x) = \int p_t(x|x_1) p_{\mrm{data}}(x_{\data})\, \dee x_{\data}. \label{eqn:marginal-probability-path}
+  \end{align}
+  
+  \item It follows that $p_0 = \mcal{N}(0,I)$, and 
+  \begin{align*}
+    p_1 = p_{\data} * \mcal{N}(0,\sigma_{\min}^2I)  \approx p_{\mrm{data}}.
+  \end{align*}
+  where $*$ is the convolution operation. So, we can use $p_1$ in place of $p_{\data}$ in many cases.
+
+  \item Our task is now to find a time-dependent vector field $u_t$ that generates $p_t$. The paper argues that the following {\bf marginal vector field},
+  \begin{align}
+    u_t(x) = \int u_t(x|x_{\data}) \frac{p_t(x|x_{\data}) p_{\mrm{data}}(x_{\data})}{p_t(x)}\, \dee x_{\data}, \label{eqn:marginal-vector-field}
+  \end{align}
+  works.  
+
+  \item \begin{theorem}
+    The marginal vector field $u_t$ defined in Equation~\eqref{eqn:marginal-vector-field} generates the marginal probability path $p_t$ in Equation~\eqref{eqn:marginal-probability-path}.
+  \end{theorem}
+  \begin{proof}
+    This proof makes heavy use of the continuity equation \eqref{eqn:continuity-no-ambiguity} and Theorem~\ref{thm:continuity-equation}.
+
+    We showed in the last section that the conditional vector field $u_t(\cdot|x_{\data})$ generates the condtional probability path $p_t(\cdot|x_{\data})$. To make derivation easier, we shall write $p_t(x|x_{\data})$ as $p_{|x_{\data}}(t,x)$ and $u_t(x|x_{\data})$ as $u_{|\data}(t,x)$. With this, we have that these two functions satisfy the continuity equation
+    \begin{align*}
+      \nabla_1 p_{|x_{\data}}(t,x) + \sum_{i=1}^d \nabla_{i+1} (p_{|x_{\data}}u^i_{|x_{\data}})(t,x) = 0.
+    \end{align*}
+    In other words,
+    \begin{align*}
+      \nabla_1 p_{|x_{\data}}(t,x) = -\sum_{i=1}^d \nabla_{i+1} (p_{|x_{\data}}u^i_{|x_{\data}})(t,x).
+    \end{align*}
+
+    Now, recall the definition of $p(t,x)$.
+    \begin{align*}
+      p(t,x) = \int p_{|x_{\data}}(t,x) p_{\data}(x_{\data})\, \dee x_{\data}.
+    \end{align*}
+    Differentiating both sides with respect to the first argument ($t$), we have that
+    \begin{align*}
+      \nabla_1 p(t,x) 
+      &= \int \nabla_1 p_{|x_{\data}}(t,x) p_{\data}(x_{\data})\, \dee x_{\data} \\
+      &= \int \bigg( -\sum_{i=1}^d \nabla_{i+1} (p_{|x_{\data}}u^i_{|x_{\data}})(t,x) \bigg) p_{\data}(x_{\data})\, \dee x_{\data} \\
+      &= -\sum_{i=1}^d \int \nabla_{i+1} (p_{|x_{\data}}u^i_{|x_{\data}})(t,x) p_{\data}(x_{\data})\, \dee x_{\data} \\
+      &= -\sum_{i=1}^d \nabla_{i+1} \bigg( \int  p_{|x_{\data}}(t,x) u_{|x_{\data}}(t,x) p_{\data}(x_{\data})\, \dee x_{\data}\bigg) \\
+      &= -\sum_{i=1}^d \nabla_{i+1} \bigg( \int  p_t(x|x_{\data}) u_t(x|x_{\data}) p_{\data}(x_{\data})\, \dee x_{\data}\bigg).
+    \end{align*}
+    By Equation~\eqref{eqn:marginal-vector-field}, we have that
+    \begin{align*}
+      u_t(x) p_t(x) = \int p_t(x|x_{\data}) u_t(x|x_{\data}) p_{\data}(x_{\data})\, \dee x_{\data}.
+    \end{align*}
+    As a result,
+    \begin{align*}
+      \nabla_1 p(t,x) &= -\sum_{i=1}^d \nabla_{i+1} \big( u_t(x) p_t(x) \big) \\
+      \nabla_1 p(t,x) &= -\sum_{i=1}^d \nabla_{i+1} (u p)(t,x) \\
+      \nabla_1 p(t,x) + \sum_{i=1}^d \nabla_{i+1} (u p)(t,x) &= 0.
+    \end{align*}
+    This shows that $u_t$ and $p_t$ satisfies the continuity equation, which implites that $u_t$ generates $p_t$.
+  \end{proof}
+\end{itemize}
+
+\subsection{Conditional Flow Matching}
+
+\begin{itemize}
+  \item We have just identified the vector field $u_t$ that we can used in the flow matching loss \eqref{eqn:flow-matching-loss}. However, the problem is that $u_t$ is defined as an integral, and we do not want to compute it directly.
+  
+  \item Instead, we optimize the following {\bf conditional flow matching objective} where we sample $x_{\data}$ and trying to match $v_t(x;\theta)$ against $u_t(x|x_{\data})$. Here, $x$ is sampled from the conditional distribution $p_t(x|x_{\data})$.
+  \begin{align*}
+    \mcal{L}_{\mrm{CFM}}(\theta) = E_{\substack{t \sim \mcal{U}([0,1]),\\ x_{\data} \sim p_{\data},\\ x \sim p_t(x|x_{\data})}} [ \| u_t(x|x_{\data}) - v_t(x;\theta)\|^2].
+  \end{align*}
+
+  \item We can sample $x_{\data}$ easily because we can sample uniformly from the collections of samples we have at hand.
+  
+  \item We can also sample from $p_t(x|x_{\data})$ easily because $p_t(x|x_{\data}) = \mcal{N}(x; \mu_t{\data}(x_{\data}), \sigma_t(x_{\data})^2I)$.
+  
+  \item The only concern is whether the conditional flow matching objective $\mcal{L}_{\mrm{CFM}}(\theta)$ would yield the same $\theta$ as $\mcal{L}_{\mrm{FM}}(\theta)$ after optimization. The answer is yes.
+  
+  \item \begin{theorem}
+    Assuming that $p_t(x) > 0$ for all $x \in \Real^d$ and $t \in [0,1]$, then,
+    $$\mathcal{L}_{\mrm{FM}}(\theta) = \mcal{L}_{\mrm{CFM}}(\theta) + C$$ where $C$ is a constant independent of $\theta$. As a result, $$\nabla_{\theta} \mathcal{L}_{\mrm{FM}}(\theta) = \nabla_{\theta} \mcal{L}_{\mrm{CFM}}(\theta).$$
+  \end{theorem}
+
+  \begin{proof}
+    We assume that all functions are well-behaved so that we can say that all integrals exist use the standard trick such as exchanging the order of integration (Fubini's theorem).
+
+    We have that
+    \begin{align*}
+      \| v_t(x;\theta) - u_t(x) \|^2 &= \| v_t(x;\theta) \|^2 - 2 \langle v_t(x;\theta), u_t(x) \rangle + \| u_t(x) \|^2 \\
+      \| v_t(x;\theta) - u_t(x|x_{\data}) \|^2 &= \| v_t(x;\theta) \|^2 - 2 \langle v_t(x;\theta), u_t(x|x_{\data}) \rangle + \| u_t(x|x_{\data}) \|^2.
+    \end{align*}
+    So,
+    \begin{align*}
+      \mcal{L}_{\mrm{FM}}(\theta) &= E_{\substack{t \sim \mcal{U}([0,1]),\\ x \sim p_t(x)}}[\| v_t(x;\theta) \|^2] - 2 E_{\substack{t \sim \mcal{U}([0,1]),\\ x \sim p_t(x)}}[\langle v_t(x;\theta), u_t(x) \rangle ] + E_{\substack{t \sim \mcal{U}([0,1]),\\ x \sim p_t(x)}}[\| u_t(x) \|^2] \\
+      \mcal{L}_{\mrm{CFM}}(\theta) &= E_{\substack{t \sim \mcal{U}([0,1]),\\ x_{\data} \sim p_{\data},\\ x \sim p_t(x|x_{\data})}}[\| v_t(x;\theta) \|^2] -2 E_{\substack{t \sim \mcal{U}([0,1]),\\ x_{\data} \sim p_{\data},\\ x \sim p_t(x|x_{\data})}} [\langle v_t(x;\theta), u_t(x|x_{\data}) \rangle] + E_{\substack{t \sim \mcal{U}([0,1]),\\ x_{\data} \sim p_{\data},\\ x \sim p_t(x|x_{\data})}} [\| u_t(x|x_{\data}) \|^2].
+    \end{align*}
+
+    Note that $u_t(x)$ and $u_t(x|x_{\data})$ does not depend on $\theta$. As a result, we can treat them as constants. In other words,
+    \begin{align*}
+      \mcal{L}_{\mrm{FM}}(\theta) &= E_{\substack{t \sim \mcal{U}([0,1]),\\ x \sim p_t(x)}}[\| v_t(x;\theta) \|^2] - 2 E_{\substack{t \sim \mcal{U}([0,1]),\\ x \sim p_t(x)}}[\langle v_t(x;\theta), u_t(x) \rangle ] + C_1 \\
+      \mcal{L}_{\mrm{CFM}}(\theta) &= E_{\substack{t \sim \mcal{U}([0,1]),\\ x_{\data} \sim p_{\data},\\ x \sim p_t(x|x_{\data})}}[\| v_t(x;\theta) \|^2] -2 E_{\substack{t \sim \mcal{U}([0,1]),\\ x_{\data} \sim p_{\data},\\ x \sim p_t(x|x_{\data})}} [\langle v_t(x;\theta), u_t(x|x_{\data}) \rangle] + C_2.
+    \end{align*}
+
+    Next, note that
+    \begin{align*}
+      E_{\substack{t \sim \mcal{U}([0,1]),\\ x \sim p_t(x)}}[\| v_t(x;\theta) \|^2] = E_{\substack{t \sim \mcal{U}([0,1]),\\ x_{\data} \sim p_{\data},\\ x \sim p_t(x|x_{\data})}}[\| v_t(x;\theta) \|^2]
+    \end{align*}
+    because we still sample $x$ from the same distribution $p_t(x)$. On the LHS, we sample $x$ directly, but, on the RHS, we sample $x_{\data}$ before sampling $x$ given $x_{\data}$.
+
+    Lastly,
+    \begin{align*}
+      & E_{\substack{t \sim \mcal{U}([0,1]),\\ x \sim p_t(x)}}[\langle v_t(x;\theta), u_t(x) \rangle ] \\
+      &= E_{\substack{t \sim \mcal{U}([0,1]),\\ x \sim p_t(x)}} \Bigg[\bigg\langle v_t(x;\theta), \int u_t(x|x_{\data}) \frac{p_t(x|x_{\data})p_{\data}(x_{\data})}{p_t(x)}\, \dee x_{\data} \bigg\rangle \Bigg] \\
+      &= E_{\substack{t \sim \mcal{U}([0,1]),\\ x \sim p_t(x)}} \Bigg[ \int \langle v_t(x;\theta), u_t(x|x_{\data}) \rangle \frac{p_t(x|x_{\data})p_{\data}(x_{\data})}{p_t(x)}\, \dee x_{\data} \Bigg] \\
+      &= E_{t \sim \mcal{U}([0,1])} \Bigg[ \int p_{t}(x) \bigg(\int \langle v_t(x;\theta), u_t(x|x_{\data}) \rangle \frac{p_t(x|x_{\data})p_{\data}(x_{\data})}{p_t(x)}\, \dee x_{\data}\,\bigg) \dee x \Bigg] \\
+      &= E_{t \sim \mcal{U}([0,1])} \Bigg[ \int \int \langle v_t(x;\theta), u_t(x|x_{\data}) \rangle p_t(x|x_{\data})p_{\data}(x_{\data})\, \dee x_{\data}\, \dee x \Bigg] \\
+      &= E_{t \sim \mcal{U}([0,1])} \Bigg[ \int p_{\data}(x_{\data}) \bigg( \int p_t(x|x_{\data}) \langle v_t(x;\theta), u_t(x|x_{\data}) \rangle \, \dee x\bigg) \, \dee x_{\data} \Bigg] \\
+      &= E_{\substack{t \sim \mcal{U}([0,1]),\\ x_{\data} \sim p_{\data},\\ x \sim p_t(x|x_{\data})}} [\langle v_t(x;\theta), u_t(x|x_{\data}) \rangle].
+    \end{align*}
+    
+    We are done.
+  \end{proof}
+\end{itemize}
+
+\section{Conditional Vector Fields}
+
+\begin{itemize}
+  \item We said earlier that there are multiple ways to define $\mu_t$ and $\sigma_t$ in Equation~\eqref{eqn:mu-sigma}. We discuss them in this section.
+\end{itemize}
+
+\subsection{Diffusion Conditonal Vector Fields}
+
+\begin{itemize}
+  \item For a diffusion model, time is the reverse of what we have been using in this note.
+  \begin{itemize}
+    \item $p_0$ is $p_{\data}$ or an approximation of it.
+    \item $p_1$ is a noise distribution.
+  \end{itemize}
+  However, to make things simple, we will reverse the time so that it complies with what we have in this note.
+
+  \item Variance-exploding case.
+  \begin{itemize}
+    \item Given $x_{\data}$, we have that $p_t(x|x_1) = \mcal{N}(x; x_{\data}, \sigma_)
+  \end{itemize}
+
+  \item Variance-preservin case
+  \begin{itemize}
+    \item 
+  \end{itemize}
+\end{itemize}
+
+\appendix
+
+\section{Continuity Equation}
+
+\begin{itemize}
+  \item The continuity equation is an equation from fluid dynamics that shows up a lot in fields that involves transport pheonomena.
+  
+  \item Here, we start with a probability density function $p_0$, which tells us how the probability mass is distributed over $\Real^d$. Then, we have a vector field $v_t$ that gives us the time-dependent velocity field that governs how the mass at each point should move. The velocity field generates a probability path $p_t$.
+  
+  \item Note that, because the velocity field just move the mass around, there is no new mass added or no new mass being dropped. It follows that the total probability mass remains constant. It is \emph{conserved}. This means that $p_t$ is a probability distribution for all $t$. If you integrate it over $\Real^d$, you should get $1$.
+  
+  \item Given a probability path $p_t$ and a time-dependent velocity field $v_t$ that generates it, the {\bf flux density} $j: [0,1] \times \Real^d \ra \Real^d$ is defined as:
+  \begin{align*}
+    j_t(x) = p_t(x) v_t(x).
+  \end{align*}
+  It is just the velocity field weighted by the probability density.
+
+  \item Let $f: \Real^d \ra \Real^d$ be a vector field. The {\bf divergence} of $f$ is a scalar function $\nabla \cdot f: \Real^d \ra \Real$ define by
+  \begin{align*}
+    (\nabla \cdot f)(x) = \sum_{i=1}^d \nabla_i f^i(x)
+  \end{align*}
+  where $f^i(x)$ denotes the $i$th component of $f(x)$.
+
+  \item The {\bf continuity equation} of $p_t$ and $v_t$ is given by
+  \begin{align*}
+    \frac{\partial}{\partial t} p_t(x) + (\nabla \cdot j_t)(x) = 0.
+  \end{align*}
+  In the above equation, we view $j_t$ with $t$ fixed as a vector field of signature $\Real^d \ra \Real^d$.
+
+  \item Let's rewrite the continuity equation with my notation and taking into account correct indexing with no ambiguity whatsoever. We have
+  \begin{align}
+    \nabla_1 p(t,x) + \sum_{i=1}^{d} \nabla_{i+1} (p v^i)(t,x) = 0. \label{eqn:continuity-no-ambiguity}
+  \end{align}
+  
+  \item In our context, the continuity equation is useful because of the following theorem.
+  \begin{theorem} \label{thm:continuity-equation}
+    Let $p: [0,1] \times \Real^d \rightarrow \Real^+ \cup \{0\}$ be a differentiable probability path. Let $v: [0,1] \times \Real^d \ra \Real^d$ be a differentiable time-dependent vector field. Then, $v_t$ generates $p_t$ if and only if the continuity equation holds.
+  \end{theorem}
+
+  \item We shall not prove the theorem in this note, but I will be studying it more.
 \end{itemize}
 
 \bibliographystyle{acm}
