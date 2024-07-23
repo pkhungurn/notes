@@ -1,0 +1,181 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+\usepackage{verbatim}
+\usepackage{hyperref}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\Dee}{\mathrm{D}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\Var}{\mathrm{Var}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+\newcommand{\ov}[1]{\overline{#1}}
+
+\title{Flow Matching for Generative Modeling}
+\author{Pramook Khungurn}
+
+\begin{document}
+\maketitle
+
+This note was written as I read the ``Flow Matching for Generative Modeling'' paper by Lipman \etal~\cite{Lipman:2023}.
+
+
+\section{Background}
+
+\begin{itemize}
+  \item A data item is denoted by $x = (x^1, x^2, \dotsc, x^d) \in \Real^d$.
+  
+  \item A {\bf probability density path} is a function $p: [0,1] \times \Real^d \rightarrow \Real^{+} \cup \{0\}$ such that each $p(t,\cdot)$ is a probabilty density function on $\Real^d$. In other words, it holds that
+  \begin{align*}
+    \int p(t,x)\, \dee x = 1
+  \end{align*}
+  for all $t \in [0,1]$.
+
+  \item For a time dependent function $f: [0,1] \times \Real^d \rightarrow R$ for some range set $R$, we may write $f(t,x)$ as $f_t(x)$ to emphasize time dependence. Moreover, we can refer to $f_t: \Real^d \rightarrow R$ as a function in its own right.
+  \begin{itemize}
+    \item With this, we may say that $p_t$ is a probability distribution on $\Real^d$. 
+  \end{itemize}
+  
+  \item A {\bf time-dependent vector field} is a function $v: [0,1] \times \Real^d \rightarrow \Real^d$.
+  
+  \item Given a time dependent vector field $v$, its {\bf flow} is another vector field $\phi: [0,1] \times \Real^d \rightarrow \Real^d$ defined by the ordinary differential equation
+  \begin{align*}
+    \frac{\dee}{\dee t} \phi_t(x) = v_t(\phi_t(x))
+  \end{align*}
+  and the initial condition $\phi_0(x) = x$.
+  \begin{itemize}
+    \item In other words, $\phi_t(x)$ is the position at time $t$ of the particle that starts at $x$ at time $0$ and follows the trajectory defined by taking $v$ as the time-dependent vector field.
+  \end{itemize}
+
+  \item Chen \etal\ proposed the {\bf neural ordinary differential equation}model \cite{Chen:2019}. The idea is to model the vector field $v$ with a neural network $v_t(x;\theta)$. We then train it so that $\phi_1$ has the property that we want.
+  \begin{itemize}
+    \item If you want a refresher on neural ODE, then read my previous note on it \cite{Khungurn:neuralODE}.
+  \end{itemize}
+  
+  \item A neural ODE can be used to transform a probability distribution to another. Say, we start with a probability distribution $p_0$ on $\Real^d$. Then, we do the following.
+  \begin{itemize}
+    \item Sample $x \sim p_0$.
+    \item Compute $x' = \phi_t(x)$ by integrating the neural ODE from 0 up to $t$.
+  \end{itemize}
+  Let us denote the probability density of $x'$ by $p_t$. It follows thet
+  \begin{align}
+    p_t(x') = p_0(\phi_t^{-1}(x'))\, \det \bigg[ \frac{\partial \phi_t^{-1}}{\partial x}(x') \bigg].\label{eqn:cnf-prob-xform}
+  \end{align}
+  This is the standard formula for tranformation of probability distribution. You can find this in section 3.1 on my notes on the subject \cite{Khungurn:ProbXform}.
+
+  \item The formula in Equation~\eqref{eqn:cnf-prob-xform} is not that great because there is an issue with variable capture. The $x$ in $\partial x$ is not a variable but a shorthard the positiional argument of a function. I previously have introduced a system to deal with this kind of problem \cite{Khungurn:Notation}. So, let's write the equation using that notation.
+  
+  First, we note that $\phi_t(x) = q(t,x)$ is a function that maps a $(d+1)$-dimensional space to a $d$-dimensional space. So, we can treat it in the same way as a function of signature $\Real^{d+1} \ra \Real^d$. In other words, we can say that $\phi$ takes $d+1$ inputs. We can then divide the $d+1$ inputs into two blocks.
+  \begin{itemize}
+    \item The first block is the first argument alone. Using Python slice notation, it is ``$1:2$.''. Using my ``chapter'' notation, it can be abbreviated as $\S 1$.
+    
+    \item The second block is the rest of the arguments. Using Python slice notation, it is ``$2:d+2$.'' Using my ``chapter'' notation, it can be abbreviate as $\S 2$.
+  \end{itemize}
+  Hence, using my notation for partial derivatives, we can rewrite the equation as:
+  \begin{align*}
+    p_t(x') = p_0(\phi_t^{-1}(x'))\, \det \nabla_{\S 2} \phi^{-1}_t(x')
+  \end{align*}
+  or, to be even briefer
+  \begin{align*}
+    p_t(x') = p_0(\phi_t^{-1}(x'))\, | \nabla_{\S 2} \phi^{-1}_t(x') |
+  \end{align*}
+
+  \item Let $f: \Real^d \ra \Real$ and let $v: \Real^d \ra \Real^d$. A {\bf push-foward} (or a change of variable) of $f$ according to $v$ is a function of $g:\Real^d \ra \Real$ defined by
+  \begin{align*}
+    g(y) = f(v^{-1}(y))\, |\nabla v^{-1}(y)|. 
+  \end{align*}
+  Here, $\nabla$ denotes the derivative operator, which gets you the Jacobian matrix. We denote the push-forward of $f$ according to $v$ as $[v]_* f$.
+
+  \item In the context of the discussion so far, we have that $p_t = [\phi_t]_* p_0$.
+  
+  \item When we use a neural ODE to transform a probability distribution from one to another (i.e., transforming $p_0$ from $p_1$), we call the resulting model a {\bf continuous normalizing flow} model. 
+\end{itemize}
+
+\section{Flow Matching}
+
+\subsection{Flow Matching Objective}
+
+\begin{itemize}
+  \item We want to use the above framework to transform a simple noise distribution $p_0 = p_{\mrm{noise}}$ to a data distribution $p_1 = p_{\mrm{data}}$.
+  \begin{itemize}
+    \item $p_{\mrm{noise}}$ is typically a Gaussian distribution $p_0 = \mcal{N}(0,I)$.
+    \item As in most ML settings, we do not have access to the density function $p_{\mrm{data}}$, but we only have samples from the distribution.
+  \end{itemize}
+
+  \item Suppose we know a probability path $p_t$ and a time-dependent vector field $u_t$ that has the following property:
+  \begin{itemize}
+    \item $p_0$ is the desired noise distribution, and $p_1$ is the desired data distribution.
+    \item $u_t$ is the vector field such that $p_t = [u_t]_* p_0$.
+  \end{itemize}
+  Suppose again that we want to model $u_t$ with a neural network $v_t(x; \theta)$. Then, we may do it my minimizing the {\bf flow matching objective}:
+  \begin{align*}
+    \mcal{L}_{\mrm{FM}}(\theta) = E_{t ~ \mcal{U}([0,1]), x \sim p_t} \big[ \| u_t(x) - v_t(x; \theta) \|^2 \big].
+  \end{align*}
+
+  \item The flow maching objective is usable if we know $p_t$ and $u_t$ before hand. However, in our settings, we do not know anything about $u_t$, and we only know $p_0 = p_{\mrm{noise}}$ and $p_1 = p_{\mrm{data}}$ but nothing in between.
+\end{itemize}
+
+\subsection{Rewriting condtional paths and vector fields}
+
+\begin{itemize}
+  \item We still do not know what $p_t$ exactly is, but let us engage in wishful thinking and try to dictate its form.
+  
+  \item Let $x_1 \sim p_{\mrm{data}}$ be a data item. We look at the conditional probability density $p_t(x|x_1)$. Let us require that
+  \begin{enumerate}
+    \item $p_0(x|x_1) = p_{\mrm{noise}}(x)$, and
+    \item $p_1(x|x_1) = \mcal{N}(x; x_1, \sigma^2I)$ where $\sigma$ is a small number.
+  \end{enumerate}
+
+  \item Now, we have that
+  \begin{align*}
+    p_t(x) = \int p_t(x|x_1) p_{\mrm{data}}(x_1)\, \dee x_1.
+  \end{align*}
+  Moreover, if we choose $\sigma$ to be small enough, we would have that
+  \begin{align*}
+    p_1(x) \approx p_{\mrm{data}}(x).
+  \end{align*}
+
+  \item 
+
+
+\end{itemize}
+
+\bibliographystyle{acm}
+\bibliography{flow-matching}  
+\end{document}
