@@ -54,87 +54,144 @@
 \begin{document}
 \maketitle
 
-This note was written as I read the ``Flow Matching for Generative Modeling'' paper by Lipman \etal~\cite{Lipman:2023}.
+This note was written as I read the ``Flow Matching for Generative Modeling'' paper by Lipman \etal~\cite{Lipman:2023}. In this document, we use both standard notations for partial derivatives and my notations for partial derivatives \cite{Khungurn:Notation}. The latter is used when we need want to avoid all ambiguities.
 
 
 \section{Background}
 
+\subsection{Flow and Neural ODE}
+
 \begin{itemize}
-  \item A data item is denoted by $x = (x^1, x^2, \dotsc, x^d) \in \Real^d$.
-  
-  \item A {\bf probability density path} is a function $p: [0,1] \times \Real^d \rightarrow \Real^{+} \cup \{0\}$ such that each $p(t,\cdot)$ is a probabilty density function on $\Real^d$. In other words, it holds that
-  \begin{align*}
-    \int p(t,x)\, \dee x = 1
-  \end{align*}
-  for all $t \in [0,1]$.
+  \item A data item is denoted by $x = (x^1, x^2, \dotsc, x^d) \in \Real^d$.  
+
+  \item \begin{definition} 
+    A {\bf time-dependent vector field} is a function $v: [0,1] \times \Real^d \rightarrow \Real^d$. 
+  \end{definition}
 
   \item For a time dependent function $f: [0,1] \times \Real^d \rightarrow R$ for some range set $R$, we may write $f(t,x)$ as $f_t(x)$ to emphasize time dependence. Moreover, we can refer to $f_t: \Real^d \rightarrow R$ as a function in its own right.
   \begin{itemize}
-    \item With this, we may say that $p_t$ is a probability distribution on $\Real^d$. 
-  \end{itemize}
-  
-  \item A {\bf time-dependent vector field} is a function $v: [0,1] \times \Real^d \rightarrow \Real^d$.
-  
-  \item Given a time dependent vector field $v$, its {\bf flow} is another vector field $\phi: [0,1] \times \Real^d \rightarrow \Real^d$ defined by the differential equation
-  \begin{align}
-    \frac{\partial}{\partial t} \phi_t(x) = v_t(\phi_t(x)) \label{eqn:flow}
-  \end{align}
-  and the initial condition $\phi_0(x) = x$.
+    \item With this, for a time-dependent vector field $v$, we may write $v_t$ to mean the vector field obtained from $v$ when restricted to a given time.
+  \end{itemize}  
+
+  \item \begin{definition}
+    A vector function $f: \Real^d \ra \Real^d$ is called a {\bf diffeomorphism} if $f$ is differentiable and bijective.
+  \end{definition}
   \begin{itemize}
-    \item In other words, $\phi_t(x)$ is the position at time $t$ of the particle that starts at $x$ at time $0$ and follows the trajectory defined by taking $v$ as the time-dependent vector field.
-    
-    \item We say that $v_t$ {\bf generates} $\phi_t$.
+    \item If $f$ is a diffeomorphism, then so is $f^{-1}$.
+    \item If $f$ is a diffeomorphism, then, for all $x \in \Real^d$, its Jacobian matrix $\nabla f(x)$ (my notation \cite{Khungurn:Notation}) is invertible. This means that $\det \nabla f(x) \neq 0$. 
   \end{itemize}
 
-  \item Chen \etal\ proposed the {\bf neural ordinary differential equation} model \cite{Chen:2019}. The idea is to model the vector field $v$ with a neural network $v_t(x;\theta)$. We then train it so that $\phi_1$ has the property that we want.
-  \begin{itemize}
-    \item If you want a refresher on neural ODE, then read my previous note on it \cite{Khungurn:neuralODE}.
-  \end{itemize}
+  \item \begin{definition}
+    A {\bf flow} is a time-dependent vector field $\phi: [0,1] \times \Real^d \ra \Real^d$ such that
+    \begin{itemize}      
+      \item $\phi$ is differentiable.
+      \item $\phi_0(x) = x$ for all $x$, and
+      \item $\phi_t$, when viewed as a function of signature $\Real^d \ra \Real^d$, is a diffeomorphism for all $t$.      
+    \end{itemize}
+  \end{definition}    
   
-  \item A neural ODE can be used to transform a probability distribution to another. Say, we start with a probability distribution $p_0$ on $\Real^d$. Then, we do the following.
-  \begin{itemize}
-    \item Sample $x \sim p_0$.
-    \item Compute $x' = \phi_t(x)$ by integrating the neural ODE from 0 up to $t$.
-  \end{itemize}
-  Let us denote the probability density of $x'$ by $p_t$. It follows thet
-  \begin{align}
-    p_t(x') = p_0(\phi_t^{-1}(x'))\, \det \bigg[ \frac{\partial \phi_t^{-1}}{\partial x}(x') \bigg]. \label{eqn:cnf-prob-xform}
-  \end{align}
-  This is the standard formula for tranformation of probability distribution. You can find this in section 3.1 on my notes on the subject \cite{Khungurn:ProbXform}.
+  \item We note that we call such a function a flow because, for any $x$, the function $\Phi_{x}: t \mapsto \phi_t(x)$ traces a path of a particle that starts at $x$ and moves through space. So, $\phi$ indicates how particles ``flow'' through space. 
+  
+  \item If $\phi$ is a flow, we can interpret $\phi_t(x)$ as the position at time $t$ of the particle that starts at $x$.
+  
+  \item \begin{definition}
+    Let $v$ be a time-dependent vector field and $\phi$ be a flow. We say that $v$ {\bf generates} $\phi$ if
+    \begin{align}
+      \frac{\partial}{\partial t} \phi_t(x) = v_t(\phi_t(x)). \label{eqn:flow}
+    \end{align}
+  \end{definition}
+  In other words, $v_t$ acts as a velocity field that governs the direction and the speed that a particle at each position move.
 
-  \item The formula in Equation~\eqref{eqn:cnf-prob-xform} is not that great because there is an issue with variable capture. The $x$ in $\partial x$ is not a variable but a shorthard the positiional argument of a function. I previously have introduced a system to deal with this kind of problem \cite{Khungurn:Notation}. So, let's write the equation using that notation.
+  \item Note that we can rewrite Equation~\eqref{eqn:flow} using my notation \cite{Khungurn:Notation} as:
+  \begin{align}
+    \nabla_1 \phi_t(x) = v_t(\phi_t(x)). \label{eqn:flow-my-notation}
+  \end{align}
+
+  \item We note that, for any time-dependent vector field $v$, it generates a flow $\phi$ that is obtained by solving the differential equation $\partial \phi_t(x) / \partial t = v_t(\phi_t(x))$ with the initial condition $\phi_0(x) = x$.
+
+  \item Chen \etal\ proposed the {\bf neural ordinary differential equation} model \cite{Chen:2019}. The idea is to model the vector field $v$ with a neural network $v_t(x;\theta)$. The vector field generates a flow $\phi_t$. The goal is to make $\phi_1$ have properties that we want.
+  \begin{itemize}        
+    \item If you want a refresher on neural ODE, then read my previous note on it \cite{Khungurn:neuralODE}.    
+    \item Chen \etal's paper proposes a way to train $v_t(x;\theta)$. However, this training method involves integrating the vector field in each iteration, which means that optimization takes a long time. This is still incredible because the gradient of this process can be computed kind of easily.
+  \end{itemize}
+
+  \item The flow matching paper is here to offer another way to train a neural ODE without integrating the vector field. Howerver, the flow matching algorithm is specialized to the task of generative modeling, so its scope is narrower than the neural ODE paper.
+\end{itemize}
+
+\subsection{Generative Modeling as Transformation of Probability Distribution}
+
+\begin{itemize}
+  \item At a high level, generative modeling is about transforming a noise distribution $p_{\mrm{noise}}$ to a distribution of data items $p_{\data}$.
   
-  First, we note that $\phi_t(x) = q(t,x)$ is a function that maps a $(d+1)$-dimensional space to a $d$-dimensional space. So, we can treat it in the same way as a function of signature $\Real^{d+1} \ra \Real^d$. In other words, we can say that $\phi$ takes $d+1$ inputs. We can then divide the $d+1$ inputs into two blocks.
+  \item Perhaps the easiest form of transforming one probability distribution to another is the following process.
+  \begin{itemize}
+    \item Sample a data item from the starting probability distribution.
+    \item Transform the data item in some way.
+    \item Return the transformed result to the usesr.
+  \end{itemize}
+  This process has a name.
+  \begin{definition}
+    Let $p: \Real^d \rightarrow \Real^{+}\cup \{0\}$ be a probability distribution. Let $f: \Real^d \rightarrow \Real^d$ be a diffeomorphism. A {\bf push-forward} or a {\bf change of variable} of $p$ according to $f$ is the probability distribution $q$ of elements $y$ created through the following process:
+    \begin{itemize}
+      \item Sample $x \sim p$.
+      \item Compute $y = f(x)$.
+    \end{itemize}
+    Notationally, we write $q = [f]_* p$.
+  \end{definition}
+
+  \item \begin{lemma}
+    Let $q = [f]_*p$. It follows that
+    \begin{align*}
+      q(y) = [f]_*p(y) = p(f^{-1}(y)) | \det \nabla f^{-1}(y) |,
+    \end{align*}
+    or
+    \begin{align*}
+      q(f(x)) = [f]_*p(f(x)) = \frac{p(x)}{|\det \nabla f(x)|}.
+    \end{align*}    
+  \end{lemma}
+  Here, $\nabla f$ is a notation for the derivative (the Jacobian matrix) of $f$ according to my notation \cite{Khungurn:Notation}. A non-rigourous proof of this lemma can be found in my note on probability density under transformation \cite{Khungurn:ProbXform}. It is analogous to the change of variable formula in multi-variable calculus.
+
+  \item \begin{definition} A {\bf probability density path} is a function $p: [0,1] \times \Real^d \rightarrow \Real^{+} \cup \{0\}$ such that each $p(t,\cdot)$ is a probabilty density function on $\Real^d$. In other words, it holds that
+    \begin{align*}
+      \int p(t,x)\, \dee x = 1
+    \end{align*}
+    for all $t \in [0,1]$.
+    \end{definition}
+
+  \item A flow $\phi_t$ can be used to transform one probability to another in a gradual sort of way.
+  \begin{lemma}
+    Let $p_0: \Real^d \ra \Real^{+} \cup \{0\}$ be a probability distribution and $\phi$ be a flow. The {\bf push-forward} or the {\bf change of variable} of $p_0$ according to $\phi$ is a probability path $p: [0,1] \times \Real^d \ra \Real^+ \cup \{0\}$ that is the result of the following process:
+    \begin{itemize}
+      \item Sample $x_0 \sim p_0$.
+      \item Apply the flow to get $x_t = \phi_t(x)$.
+      \item Let $p_t$ be the distribution of $x_t$.
+    \end{itemize}
+    It follows that $p_t = [\phi_t]_* p_0$. In other words,
+    \begin{align}
+      p_t(x') = p_0(\phi_t^{-1}(x'))\, |\det \nabla \phi_t^{-1}(x')| \label{eqn:cnf-prob-xform}
+    \end{align}
+    for all $x' \in \Real^d$.    
+  \end{lemma}
+  So, instead of getting just one probability distribution from $p_0$, we get an infinite number of distributions.  
+
+  \item The formula in Equation~\eqref{eqn:cnf-prob-xform} is not that great because there is an issue about arity. We said earlier that $\phi_t$ can be viewed as a function of signature $\Real^d \ra \Real^d$. However, $\phi$ itself has signature $[0,1] \times \Real^{d} \ra \Real^d$, which means that it is function that maps a $(d+1)$-dimensional space to a $d$-dimensional space. So, we can treat it in the same way as a function of signature $\Real^{d+1} \ra \Real^d$. In other words, we can say that $\phi$ takes $d+1$ inputs. We can then divide the $d+1$ inputs into two blocks.
   \begin{itemize}
     \item The first block is the first argument alone. Using Python slice notation, it is ``$1:2$.'' Using my ``chapter'' notation, it can be abbreviated as $\S 1$.
     
     \item The second block is the rest of the arguments. Using Python slice notation, it is ``$2:d+2$.'' Using my ``chapter'' notation, it can be abbreviate as $\S 2$.
   \end{itemize}
   Hence, using my notation for partial derivatives, we can rewrite the equation as:
-  \begin{align*}
-    p_t(x') = p_0(\phi_t^{-1}(x'))\, \det \nabla_{\S 2} \phi^{-1}_t(x')
-  \end{align*}
-  or, to be even briefer
   \begin{align}
-    p_t(x') = p_0(\phi_t^{-1}(x'))\, | \nabla_{\S 2} \phi^{-1}_t(x') |. \label{eqn:cnf-prob-xform-my-notation}
-  \end{align}
+    p_t(x') = p_0(\phi_t^{-1}(x'))\, | \det \nabla_{\S 2} \phi^{-1}_t(x') |. \label{eqn:cnf-prob-xform-my-notation}
+  \end{align}  
 
-  \item Note that we can rewrite Equation~\eqref{eqn:flow} using my notation as:
-  \begin{align}
-    \nabla_1 \phi_t(x) = v_t(\phi_t(x)). \label{eqn:flow-my-notation}
-  \end{align}
-
-  \item Let $f: \Real^d \ra \Real$ and let $v: \Real^d \ra \Real^d$. A {\bf push-forward} (or a change of variable) of $f$ according to $v$ is a function of $g:\Real^d \ra \Real$ defined by
-  \begin{align*}
-    g(y) = f(v^{-1}(y))\, |\nabla v^{-1}(y)|. 
-  \end{align*}
-  Here, $\nabla$ denotes the derivative operator, which gets you the Jacobian matrix. We denote the push-forward of $f$ according to $v$ as $[v]_* f$.
-
-  \item In the context of the discussion so far, we have that $p_t = [\phi_t]_* p_0$.
+  \item \begin{definition} 
+    If $p_t$ is a probability path that is a push-forward of $p_0$ according to flow $\phi_t$, and $v_t$ generates $\phi_t$, we say that $v_t$ {\bf generates} $p_t$.
+  \end{definition}
   
-  \item When a time-dependent vector field $v_t$ generetes a flow $\phi_t$ and when $p_t = [\phi_t]_* p_0$,\\ we says that $v_t$ {\bf generates} $p_t$.
+  \item The neural ODE framework can be used to do generative modeling in the following way. We train a neural network to model a vector field $v_t(x;\theta)$ such that it generates a flow $\phi_t$ so that the push-forward of a noise distribution $p_0 = p_{\mrm{noise}}$ results in a probability path $p_t$ such that $p_1 = p_{\data}$.
   
-  \item When we use a neural ODE to transform a probability distribution from one to another (i.e., transforming $p_0$ from $p_1$), we call the resulting model a {\bf continuous normalizing flow} model. 
+  A neural ODE used in this way is called a {\bf continous normalizing flow} model.
 \end{itemize}
 
 \section{Flow Matching}
@@ -413,7 +470,7 @@ This note was written as I read the ``Flow Matching for Generative Modeling'' pa
   \item We said earlier that there are multiple ways to define $\mu_t$ and $\sigma_t$ in Equation~\eqref{eqn:mu-sigma}. We discuss them in this section.
 \end{itemize}
 
-\subsection{Diffusion Conditonal Vector Fields}
+\subsection{Diffusion Conditional Vector Fields}
 
 \begin{itemize}
   \item For a diffusion model, time is the reverse of what we have been using in this note.
@@ -427,7 +484,7 @@ This note was written as I read the ``Flow Matching for Generative Modeling'' pa
   \begin{itemize}
     \item Given $x_{\data}$, we have that $p_t(x|x_{\data}) = \mcal{N}(x; x_{\data}, \sigma_t^2 I )$ where $\sigma_1 = 0$ and $\sigma_0 \gg 1$. 
     \item Hence, $\mu_t(x_{\data}) = x_{\data}$, and $\sigma_t(x_{\data})$ does not depend on $x_{\data}$.
-    \item As a resulit, the conditional vector field is given by
+    \item As a result, the conditional vector field is given by
     \begin{align*}
       u_t(x|x_\data) = \frac{\sigma'_t}{\sigma_t} (x - x_{\data}).
     \end{align*}
@@ -448,7 +505,7 @@ This note was written as I read the ``Flow Matching for Generative Modeling'' pa
   \end{itemize}
 \end{itemize}
 
-\subsection{Optimal Transport Conditional Vector Fields}
+\subsection{Optimal Transport Conditional Vector Field}
 
 \begin{itemize}
   \item We simply make $\mu_t$ and $\sigma_t$ linear functions of time.
@@ -460,6 +517,184 @@ This note was written as I read the ``Flow Matching for Generative Modeling'' pa
   \begin{align*}
     u_t(x|x_{\data}) = \frac{-(1-\sigma_{min})}{1 - (1-\sigma_{\min}) t} (x - t x_{\data}) + x_{\data} = \frac{x_{\data} - (1-\sigma_{\min})x}{1 - (1-\sigma_{\min}) t}.
   \end{align*}
+  The conditional flow is given by:
+  \begin{align*}
+    \psi_t(x) 
+    &= \sigma_t(x_{\data})x + \mu_t(x_{\data})    
+    = (1 - (1-\sigma_{\min})t) x + tx_{\data}.
+  \end{align*}
+  The conditional flow matching objective is given by
+  \begin{align*}
+    \mcal{L}_{\mrm{CFM}}(\theta) 
+    &= E_{\substack{t \sim \mcal{U}([0,1]),\\ x_{\data} \sim p_{\data},\\ x \sim p_t(x|x_{\data})}} [\| u_t(x|x_{\data}) - v_t(x;\theta) \|^2] \\
+    &= E_{\substack{t \sim \mcal{U}([0,1]),\\ x_{\data} \sim p_{\data},\\ x \sim p_t(x|x_{\data})}} \bigg[\bigg\| \frac{x_{\data} - (1-\sigma_{\min})x}{1 - (1-\sigma_{\min})t} - v_t(x;\theta) \bigg\|^2 \bigg].
+  \end{align*}
+  
+  \item Let's rewrite the loss so that it becomes simpler. We have that $x \sim p_t(x|x_{\data})$ simply means that $x = (1-(1-\sigma_{\min})t)x_0 + tx_{\data}$ where $x_0 \sim p_0$. So,
+  \begin{align*}
+    &\mcal{L}_{\mrm{CFM}}(\theta) \\    
+    &= E_{\substack{t \sim \mcal{U}([0,1]),\\ x_{\data} \sim p_{\data},\\ x_0 \sim p_0}} \bigg[\bigg\| \frac{x_{\data} - (1-\sigma_{\min})((1 - (1-\sigma_{\min})t) x_0 + t{x_{\data}})}{1 - (1-\sigma_{\min})t} - v_t( (1-(1-\sigma_{\min}t))x_0 + t x_{\data};\theta) \bigg\|^2 \bigg] \\
+    &= E_{\substack{t \sim \mcal{U}([0,1]),\\ x_{\data} \sim p_{\data},\\ x_0 \sim p_0}} \bigg[\bigg\| \frac{(1 - (1-\sigma_{\min})t)(x_{\data} - (1-\sigma_{\min})x_0)}{1 - (1-\sigma_{\min})t} - v_t( (1-(1-\sigma_{\min}t))x_0 + t x_{\data};\theta) \bigg\|^2 \bigg] \\
+    &= E_{\substack{t \sim \mcal{U}([0,1]),\\ x_{\data} \sim p_{\data},\\ x_0 \sim p_0}} \bigg[\bigg\| x_{\data} - (1-\sigma_{\min})x_0 - v_t( (1-(1-\sigma_{\min}t))x_0 + t x_{\data};\theta) \bigg\|^2 \bigg].
+  \end{align*}
+
+  \item The paper seems to make a great deal with the flow $\psi_t$ is the ``optimal transport displacement map'' between two Gaussians.
+  \begin{itemize}
+    \item Honestly, I found this to be very difficult to parse.
+    \item The paper cites a paper by McCann \cite{McCann:1997}, but McCann's paper does not contain the word ``optimal transport'' or the word ``displacement map.''
+  \end{itemize}
+
+  \item McCann's paper defines something called the ``displacement interpolation.''
+  \begin{definition}
+    Let $p$ and $p'$ be two probability distributions on $\Real^d$ such that there exists a diffeomorphism $\varphi$ such that $p' = [\varphi]_* p$. Let $\mrm{id}: x \mapsto x$ denotes the identity mapping on $\Real^d$. The {\bf displacemenet interpolation} between $p$ and $p'$ is defined to be the probability path
+    $$ p_t := [(1-t)\mrm{id} + t\varphi]_* p.$$
+  \end{definition}
+  In other words, to sample from $p_t$, one does the following
+  \begin{itemize}
+    \item Sample $x$ form $p$.
+    \item Compute $x' = \varphi(x)$.
+    \item Compute $x_t = (1-t) x + tx'$.
+    \item Return $x_t$ to the user.
+  \end{itemize}
+
+  \item Look at our conditional flow $\psi_t(x) = (1-(1-\sigma_{\min})t) x + tx_{\data}$ again. We note that it transforms a Gaussian distribution $p_0 = \mcal{N}(0,I)$ to another Gaussian distribution $p_1 = \mcal{N}(x_{\data},\sigma_{\min}^2 I)$. Moreover, we can write it as a displacement interpolant between $p_0$ and $p_1$ because we can define
+  \begin{align*}
+    \varphi(x) = \sigma_{\min} x + x_{\data}.
+  \end{align*}
+  It is clear that $\varphi$ is a diffeomorphism if $\sigma_{\min} \neq 0$. It is also clear that $p_1 = [\varphi]_* p_0$. Lastly,
+  \begin{align*}
+    \psi_t(x) = (1 - (1-\sigma_{\min})t) x + tx_{\data} = (1 - t)x + t(\sigma_{\min}x + x_{\data}) = (1-t)x + t\varphi(x).
+  \end{align*}
+  So, indeed, $\psi_t$ is a displacement interpolation between two Gaussians.
+
+  \item Where does optimal transport come from then?
+  
+  \item First, let us understand what an optimal transport problem is.
+  
+  \begin{definition}
+    Given two probability distributions $p$ and $p'$ on $\Real^d$, a diffeomorphism $f: \Real^d \ra \Real$ is called an {\bf optimal transport plan} from $p$ to $p'$ if the following two conditions are satisfied.
+    \begin{itemize}
+      \item $p'$ is the push-forward of $p$ according to $f$. In other word, $p' = [f]_* p$.
+      \item $f$ is a function that minimizes
+      \begin{align*}
+        E_{x \sim p}[c(x, f(x))] = \int p(x) c(x,f(x))\, \dee x
+      \end{align*}
+      for some cost function $c: \Real^d \times \Real^d \ra \Real^+ \cup \{0\}$.
+    \end{itemize} 
+  \end{definition}
+
+  \item For the cost function $c(x,y) = \| x-y \|^2$, the optimal transport plan exists and is unique for non-pathological $p$ and $p'$.
+  \begin{theorem}[Brenier's \cite{Brenier:1991}]
+    Let the cost function $c(x,y) = \| x-y \|^2$. Let $p$ and $p'$ be well-behaved probability distributions (i.e., have finite moments and do not assign mass to sets with measure zero). Then, there exists a unique optimal transport plan $f$ from $p$ to $p'$. Moreover, there exists a convex scalar function $F:\Real^d \ra \Real$ such that $\nabla F = f$.
+  \end{theorem}
+  I'm using the form of the theorem from a Tweet by Gabriel Peyr\'{e} \cite{Peyre:BreinerTheoremTweet}.
+
+  \item For two Gaussians, our diffeomorphism is $\varphi(x) = \sigma_{\min} x + x_{\data}$. Let
+  \begin{align*}
+    \Phi(x) = \frac{1}{2} \sum_{i=1}^d \bigg(\sqrt{\sigma_{\min}} x^i + \frac{x^i_{\data}}{\sqrt{\sigma_{\min}}} \bigg)^2.
+  \end{align*}
+  We have that
+  \begin{align*}
+    \nabla_i \Phi(x) = \sigma_{\min} x^i + x^i_{\data}.
+  \end{align*}
+  So,
+  \begin{align*}
+    \nabla \Phi(x) = \begin{bmatrix}
+      \nabla_1 \Phi(x) \\
+      \nabla_2 \Phi(x) \\
+      \vdots \\
+      \nabla_d \Phi(x)
+    \end{bmatrix}
+    = \begin{bmatrix}
+      \sigma_{\min} x^1 + x^1_{\data} \\
+      \sigma_{\min} x^2 + x^2_{\data} \\
+      \vdots \\
+      \sigma_{\min} x^d + x^d_{\data} 
+    \end{bmatrix}
+    = \sigma_{\min} x + x_{\data}
+    = \varphi(x).
+  \end{align*}
+  By Brenier's theorem, $\varphi$ is the unique optimal transport plan that minimizes $\int p(x) \| x - \varphi(x) \|^2\, \dee x$.
+
+  \item So, when the paper says $\phi_t$ is the ``optimal transport displacement map'' between two Gaussians, it means that
+  \begin{itemize}
+    \item There exists the unique optimal transport map $\varphi$ from the Gaussian $p_0 = \mcal{N}(0,I)$ to another Gaussian $p_1 = \mcal{N}(x_{\data},\sigma_{\min}^2 I)$.
+    \item $\phi_t$ is the displacement interpolation between $p_0$ and $p_1$ with respect to $\varphi$.
+  \end{itemize}
+
+  \item The conditional flow $\phi_t(x) = (1 - (1-\sigma_{\min})t) x + tx_{\data}$ has nice properties.
+  \begin{itemize}
+    \item These properties are kind of evident by the form of the function itself. Don't be fooled by the fact that $\phi_t$ is ``optimal transport'' or anything. I think it's just a marketing gimmick to make it sound more impressive than it is.
+    
+    \item The first property is that, according to the flow, a particle that starts from $x$ moves in a straight line from $x$ towards $x_{\data}$.
+    \begin{itemize}
+      \item This is also true for variance-preserving diffusion conditional flows.
+    \end{itemize}
+
+    \item The second property is that the velocity at which each particle moves is constant throughout the movement duration. A particle that starts at $x$ always move at velocity $x_{\data} - (1-\sigma_{\min}) x$.
+    \begin{itemize}
+      \item This property is not true for diffusion conditional flows in general.
+    \end{itemize}
+  \end{itemize}
+  
+  \item The paper claims that ``sampling trajectory from diffusion paths can `overshoot' the final sample, resulting in unnecessary backtracking, whilst the OT paths are guaranteed to stay straight.''
+  \begin{itemize}
+    \item WTF are the authors talking about?
+    \item Diffusion conditional paths are straight too. They don't overshoot whatsover. See Figure 2. Every paths are straight.
+    \item If they talk about unconditonal sampling paths, then there is no gaurantee that the uncondional paths according to this formulation is going to be straight. See the rectified flow paper \cite{Liu:2022}.
+  \end{itemize}
+
+  \item The paper claims that ``An interesting observation is that the OT VF has a constant direction in time, which arguably leads to a simpler regression task.''
+  \begin{itemize}
+    \item This is plausible, but take it with grain of salt.
+  \end{itemize}
+
+  \item Also, keep in main that ``we note that although the conditional flow is optimal, this by no means imply that the marginal VT is an optimal transport solution.''
+  \begin{itemize}
+    \item The rectified flow paper \cite{Liu:2022} has more things to say in terms of optimal transport properties of the marginal VT.
+  \end{itemize}
+\end{itemize}
+
+\section{Experiments}
+
+\begin{itemize}
+  \item The paper trains generative models on the following datasets.
+  \begin{itemize}
+    \item CIFAR-10 at $32\times32$.
+    \item ImageNet at $32 \times 32$, $64 \times 64$ and $128 \times 128$.
+  \end{itemize}
+  
+  \item The following generative models were trained:
+  \begin{itemize}
+    \item Vanilla DDPM \cite{Ho:2020}. I believe this is a noise-predicting network with linear-$\beta$ schedule.
+    \item Score matching \cite{Song:SDE:2021}. I believe this is a diffusion model with variance-exploding noise schedule.
+    \item ScoreFlow \cite{Song:ScoreFlow:2021}. I have not read this paper, so I don't have a good idea what it is about.
+    \item Flow matching with diffusion conditional path (variance preserving).
+    \item Flow matching with optimal transport conditional path.
+  \end{itemize}
+
+  \item It seems all the generative models use the ADM architecture because the hyperparameter table is that of the ADM architecture.
+  
+  \item Evaluation metrics.
+  \begin{itemize}
+    \item FID
+    \item NLL $=$ natgative log likelihood
+    \item NFE = ``number of function evaluations for an adaptive solver to reach its prespecified numerical tolerance.''
+    \begin{itemize}
+      \item Actually, I don't know exactly what this means. This is the first time I see this metric.
+      \item My guess is that, for a solver like Euler's method, the output converges as you increase the number of steps.
+      \item This might measure the number of steps $N$ such that the difference between a sample generated with $N$ steps and another sample generated with $N+1$ step is below a certain threshold.
+      \item This metrics would take a very long time to evaluate.
+    \end{itemize}
+  \end{itemize}
+
+  \item In Table 1 of the paper, it seems that FM with OT conditional path beats all other generative models in all metrics for all datsets.
+  
+  \item Paper comments that flow matching models converge much faster than other models on ImageNet 64.
+  
+  \item The paper presents evidence that flow matching models attent higher FID scores with lower NFEs. (Figure 7.)
+  
+  \item Lastly, the paper trains an image super-resolution model with flow matching and compares it to SR3. They found that they beated SR3 on the FID score but not image similarity metrics (PSNR and SSIM).
 \end{itemize}
 
 \appendix
@@ -503,6 +738,7 @@ This note was written as I read the ``Flow Matching for Generative Modeling'' pa
 
   \item We shall not prove the theorem in this note, but I will be studying it more.
   
+\begin{comment}
   \item Let $h: \Real^d \rightarrow \Real$ be any compactly supported differentiable function. Consider the time derivative of the following expectation
   \begin{align*}
     \frac{\partial}{\partial t} E_{x \sim p_0} [h(\phi_t(x))]
@@ -515,7 +751,10 @@ This note was written as I read the ``Flow Matching for Generative Modeling'' pa
     &= \int p_0(x) \bigg( \sum_{i=1}^d \nabla_i h(\phi_t(x)) \nabla_1 \phi^i_t(x) \bigg) \, \dee x \\
     &= \int p_0(x) \bigg( \sum_{i=1}^d \nabla_i h(\phi_t(x)) v_t^i(\phi_t(x)) \bigg) \, \dee x \\
   \end{align*}
+\end{comment}
+
 \end{itemize}
+
 
 \bibliographystyle{acm}
 \bibliography{flow-matching}  
