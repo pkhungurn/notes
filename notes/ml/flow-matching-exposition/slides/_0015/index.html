@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>0015</title>
+
+    <!-- Bootstrap -->
+    <link href="../../../../../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../../../../../css/theme.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+      TeX: { equationNumbers: {autoNumber: "AMS"} }
+    });
+    </script>
+    <script type="text/javascript"
+            src="../../../../../MathJax/MathJax.js?config=TeX-AMS_HTML-full">
+    </script>
+
+    <script type="text/javascript" src="../../../../../js/jquery-3.4.1.min.js"></script>
+    <script type="text/javascript" src="../../../../../js/bigfoot.min.js"></script>
+
+    <link rel="stylesheet" type="text/css" href="../../../../../css/bigfoot-default.css">
+
+</head>
+<body>
+<div class="container">
+    <span style="visibility: hidden;">
+        \(
+        \def\sc#1{\dosc#1\csod}
+        \def\dosc#1#2\csod{{\rm #1{\small #2}}}
+
+        \newcommand{\dee}{\mathrm{d}}
+        \newcommand{\Dee}{\mathrm{D}}
+        \newcommand{\In}{\mathrm{in}}
+        \newcommand{\Out}{\mathrm{out}}
+        \newcommand{\pdf}{\mathrm{pdf}}
+        \newcommand{\Cov}{\mathrm{Cov}}
+        \newcommand{\Var}{\mathrm{Var}}
+
+        \newcommand{\ve}[1]{\mathbf{#1}}
+        \newcommand{\ves}[1]{\boldsymbol{#1}}
+        \newcommand{\mrm}[1]{\mathrm{#1}}
+        \newcommand{\etal}{{et~al.}}
+        \newcommand{\sphere}{\mathbb{S}^2}
+        \newcommand{\modeint}{\mathcal{M}}
+        \newcommand{\azimint}{\mathcal{N}}
+        \newcommand{\ra}{\rightarrow}
+        \newcommand{\mcal}[1]{\mathcal{#1}}
+        \newcommand{\X}{\mathcal{X}}
+        \newcommand{\Y}{\mathcal{Y}}
+        \newcommand{\Z}{\mathcal{Z}}
+        \newcommand{\x}{\mathbf{x}}
+        \newcommand{\y}{\mathbf{y}}
+        \newcommand{\z}{\mathbf{z}}
+        \newcommand{\tr}{\mathrm{tr}}
+        \newcommand{\sgn}{\mathrm{sgn}}
+        \newcommand{\diag}{\mathrm{diag}}
+        \newcommand{\Real}{\mathbb{R}}
+        \newcommand{\sseq}{\subseteq}
+        \newcommand{\ov}[1]{\overline{#1}}
+        \DeclareMathOperator*{\argmax}{arg\,max}
+        \DeclareMathOperator*{\argmin}{arg\,min}
+
+        \newcommand{\data}{\mathrm{data}}
+        \newcommand{\N}{\mathcal{N}}
+        \newcommand{\Hil}{\mathcal{H}}
+        \)
+    </span>
+
+    <br>
+    <h1>Scale-Add</h1>
+
+    <hr>
+    <p><b>Definition.</b> A <b>scale-add</b> is a vector function $f: \Real^d \rightarrow \Real^d$ of the form $$f(x) = \sigma x + \mu$$ where $\sigma \in \Real$ and $\mu \in \Real^d$.</p>
+    
+    <hr>    
+    <table>
+        <tr>
+            <td valign="top">Image.</td>
+            <td valign="top">Vector function.</td>
+        </tr>
+        <tr>
+            <td><img src="../../data/_20240729/scaleadds/hoshihina_original.png" width="500" alt=""></td>
+            <td>$$ f(x) = 2x + (1,-1)$$</td>
+        </tr>
+    </table>
+
+    <p>What is the effect of the vector function on the image?</p>
+
+    <table>
+        <tr>
+            <td>(a)</td>
+            <td><img src="../../data/_20240729/scaleadds/hoshihina_scaleadd_00.png" width="500" alt=""></td>
+            <td>(b)</td>
+            <td><img src="../../data/_20240729/scaleadds/hoshihina_scaleadd_01.png" width="500" alt=""></td>
+        </tr>
+        <tr>
+            <td>(c)</td>
+            <td><img src="../../data/_20240729/scaleadds/hoshihina_scaleadd_02.png" width="500" alt=""></td>
+            <td>(d)</td>
+            <td><img src="../../data/_20240729/scaleadds/hoshihina_scaleadd_03.png" width="500" alt=""></td>
+        </tr>
+    </table>
+    
+    <hr>    
+    <p>The answer is (c)</p>      
+    
+    <table>        
+        <tr>
+            <td><img src="../../data/_20240729/scaleadds/hoshihina_original.png" width="500" alt=""></td>
+            <td>$\xrightarrow{\ \ \ f\ \ \ }$</td>
+            <td><img src="../../data/_20240729/scaleadds/hoshihina_scaleadd_02.png" width="500" alt=""></td>
+        </tr>        
+    </table>
+
+    <hr>
+    <p>How do you know? Well,
+    \begin{align*}
+        f(x) &= 2x + (1,-1) = \texttt{T}_{(1,-1)}(2x) = \texttt{T}_{(1,-1)}(\texttt{S}_2(x)) = (\texttt{T}_{(1,-1)} \circ \texttt{S}_2)(x).
+    \end{align*}
+    So,
+    </p>
+
+    <ol>
+        <li>You double the size of the image first.</li>
+        <li>Then you move it one unit to the left and then one unit down.</li>
+    </ol>
+
+    <table>        
+        <tr>
+            <td><img src="../../data/_20240729/scaleadds/hoshihina_original.png" width="300" alt=""></td>
+            <td>$\xrightarrow{\ \ \ \texttt{S}_{2}\ \ \ }$</td>
+            <td><img src="../../data/_20240729/scaleadds/hoshihina_scaleadd_01.png" width="300" alt=""></td>
+            <td>$\xrightarrow{\ \ \ \texttt{T}_{(1,-1)}\ \ \ }$</td>
+            <td><img src="../../data/_20240729/scaleadds/hoshihina_scaleadd_02.png" width="300" alt=""></td>
+        </tr>        
+    </table>    
+
+    <hr>
+    <p>There are two ways to denote a scale-add.</p>
+
+    <ul>
+        <li>$\texttt{T}_{\mu} \circ \texttt{S}_\sigma$</li>
+        <li>$\sigma\, \mrm{id} + \mu$</li>
+    </ul>
+
+    <p>So, $$ (\texttt{T}_{\mu} \circ \texttt{S}_\sigma)(x) = (\sigma\, \mrm{id} + \mu)(x) = \sigma x + \mu.$$</p>
+
+    <hr>
+    <p>A scale-add <b>always scales before adds</b>.</p>
+    
+    <hr>
+    <p>
+        <a href="../_0013/index.html">[&lt;&lt;]</a> 
+        <a href="../../index.html">[Top]</a>
+        <a href="../_0016/index.html">[&gt;&gt;]</a> 
+    </p>            
+</div>
+
+<script type="text/javascript">
+$.bigfoot();
+</script>
+
+</body>
+</html>

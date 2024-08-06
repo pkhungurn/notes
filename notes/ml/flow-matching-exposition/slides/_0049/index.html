@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>0049</title>
+
+    <!-- Bootstrap -->
+    <link href="../../../../../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../../../../../css/theme.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+      TeX: { equationNumbers: {autoNumber: "AMS"} }
+    });
+    </script>
+    <script type="text/javascript"
+            src="../../../../../MathJax/MathJax.js?config=TeX-AMS_HTML-full">
+    </script>
+
+    <script type="text/javascript" src="../../../../../js/jquery-3.4.1.min.js"></script>
+    <script type="text/javascript" src="../../../../../js/bigfoot.min.js"></script>
+
+    <link rel="stylesheet" type="text/css" href="../../../../../css/bigfoot-default.css">
+
+</head>
+<body>
+<div class="container">
+    <span style="visibility: hidden;">
+        \(
+        \def\sc#1{\dosc#1\csod}
+        \def\dosc#1#2\csod{{\rm #1{\small #2}}}
+
+        \newcommand{\dee}{\mathrm{d}}
+        \newcommand{\Dee}{\mathrm{D}}
+        \newcommand{\In}{\mathrm{in}}
+        \newcommand{\Out}{\mathrm{out}}
+        \newcommand{\pdf}{\mathrm{pdf}}
+        \newcommand{\Cov}{\mathrm{Cov}}
+        \newcommand{\Var}{\mathrm{Var}}
+
+        \newcommand{\ve}[1]{\mathbf{#1}}
+        \newcommand{\ves}[1]{\boldsymbol{#1}}
+        \newcommand{\mrm}[1]{\mathrm{#1}}
+        \newcommand{\etal}{{et~al.}}
+        \newcommand{\sphere}{\mathbb{S}^2}
+        \newcommand{\modeint}{\mathcal{M}}
+        \newcommand{\azimint}{\mathcal{N}}
+        \newcommand{\ra}{\rightarrow}
+        \newcommand{\mcal}[1]{\mathcal{#1}}
+        \newcommand{\X}{\mathcal{X}}
+        \newcommand{\Y}{\mathcal{Y}}
+        \newcommand{\Z}{\mathcal{Z}}
+        \newcommand{\x}{\mathbf{x}}
+        \newcommand{\y}{\mathbf{y}}
+        \newcommand{\z}{\mathbf{z}}
+        \newcommand{\tr}{\mathrm{tr}}
+        \newcommand{\sgn}{\mathrm{sgn}}
+        \newcommand{\diag}{\mathrm{diag}}
+        \newcommand{\Real}{\mathbb{R}}
+        \newcommand{\sseq}{\subseteq}
+        \newcommand{\ov}[1]{\overline{#1}}
+        \DeclareMathOperator*{\argmax}{arg\,max}
+        \DeclareMathOperator*{\argmin}{arg\,min}
+
+        \newcommand{\data}{\mathrm{data}}
+        \newcommand{\N}{\mathcal{N}}
+        \newcommand{\Hil}{\mathcal{H}}
+        \)
+    </span>
+
+    <h1>Flow for Gaussian Probability Path</h1>
+
+    <hr>
+    <p>We studied probability path $$p_t = \mcal{N}(\mu_t, \sigma_t^2 I)$$ where $\mu_t: \Real \ra \Real^d$ and $\sigma_t: \Real \ra \Real^+$ are continuous functions. <br>This path represents a smooth transition from one isotropic Gaussian $\mcal{N}(\mu_0, \sigma_0^2 I)$ to another $\mcal{N}(\mu_1, \sigma_1^2 I)$.</p>
+
+    <hr>
+    <p>Could this path have been a result of pushing the initial distribution $p_0$ with a flow $\phi_t$?</p>
+
+    <hr>
+    <p>Well yes.</p>
+
+    <p>Let's assume such a flow exists. Then, we would have that $p_t = [\phi_t]_* p_0$. This it means that $$\mcal{N}(\mu_t, \sigma_t^2 I) = [\phi_t]_* \mcal{N}(\mu_0, \sigma_0^2 I).$$ We know that
+    $$\phi_t(x) = \frac{\sigma_t}{\sigma_0} (x - \mu_0) + \mu_t$$
+    satisfies the above condition. So, actually, the probability path $p_t$ is the result of pushing $p_0$ forward with the above $\phi_t$.
+    </p>
+
+    <hr>
+    <p>Let's do some sanity checks. Is $\phi_t$ a flow?</p>
+
+    <ul>
+      <li>$\phi_0(x) = \frac{\sigma_0}{\sigma_0} (x - \mu_0) + \mu_0 = x$.</li>      
+      <li>Each $\phi_t$ is a scale-add. We know that a scale-add is a diffeomorphism if the scaling coefficient is not zero, and $\sigma_t / \sigma_0 \neq 0$.</li>
+      <li>The derivative of the flow is given by
+      \begin{align*}
+        \nabla \phi_t(x) = \nabla \begin{bmatrix} 
+          \sigma_t(x^1 - \mu_0^1)/\sigma_0 + \mu_t^1 \\
+          \sigma_t(x^2 - \mu_2^1)/\sigma_2 + \mu_2^1
+        \end{bmatrix}
+        &= \begin{bmatrix}
+          \sigma_t'(x^1 - \mu_0^1)/\sigma_0 + \{\mu_t^1\}' & \sigma_t & 0 \\
+          \sigma_t'(x^2 - \mu_0^1)/\sigma_0 + \{\mu_t^2\}' & 0 & \sigma_t.
+        \end{bmatrix}
+      \end{align*}
+      Actually, the deritive might not exist if $\sigma_t'$ and $\mu_t'$ do not exist.
+      </li>
+    </ul>
+
+    <p>So, $\phi_t$ is a flow if and only if $\mu_t$ and $\phi_t$ are differentiable.</p>
+
+    <hr>
+    <p>
+        <a href="../_0047/index.html">[&lt;&lt;]</a> 
+        <a href="../../index.html">[Top]</a>
+        <a href="../_0050/index.html">[&gt;&gt;]</a> 
+    </p>
+</div>
+
+<script type="text/javascript">
+$.bigfoot();
+</script>
+
+</body>
+</html>

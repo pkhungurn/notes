@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>0044</title>
+
+    <!-- Bootstrap -->
+    <link href="../../../../../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../../../../../css/theme.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+      TeX: { equationNumbers: {autoNumber: "AMS"} }
+    });
+    </script>
+    <script type="text/javascript"
+            src="../../../../../MathJax/MathJax.js?config=TeX-AMS_HTML-full">
+    </script>
+
+    <script type="text/javascript" src="../../../../../js/jquery-3.4.1.min.js"></script>
+    <script type="text/javascript" src="../../../../../js/bigfoot.min.js"></script>
+
+    <link rel="stylesheet" type="text/css" href="../../../../../css/bigfoot-default.css">
+
+</head>
+<body>
+<div class="container">
+    <span style="visibility: hidden;">
+        \(
+        \def\sc#1{\dosc#1\csod}
+        \def\dosc#1#2\csod{{\rm #1{\small #2}}}
+
+        \newcommand{\dee}{\mathrm{d}}
+        \newcommand{\Dee}{\mathrm{D}}
+        \newcommand{\In}{\mathrm{in}}
+        \newcommand{\Out}{\mathrm{out}}
+        \newcommand{\pdf}{\mathrm{pdf}}
+        \newcommand{\Cov}{\mathrm{Cov}}
+        \newcommand{\Var}{\mathrm{Var}}
+
+        \newcommand{\ve}[1]{\mathbf{#1}}
+        \newcommand{\ves}[1]{\boldsymbol{#1}}
+        \newcommand{\mrm}[1]{\mathrm{#1}}
+        \newcommand{\etal}{{et~al.}}
+        \newcommand{\sphere}{\mathbb{S}^2}
+        \newcommand{\modeint}{\mathcal{M}}
+        \newcommand{\azimint}{\mathcal{N}}
+        \newcommand{\ra}{\rightarrow}
+        \newcommand{\mcal}[1]{\mathcal{#1}}
+        \newcommand{\X}{\mathcal{X}}
+        \newcommand{\Y}{\mathcal{Y}}
+        \newcommand{\Z}{\mathcal{Z}}
+        \newcommand{\x}{\mathbf{x}}
+        \newcommand{\y}{\mathbf{y}}
+        \newcommand{\z}{\mathbf{z}}
+        \newcommand{\tr}{\mathrm{tr}}
+        \newcommand{\sgn}{\mathrm{sgn}}
+        \newcommand{\diag}{\mathrm{diag}}
+        \newcommand{\Real}{\mathbb{R}}
+        \newcommand{\sseq}{\subseteq}
+        \newcommand{\ov}[1]{\overline{#1}}
+        \DeclareMathOperator*{\argmax}{arg\,max}
+        \DeclareMathOperator*{\argmin}{arg\,min}
+
+        \newcommand{\data}{\mathrm{data}}
+        \newcommand{\N}{\mathcal{N}}
+        \newcommand{\Hil}{\mathcal{H}}
+        \)
+    </span>
+
+    <h1>Generating Probability Paths with Flows</h1>
+
+    <hr>
+    <p>In generative modeling, we typically do not care about the exact form of probability distribution.<br> We may just want to sample from $p_{\data}$.</p>
+
+    <hr>
+    <p>In case of a probability path $p_t$, we do not care about the exact form of $p_t$.<br> We just want to sample from it.</p>
+
+    <hr>
+    <p>This is just like a transformation of probability distribution by a push-forward $q = [f]_* p$</p>
+
+    <ul>
+        <li>We know how to sample from $p$.</li>
+        <li>We know how to apply $f$.</li>
+        <li>Notice that we don't know anything about $q$, but we can sample from it by just knowing the two items above.</li>
+    </ul>
+
+    <hr>
+    <p>There's an analogue of the push-foward for probability flow. However, it requires one new concept.</p>
+
+    <hr>
+    <p><b>Definition.</b> A <b>flow</b> $\phi$ in an indexed famility of vector functions $\{ \phi_t : t \in \Real \}$ that satisfies the following property.</p>
+
+    <ul>
+        <li>Each $\phi_t$ has signature $\Real^d \ra \Real^d$.</li>
+        <li>$\phi_0 = \mrm{id}$.</li>
+        <li>$\phi_t$ is a diffeomorphism.</li>
+        <li>When $\phi$ is viewed as function $\phi(t,x)$ of signature $\Real^{d+1} \ra \Real^d$ is differentiable.</li>
+    </ul>
+
+    <hr>
+    <p><b>Definition.</b> A <b>push-forward</b> of probability distribution $p$ according to a flow $\phi_t$ is probability path $p_t$ defined by $p_t = [\phi_t]_* p$.</p>
+
+    <hr>
+    <p>So, to sample from $p_t$ which is the push-forward of $p$ according to $\phi_t$, we do the following.</p>
+
+    <ol>
+        <li>Sample $x \sim p$.</li>
+        <li>Compute $x_t = \phi_t(x)$.</li>
+        <li>Return $x_t$ to the user.</li>
+    </ol>
+
+    <hr>
+    <p>
+        <a href="../_0043/index.html">[&lt;&lt;]</a> 
+        <a href="../../index.html">[Top]</a>
+        <a href="../_0045/index.html">[&gt;&gt;]</a> 
+    </p>
+</div>
+
+<script type="text/javascript">
+$.bigfoot();
+</script>
+
+</body>
+</html>

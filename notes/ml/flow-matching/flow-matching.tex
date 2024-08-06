@@ -645,9 +645,7 @@ This note was written as I read the ``Flow Matching for Generative Modeling'' pa
   
   \item The paper claims that ``sampling trajectory from diffusion paths can `overshoot' the final sample, resulting in unnecessary backtracking, whilst the OT paths are guaranteed to stay straight.''
   \begin{itemize}
-    \item WTF are the authors talking about?
-    \item Diffusion conditional paths are straight too. They don't overshoot whatsover. See Figure 2. Every paths are straight.
-    \item If they talk about unconditonal sampling paths, then there is no gaurantee that the uncondional paths according to this formulation is going to be straight. See the rectified flow paper \cite{Liu:2022}.
+    \item This is true because the trajectory of a point can be a non-linear function of $t$.        
   \end{itemize}
 
   \item The paper claims that ``An interesting observation is that the OT VF has a constant direction in time, which arguably leads to a simpler regression task.''
