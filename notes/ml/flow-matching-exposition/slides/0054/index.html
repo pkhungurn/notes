@@ -5,7 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
-    <title>0000</title>
+    <title>0054</title>
 
     <!-- Bootstrap -->
     <link href="../../../../../css/bootstrap.min.css" rel="stylesheet">
@@ -34,6 +34,9 @@
 
     <link rel="stylesheet" type="text/css" href="../../../../../css/bigfoot-default.css">
 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.1/styles/default.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.1/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
 </head>
 <body>
 <div class="container">
@@ -80,37 +83,91 @@
         \)
     </span>
 
-    <br>
-    <h1>Vector Function</h1>
-    <hr>
-
-    <p>For the current paper we are reading, we are working in a $d$-dimensional space $\Real^d$.</p>
-    <hr>
-
-    <p>We denote a vector in $\Real^d$ with $x = (x^1, x^2, \dotsc, x^d)$.</p>
-
-    <p>This is an unusual convention. However, some really famous textbooks uses it. These textbooks include Spivak's <a href="https://www.amazon.co.jp/-/en/Michael-Spivak/dp/0805390219">Calculus on Manifolds</a>, which is one of the book I learned multi-variable calculus from.</p>
-    <hr>
-
-    <p><b>Definition.</b> A <b>vector function</b> or a <b>vector-valued function</b> is a function $f$ that maps $\Real^n$ to $\Real^m$ for some positive integers $n$ and $m$.</p>
+    <h1>How to compute integrals, computationally...</h1>
 
     <hr>
-    <p>We say that the function $f$ has <b>signature</b> $\Real^n \ra \Real^m$. We also write $f:\Real^n \ra \Real^m$.</p>
+    <p>When you are given a time-dependent vector field $v_t$, you know that you can compute the associated "flow" $\phi_t$ by integrating $v_t$ like the way we did it in the last slide.
+    \begin{align*}
+      \phi_t(x) = x + \int_0^t v_u(\phi_u(x))\, \dee u
+    \end{align*}
+    </p>
 
     <hr>
-    <p>Most of the time, we will deal with functions of signature $\Real^d \ra \Real^d$ or $\Real^{d+1} \ra \Real^d$.</p>
+    <p>However, computing integrals analytically is not always possible, but we can always do it numerically.</p>
 
     <hr>
-    <p>Let's talk first about functions of signature $\Real^d \ra \Real^d$. There are two interpretations of this type of functions.</p>
+    <p>We have several well-known algorithms to do it.</p>
 
-    <ol>
-        <li>Point transformation.</li>
-        <li>Vector field.</li>
-    </ol>
+    <ul>
+      <li>Euler's method</li>
+      <li>Heun's method</li>
+      <li>Runge-Kutta method</li>
+    </ul>
+
+    <hr>
+    <h2>Euler's Method</h2>
+
+<pre><code class="class=language-python">def euler(v, t, x, K=50):
+  du = t / K  
+  u = 0.0
+  
+  for k in range(K):
+    x = x + du * v(u,x)
+    u = u + du
+  
+  return x
+</code></pre>
+
+    <hr>
+    <h2>Huen's Method</h2>
+
+<pre><code class="class=language-python">def heun(v, t, x, K=50):
+  du = t / K  
+  u = 0.0
+  
+  for k in range(K):
+    v_1 = v(u, x)
+    v_2 = v(u + du, x + du*v_1)
+    x = du/2 * (v_1 + v_2) 
+    u = u + du
+  
+  return x
+</code></pre>
+
+    <hr>
+    <h2>Runge-Kutta Method</h2>
+
+<pre><code class="class=language-python">def runge_kutta(v, t, x, K=50):
+  delta_u = t / K  
+  u = 0.0
+  for k in range(K):
+    v_1 = v(u, x)  
+    v_2 = v(u + du/2, v + du*v_1/2)
+    v_3 = v(u + du/2, v + du*v_2/2)
+    v_4 = v(u + du, v + du*v_3)
+    x = x + du/6 * (v1 + 2*v_2 * 2*v_3 + v_4)
+    u = u + du
+  return x
+</code></pre>
     
-    <hr>    
-    <p><a href="../../index.html">[Top]</a> <a href="../0001/index.html">[&gt;&gt;]</a></p>
-    
+    <hr>
+    <p>There are many more integration methods.<br>The point is that, if we know $v$, $t$, and $x$, we can always compute numerically $\phi_t(x)$.</p>
+
+    <hr>
+    <p>This means, given a probability distribution $p$ and a time-depenent vector field $v$, we can always do a "push-forward" with the associated "flow" $\phi$.</p>
+
+    <ul>
+      <li>Sample $x \sim p$.</li>
+      <li>Compute $x_t = \mrm{euler}(v, t, x)$. (You can use your favorite integrator here.)</li>
+      <li>Return $x_t$ to the user.</li>
+    </ul>
+
+    <hr>
+    <p>
+        <a href="../0053/index.html">[&lt;&lt;]</a> 
+        <a href="../../index.html">[Top]</a>
+        <a href="../0055/index.html">[&gt;&gt;]</a> 
+    </p>    
 </div>
 
 <script type="text/javascript">

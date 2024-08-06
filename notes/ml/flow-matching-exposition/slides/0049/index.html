@@ -5,7 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
-    <title>0000</title>
+    <title>0049</title>
 
     <!-- Bootstrap -->
     <link href="../../../../../css/bootstrap.min.css" rel="stylesheet">
@@ -80,37 +80,51 @@
         \)
     </span>
 
-    <br>
-    <h1>Vector Function</h1>
-    <hr>
-
-    <p>For the current paper we are reading, we are working in a $d$-dimensional space $\Real^d$.</p>
-    <hr>
-
-    <p>We denote a vector in $\Real^d$ with $x = (x^1, x^2, \dotsc, x^d)$.</p>
-
-    <p>This is an unusual convention. However, some really famous textbooks uses it. These textbooks include Spivak's <a href="https://www.amazon.co.jp/-/en/Michael-Spivak/dp/0805390219">Calculus on Manifolds</a>, which is one of the book I learned multi-variable calculus from.</p>
-    <hr>
-
-    <p><b>Definition.</b> A <b>vector function</b> or a <b>vector-valued function</b> is a function $f$ that maps $\Real^n$ to $\Real^m$ for some positive integers $n$ and $m$.</p>
+    <h1>Flow for Gaussian Probability Path</h1>
 
     <hr>
-    <p>We say that the function $f$ has <b>signature</b> $\Real^n \ra \Real^m$. We also write $f:\Real^n \ra \Real^m$.</p>
+    <p>We studied probability path $$p_t = \mcal{N}(\mu_t, \sigma_t^2 I)$$ where $\mu_t: \Real \ra \Real^d$ and $\sigma_t: \Real \ra \Real^+$ are continuous functions. <br>This path represents a smooth transition from one isotropic Gaussian $\mcal{N}(\mu_0, \sigma_0^2 I)$ to another $\mcal{N}(\mu_1, \sigma_1^2 I)$.</p>
 
     <hr>
-    <p>Most of the time, we will deal with functions of signature $\Real^d \ra \Real^d$ or $\Real^{d+1} \ra \Real^d$.</p>
+    <p>Could this path have been a result of pushing the initial distribution $p_0$ with a flow $\phi_t$?</p>
 
     <hr>
-    <p>Let's talk first about functions of signature $\Real^d \ra \Real^d$. There are two interpretations of this type of functions.</p>
+    <p>Well yes.</p>
 
-    <ol>
-        <li>Point transformation.</li>
-        <li>Vector field.</li>
-    </ol>
-    
-    <hr>    
-    <p><a href="../../index.html">[Top]</a> <a href="../0001/index.html">[&gt;&gt;]</a></p>
-    
+    <p>Let's assume such a flow exists. Then, we would have that $p_t = [\phi_t]_* p_0$. This it means that $$\mcal{N}(\mu_t, \sigma_t^2 I) = [\phi_t]_* \mcal{N}(\mu_0, \sigma_0^2 I).$$ We know that
+    $$\phi_t(x) = \frac{\sigma_t}{\sigma_0} (x - \mu_0) + \mu_t$$
+    satisfies the above condition. So, actually, the probability path $p_t$ is the result of pushing $p_0$ forward with the above $\phi_t$.
+    </p>
+
+    <hr>
+    <p>Let's do some sanity checks. Is $\phi_t$ a flow?</p>
+
+    <ul>
+      <li>$\phi_0(x) = \frac{\sigma_0}{\sigma_0} (x - \mu_0) + \mu_0 = x$.</li>      
+      <li>Each $\phi_t$ is a scale-add. We know that a scale-add is a diffeomorphism if the scaling coefficient is not zero, and $\sigma_t / \sigma_0 \neq 0$.</li>
+      <li>The derivative of the flow is given by
+      \begin{align*}
+        \nabla \phi_t(x) = \nabla \begin{bmatrix} 
+          \sigma_t(x^1 - \mu_0^1)/\sigma_0 + \mu_t^1 \\
+          \sigma_t(x^2 - \mu_2^1)/\sigma_2 + \mu_2^1
+        \end{bmatrix}
+        &= \begin{bmatrix}
+          \sigma_t'(x^1 - \mu_0^1)/\sigma_0 + \{\mu_t^1\}' & \sigma_t & 0 \\
+          \sigma_t'(x^2 - \mu_0^1)/\sigma_0 + \{\mu_t^2\}' & 0 & \sigma_t.
+        \end{bmatrix}
+      \end{align*}
+      Actually, the deritive might not exist if $\sigma_t'$ and $\mu_t'$ do not exist.
+      </li>
+    </ul>
+
+    <p>So, $\phi_t$ is a flow if and only if $\mu_t$ and $\phi_t$ are differentiable.</p>
+
+    <hr>
+    <p>
+        <a href="../0047/index.html">[&lt;&lt;]</a> 
+        <a href="../../index.html">[Top]</a>
+        <a href="../0050/index.html">[&gt;&gt;]</a> 
+    </p>
 </div>
 
 <script type="text/javascript">

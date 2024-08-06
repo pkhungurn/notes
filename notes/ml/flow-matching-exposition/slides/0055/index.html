@@ -5,7 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
-    <title>0000</title>
+    <title>0055</title>
 
     <!-- Bootstrap -->
     <link href="../../../../../css/bootstrap.min.css" rel="stylesheet">
@@ -33,7 +33,6 @@
     <script type="text/javascript" src="../../../../../js/bigfoot.min.js"></script>
 
     <link rel="stylesheet" type="text/css" href="../../../../../css/bigfoot-default.css">
-
 </head>
 <body>
 <div class="container">
@@ -80,37 +79,69 @@
         \)
     </span>
 
-    <br>
-    <h1>Vector Function</h1>
-    <hr>
-
-    <p>For the current paper we are reading, we are working in a $d$-dimensional space $\Real^d$.</p>
-    <hr>
-
-    <p>We denote a vector in $\Real^d$ with $x = (x^1, x^2, \dotsc, x^d)$.</p>
-
-    <p>This is an unusual convention. However, some really famous textbooks uses it. These textbooks include Spivak's <a href="https://www.amazon.co.jp/-/en/Michael-Spivak/dp/0805390219">Calculus on Manifolds</a>, which is one of the book I learned multi-variable calculus from.</p>
-    <hr>
-
-    <p><b>Definition.</b> A <b>vector function</b> or a <b>vector-valued function</b> is a function $f$ that maps $\Real^n$ to $\Real^m$ for some positive integers $n$ and $m$.</p>
+    <h1>Is this actually a flow?</h1>
 
     <hr>
-    <p>We say that the function $f$ has <b>signature</b> $\Real^n \ra \Real^m$. We also write $f:\Real^n \ra \Real^m$.</p>
+    <p>If we have a time-varying vector field $v_t$, we can integrate it to get another time-varying vector field $\phi_t$. The result is quite similar to a flow.</p>
+
+    <ul>
+      <li>$\phi_0(x) = x$</li>
+      <li>$\phi$ is differentiable with respect to $t$.</li>
+      <li>$\phi$ is differentiable with respect to $x$ if $v$ is also differentiable with respect to $x$ (under certain conditions).
+      \begin{align*}
+        \frac{\partial}{\partial x} \phi_t(x) &= \frac{\partial}{\partial x} \bigg\{ x + \int_0^t v_u(\phi_u(x))\, \dee u \bigg\}\\
+        &= I + \int_0^t \frac{\partial}{\partial x} v_u(\phi_u(x))\, \dee u
+      \end{align*}
+      </li>      
+    </ul>
+
+    <p>However, we are not so sure if it is a flow because we don't know if $\phi_t: \Real^d \ra \Real^d$ is a differeomorphism for all $t$ or not.</p>
 
     <hr>
-    <p>Most of the time, we will deal with functions of signature $\Real^d \ra \Real^d$ or $\Real^{d+1} \ra \Real^d$.</p>
+    <p><b>Question.</b> Why do we care if it is a flow?</p>
+
+    <p><b>Answer.</b> If it is a flow, we can do a push-forward.
+    \begin{align*}
+      p_t = [\phi_t]_* p
+    \end{align*}
+    A push-forward only works with a flow because we need $\det \phi_t(x) \neq 0$, and this is only so when $\phi_t$ is a diffeomorphism.
+    </p>
 
     <hr>
-    <p>Let's talk first about functions of signature $\Real^d \ra \Real^d$. There are two interpretations of this type of functions.</p>
+    <p><b>Question.</b> So, is $\phi_t$ produced this way a flow?</p>
 
-    <ol>
-        <li>Point transformation.</li>
-        <li>Vector field.</li>
-    </ol>
-    
-    <hr>    
-    <p><a href="../../index.html">[Top]</a> <a href="../0001/index.html">[&gt;&gt;]</a></p>
-    
+    <p><b>Answer.</b> Not always. $v$ has to be continuous and cannot change too fast.</p>
+
+    <hr>
+    <p><b>Theorem (Picard&mdash;Lindelöf).</b> Let $v$ be a time-dependent vector field, and $\phi$ be the time-dependent vector field that is the solution of the initial value problem 
+    \begin{align*}
+      \frac{\partial}{\partial} \phi_t(x) &= v_t(\phi_t(x)),\\
+      \phi_0(x) &= x. 
+    \end{align*}  
+    If $v$ is continuous in $t$ and Lipschitz continuous in $x$, then, $\phi_t(x)$ is "unique" in the following sense:
+    <center>
+      for any fixed $t$, if $\phi_t(x) = \phi_t(x')$, then $x = x'$.
+    </center>
+    </p>
+
+    <hr>
+    <p><b>Definition.</b> A function $f: \Real^d \ra \Real^d$ is Lipschitz continuous if there is a constant $K \geq 0$ such that $$\|f(x) - f(y)\| \leq K\|x-y\|$$ for all $x,y \in \Real^d$.</p>
+
+    <hr>
+    <p>So, <i>mathematicians</i> say $\phi_t$ is a flow if $v$ is differentiable in $x$ and the conditions of the Picard&mdash;Lindelöf is true.</p>
+
+    <hr>
+    <p><b>Question.</b> So, is $\phi_t$ produced this way a flow?</p>
+
+    <p><b>REAL Answer.</b> We are machine learning engineers. Just assume it is a flow.</p>
+
+    <hr>
+    <p>
+        <a href="../0054/index.html">[&lt;&lt;]</a> 
+        <a href="../../index.html">[Top]</a>
+        <a href="../0056/index.html">[&gt;&gt;]</a> 
+    </p>
+
 </div>
 
 <script type="text/javascript">

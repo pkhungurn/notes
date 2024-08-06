@@ -5,7 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
-    <title>0000</title>
+    <title>0047</title>
 
     <!-- Bootstrap -->
     <link href="../../../../../css/bootstrap.min.css" rel="stylesheet">
@@ -80,37 +80,55 @@
         \)
     </span>
 
-    <br>
-    <h1>Vector Function</h1>
-    <hr>
-
-    <p>For the current paper we are reading, we are working in a $d$-dimensional space $\Real^d$.</p>
-    <hr>
-
-    <p>We denote a vector in $\Real^d$ with $x = (x^1, x^2, \dotsc, x^d)$.</p>
-
-    <p>This is an unusual convention. However, some really famous textbooks uses it. These textbooks include Spivak's <a href="https://www.amazon.co.jp/-/en/Michael-Spivak/dp/0805390219">Calculus on Manifolds</a>, which is one of the book I learned multi-variable calculus from.</p>
-    <hr>
-
-    <p><b>Definition.</b> A <b>vector function</b> or a <b>vector-valued function</b> is a function $f$ that maps $\Real^n$ to $\Real^m$ for some positive integers $n$ and $m$.</p>
+    <h1>Examples of Flows.</h1>
 
     <hr>
-    <p>We say that the function $f$ has <b>signature</b> $\Real^n \ra \Real^m$. We also write $f:\Real^n \ra \Real^m$.</p>
+    <p><b>Example 1.</b> The function $$\phi_t(x) = x + (t,0)$$ is a flow.</p>
+
+    <ul>
+      <li>$\phi_0(x) = x + (0,0) = x$.</li>
+      <li>The derivative is given by
+        \begin{align*}
+          \nabla \phi_t(x) 
+          = \nabla \begin{bmatrix} x^1 + t \\ x^2 \\ \end{bmatrix}
+          = \begin{bmatrix}
+            \frac{\partial (x^1 + t)}{\partial t} & \frac{\partial (x^1 + t)}{\partial x^1} & \frac{\partial (x^1 + t)}{\partial x^2} \\
+            \frac{\partial x^2}{\partial t} & \frac{\partial x^2}{\partial x^1} & \frac{\partial x^2}{\partial x^2}          
+          \end{bmatrix}
+          = \begin{bmatrix}
+            1 & 1 & 0 \\
+            0 & 0 & 1
+          \end{bmatrix}.
+        \end{align*}
+        So, $\phi$ is a differentiable function.
+      </li>
+      <li>$\phi_t$ as a function of signature $\Real^d \ra \Real^d$ is the translation $\texttt{T}_{(t,0)}$. So it is a diffeomorphism.</li>
+    </ul>
 
     <hr>
-    <p>Most of the time, we will deal with functions of signature $\Real^d \ra \Real^d$ or $\Real^{d+1} \ra \Real^d$.</p>
+    <p><b>Example 2.</b> The function $$\phi_t(x) = \begin{bmatrix} \cos t & -\sin t \\ \sin t & \cos t \end{bmatrix} x$$  is a flow.</p>
+
+    <ul>
+      <li>$\phi_0(x) = Ix = x$.</li>
+      <li>The derivative is given by
+        \begin{align*}
+          \nabla \phi_t(x) &= \begin{bmatrix} \nabla_1 \phi_t(x) & \nabla_{\S 2} \phi_t(x) \end{bmatrix} \\
+          \nabla_1 \phi_t(x) &= \frac{\partial}{\partial t} \bigg( \begin{bmatrix}  \cos t & -\sin t \\ \sin t & \cos t \end{bmatrix} x \bigg)
+          = \begin{bmatrix} -\sin t & -\cos t \\ \cos t & -\sin t \end{bmatrix} x \\
+          \nabla_{\S 2} \phi_t(x) &= \frac{\partial}{\partial x} \bigg( \begin{bmatrix}  \cos t & -\sin t \\ \sin t & \cos t \end{bmatrix} x \bigg) = \begin{bmatrix} \cos t & -\sin t \\ \sin t & \cos t \end{bmatrix}.
+        \end{align*}
+        All entries are continuous funtions of $t$ and $x$. So, $\phi$ is differentiable.
+      </li>
+      <li>$\phi_t$ as a function of signature $\Real^d \ra \Real^d$ is just a rotation of $x$ around the origin by $t$ radians. So it is a diffeomorphism.</li>
+    </ul>
+
 
     <hr>
-    <p>Let's talk first about functions of signature $\Real^d \ra \Real^d$. There are two interpretations of this type of functions.</p>
-
-    <ol>
-        <li>Point transformation.</li>
-        <li>Vector field.</li>
-    </ol>
-    
-    <hr>    
-    <p><a href="../../index.html">[Top]</a> <a href="../0001/index.html">[&gt;&gt;]</a></p>
-    
+    <p>
+        <a href="../0046/index.html">[&lt;&lt;]</a> 
+        <a href="../../index.html">[Top]</a>
+        <a href="../0049/index.html">[&gt;&gt;]</a> 
+    </p>
 </div>
 
 <script type="text/javascript">

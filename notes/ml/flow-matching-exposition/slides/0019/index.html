@@ -5,7 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
-    <title>0000</title>
+    <title>0019</title>
 
     <!-- Bootstrap -->
     <link href="../../../../../css/bootstrap.min.css" rel="stylesheet">
@@ -81,36 +81,86 @@
     </span>
 
     <br>
-    <h1>Vector Function</h1>
-    <hr>
-
-    <p>For the current paper we are reading, we are working in a $d$-dimensional space $\Real^d$.</p>
-    <hr>
-
-    <p>We denote a vector in $\Real^d$ with $x = (x^1, x^2, \dotsc, x^d)$.</p>
-
-    <p>This is an unusual convention. However, some really famous textbooks uses it. These textbooks include Spivak's <a href="https://www.amazon.co.jp/-/en/Michael-Spivak/dp/0805390219">Calculus on Manifolds</a>, which is one of the book I learned multi-variable calculus from.</p>
-    <hr>
-
-    <p><b>Definition.</b> A <b>vector function</b> or a <b>vector-valued function</b> is a function $f$ that maps $\Real^n$ to $\Real^m$ for some positive integers $n$ and $m$.</p>
+    <h1>Derivatives of Simple Functions</h1>
 
     <hr>
-    <p>We say that the function $f$ has <b>signature</b> $\Real^n \ra \Real^m$. We also write $f:\Real^n \ra \Real^m$.</p>
-
-    <hr>
-    <p>Most of the time, we will deal with functions of signature $\Real^d \ra \Real^d$ or $\Real^{d+1} \ra \Real^d$.</p>
-
-    <hr>
-    <p>Let's talk first about functions of signature $\Real^d \ra \Real^d$. There are two interpretations of this type of functions.</p>
-
-    <ol>
-        <li>Point transformation.</li>
-        <li>Vector field.</li>
-    </ol>
+    <p>Let's compute derivatives of functions we have seen so far.</p>
     
     <hr>    
-    <p><a href="../../index.html">[Top]</a> <a href="../0001/index.html">[&gt;&gt;]</a></p>
+    <h2>Translation</h2>
+
+    <p>Derivative of the translation function $\texttt{T}_{\mu}(x)$ is the identity matrix.
+    \begin{align*}
+    \nabla \texttt{T}_{\mu}(x) = 
+    \begin{bmatrix} 
+    1 & 0 & \cdots & 0 \\ 
+    0 & 1 & \cdots & 0 \\ 
+    \vdots & \vdots & \ddots & \vdots \\
+    0 & 0 & \cdots & 1 
+    \end{bmatrix} 
+    = I.
+    \end{align*}
+    </p>
+
+    <p>
+    For the 2D case, we have that
+    \begin{align*}
+    \texttt{T}_{\mu}(x) = \begin{bmatrix} x^1 + \mu^1 \\ x^2 + \mu^2 \end{bmatrix}.
+    \end{align*}
+    So,
+    \begin{align*}
+    \nabla T_{\mu}(x) = \begin{bmatrix}
+    \frac{\partial (x^1 + \mu^1)}{\partial x^1} & \frac{\partial (x^1 + \mu^1)}{\partial x^2} \\
+    \frac{\partial (x^2 + \mu^2)}{\partial x^1} & \frac{\partial (x^2 + \mu^2)}{\partial x^2}
+    \end{bmatrix}
+    = \begin{bmatrix} 1 & 0 \\ 0 & 1 \end{bmatrix}.
+    \end{align*}
+    </p>
+
+    <hr>
+    <h2>Uniform Scaling</h2>
     
+    <p>The derivative of a uniform scaling $\texttt{S}_{\sigma}$ is the identity matrix multiplied by a scalar. 
+    \begin{align*}
+    \nabla \texttt{S}_{\sigma}(x) = 
+    \begin{bmatrix} 
+    \sigma & 0 & \cdots & 0 \\ 
+    0 & \sigma & \cdots & 0 \\ 
+    \vdots & \vdots & \ddots & \vdots \\
+    0 & 0 & \cdots & \sigma 
+    \end{bmatrix} 
+    = \sigma I.
+    \end{align*}
+    </p>
+
+    <p>
+    For the 2D case, we have that
+    \begin{align*}
+    \texttt{S}_{\sigma}(x) = \begin{bmatrix} \sigma x^1 \\ \sigma x^2 \end{bmatrix}.
+    \end{align*}
+    So,
+    \begin{align*}
+    \nabla S_{\sigma}(x) = \begin{bmatrix}
+    \frac{\partial (\sigma x^1)}{\partial x^1} & \frac{\partial (\sigma x^1)}{\partial x^2} \\
+    \frac{\partial (\sigma x^2)}{\partial x^1} & \frac{\partial (\sigma x^2)}{\partial x^2}
+    \end{bmatrix}
+    = \begin{bmatrix} \sigma & 0 \\ 0 & \sigma \end{bmatrix} = \sigma I.
+    \end{align*}
+    </p>
+
+    <hr>
+    <h2>Scale-Add</h2>
+
+    <p>The derivative of the scale-add is the same as the derivative of the uniform scaling part of it. $$ \nabla(\texttt{T}_\mu \circ \texttt{S}_\sigma)(x) = \nabla(\sigma\, \mrm{id} + \mu)(x) = \sigma I. $$</p>
+
+    <p>Derivation is left as an exercise for the reader.</p>
+
+    <hr>
+    <p>
+        <a href="../0018/index.html">[&lt;&lt;]</a> 
+        <a href="../../index.html">[Top]</a>
+        <a href="../0025/index.html">[&gt;&gt;]</a> 
+    </p>    
 </div>
 
 <script type="text/javascript">

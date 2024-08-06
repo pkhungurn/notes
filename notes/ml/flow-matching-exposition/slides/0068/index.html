@@ -5,7 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
-    <title>0000</title>
+    <title>0068</title>
 
     <!-- Bootstrap -->
     <link href="../../../../../css/bootstrap.min.css" rel="stylesheet">
@@ -32,8 +32,7 @@
     <script type="text/javascript" src="../../../../../js/jquery-3.4.1.min.js"></script>
     <script type="text/javascript" src="../../../../../js/bigfoot.min.js"></script>
 
-    <link rel="stylesheet" type="text/css" href="../../../../../css/bigfoot-default.css">
-
+    <link rel="stylesheet" type="text/css" href="../../../../../css/bigfoot-default.css">    
 </head>
 <body>
 <div class="container">
@@ -80,38 +79,60 @@
         \)
     </span>
 
-    <br>
-    <h1>Vector Function</h1>
-    <hr>
-
-    <p>For the current paper we are reading, we are working in a $d$-dimensional space $\Real^d$.</p>
-    <hr>
-
-    <p>We denote a vector in $\Real^d$ with $x = (x^1, x^2, \dotsc, x^d)$.</p>
-
-    <p>This is an unusual convention. However, some really famous textbooks uses it. These textbooks include Spivak's <a href="https://www.amazon.co.jp/-/en/Michael-Spivak/dp/0805390219">Calculus on Manifolds</a>, which is one of the book I learned multi-variable calculus from.</p>
-    <hr>
-
-    <p><b>Definition.</b> A <b>vector function</b> or a <b>vector-valued function</b> is a function $f$ that maps $\Real^n$ to $\Real^m$ for some positive integers $n$ and $m$.</p>
+    <h1>Putting Things Together</h1>
 
     <hr>
-    <p>We say that the function $f$ has <b>signature</b> $\Real^n \ra \Real^m$. We also write $f:\Real^n \ra \Real^m$.</p>
+    <p>Here's how to train a continuous normalizing flow model with the conditonal flow matching loss.</p>
+
+    <ul class="no-bullets">
+        <li>$\mathrm{Train}(p_{\data})$ {
+        <ul class="no-bullets">
+            <li>Randomly initialize network parmeters $\theta$.</li>
+            <li><b>while</b> not satisfied <b>do</b> {
+            <ul class="no-bullets">
+                <li>Sample $x_{\data} \sim p_{\data}$.</li>                
+                <li>Sample $t \sim \mcal{U}([0,1])$.</li>
+                <li>Sample $x_0 \sim \mcal{N}(0,I)$.</li>
+                <li>$x \gets (1 - (1-\sigma_{\min}t))x_0 + tx_{\data}$</li>
+                <li>$\mcal{L} \gets \| x_{\data} - (1-\sigma_{\min})x_0 - v(t, x; \theta) \|^2$</li>
+                <li>Update $\theta$ according to $\nabla_{\theta}\mcal{L}$.</li>
+            </ul>
+            </li>            
+            <li>}</li>
+            <li><b>return</b> $\theta$</li>
+        </ul>
+        </li>        
+        <li>}</li>
+    </ul>
 
     <hr>
-    <p>Most of the time, we will deal with functions of signature $\Real^d \ra \Real^d$ or $\Real^{d+1} \ra \Real^d$.</p>
+    <p>Here's how to sample from $p_1 \approx p_{\data}$ given a trained CNF $v(t,x;\theta)$.</p>
+
+    <ul class="no-bullets">
+        <li>$\mathrm{Sample}(\theta, K=50)$ {
+        <ul class="no-bullets">
+            <li>Sample $x \sim \mcal{N}(0,I)$.</li>
+            <li>$h \gets 1 / K$</li>
+            <li>$t \gets 0$</li>
+            <li><b>for</b> $i$ = $1$ <b>to</b> $K$ <b>do</b> {
+            <ul class="no-bullets">
+                <li>$x \gets x + h\, v(t, x;\theta)$</li>
+                <li>$t \gets t + h$</li>
+            </ul>
+            </li>
+            <li>}</li>
+        </ul>
+        </li>        
+        <li>}</li>
+    </ul>
 
     <hr>
-    <p>Let's talk first about functions of signature $\Real^d \ra \Real^d$. There are two interpretations of this type of functions.</p>
-
-    <ol>
-        <li>Point transformation.</li>
-        <li>Vector field.</li>
-    </ol>
-    
-    <hr>    
-    <p><a href="../../index.html">[Top]</a> <a href="../0001/index.html">[&gt;&gt;]</a></p>
-    
-</div>
+    <p>
+        <a href="../0067/index.html">[&lt;&lt;]</a> 
+        <a href="../../index.html">[Top]</a>
+        <a href="../0069/index.html">[&gt;&gt;]</a> 
+    </p>
+  </div>
 
 <script type="text/javascript">
 $.bigfoot();

@@ -5,7 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
-    <title>0000</title>
+    <title>0032</title>
 
     <!-- Bootstrap -->
     <link href="../../../../../css/bootstrap.min.css" rel="stylesheet">
@@ -81,36 +81,66 @@
     </span>
 
     <br>
-    <h1>Vector Function</h1>
-    <hr>
+    <h1>Probability Distribution</h1>
 
-    <p>For the current paper we are reading, we are working in a $d$-dimensional space $\Real^d$.</p>
-    <hr>
-
-    <p>We denote a vector in $\Real^d$ with $x = (x^1, x^2, \dotsc, x^d)$.</p>
-
-    <p>This is an unusual convention. However, some really famous textbooks uses it. These textbooks include Spivak's <a href="https://www.amazon.co.jp/-/en/Michael-Spivak/dp/0805390219">Calculus on Manifolds</a>, which is one of the book I learned multi-variable calculus from.</p>
-    <hr>
-
-    <p><b>Definition.</b> A <b>vector function</b> or a <b>vector-valued function</b> is a function $f$ that maps $\Real^n$ to $\Real^m$ for some positive integers $n$ and $m$.</p>
-
-    <hr>
-    <p>We say that the function $f$ has <b>signature</b> $\Real^n \ra \Real^m$. We also write $f:\Real^n \ra \Real^m$.</p>
-
-    <hr>
-    <p>Most of the time, we will deal with functions of signature $\Real^d \ra \Real^d$ or $\Real^{d+1} \ra \Real^d$.</p>
-
-    <hr>
-    <p>Let's talk first about functions of signature $\Real^d \ra \Real^d$. There are two interpretations of this type of functions.</p>
-
-    <ol>
-        <li>Point transformation.</li>
-        <li>Vector field.</li>
-    </ol>
-    
     <hr>    
-    <p><a href="../../index.html">[Top]</a> <a href="../0001/index.html">[&gt;&gt;]</a></p>
+    <p>We saw that a vector function can transform images.</p>
+
+    <hr>
+    <p>A probability distribution $p: \Real^d \ra \Real^{+} \cup \{0 \}$ (or a probability density function) is a special kind of image. It has the property that
+    \begin{align*}
+    \int p(x)\, \dee x = 1.
+    \end{align*}
+    Here, the integration domain is the whole $\Real^d$.
+    </p>
+
+    <hr>
+    <p><b>Question.</b> What does $p(x)$ mean?</p>
+
+    <p><b>Answer.</b> Let's say $x = (x^1, x^2, \dotsc, x^d)$. It means that, in the infinitesimally small volume 
+    $$[x^1, x^1+ \dee x^1) \times [x^2, x+ \dee x^2) \times \dotsb \times [x^d, x+ \dee x^d)$$
+    that contains $x$, there exists "probability mass" in this volume, and the amount of this probability mass is
+    \begin{align*}
+        p(x)\, \dee x = p(x)\, \dee x^1 \dee x^2 \dotsm \dee x^d.
+    \end{align*}
+    Here, each $\dee x^i$ is an infinitesimally small quantity such that $(\dee x^i)^2 = 0$.
+    </p>
+
+    <p>(This is hand-wavy physics math. Use with caution.)</p>
+
+    <hr>
+    <p>We can visualize probability distributions by rendering it has a heatmap over some space.</p>
+
+    <hr>
+    <table cellpadding="10" border="1">
+        <tr>
+            <td><b>Distribution</b></td>
+            <td><b>Visualization<br>(Each image its own scale)</b></td>
+            <td><b>Visualization<br>(All images in the same scale)</b></td>
+        </tr>
+        <tr>
+            <td>Uniform distribution on $[0,1] \times [0,1]$ $$ p(x) = \begin{cases} 1, & x \in [0,1] \times [0,1] \\ 0, & \mrm{otherwise} \end{cases} $$</td>
+            <td><img src="../../data/20240729/probdist/_00.png" width="400" alt=""></td>
+            <td><img src="../../data/20240729/probdist/_00_to_scale.png" width="400" alt=""></td>
+        </tr>
+        <tr>
+            <td>Uniform distribution on $[-1,1] \times [-1,1]$ $$ p(x) = \begin{cases} 0.25, & x \in [-1,1] \times [-1,1] \\ 0, & \mrm{otherwise} \end{cases} $$</td>
+            <td><img src="../../data/20240729/probdist/_01.png" width="400" alt=""></td>
+            <td><img src="../../data/20240729/probdist/_01_to_scale.png" width="400" alt=""></td>
+        </tr>
+        <tr>
+            <td>The ホシヒナてぇてぇ distribution</td>
+            <td><img src="../../data/20240729/probdist/_02.png" width="400" alt=""></td>
+            <td><img src="../../data/20240729/probdist/_02_to_scale.png" width="400" alt=""></td>
+        </tr>
+    </table>
     
+    <hr>
+    <p>
+        <a href="../0025/index.html">[&lt;&lt;]</a> 
+        <a href="../../index.html">[Top]</a>
+        <a href="../0033/index.html">[&gt;&gt;]</a> 
+    </p> 
 </div>
 
 <script type="text/javascript">

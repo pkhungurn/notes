@@ -5,7 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
-    <title>0000</title>
+    <title>0037</title>
 
     <!-- Bootstrap -->
     <link href="../../../../../css/bootstrap.min.css" rel="stylesheet">
@@ -81,36 +81,48 @@
     </span>
 
     <br>
-    <h1>Vector Function</h1>
-    <hr>
-
-    <p>For the current paper we are reading, we are working in a $d$-dimensional space $\Real^d$.</p>
-    <hr>
-
-    <p>We denote a vector in $\Real^d$ with $x = (x^1, x^2, \dotsc, x^d)$.</p>
-
-    <p>This is an unusual convention. However, some really famous textbooks uses it. These textbooks include Spivak's <a href="https://www.amazon.co.jp/-/en/Michael-Spivak/dp/0805390219">Calculus on Manifolds</a>, which is one of the book I learned multi-variable calculus from.</p>
-    <hr>
-
-    <p><b>Definition.</b> A <b>vector function</b> or a <b>vector-valued function</b> is a function $f$ that maps $\Real^n$ to $\Real^m$ for some positive integers $n$ and $m$.</p>
+    <h1>Transform One Gaussian to Another Gaussian</h1>
 
     <hr>
-    <p>We say that the function $f$ has <b>signature</b> $\Real^n \ra \Real^m$. We also write $f:\Real^n \ra \Real^m$.</p>
+    <p>If you want to transform one Gaussian $\mcal{N}(\mu_0, \sigma_0^2 I)$ to another Gaussian $\mcal{N}(\mu_1, \sigma_1^2 I )$, what function do you use as in a push-forward? $$ \mcal{N}(\mu_1, \sigma_1^2 I ) = [???]_* \mcal{N}(\mu_0, \sigma_0^2 I ) $$</p>
 
     <hr>
-    <p>Most of the time, we will deal with functions of signature $\Real^d \ra \Real^d$ or $\Real^{d+1} \ra \Real^d$.</p>
-
-    <hr>
-    <p>Let's talk first about functions of signature $\Real^d \ra \Real^d$. There are two interpretations of this type of functions.</p>
-
-    <ol>
-        <li>Point transformation.</li>
-        <li>Vector field.</li>
-    </ol>
+    <p>The answer is $$ \mcal{N}(\mu_1, \sigma_1^2 I ) = [\texttt{T}_{\mu_1} \circ \texttt{S}_{\sigma_1} \circ \texttt{S}_{1/\sigma_0} \circ \texttt{T}_{-\mu_0}]_* \mcal{N}(\mu_0, \sigma_0^2 I ).$$</p>
     
-    <hr>    
-    <p><a href="../../index.html">[Top]</a> <a href="../0001/index.html">[&gt;&gt;]</a></p>
+    <hr>
+    <p>Why?
+
+    \begin{align*}
+    \mcal{N}(\mu_0, \sigma_0^2 I) 
+    \xrightarrow{\ \ \ \mcal{T}_{-\mu_0}\ \ \ }
+    \mcal{N}(0, \sigma_0^2 I)
+    \xrightarrow{\ \ \ \mcal{S}_{1/\sigma_0}\ \ \ }
+    \mcal{N}(0, I)
+    \xrightarrow{\ \ \ \mcal{S}_{\sigma_1}\ \ \ }
+    \mcal{N}(0, \sigma_1^2 I)
+    \xrightarrow{\ \ \ \mcal{T}_{\mu_1}\ \ \ }
+    \mcal{N}(\mu_1, \sigma_1^2 I) 
+    \end{align*}
+    </p>
+
+    <hr>
+    <p>What does this function look like?
+    \begin{align*}
+    (\texttt{T}_{\mu_1} \circ \texttt{S}_{\sigma_1} \circ \texttt{S}_{1/\sigma_0} \circ \texttt{T}_{-\mu_0})(x)
+    &= (\texttt{T}_{\mu_1} \circ \texttt{S}_{\sigma_1} \circ \texttt{S}_{1/\sigma_0})(x-\mu_0) \\
+    &= (\texttt{T}_{\mu_1} \circ \texttt{S}_{\sigma_1})\bigg(\frac{1}{\sigma_0}(x-\mu_0)\bigg) \\
+    &= \texttt{T}_{\mu_1}\bigg(\frac{\sigma_1}{\sigma_0}(x-\mu_0)\bigg) \\
+    &= \frac{\sigma_1}{\sigma_0}(x-\mu_0) + \mu_1 \\    
+    &= \bigg( \frac{\sigma_1}{\sigma_0}(\mrm{id} - \mu_0) + \mu_1  \bigg) x.
+    \end{align*}
+    </p>    
     
+    <hr>
+    <p>
+        <a href="../0036/index.html">[&lt;&lt;]</a> 
+        <a href="../../index.html">[Top]</a>
+        <a href="../0039/index.html">[&gt;&gt;]</a> 
+    </p>
 </div>
 
 <script type="text/javascript">

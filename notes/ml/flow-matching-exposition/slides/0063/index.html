@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>0063</title>
+
+    <!-- Bootstrap -->
+    <link href="../../../../../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../../../../../css/theme.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+      TeX: { equationNumbers: {autoNumber: "AMS"} }
+    });
+    </script>
+    <script type="text/javascript"
+            src="../../../../../MathJax/MathJax.js?config=TeX-AMS_HTML-full">
+    </script>
+
+    <script type="text/javascript" src="../../../../../js/jquery-3.4.1.min.js"></script>
+    <script type="text/javascript" src="../../../../../js/bigfoot.min.js"></script>
+
+    <link rel="stylesheet" type="text/css" href="../../../../../css/bigfoot-default.css">    
+</head>
+<body>
+<div class="container">
+    <span style="visibility: hidden;">
+        \(
+        \def\sc#1{\dosc#1\csod}
+        \def\dosc#1#2\csod{{\rm #1{\small #2}}}
+
+        \newcommand{\dee}{\mathrm{d}}
+        \newcommand{\Dee}{\mathrm{D}}
+        \newcommand{\In}{\mathrm{in}}
+        \newcommand{\Out}{\mathrm{out}}
+        \newcommand{\pdf}{\mathrm{pdf}}
+        \newcommand{\Cov}{\mathrm{Cov}}
+        \newcommand{\Var}{\mathrm{Var}}
+
+        \newcommand{\ve}[1]{\mathbf{#1}}
+        \newcommand{\ves}[1]{\boldsymbol{#1}}
+        \newcommand{\mrm}[1]{\mathrm{#1}}
+        \newcommand{\etal}{{et~al.}}
+        \newcommand{\sphere}{\mathbb{S}^2}
+        \newcommand{\modeint}{\mathcal{M}}
+        \newcommand{\azimint}{\mathcal{N}}
+        \newcommand{\ra}{\rightarrow}
+        \newcommand{\mcal}[1]{\mathcal{#1}}
+        \newcommand{\X}{\mathcal{X}}
+        \newcommand{\Y}{\mathcal{Y}}
+        \newcommand{\Z}{\mathcal{Z}}
+        \newcommand{\x}{\mathbf{x}}
+        \newcommand{\y}{\mathbf{y}}
+        \newcommand{\z}{\mathbf{z}}
+        \newcommand{\tr}{\mathrm{tr}}
+        \newcommand{\sgn}{\mathrm{sgn}}
+        \newcommand{\diag}{\mathrm{diag}}
+        \newcommand{\Real}{\mathbb{R}}
+        \newcommand{\sseq}{\subseteq}
+        \newcommand{\ov}[1]{\overline{#1}}
+        \DeclareMathOperator*{\argmax}{arg\,max}
+        \DeclareMathOperator*{\argmin}{arg\,min}
+
+        \newcommand{\data}{\mathrm{data}}
+        \newcommand{\N}{\mathcal{N}}
+        \newcommand{\Hil}{\mathcal{H}}
+        \)
+    </span>
+
+    <h1>The General Case</h1>
+
+    <hr>
+    <p>For the special case, there's no need to even train a neural network because we know the vector field in closed form.</p>
+
+    <hr>
+    <p>So, how do we deal with the general case where $p_{\data}$ is much more complicated than a distribution that contains a single element?</p>
+    
+    <hr>
+    <p>Well, we can use the law of total proability to decompose $p_{\data}$ into a mixture of distributions that contain single elements.
+    \begin{align*}
+      p_{\data}(x) = \int p_{\data}(x_{\data}) p_{\data}(x|x_{\data})\, \dee x_{\data}.
+    \end{align*}
+    where
+    \begin{align*}
+      p(x|x_{\data}) = \delta(x - x_{\data}).
+    \end{align*}
+    </p>
+
+    <hr>
+    <p>We want $p_1$ to be $p_{\data}$, but that might be too hard. Let's do the same thing we do in the last slide. Let us say that, given that we have picked $x_{\data}$, our target distribution is
+    \begin{align*}
+      p_{1}(x|x_{\data}) = \mcal{N}(x; x_{\data}, \sigma_{\min}^2 I).
+    \end{align*}
+    So,
+    \begin{align*}
+      p_1(x) &= \int p_{\data}(x_{\data}) p_1(x|x_{\data})\, \dee x_{\data} 
+      = \int p_{\data}(x_{\data}) \mcal{N}(x_{\data}, \sigma_{\min}^2 I)\, \dee x_{\data}.
+    \end{align*}
+    In other words,
+    $$p_1 = \mcal{N}(0,\sigma_2^2I) * p_{\data}$$
+    where $*$ is denotes convolution.
+    </p>
+
+    <hr>
+    <p>In the last slide, we know a probability path that transforms $\mcal{N}(0,1)$ to $\mcal{N}(x_{\data}, \sigma_{\min}^2 I)$. This probability path is completely determined if we have picked one $x_{\data}$. So, let us denote it by $$p_t(x|x_{\data}).$$</p>
+
+    <hr>
+    <p>It follows immediately from the law of total probability that we can get the full probability distribution by "marginalizing" the conditional distribution:
+    \begin{align*}
+      p_t(x) = \int p_{\data}(x_{\data}) p_t(x|x_{\data})\, \dee x_{\data}.
+    \end{align*}
+    In other words, we can construct a probability path from $\mcal{N}(0,I)$ to an approximation of $p_{\data}$ by integrating the probability paths for the special cases where $p_{\data}$ has only one element.
+    </p>
+
+    <p>Let's call this distribution the <b>marginal distribution</b>.</p>
+
+    <hr>
+    <p>While we can construct $p_t$, we don't know the vector field that generates this probability path, so we cannot do flow matching yet.</p>
+
+    <hr>
+    <p>In the last slide, we know that the vector field $v_t(x|x_{\data})$ that generates the probability path $p_t(x|x_{\data})$. This probability path is given by:
+    \begin{align*}
+    v_t(x|x_{\data}) = \frac{\sigma_t'(x_{\data})}{\sigma_t(x_{\data})} (x - \mu_t(x_{\data})) + \mu'_t(x_{\data}).
+    \end{align*}
+    Note that $\mu_t$ and $\sigma_t$ becomes $\mu_t(x_{\data})$ and $\sigma_t(x_{\data})$ because we want to emphasize the dependence of $\mu_t$ and $\sigma_t$ on $x_{\data}$.
+    </p>
+
+    <hr>
+    <p>It turns out the following flow works.</p>
+
+    <p><b>Theorem</b>. The <b>marginal vector field</b>
+    \begin{align*}
+      v_t(x) = \int v_t(x|x_{\data}) \frac{p_t(x|x_{\data})p_{\data}(x_{\data})}{p_t(x)}\, \dee x_{\data}
+    \end{align*}
+    generates the probability path
+    \begin{align*}
+      p_t(x) = \int p_{\data}(x_{\data}) p_t(x|x_{\data})\, \dee x_{\data}.
+    \end{align*}
+    </p>
+
+    <p>This can be proven using the theorem on continuity equation.</p>
+
+    <hr>
+    <p>Have you seen
+    \begin{align*}
+      \frac{p_t(x|x_{\data})p_{\data}(x_{\data})}{p_t(x)}
+    \end{align*}
+    somewhere before?
+    </p>
+
+    <p>This is very similar to the RHS of Bayes' rule.
+    \begin{align*}
+      \Pr(B|A) = \frac{\Pr(A|B)\Pr(B)}{\Pr(A)}
+    \end{align*}
+    </p>
+
+    
+    <hr>
+    <p>
+        <a href="../0062/index.html">[&lt;&lt;]</a> 
+        <a href="../../index.html">[Top]</a>
+        <a href="../0064/index.html">[&gt;&gt;]</a> 
+    </p>
+  </div>
+
+<script type="text/javascript">
+$.bigfoot();
+</script>
+
+</body>
+</html>

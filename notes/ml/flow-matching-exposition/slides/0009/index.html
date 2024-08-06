@@ -5,7 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
-    <title>0000</title>
+    <title>0009</title>
 
     <!-- Bootstrap -->
     <link href="../../../../../css/bootstrap.min.css" rel="stylesheet">
@@ -81,36 +81,71 @@
     </span>
 
     <br>
-    <h1>Vector Function</h1>
-    <hr>
-
-    <p>For the current paper we are reading, we are working in a $d$-dimensional space $\Real^d$.</p>
-    <hr>
-
-    <p>We denote a vector in $\Real^d$ with $x = (x^1, x^2, \dotsc, x^d)$.</p>
-
-    <p>This is an unusual convention. However, some really famous textbooks uses it. These textbooks include Spivak's <a href="https://www.amazon.co.jp/-/en/Michael-Spivak/dp/0805390219">Calculus on Manifolds</a>, which is one of the book I learned multi-variable calculus from.</p>
-    <hr>
-
-    <p><b>Definition.</b> A <b>vector function</b> or a <b>vector-valued function</b> is a function $f$ that maps $\Real^n$ to $\Real^m$ for some positive integers $n$ and $m$.</p>
+    <h1>Translation</h1>
 
     <hr>
-    <p>We say that the function $f$ has <b>signature</b> $\Real^n \ra \Real^m$. We also write $f:\Real^n \ra \Real^m$.</p>
+    <p>
+        <b>Definition.</b> A <b>translation</b> is a vector function $f:\Real^d \ra \Real^d$ of the form
+        $$f(x) = x + \mu$$
+        where $\mu \in \Real^d$.
+    </p>
 
     <hr>
-    <p>Most of the time, we will deal with functions of signature $\Real^d \ra \Real^d$ or $\Real^{d+1} \ra \Real^d$.</p>
+    <p><b>Example 1</b>. $f(x) = x + (1,0)$</p>
+
+    <table>        
+        <tr>
+            <td><img src="../../data/20240729/translations/hoshihina_original.png" width="500" alt=""></td>
+            <td>$\xrightarrow{\ \ \ f\ \ \ }$</td>
+            <td><img src="../../data/20240729/translations/hoshihina_translate_00.png" width="500" alt=""></td>
+        </tr>        
+    </table>
+
+    <p>The image is moved one unit to the right.</p>
 
     <hr>
-    <p>Let's talk first about functions of signature $\Real^d \ra \Real^d$. There are two interpretations of this type of functions.</p>
+    <p><b>Example 2.</b> $f(x) = x - (0,1)$</p>
 
-    <ol>
-        <li>Point transformation.</li>
-        <li>Vector field.</li>
-    </ol>
+    <table>        
+        <tr>
+            <td><img src="../../data/20240729/translations/hoshihina_original.png" width="500" alt=""></td>
+            <td>$\xrightarrow{\ \ \ f\ \ \ }$</td>
+            <td><img src="../../data/20240729/translations/hoshihina_translate_01.png" width="500" alt=""></td>
+        </tr>        
+    </table>
+
+    <p>The image is moved one unit down.</p>
+
+    <hr>
+    <p><b>Example 3.</b> $f(x) = x + (-5,3)$</p>
+    
+    <table>        
+        <tr>
+            <td><img src="../../data/20240729/translations/hoshihina_translate_02.png" width="500" alt=""></td>
+            <td>$\xrightarrow{\ \ \ f\ \ \ }$</td>
+            <td><img src="../../data/20240729/translations/hoshihina_translate_03.png" width="500" alt=""></td>
+        </tr>        
+    </table>
+
+    <p>The image is moved 5 units to the left and 3 units up.</p>          
+    
+    <hr>
+    <p>We shall denote translation by a vector $\tau$ in two ways.</p>
+    
+    <ul>
+        <li>$\texttt{T}_\mu$</li>
+        <li>$\mrm{id} + \mu$</li>
+    </ul>
+
+    <p>So, $$\texttt{T}_{\mu}(x) = (\mrm{id} + \mu)(x) = x + \mu.$$</p>
+    
     
     <hr>    
-    <p><a href="../../index.html">[Top]</a> <a href="../0001/index.html">[&gt;&gt;]</a></p>
-    
+    <p>
+        <a href="../0002/index.html">[&lt;&lt;]</a> 
+        <a href="../../index.html">[Top]</a>
+        <a href="../0013/index.html">[&gt;&gt;]</a> 
+    </p>            
 </div>
 
 <script type="text/javascript">

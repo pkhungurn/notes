@@ -5,7 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
-    <title>0000</title>
+    <title>0065</title>
 
     <!-- Bootstrap -->
     <link href="../../../../../css/bootstrap.min.css" rel="stylesheet">
@@ -34,6 +34,9 @@
 
     <link rel="stylesheet" type="text/css" href="../../../../../css/bigfoot-default.css">
 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.1/styles/default.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.1/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
 </head>
 <body>
 <div class="container">
@@ -80,38 +83,44 @@
         \)
     </span>
 
-    <br>
-    <h1>Vector Function</h1>
-    <hr>
-
-    <p>For the current paper we are reading, we are working in a $d$-dimensional space $\Real^d$.</p>
-    <hr>
-
-    <p>We denote a vector in $\Real^d$ with $x = (x^1, x^2, \dotsc, x^d)$.</p>
-
-    <p>This is an unusual convention. However, some really famous textbooks uses it. These textbooks include Spivak's <a href="https://www.amazon.co.jp/-/en/Michael-Spivak/dp/0805390219">Calculus on Manifolds</a>, which is one of the book I learned multi-variable calculus from.</p>
-    <hr>
-
-    <p><b>Definition.</b> A <b>vector function</b> or a <b>vector-valued function</b> is a function $f$ that maps $\Real^n$ to $\Real^m$ for some positive integers $n$ and $m$.</p>
+    <h1>Choosing $\mu_t$ and $\sigma_t$</h1>
 
     <hr>
-    <p>We say that the function $f$ has <b>signature</b> $\Real^n \ra \Real^m$. We also write $f:\Real^n \ra \Real^m$.</p>
+    <p>We know that we can construct the full vector field $v_t(x)$ by integrating the conditional vector field
+    \begin{align*}
+      v_t(x|x_{\data}) = \frac{\sigma_t'(x_{\data})}{\sigma_t(x_{\data})} (x - \mu_t(x_{\data})) + \mu'_t(x_{\data}).
+    \end{align*}
+    </p>
 
     <hr>
-    <p>Most of the time, we will deal with functions of signature $\Real^d \ra \Real^d$ or $\Real^{d+1} \ra \Real^d$.</p>
+    <p>However, we haven't actually picked $\mu_t$ and $\sigma_t$. We just know that any differentiable functions that satisfy the following constraints
+    \begin{align*}
+      \mu_0(x_{\data}) &= 0, \\
+      \mu_1(x_{\data}) &= x_{\data}, \\
+      \sigma_0(x_{\data}) &= 1, \\
+      \sigma_1(x_{\data}) &= \sigma_\min
+    \end{align*}
+    would work.
+    </p>
 
     <hr>
-    <p>Let's talk first about functions of signature $\Real^d \ra \Real^d$. There are two interpretations of this type of functions.</p>
+    <p>So, let's pick something concrete. Shall we.</p>
 
-    <ol>
-        <li>Point transformation.</li>
-        <li>Vector field.</li>
-    </ol>
+    <hr>
+    <p>The paper gives two examples of such choices.</p>
+
+    <ul>
+      <li>Diffusion conditional vector field.</li>
+      <li>"Optimal transport" conditional vector field.</li>
+    </ul>
     
-    <hr>    
-    <p><a href="../../index.html">[Top]</a> <a href="../0001/index.html">[&gt;&gt;]</a></p>
-    
-</div>
+    <hr>
+    <p>
+        <a href="../0064/index.html">[&lt;&lt;]</a> 
+        <a href="../../index.html">[Top]</a>
+        <a href="../0066/index.html">[&gt;&gt;]</a> 
+    </p>
+  </div>
 
 <script type="text/javascript">
 $.bigfoot();

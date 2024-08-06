@@ -5,7 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
-    <title>0000</title>
+    <title>0050</title>
 
     <!-- Bootstrap -->
     <link href="../../../../../css/bootstrap.min.css" rel="stylesheet">
@@ -80,36 +80,70 @@
         \)
     </span>
 
-    <br>
-    <h1>Vector Function</h1>
-    <hr>
-
-    <p>For the current paper we are reading, we are working in a $d$-dimensional space $\Real^d$.</p>
-    <hr>
-
-    <p>We denote a vector in $\Real^d$ with $x = (x^1, x^2, \dotsc, x^d)$.</p>
-
-    <p>This is an unusual convention. However, some really famous textbooks uses it. These textbooks include Spivak's <a href="https://www.amazon.co.jp/-/en/Michael-Spivak/dp/0805390219">Calculus on Manifolds</a>, which is one of the book I learned multi-variable calculus from.</p>
-    <hr>
-
-    <p><b>Definition.</b> A <b>vector function</b> or a <b>vector-valued function</b> is a function $f$ that maps $\Real^n$ to $\Real^m$ for some positive integers $n$ and $m$.</p>
+    <h1>Displacement Interpolation</h1>
 
     <hr>
-    <p>We say that the function $f$ has <b>signature</b> $\Real^n \ra \Real^m$. We also write $f:\Real^n \ra \Real^m$.</p>
+    <p>In the last slide, we know that $$\phi_t(x) = \frac{\sigma_t}{\sigma_0}(x - \mu_0) + \mu_t$$
+    is a flow if $\mu_t$ and $\phi_t$ are differentiable. If you use this flow to push forward a Gaussian $\mcal{N}(\mu_0, \sigma_0^2I)$, then you get a probabilty path $$p_t = \mcal{N}(\mu_t, \sigma_t^2 I)$$
+    that continuously transforms $\mcal{N}(\mu_0,\sigma_0^2 I)$ to $\mcal{N}(\mu_1,\sigma_1^2 I)$ over the time interval $0 \leq t \leq 1$.
+    </p>
 
     <hr>
-    <p>Most of the time, we will deal with functions of signature $\Real^d \ra \Real^d$ or $\Real^{d+1} \ra \Real^d$.</p>
+    <p>Let's look at the special case where $\mu_t$ and $\sigma_t$ are linear interpolations of the end values.
+    \begin{align*}
+    \mu_t &= (1 - t)\mu_0 + t \mu_1 \\
+    \sigma_t &= (1-t)\sigma_0 + t \sigma_t \\
+    \end{align*}
+    In this case, we have that
+    \begin{align*}
+      \phi_t(x) 
+      &= \frac{(1-t)\sigma_0 + t\sigma_1}{\sigma_0}(x - \mu_0) + (1-t)\mu_0 + t \mu_1 \\
+      &= (1-t)(x-\mu) + (1-t)\mu_0 + t \bigg[ \frac{\sigma_1}{\sigma_0} (x - \mu_0) + \mu_1 \bigg] \\
+      &= (1-t)x + t \bigg[ \frac{\sigma_1}{\sigma_0} (x - \mu_0) + \mu_1 \bigg].
+    \end{align*}
+    Let $$\varphi(x) = \frac{\sigma_1}{\sigma_0} (x - \mu_0) + \mu_1.$$  We know that
+    \begin{align*}
+      \mcal{N}(\mu_1, \sigma_1^2 I) = [\varphi]_* \mcal{N}(\mu_0, \sigma_0^2 I).
+    \end{align*}
+    We also have that
+    \begin{align*}
+      \phi_t(x) = (1-t)x + t\varphi(x) = (1-t)\mrm{id}(x) = t\varphi(x).
+    \end{align*}  
+    So, it seems that $\phi_t$ is a linear interpolation between two functions:
+    \begin{align*}
+      \phi_t = (1-t)\mrm{id} + t\varphi.
+    \end{align*}
+    This type of flow has a special name.
+    </p>
 
     <hr>
-    <p>Let's talk first about functions of signature $\Real^d \ra \Real^d$. There are two interpretations of this type of functions.</p>
+    <p>
+    <b>Definition.</b> Let $\phi: \Real^d \ra \Real^d$ be a diffeomorphism. The <b>displacement interpolation of $\phi$</b> is a flow defined by
+    \begin{align*}
+      \phi_t = (1-t)\mrm{id} + t\varphi.
+    \end{align*}
+    </p>
 
-    <ol>
-        <li>Point transformation.</li>
-        <li>Vector field.</li>
-    </ol>
-    
-    <hr>    
-    <p><a href="../../index.html">[Top]</a> <a href="../0001/index.html">[&gt;&gt;]</a></p>
+    <hr>
+    <p>Given two Gaussian $\mcal{N}(\mu_0, \sigma_0^2I)$ and $\mcal{N}(\mu_1, \sigma_1^2I)$, let $\varphi(x)$ be the diffeomorphism
+    \begin{align*}
+      \varphi(x) = \frac{\sigma_1}{\sigma_0} (x - \mu_0) + \mu_1.
+    \end{align*}
+    We have that $$\mcal{N}(\mu_1, \sigma_1^2 I) = [\varphi]_* \mcal{N}(\mu_0, \sigma_0^2 I).$$ Moreover, the displacement interpolation of $\phi_t = (1-t)\mrm{id} + t\varphi$ is a flow that gives rise to a probability path between $\mcal{N}(\mu_0, \sigma_0^2 I)$ and $\mcal{N}(\mu_1, \sigma_1^2 I)$. Moreover, we know that the path is "straight."    
+    </p>
+
+    <ul>
+      <li>The mean moves in a straight line.</li>
+      <li>The standard deviation changes linearly with time.</li>
+    </ul>
+
+    <hr>
+    <p>
+        <a href="../0049/index.html">[&lt;&lt;]</a> 
+        <a href="../../index.html">[Top]</a>
+        <a href="../0051/index.html">[&gt;&gt;]</a> 
+    </p>
+
     
 </div>
 

@@ -5,7 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
-    <title>0000</title>
+    <title>0051</title>
 
     <!-- Bootstrap -->
     <link href="../../../../../css/bootstrap.min.css" rel="stylesheet">
@@ -80,36 +80,104 @@
         \)
     </span>
 
-    <br>
-    <h1>Vector Function</h1>
-    <hr>
-
-    <p>For the current paper we are reading, we are working in a $d$-dimensional space $\Real^d$.</p>
-    <hr>
-
-    <p>We denote a vector in $\Real^d$ with $x = (x^1, x^2, \dotsc, x^d)$.</p>
-
-    <p>This is an unusual convention. However, some really famous textbooks uses it. These textbooks include Spivak's <a href="https://www.amazon.co.jp/-/en/Michael-Spivak/dp/0805390219">Calculus on Manifolds</a>, which is one of the book I learned multi-variable calculus from.</p>
-    <hr>
-
-    <p><b>Definition.</b> A <b>vector function</b> or a <b>vector-valued function</b> is a function $f$ that maps $\Real^n$ to $\Real^m$ for some positive integers $n$ and $m$.</p>
+    <h1>Vector Function as Vector Field</h1>
 
     <hr>
-    <p>We say that the function $f$ has <b>signature</b> $\Real^n \ra \Real^m$. We also write $f:\Real^n \ra \Real^m$.</p>
+    <p>OK. So far we know how to do generative modeling from one isotropic Gaussian to another.</p>
+
+    <ul>
+      <li>One shot transformation version:
+      \begin{align*}
+        \varphi(x) = \frac{\sigma_1}{\sigma_0}(x - \mu_0) + \mu_1.
+      \end{align*}
+      </li>
+      <li>Continuous version:
+      \begin{align*}
+        \phi_t(x) = \frac{\sigma_t}{\sigma_0} (x -\mu_0) + \mu_t
+      \end{align*}
+      for any differentiable function $\mu_t$ and $\sigma_t$ that goes from $(\mu_0, \sigma_0)$ to $(\mu_1, \sigma_1)$. In particular,
+      \begin{align*}
+        \phi_t = (1-t) \mrm{id} + t \varphi
+      \end{align*}
+      is the "straight" flow.
+      </li>
+    </ul>
 
     <hr>
-    <p>Most of the time, we will deal with functions of signature $\Real^d \ra \Real^d$ or $\Real^{d+1} \ra \Real^d$.</p>
+    <p>We still don't know how to solve the problem in general. To do so, we need a more sophisticated way to generate a flow.</p>
 
     <hr>
-    <p>Let's talk first about functions of signature $\Real^d \ra \Real^d$. There are two interpretations of this type of functions.</p>
+    <p>The way people do this is by <b>integrating a time-dependent vector field</b>.</p>
 
-    <ol>
-        <li>Point transformation.</li>
-        <li>Vector field.</li>
-    </ol>
+    <hr>
+    <p>But hey...</p>
+
+    <ul>
+      <li>What does "integrating" mean?</li>
+      <li>What is a "time-dependent vector field?"</li>      
+    </ul>
+
+    <hr>
+    <p>Let's start with what a vector field is.</p>
+
+    <hr>
+    <p>We said in the very first slide that there are two interpretations of a vector function $\Real^d \ra \Real^d$.</p>
+
+    <ul>
+      <li>Point transformation.</li>
+      <li>Vector field.</li>
+    </ul>
     
-    <hr>    
-    <p><a href="../../index.html">[Top]</a> <a href="../0001/index.html">[&gt;&gt;]</a></p>
+    <p>So, a vector field is just a vector function. We see it as associating a $d$-dimensional vector to each point in $\Real^d$.</p>
+
+    <hr>
+    <p>For vectors, we will typically use letters like $u$, $v$, or $w$ instead of $f$, $g$, and $h$.</p>
+
+    <hr>
+    <p>When we visualize a vector field, we draw a lot of arrows on the space.</p>
+
+    <hr>
+    <p>Here's a vector field.
+    \begin{align*}
+      v(x) = (1,0)
+    \end{align*}
+    And here's what it looks like.
+    <center>
+      <img src="../../data/20240803/vector_fields/_00.png" alt="">
+    </center>
+    Note that the arrows are not to scale.
+    </p>
+
+    <hr>
+    <p>Here's another vector field.
+    \begin{align*}
+      v(x) = \begin{bmatrix} -x^2 \\ x^1 \end{bmatrix}
+    \end{align*}
+    And here's what it looks like.
+    <center>
+      <img src="../../data/20240803/vector_fields/_01.png" alt="">
+    </center>
+    </p>
+
+    <hr>
+    <p>Here's another one.
+    \begin{align*}
+      v(x) = \frac{-x}{\|x\|}
+    \end{align*}
+    (This vector field is undefined at $0$.) Here's what it looks like.
+    <center>
+      <img src="../../data/20240803/vector_fields/_02.png" alt="">
+    </center>
+    </p>
+    
+
+    <hr>
+    <p>
+        <a href="../0050/index.html">[&lt;&lt;]</a> 
+        <a href="../../index.html">[Top]</a>
+        <a href="../0052/index.html">[&gt;&gt;]</a> 
+    </p>
+
     
 </div>
 
