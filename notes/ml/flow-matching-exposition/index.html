@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<li><a href="slides/0041/index.html">0041 Continuous Normalizing Flow?</a></li><!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
@@ -26,7 +26,7 @@
     });
     </script>
     <script type="text/javascript"
-            src="MathJax/MathJax.js?config=TeX-AMS_HTML-full">
+            src="../../../MathJax/MathJax.js?config=TeX-AMS_HTML-full">
     </script>
 
     <script type="text/javascript" src="../../../js/jquery-3.4.1.min.js"></script>    
@@ -37,6 +37,49 @@
 <body>
 
 <div class="container">
+    <span style="visibility: hidden;">
+        \(
+        \def\sc#1{\dosc#1\csod}
+        \def\dosc#1#2\csod{{\rm #1{\small #2}}}
+
+        \newcommand{\dee}{\mathrm{d}}
+        \newcommand{\Dee}{\mathrm{D}}
+        \newcommand{\In}{\mathrm{in}}
+        \newcommand{\Out}{\mathrm{out}}
+        \newcommand{\pdf}{\mathrm{pdf}}
+        \newcommand{\Cov}{\mathrm{Cov}}
+        \newcommand{\Var}{\mathrm{Var}}
+
+        \newcommand{\ve}[1]{\mathbf{#1}}
+        \newcommand{\ves}[1]{\boldsymbol{#1}}
+        \newcommand{\mrm}[1]{\mathrm{#1}}
+        \newcommand{\etal}{{et~al.}}
+        \newcommand{\sphere}{\mathbb{S}^2}
+        \newcommand{\modeint}{\mathcal{M}}
+        \newcommand{\azimint}{\mathcal{N}}
+        \newcommand{\ra}{\rightarrow}
+        \newcommand{\mcal}[1]{\mathcal{#1}}
+        \newcommand{\X}{\mathcal{X}}
+        \newcommand{\Y}{\mathcal{Y}}
+        \newcommand{\Z}{\mathcal{Z}}
+        \newcommand{\x}{\mathbf{x}}
+        \newcommand{\y}{\mathbf{y}}
+        \newcommand{\z}{\mathbf{z}}
+        \newcommand{\tr}{\mathrm{tr}}
+        \newcommand{\sgn}{\mathrm{sgn}}
+        \newcommand{\diag}{\mathrm{diag}}
+        \newcommand{\Real}{\mathbb{R}}
+        \newcommand{\sseq}{\subseteq}
+        \newcommand{\ov}[1]{\overline{#1}}
+        \DeclareMathOperator*{\argmax}{arg\,max}
+        \DeclareMathOperator*{\argmin}{arg\,min}
+
+        \newcommand{\data}{\mathrm{data}}
+        \newcommand{\N}{\mathcal{N}}
+        \newcommand{\Hil}{\mathcal{H}}
+        \)
+    </span>
+
     <br>
     <h1>Flow  Matching</h1>
 
@@ -47,7 +90,53 @@
     <h2>Slides</h2>
 
     <ul>
-        <li><a href="slides/0000/index.html">0000</a></li>
+        <li><a href="slides/0000/index.html">0000 Vector Function</a></li>
+        <li><a href="slides/0001/index.html">0001 $\Real^d \ra \Real^d$ as Point Transformation</a> </li>
+        <li><a href="slides/0002/index.html">0002 Point Transformation Visualization</a></li>
+        <li><a href="slides/0009/index.html">0009 Translation</a></li>
+        <li><a href="slides/0013/index.html">0013 (Uniform) Scaling</a></li>
+        <li><a href="slides/0015/index.html">0015 Scale-Add</a></li>
+        <li><a href="slides/0016/index.html">0016 Derivatives</a></li>
+        <li><a href="slides/0018/index.html">0018 Notation for Derivatives</a></li>
+        <li><a href="slides/0019/index.html">0019 Derivatives of Simple Functions</a></li>
+        <li><a href="slides/0025/index.html">0025 Diffeomorphism</a></li>
+        <li><a href="slides/0032/index.html">0032 Probability Distribution</a></li>
+        <li><a href="slides/0033/index.html">0033 Gaussian Distributions</a></li>
+        <li><a href="slides/0034/index.html">0034 Generative Modeling</a></li>
+        <li><a href="slides/0035/index.html">0035 Push-Forward</a></li>
+        <li><a href="slides/0036/index.html">0036 Push-Forward of Gaussian Distributions</a></li>
+        <li><a href="slides/0037/index.html">0037 Transform One Gaussian to Another Gaussian</a></li>
+        <li><a href="slides/0039/index.html">0039 Approaches for General Generative Modeling</a></li>
+        <li><a href="slides/0040/index.html">0040 (Discrete) Normalizing Flow</a></li>
+        <li><a href="slides/0041/index.html">0041 Continuous Normalizing Flow?</a></li>
+        <li><a href="slides/0042/index.html">0042 Probability Path</a></li>
+        <li><a href="slides/0043/index.html">0043 Probability Path Between Two Isotropic Gaussians</a></li>
+        <li><a href="slides/0044/index.html">0044 Generating Probability Paths with Flows</a></li>
+        <li><a href="slides/0045/index.html">0045 Familiarize Ourselves with Flows</a></li>
+        <li><a href="slides/0046/index.html">0046 Notation for Derivatives of Flows</a></li>
+        <li><a href="slides/0047/index.html">0047 Examples of Flows</a></li>
+        <li><a href="slides/0049/index.html">0049 Flow for Gaussian Probability Path</a></li>
+        <li><a href="slides/0050/index.html">0050 Displacement Interpolation</a></li>
+        <li><a href="slides/0051/index.html">0051 Vector Function as Vector Field</a></li>
+        <li><a href="slides/0052/index.html">0052 Time-Dependent Vector Field</a></li>
+        <li><a href="slides/0053/index.html">0053 Integrating a Time-Dependent Vector Field</a></li>
+        <li><a href="slides/0054/index.html">0054 How to compute integrals, computationally...</a></li>
+        <li><a href="slides/0055/index.html">0055 Is this actually a flow?</a></li>
+        <li><a href="slides/0056/index.html">0056 Push-Forward by a Vector Field</a></li>
+        <li><a href="slides/0057/index.html">0057 Continuity Equation</a></li>
+        <li><a href="slides/0058/index.html">0058 Instantaneous Change of Variable Formula</a></li>
+        <li><a href="slides/0059/index.html">0059 Computing Log-Likelihood</a></li>
+        <li><a href="slides/0060/index.html">0060 Continuous Normalizing Flow</a></li>
+        <li><a href="slides/0061/index.html">0061 Flow Matching</a></li>
+        <li><a href="slides/0062/index.html">0062 Flow Matching for Gaussian Distributions</a></li>
+        <li><a href="slides/0063/index.html">0063 The General Case</a></li>
+        <li><a href="slides/0064/index.html">0064 Conditional Flow Matching Loss</a></li>
+        <li><a href="slides/0065/index.html">0065 Choosing $\mu_t$ and $\sigma_t$</a></li>
+        <li><a href="slides/0066/index.html">0066 Diffusion Conditional Vector Field</a></li>
+        <li><a href="slides/0067/index.html">0067 "Optional Transport" Conditional Vector Field</a></li>
+        <li><a href="slides/0068/index.html">0068 Putting Things Together</a></li>
+        <li><a href="slides/0069/index.html">0069 Experimental Results</a></li>
+        <li><a href="slides/0070/index.html">0070 Related & Follow-up Works</a></li>
     </ul>
 
     <hr>
