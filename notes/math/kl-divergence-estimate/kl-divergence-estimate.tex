@@ -1,0 +1,127 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+\usepackage{verbatim}
+\usepackage{hyperref}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\Dee}{\mathrm{D}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\Var}{\mathrm{Var}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+\newcommand{\ov}[1]{\overline{#1}}
+
+\title{Monte Carlo Estimation of the KL Divergence}
+\author{Pramook Khungurn}
+
+\begin{document}
+\maketitle
+
+This is a summary of the note by John Schulman's on how to approximate the KL divergence between two probability distributions \cite{Schulman:2020}.
+
+\section{Preliminary}
+
+\begin{itemize}
+	\item Given two probability distributions $p$ and $q$ on $\Real^d$, the {\bf Kullback--Liebler divergence (KL divergence)} between them is defined by
+	\begin{align*}
+		\mrm{KL}(p\,\|\,q) = E_{x \sim p} \bigg[ \log \frac{p(x)}{q(x)} \bigg].
+	\end{align*}
+	
+	\item It is a non-negative number, and it measures how different the probability distributions are. You can read more about it in my note on information theory \cite{Khungurn:InfoTheory}.
+	
+	\item We are interested in estimating the KL divergence via Monte Carlo integration. The simplest estimator is as follows.
+	\begin{itemize}
+		\item Sample $x_1, x_2, \dotsc x_N$ independently according to $p$.
+		\item Compute
+		\begin{align*}
+			A = \frac{1}{N} \sum_{i=1}^N \log \frac{p(x_i)}{q(x_i)}.
+		\end{align*}
+	\end{itemize}
+	We have that $A$ is an unbiased estimator of $\mrm{KL}(p\,\|\,q)$. In other words, $E[A] = \mrm{KL}(p\,\|\,q)$.
+
+	\item The problem with this is that $A$ might have high variance. This can result in an unintuitive result where the actual value of $A$ is less than $0$ while the KL-divergence is always positive.	
+\end{itemize}
+
+\section{Schulman's Unbiased Estimator}
+
+\begin{itemize}
+	\item Schulman proposes using the following estimator instead.
+	\begin{itemize}
+		\item Sample $x_1, x_2, \dotsc x_N$ independently according to $p$.
+		\item Compute
+		\begin{align*}
+			B = \frac{1}{N} \sum_{i=1}^N \bigg( \frac{q(x_i)}{p(x_i)} - 1 - \log \frac{q(x_i)}{p(x_i)} \bigg).
+		\end{align*}
+	\end{itemize}
+
+	\item First, we note that $B$ is an unbiased estimator of $\mrm{KL}(p\,\|\,q)$. It is the Monte Carlo integration of the expectation
+	\begin{align*}
+		E_{x \sim p} \bigg[ \frac{q(x)}{p(x)} - 1 - \log \frac{q(x)}{p(x)} \bigg]
+		&= E_{x \sim p} \bigg[ \frac{q(x)}{p(x)} - 1 \bigg] - E_{x \sim p}\bigg[\log \frac{q(x)}{p(x)} \bigg] \\
+		&= \int p(x) \bigg( \frac{q(x)}{p(x)} - 1 \bigg)\, \dee x  + E_{x \sim p}\bigg[\log \frac{p(x)}{q(x)} \bigg] \\
+		&= \int q(x)\, \dee x - \int p(x)\, \dee x  + E_{x \sim p}\bigg[\log \frac{p(x)}{q(x)} \bigg] \\
+		&= E_{x \sim p}\bigg[\log \frac{p(x)}{q(x)} \bigg] \\
+		&= \mrm{KL}(p\,\|\,q).
+	\end{align*}
+
+	\item Second, it is the case that $B$ is non-negative. This is because, if we let $r_i = q(x_i)/p(x_i)$, then we have that
+	\begin{align*}
+		B = \frac{1}{N} \sum_{i=1}^N (r_i - 1 - \log r_i).
+	\end{align*}
+	Now, we know that $\log x \leq x - 1$ for all $x > 0$. So, $B \geq 0$.
+
+	\item Unfortunately, we cannot show that $B$ has lower variance than $A$, but there are things that we know about it. Let $X$ be a random variable whose distribution is $p$. Let 
+	\begin{align*}
+		V &= - \log \frac{q(X)}{p(X)}, \\
+		U &= \exp(V) - 1 = \frac{q(X)}{p(X)} - 1
+	\end{align*}
+	We have that
+	\begin{align*}
+		\Var(B) 
+		&= \frac{1}{N} \Var(U+V) \\
+		&= \frac{1}{N}\big[ \Var(U) + \Var(V) + 2\Cov(U,V)  \big] \\
+		&= \frac{\Var(V)}{N}  + \frac{\Var(U) + 2\Cov(U,V)}{N} \\
+		&= \Var(A) + \frac{\Var(U) + 2\Cov(U,V)}{N}.
+	\end{align*}
+	We note that $U$ and $V$ are negatively correlated, so $\Var(U) + 2\Cov(U,V)$ has a potential to be negative.
+\end{itemize}
+
+\bibliographystyle{alpha}
+\bibliography{kl-divergence-estimate}  
+\end{document}
