@@ -9,6 +9,7 @@
 \usepackage{tikz}
 \usepackage{verbatim}
 \usepackage{hyperref}
+\usepackage{algpseudocode}
 
 \newtheorem{lemma}{Lemma}
 \newtheorem{theorem}[lemma]{Theorem}
@@ -157,6 +158,234 @@ This note is written as I study algorithms for the non-linear least squares prob
     \begin{itemize}
         \item Find a direction $\ve{h}$ along which to move $\ve{x}^{(k)}$. (Here, $k$ is the index of the iteration.)
         \item Find the step length to move $\ve{x}^{(k)}$.
+    \end{itemize}
+    
+    \item The outline of the descent method is as follows.
+    \medskip
+    \begin{algorithmic}
+        \State $k \gets 0$
+        \State $found \gets \mathbf{false}$
+        \State $\ve{x} \gets \ve{x}^{(0)}$
+        \While {$(\mathbf{not}\ found)$ {\bf and} $(k < k_{\max})$}
+            \State $\ve{h} \gets \operatorname{Find-Direction}(\ve{x})$
+            \If {(no such $\ve{h}$ exists)}
+                \State $found \gets \mathbf{true}$
+            \Else
+                \State $\alpha \gets \operatorname{Compute-Step-Length}(\ve{x}, \ve{h})$
+                \State $\ve{x} \gets \ve{x} + \alpha\ve{h}$
+                \State $k \gets k+1$
+            \EndIf
+        \EndWhile
+    \end{algorithmic}
+
+    \item Consider how the value of $\mcal{L}$ changes after the update.
+    \begin{align*}
+        \mcal{L}(\ve{x} + \alpha \ve{h}) 
+        &= \mcal{L}(\ve{x}) + \alpha \nabla \mcal{L}(\ve{x}) \ve{h} + O(\alpha^2) 
+        \approx \mcal{L}(\ve{x}) + \alpha \nabla \mcal{L}(\ve{x}) \ve{h}
+    \end{align*}
+    when $\alpha$ is small enough. 
+    
+    \item \begin{definition}
+        A direction $\ve{h}$ is a {\bf descent direction} if $\nabla \mcal{L}(\ve{x}) \ve{h} < 0$.
+    \end{definition}
+
+    \item If we are at $\ve{x}$ where there exists no descent direction, it must be that $\nabla \mcal{L}(\ve{x}) = \ve{0}$, so $\ve{x}$ is a stationary point.
+    
+    \item If there is a descent direction, we then have to find the step length $\alpha$ such that $\mcal{L}(\ve{x} + \alpha \ve{h}) < \mcal{L}(\ve{x}).$ 
+\end{itemize}
+
+\subsection{Gradient Descent}
+
+\begin{itemize}
+    \item One of the most popular descent method is {\bf gradient descent}. It choose $\ve{h} = -(\nabla \mcal{L}(\ve{x}))^T$  and $\alpha$ to be a fixed small constant.
+    
+    \item The choice of the descent direction is the best choice locally at $\ve{x}^{(k)}$.
+    
+    \item However, the convergence of gradient descent is linear and often very slow.
+    
+    \item Nevertheless, it offers good performance when $\ve{x}$ is far away the converged solution $\ve{x}^*$. So, it is often used as the initial phase of the iterative optimization process.
+\end{itemize}
+
+\subsection{Newton's Method}
+
+\begin{itemize}
+    \item If $\ve{x}^*$ is a stationary point then, $\nabla \mcal{L}(\ve{x}^*) = \ve{0}$.
+    
+    \item We also have that
+    \begin{align*}
+        \nabla \mcal{L}(\ve{x} + \ve{h})^T
+        &= \nabla \mcal{L}(\ve{x})^T + \nabla(\nabla \mcal{L}(\ve{x})^T) \ve{h} + O(\| \ve{h} \|^2) \\
+        &= \nabla \mcal{L}(\ve{x})^T + H_{\mcal{L}}(\ve{x}) \ve{h} + O(\| \ve{h} \|^2) \\
+        &\approx \nabla \mcal{L}(\ve{x})^T + H_{\mcal{L}}(\ve{x}) \ve{h}
+    \end{align*}
+    when $\| \ve{h} \|$ is small enough.
+
+    \item Assuming that we can get to the stationary point in one step, it must be the case that $\nabla \mcal{L}(\ve{x} + \ve{h})^T = \ve{0}$. So,
+    \begin{align*}
+        \ve{0} &\approx \nabla \mcal{L}(\ve{x})^T + H_{\mcal{L}}(\ve{x}) \ve{h}.
+    \end{align*}
+    We go one step further and assume that the above inequality is an equality.
+    \begin{align*}
+        \ve{0} &= \nabla\mcal{L}(\ve{x})^T + H_{\mcal{L}}(\ve{x}) \ve{h}.
+    \end{align*}
+    This gives
+    \begin{align*}
+        \ve{h} = - (H_{\mcal{L}}(\ve{x}))^{-1} \nabla\mcal{L}(\ve{x})^T.
+    \end{align*}
+
+    \item {\bf Newton's method} chooses $\ve{h} = - (H_{\mcal{L}}(\ve{x}))^{-1} \nabla\mcal{L}(\ve{x})^T$ and $\alpha = 1$.
+    
+    \item If $H_{\mcal{L}}(\ve{x})$ is positive definite, we have that
+    \begin{align*}
+        0 < \ve{h}^T H_{\mcal{L}}(\ve{x}) \ve{h}.
+    \end{align*}
+    Because of our choice of $\ve{h}$, we have that $H_{\mcal{L}}(\ve{x}) \ve{h} = -\mcal{L}(\ve{x})^T$. As a result,
+    \begin{align*}
+        0 &< - \ve{h}^T \mcal{L}(\ve{x})^T \\
+        \mcal{L}(\ve{x})^T \ve{h} &< 0.
+    \end{align*}
+    As a result, $\ve{h}$ is a descent direction if $H_{\mcal{L}}(\ve{x})$ is positive definite.
+
+    \item Newton's method is good at a late stage of the optimization process. That is, whne $\ve{x}$ is close to $\ve{x}^*$. If $\ve{x}^*$ is a local minimizer, then $H_{\mcal{L}}(\ve{x}^*)$ is positive definite. As a result, there is a neighborhood around $\ve{x}^*$ such that, if $\ve{x}$ is in that neighborhood, then $H_{\mcal{L}}(\ve{x})$ is also positive definite. As a result, we have that $\ve{h}$ is a descent direction. Moreover, the convergence in this neighborhood is quadratic.
+    
+    \item On the other hand, if the $H_{\mcal{L}}(\ve{x}^*)$ is negative definite, then $\ve{h}$ will be an \emph{ascent} direction, and the algorithm would converge to a local maximizer at a qudratic rate as well. To prevent this, we should always ensure that each update results in a decrease of the loss function.
+    
+    \item We can build a hybrid method between gradient descent and Newton's method with the following simple rule. If $H_{\mcal{L}}(\ve{x})$ is positive definite, then we use Newton's method for the current optimization step. Otherwise, we use gradient descent.
+    \medskip
+    \begin{algorithmic}
+        \If {$H_{\mcal{L}}(\ve{x})$ is postiive definite}
+            \State $\ve{h} \gets - (H_{\mcal{L}}(\ve{x}))^{-1} \nabla\mcal{L}(\ve{x})^T$
+            \State $\alpha \gets 1$
+        \Else
+        \State $\ve{h} \gets - \nabla\mcal{L}(\ve{x})^T$
+        \State $\alpha \gets $ small positive constant
+        \EndIf
+    \end{algorithmic}
+
+    \item We can check whether a matrix is positive definite by performing the Cholesky factorization, which, if successful, would imply that the matrix is positive definite and also give us a factorization to compute $- (H_{\mcal{L}}(\ve{x}))^{-1} \nabla\mcal{L}(\ve{x})^T$. Factorization takes $O(n^3)$ where $n$ is the number dimension of $\ve{x}$.
+\end{itemize}
+
+\subsection{Line Search}
+
+\begin{itemize}
+    \item We see that, in the last two sections, the choice of the step length $\alpha$ does not always work.
+    \begin{itemize}
+        \item For gradient descent, a constant $\alpha$ does not guarantee the descending condition in any way possible.
+        \item For Newton's method, $\alpha = 1$ only works when the Hessian is positive definite.
+    \end{itemize}
+
+    \item A {\bf line search} is an algorithm to find an $\alpha$ such the descending condition is true.
+    
+    \item For a fixed $\ve{x}$ and a descent direction $\ve{h}$ and $\alpha \geq 0$, let
+    \begin{align*}
+        \varphi(\alpha) = \mcal{L}(\ve{x} + \alpha \ve{h}).
+    \end{align*}
+    
+    \item We have that
+    \begin{align*}
+        \varphi'(\alpha) 
+        &= \frac{\partial \mcal{L}(\ve{x} + \alpha \ve{h})}{\partial (\ve{x} + \alpha \ve{h})} \frac{\partial(\ve{x} + \alpha \ve{h})}{\alpha}
+        = \nabla \mcal{L}(\ve{x} + \alpha \ve{h}) \ve{h}.
+    \end{align*}
+    As a result,
+    \begin{align*}
+        \phi'(0) = \nabla \mcal{L}(\ve{x}) \ve{h}.
+    \end{align*}
+    Because $\ve{h}$ is a descent direction, we have that $\phi'(0) < 0$. So, $\phi$ decreases first before potentially increases later. As a result, there is $\alpha > 0$ such that $\phi(\alpha) < \phi(0)$. This means that the line search problem always has an answer if $\ve{h}$ is a descent direction.
+
+    \item It is tempting to find $\alpha^* = \argmin_{\alpha > 0} \varphi(\alpha)$. This results in an algorithm called {\bf exact line search}. However, this is still a hard optimization problem. Even if we allow ourselves to find a local minimizer instead of the global minimizer, literature still considers it not cost effective.
+    
+    \item Instead, what people do is {\bf inexact line search} where we produce an $\alpha$ value that is not too short and not too long.
+    \begin{itemize}
+        \item If $\alpha$ is too short, then $\phi(0) - \phi(\alpha)$ might be too small to call it an improvement, implying slow convergence.
+        \item If $\alpha$ is too large, then $\phi(\alpha)$ might be greater than $\phi(0)$.
+    \end{itemize}    
+\end{itemize}
+
+\subsubsection{Forms of Line Search Algorithm}
+
+\begin{itemize}
+    \item Inexact line search is generally an iterative algorithm.
+    \begin{itemize}
+        \item Starts with an initial guess $\alpha \gets \alpha^{(0)}$.
+        \item Keeps updating the value of $\alpha$ until it satisfies some conditions.
+    \end{itemize}
+
+    \item In {\bf backtracking line search} \cite{Cao:2021}, we start with a large initial guess, say $\alpha^{(0)} = 1$. We keep exponentially decaying the value of $\alpha \gets \rho \alpha$  where $0 < \rho < 1$ until it satisfies some condition.
+    \medskip
+    \begin{algorithmic}
+        \State $\alpha \gets \alpha^{(0)}$
+        \While {$\alpha$ does not satisfy some conditions}
+            \State $\alpha \gets \rho \alpha$
+        \EndWhile        
+    \end{algorithmic}
+
+    \item In {\bf interval binary search} \cite{Frandsen:2004}, we maintain in interval $[a,b]$ where an $\alpha$ value would be sampled from. After we sample $\alpha$, we would update $[a,b]$ like what we do in binary search: either turning it into $[a,\alpha]$ or $[\alpha,b]$. We keep doing this until our sampled $\alpha$ satisifed some conditions.
+
+    \item In Frandsen~\etal's book \cite{Frandsen:2004}, the authors present a version of interval binary search that has two phases. In the first phase, the interval $[a,b]$ is ``expanded'' until we find something suitable. In the second phase, the binary search kicks in. The pseudocode of the algorithm is given below.
+    \medskip
+    \begin{algorithmic}
+        \State $k \gets 0$
+        \State $a \gets 0$
+        \State $b \gets \min\{1, \alpha_{\max}\}$
+        \While {($b$ does not satisfy some conditions) {\bf and} $(b \leq \alpha_{\max})$ {\bf and} $(k < k_{\max})$}                        
+            \State $a \gets b$
+            \State $b \gets \min\{2b, \alpha_{\max}\}$
+            \State $k \gets k+1$            
+        \EndWhile
+        \State $\alpha \gets b$
+        \While {($\alpha$ does not satisfy some conditions) {\bf and} $(k < k_{\max})$}
+            \State Refine $\alpha$ and $[a,b]$.
+            \State $k \gets k+1$
+        \EndWhile
+        \State \Return $\alpha$
+    \end{algorithmic}
+\end{itemize}
+
+\subsubsection{Backtracking Armijo Line Search}
+
+\begin{itemize}
+    \item The first concrete example of a line search algorithm uses a condition called the ``Armijo condition'' \cite{Cao:2021} with the backtracking line search template.
+    
+    \item The {\bf Armijo condition} is as follow:
+    \begin{align*}
+        \varphi(\alpha) \leq \varphi(0) + \gamma \cdot \alpha \cdot \varphi'(0)
+    \end{align*}
+    where $0 < \gamma < 1$, and $\gamma$ is often chosen to be around $10^{-3}$.
+
+    \item If we graph $\varphi$ as a function of $\alpha$, the Armijo condition requires that we find $\alpha$ such that $(\alpha, \varphi(\alpha))$ is below the line of slope $\gamma \varphi'(0)$ with vertical intercept $\varphi(0)$. In other words, it requires that the loss function decreases by some sufficient amount, determined by $\gamma$.
+    \begin{itemize}
+        \item As a result, the Armijo condition is sometimes referred to as the {\bf sufficient decrease condition}.        
+    \end{itemize}
+
+    \item The pseudocode of the full algorithm is as follows.
+    \medskip
+    \begin{algorithmic}
+        \State $\alpha \gets \alpha^{(0)}$
+        \While {$\phi(\alpha) > \phi(0) + \gamma \cdot \alpha \cdot \phi'(0)$}
+            \State $\alpha \gets \rho \alpha$
+        \EndWhile        
+    \end{algorithmic}
+
+    \item The algorithm is gauranteed to terminate because the Armijo condition is always satisfied when $\alpha$ is low enough.
+    
+    \item A drawback of the algorithm is that there is no conditions that prevent $\alpha$ from being too small.
+\end{itemize}
+
+\subsubsection{Interval Binary Search with Wolfe Conditions}
+
+\begin{itemize}
+    \item Frandsen \etal\ presents an algorithm they call {\bf soft line search}, which is basically interval binary search with conditions called the ``Wolfe conditions.'' 
+    
+    \item The {\bf Wolfe conditions} \cite{Cao:2021} consists of two conditions. The first condition ensures that $\alpha$ is small enough, and the second conditions ensures that $\alpha$ is not too small.
+    \begin{itemize}
+        \item The first condition is just the Armijo condition with the extra requirement that $\gamma < 0.5$.
+        \item The second condition is called the {\bf Wolfe curvature condition}:
+        \begin{align*}
+            \phi'(\alpha) \geq \beta \cdot \phi'(0)
+        \end{align*}
+        where $\gamma < \beta < 1$, and $\beta$ is often picked to be much greater than $\gamma$, typically $0.1$. The curvature condition requires that the gradient increases by some amount, making sure that the picked $\alpha$ yields $\ve{x}$ that is close to a stationary point.
     \end{itemize}
 \end{itemize}
 
