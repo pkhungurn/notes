@@ -1,0 +1,166 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+\usepackage{verbatim}
+\usepackage{hyperref}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\Dee}{\mathrm{D}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\Var}{\mathrm{Var}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+\newcommand{\ov}[1]{\overline{#1}}
+\newcommand{\data}{\mathrm{data}}
+
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+
+\title{Algorithms for Non-Linear Least Squares}
+\author{Pramook Khungurn}
+
+\begin{document}
+\maketitle
+
+This note is written as I study algorithms for the non-linear least squares problem, which will culminate in the Levenberg--Marquardt algorithm. Source materials I use for this note includes Madsen \etal's book \cite{Madsen:2004}, Henri's note \cite{Henri:2024}, and Ranganathan's tutorial \cite{Ranganathan:2004}.
+
+\section{Notations}
+
+\begin{itemize}
+    \item Scalars are denoted by regular (i.e., non-bold, non-italic) small latters: $a$, $b$, $c$, $x$, $y$, and $z$.
+    \item We denote vectors with bold, small letters: $\ve{a}$, $\ve{b}$ $\ve{c}$, $\ve{x}$, $\ve{y}$, and $\ve{z}$.
+    \item Vector components are denoted with regular, small letters with a subscript. For example, $$\ve{x} = (x_1, x_2, \dots, x_n).$$
+    \item Matrices, on the other hand, are denoted by regular, capital letters: $A$, $B$, and $C$.
+    \item Scalar functions use the same type face as scalars, and vector functions use the same type face as vectors.
+    \item Component functions of vector functions are denoted in the same was a vector components. That is, if $f: \Real^n \ra \Real^m$, then
+    \begin{align*}
+        \ve{f}(\ve{x}) = \begin{bmatrix} f_1(\ve{x}) \\ f_2(\ve{x}) \\ \vdots \\ f_m(\ve{x}) \end{bmatrix}.
+    \end{align*}
+    \item For derivatives, we use the notations I developed in a previous note \cite{Khungurn:2022}.
+\end{itemize}
+
+\section{Preliminary}
+
+\begin{itemize}
+    \item We are interested in solving the {\bf non-linear least squares} problem. That is, we are given a non-linear vector function $\ve{f}: \Real^n \ra \Real^m$, and we want to find $\ve{x}^*$ such that $\| \ve{f}(\ve{x}^*) \|^2$ is minimized. In other words, we want to compute
+    \begin{align*}
+        \ve{x}^* = \argmin_{\ve{x}} \| \ve{f}(\ve{x}) \|^2.
+    \end{align*}
+
+    \item Of course, non-linear least square is a special case of the general {\bf function minimization} problem. Here, we are given a {\bf loss function}, aka an {\bf objective function}, $\mcal{L}: \Real^n \ra \Real$. We want to find
+    \begin{align*}
+        \ve{x}^* = \argmin_{\ve{x}} \mcal{L}(\ve{x}).
+    \end{align*}
+
+    \item Obviously, for the non-linear least square problem, we have that $\mcal{L}(\ve{x}) = \| \ve{f}(\ve{x}) \|^2$.
+    
+    \item Finding $\argmin_{\ve{x}} \mcal{L}(\ve{x})$ (i.e., the {\bf global minimizer}) is very hard in general, especially with non-linear $\ve{f}$. So, we settle to find a local minimizer instead.
+    
+    \begin{definition}
+        A point $\ve{x} \in \Real^n$ is said to be a {\bf local minimizer} of $\mcal{L}: \Real^n \ra \Real$ if there exists $\delta > 0$ such that $\mcal{L}(\ve{x}') \leq \mcal{L}(\ve{x})$ for all $\| \ve{x} - \ve{x}' \| < \delta$. In other words, there exists a neighborhood of $\ve{x}$ such that $\mcal{L}(\ve{x})$ is minimal.
+    \end{definition}
+
+    \item We shall assume that $\mcal{L}$ is differentiable to arbitrary order. As a result, we have that
+    \begin{align*}
+        \mcal{L}(\ve{x} + \ve{h}) = \mcal{L}(\ve{x}) + \nabla\mcal{L}(\ve{x}) \ve{h} + \frac{1}{2} \ve{h}^T H_{\mcal{L}}(\ve{x}) \ve{h} + O(\| \ve{h} \|^3)
+    \end{align*}
+    where $H_{\mcal{L}}(\ve{x})$ denotes the Hessian matrix of $\mcal{L}$:
+    \begin{align*}
+        H_{\mcal{L}}(\ve{x}) = \begin{bmatrix}
+            \nabla_{1,1} \mcal{L}(\ve{x}) & \nabla_{1,2} \mcal{L}(\ve{x}) & \cdots & \nabla_{1,n} \mcal{L}(\ve{x}) \\
+            \nabla_{2,1} \mcal{L}(\ve{x}) & \nabla_{2,2} \mcal{L}(\ve{x}) & \cdots & \nabla_{2,n} \mcal{L}(\ve{x}) \\
+            \vdots & \vdots & \ddots & \vdots \\
+            \nabla_{n,1} \mcal{L}(\ve{x}) & \nabla_{n,2} \mcal{L}(\ve{x}) & \cdots & \nabla_{n,n} \mcal{L}(\ve{x})           
+        \end{bmatrix}
+        = \nabla((\nabla \mcal{L}(\ve{x}))^T).
+    \end{align*}
+
+    \item \begin{definition}
+        A point $\ve{x} \in \Real^n$ is said to be a {\bf stationary point} of $\mcal{L}: \Real^n \ra \Real$ if $\nabla{L}(\ve{x}) = \ve{0}^T$.
+    \end{definition}
+
+    \item \begin{theorem}
+        A local minimizer of $\mcal{L}$ is a stationary point.
+    \end{theorem}
+    In other words, being a staionary point is a necessary condition for being a local minimizer. It is not a sufficient condition because a stationary point can be a \emph{local maximizer} or a \emph{saddle point}      
+
+    \item The sufficient condition for a local minimizer is given below.
+    \begin{theorem}
+        If $\ve{x}$ is a stationary point of $\mcal{L}$, and $H_{\mcal{L}}(\ve{x})$ is positive definite, then $\ve{x}$ is a local minimizer.
+    \end{theorem}
+\end{itemize}
+
+\section{Descent Methods}
+
+\begin{itemize}
+    \item In this section, we present methods for the general function minimzation problem. We will deal with methods specific to non-linear least squares in the sections after this one.
+    
+    \item The methods in this section are iterative.
+    \begin{itemize}
+        \item Start with a starting point $\ve{x}^{(0)}$.
+        \item We produce a series of points $\ve{x}^{(1)}$, $\ve{x}^{(2)}$, $\dotsc$.
+    \end{itemize}
+    Then, we pray that the series of points would converge to a local minimizer $\ve{x}^*$.
+
+    \item Let $\ve{e}^{(k)} = \ve{x}^{(k)} - \ve{x}^*.$ The optimization process converges if $\lim_{k \ra \infty} \| \ve{e}^{(k)}\| = 0$.
+    
+    \item We are interested in quantifying how the optimization process converges. The speed at which it converges can be measured by how much $\| \ve{e}^{(k+1)} \|$ becomes smaller than $\| \ve{e}^{(k)} \|$. There are multiple types of convergence
+    \begin{itemize}
+        \item {\bf Linear convergence} is when $\| \ve{e}^{(k+1)}\| \leq a\| \ve{e}^{(k)} \|$ for some $0 < a < 1$ for all $k$ large enough.
+        \item {\bf Quadratic convergence} is when $\| \ve{e}^{(k+1)}\| = O(\| \ve{e}^{(k)} \|^2)$ for all $k$ large enough that $\| \ve{e}^{(k)} \|$ is small.
+        \item {\bf Superlinear convergence} is when $\| \ve{e}^{(k+1)}\| / \| \ve{e}^{(k)}\| \ra 0$ as $k \ra \infty$.
+    \end{itemize}
+
+    \item Most methods try to ensure the \emph{descending condition}
+    \begin{align*}
+        \mcal{L}(\ve{x}^{(k+1)}) < \mcal{L}(\ve{x}^{(k)})
+    \end{align*}
+    for all $k \geq 0$. This prevents convergence to a local maximizer. However, we might still end up at a saddle point, but it is quite unlikely because a saddle point has directions that would increase the loss function's value. A {\bf descent method} is one that tries to maintain the descending condition.
+
+    \item All methods in this note is a descent method with a particular structure. In each iteration of such a method, we do the following.
+    \begin{itemize}
+        \item Find a direction $\ve{h}$ along which to move $\ve{x}^{(k)}$. (Here, $k$ is the index of the iteration.)
+        \item Find the step length to move $\ve{x}^{(k)}$.
+    \end{itemize}
+\end{itemize}
+
+
+\bibliographystyle{acm}
+\bibliography{nonlinear-least-square-algo}
+\end{document}
