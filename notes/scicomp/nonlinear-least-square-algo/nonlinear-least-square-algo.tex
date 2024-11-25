@@ -10,6 +10,7 @@
 \usepackage{verbatim}
 \usepackage{hyperref}
 \usepackage{algpseudocode}
+\usepackage{algorithm}
 
 \newtheorem{lemma}{Lemma}
 \newtheorem{theorem}[lemma]{Theorem}
@@ -59,7 +60,7 @@
 \begin{document}
 \maketitle
 
-This note is written as I study algorithms for the non-linear least squares problem, which will culminate in the Levenberg--Marquardt algorithm. Source materials I use for this note includes Madsen \etal's book \cite{Madsen:2004}, Henri's note \cite{Henri:2024}, and Ranganathan's tutorial \cite{Ranganathan:2004}.
+This note is written as I study algorithms for the non-linear least squares problem, which will culminate in the Levenberg--Marquardt algorithm. Source materials I use for this note includes Madsen \etal~\cite{Madsen:2004}, Henri~\cite{Henri:2024}, Ranganathan~\cite{Ranganathan:2004}, and Norcedal and Wright~\cite{Norcedal:2006}
 
 \section{Notations}
 
@@ -160,23 +161,27 @@ This note is written as I study algorithms for the non-linear least squares prob
         \item Find the step length to move $\ve{x}^{(k)}$.
     \end{itemize}
     
-    \item The outline of the descent method is as follows.
-    \medskip
+    \item The outline of the descent method is given in Algorithm~\ref{algo:descent-method}.
+    
+    \begin{algorithm}[t]
     \begin{algorithmic}
         \State $k \gets 0$
         \State $found \gets \mathbf{false}$
         \State $\ve{x} \gets \ve{x}^{(0)}$
         \While {$(\mathbf{not}\ found)$ {\bf and} $(k < k_{\max})$}
-            \State $\ve{h} \gets \operatorname{Find-Direction}(\ve{x})$
+            \State $\ve{h} \gets \Call{Find-Direction}{\ve{x}}$
             \If {(no such $\ve{h}$ exists)}
                 \State $found \gets \mathbf{true}$
             \Else
-                \State $\alpha \gets \operatorname{Compute-Step-Length}(\ve{x}, \ve{h})$
+                \State $\alpha \gets \Call{Compute-Step-Length}{\ve{x}, \ve{h}}$
                 \State $\ve{x} \gets \ve{x} + \alpha\ve{h}$
                 \State $k \gets k+1$
             \EndIf
         \EndWhile
     \end{algorithmic}
+    \caption{Descent method}
+    \label{algo:descent-method}
+    \end{algorithm}
 
     \item Consider how the value of $\mcal{L}$ changes after the update.
     \begin{align*}
@@ -251,8 +256,9 @@ This note is written as I study algorithms for the non-linear least squares prob
     
     \item On the other hand, if the $H_{\mcal{L}}(\ve{x}^*)$ is negative definite, then $\ve{h}$ will be an \emph{ascent} direction, and the algorithm would converge to a local maximizer at a qudratic rate as well. To prevent this, we should always ensure that each update results in a decrease of the loss function.
     
-    \item We can build a hybrid method between gradient descent and Newton's method with the following simple rule. If $H_{\mcal{L}}(\ve{x})$ is positive definite, then we use Newton's method for the current optimization step. Otherwise, we use gradient descent.
-    \medskip
+    \item We can build a hybrid method between gradient descent and Newton's method with the following simple rule. If $H_{\mcal{L}}(\ve{x})$ is positive definite, then we use Newton's method for the current optimization step. Otherwise, we use gradient descent. The pseudocode is given in Algorithm~\ref{algo:hybrid-newton-gradient-descent}.
+    
+    \begin{algorithm}[t]
     \begin{algorithmic}
         \If {$H_{\mcal{L}}(\ve{x})$ is postiive definite}
             \State $\ve{h} \gets - (H_{\mcal{L}}(\ve{x}))^{-1} \nabla\mcal{L}(\ve{x})^T$
@@ -262,6 +268,9 @@ This note is written as I study algorithms for the non-linear least squares prob
         \State $\alpha \gets $ small positive constant
         \EndIf
     \end{algorithmic}
+    \caption{A hybrid method between Netwon's and gradient descent}
+    \label{algo:hybrid-newton-gradient-descent}
+    \end{algorithm}
 
     \item We can check whether a matrix is positive definite by performing the Cholesky factorization, which, if successful, would imply that the matrix is positive definite and also give us a factorization to compute $- (H_{\mcal{L}}(\ve{x}))^{-1} \nabla\mcal{L}(\ve{x})^T$. Factorization takes $O(n^3)$ where $n$ is the number dimension of $\ve{x}$.
 \end{itemize}
@@ -290,16 +299,23 @@ This note is written as I study algorithms for the non-linear least squares prob
     \end{align*}
     As a result,
     \begin{align*}
-        \phi'(0) = \nabla \mcal{L}(\ve{x}) \ve{h}.
+        \varphi'(0) = \nabla \mcal{L}(\ve{x}) \ve{h}.
     \end{align*}
-    Because $\ve{h}$ is a descent direction, we have that $\phi'(0) < 0$. So, $\phi$ decreases first before potentially increases later. As a result, there is $\alpha > 0$ such that $\phi(\alpha) < \phi(0)$. This means that the line search problem always has an answer if $\ve{h}$ is a descent direction.
+    Because $\ve{h}$ is a descent direction, we have that $\varphi'(0) < 0$. So, $\varphi$ decreases first before potentially increases later. See Figure~\ref{fig:line-search-cost-function}. As a result, there is $\alpha > 0$ such that $\varphi(\alpha) < \varphi(0)$. This means that the line search problem always has an answer if $\ve{h}$ is a descent direction.
+
+    \begin{figure}
+        \centering
+        \includegraphics[width=3in]{line-search-cost-function.png}
+        \caption{Loss value as a function $\varphi(\alpha)$ of the step length $\alpha$ when $\ve{h}$ is a descent direction \cite{Madsen:2004}.}
+        \label{fig:line-search-cost-function}
+    \end{figure}
 
     \item It is tempting to find $\alpha^* = \argmin_{\alpha > 0} \varphi(\alpha)$. This results in an algorithm called {\bf exact line search}. However, this is still a hard optimization problem. Even if we allow ourselves to find a local minimizer instead of the global minimizer, literature still considers it not cost effective.
     
     \item Instead, what people do is {\bf inexact line search} where we produce an $\alpha$ value that is not too short and not too long.
     \begin{itemize}
-        \item If $\alpha$ is too short, then $\phi(0) - \phi(\alpha)$ might be too small to call it an improvement, implying slow convergence.
-        \item If $\alpha$ is too large, then $\phi(\alpha)$ might be greater than $\phi(0)$.
+        \item If $\alpha$ is too short, then $\varphi(0) - \varphi(\alpha)$ might be too small to call it an improvement, implying slow convergence.
+        \item If $\alpha$ is too large, then $\varphi(\alpha)$ might be greater than $\varphi(0)$.
     \end{itemize}    
 \end{itemize}
 
@@ -312,19 +328,24 @@ This note is written as I study algorithms for the non-linear least squares prob
         \item Keeps updating the value of $\alpha$ until it satisfies some conditions.
     \end{itemize}
 
-    \item In {\bf backtracking line search} \cite{Cao:2021}, we start with a large initial guess, say $\alpha^{(0)} = 1$. We keep exponentially decaying the value of $\alpha \gets \rho \alpha$  where $0 < \rho < 1$ until it satisfies some condition.
-    \medskip
+    \item In {\bf backtracking line search} \cite{Norcedal:2006} we start with a large initial guess, say $\alpha^{(0)} = 1$. We keep exponentially decaying the value of $\alpha \gets \rho \alpha$  where $0 < \rho < 1$ until it satisfies some condition. See Algorithm~\ref{algo:backtracking-line-search} for the pseudocode.
+    
+    \begin{algorithm}[t]
     \begin{algorithmic}
         \State $\alpha \gets \alpha^{(0)}$
         \While {$\alpha$ does not satisfy some conditions}
             \State $\alpha \gets \rho \alpha$
         \EndWhile        
-    \end{algorithmic}
+    \end{algorithmic}    
+    \caption{Backtracking line search}
+    \label{algo:backtracking-line-search}
+    \end{algorithm}
 
     \item In {\bf interval binary search} \cite{Frandsen:2004}, we maintain in interval $[a,b]$ where an $\alpha$ value would be sampled from. After we sample $\alpha$, we would update $[a,b]$ like what we do in binary search: either turning it into $[a,\alpha]$ or $[\alpha,b]$. We keep doing this until our sampled $\alpha$ satisifed some conditions.
 
-    \item In Frandsen~\etal's book \cite{Frandsen:2004}, the authors present a version of interval binary search that has two phases. In the first phase, the interval $[a,b]$ is ``expanded'' until we find something suitable. In the second phase, the binary search kicks in. The pseudocode of the algorithm is given below.
-    \medskip
+    \item In Frandsen~\etal's book \cite{Frandsen:2004}, the authors present a version of interval binary search that has two phases. In the first phase, the interval $[a,b]$ is ``expanded'' until we find something suitable. In the second phase, the binary search kicks in. The pseudocode of the algorithm is given in Algorithm~\ref{algo:interval-binary-search}.
+        
+    \begin{algorithm}[t]
     \begin{algorithmic}
         \State $k \gets 0$
         \State $a \gets 0$
@@ -341,32 +362,57 @@ This note is written as I study algorithms for the non-linear least squares prob
         \EndWhile
         \State \Return $\alpha$
     \end{algorithmic}
+    \caption{Interval binary search}
+    \label{algo:interval-binary-search}
+    \end{algorithm}
 \end{itemize}
 
 \subsubsection{Backtracking Armijo Line Search}
 
 \begin{itemize}
-    \item The first concrete example of a line search algorithm uses a condition called the ``Armijo condition'' \cite{Cao:2021} with the backtracking line search template.
+    \item The first concrete example of a line search algorithm uses a condition called the ``Armijo condition''~\cite{Norcedal:2006} with the backtracking line search template.
     
     \item The {\bf Armijo condition} is as follow:
     \begin{align*}
         \varphi(\alpha) \leq \varphi(0) + \gamma \cdot \alpha \cdot \varphi'(0)
     \end{align*}
-    where $0 < \gamma < 1$, and $\gamma$ is often chosen to be around $10^{-3}$.
+    where $0 < \gamma < 1$, and $\gamma$ is often chosen to be around $10^{-3}$. It is depicted in Figure~\ref{fig:armijo-condition}.
+
+    \begin{figure}
+        \centering
+        \includegraphics[width=4in]{armijo.png}
+        \caption{The Armijo condition.}
+        \label{fig:armijo-condition}        
+    \end{figure}
+
+    \item We note that the Armijo condition always hold at $\alpha = 0$.
 
     \item If we graph $\varphi$ as a function of $\alpha$, the Armijo condition requires that we find $\alpha$ such that $(\alpha, \varphi(\alpha))$ is below the line of slope $\gamma \varphi'(0)$ with vertical intercept $\varphi(0)$. In other words, it requires that the loss function decreases by some sufficient amount, determined by $\gamma$.
     \begin{itemize}
         \item As a result, the Armijo condition is sometimes referred to as the {\bf sufficient decrease condition}.        
     \end{itemize}
 
-    \item The pseudocode of the full algorithm is as follows.
-    \medskip
+    \item The pseudocode of the full algorithm is given in Algorithm~\ref{algo:backtracking-armijo-line-search}.
+    
+    \begin{algorithm}[t]
     \begin{algorithmic}
+        \Procedure{Backtracking-Armijo-Line-Search}{}
         \State $\alpha \gets \alpha^{(0)}$
-        \While {$\phi(\alpha) > \phi(0) + \gamma \cdot \alpha \cdot \phi'(0)$}
+        \While {{\bf not} $\Call{Armijo}{\alpha}$}
             \State $\alpha \gets \rho \alpha$
-        \EndWhile        
+        \EndWhile
+        \State \Return $\alpha$
+        \EndProcedure     
+        
+        \State
+
+        \Procedure{Armijo}{$\alpha$}
+            \State \Return $\varphi(\alpha) \leq \varphi(0) + \gamma \cdot \alpha \cdot \varphi'(0)$
+        \EndProcedure
     \end{algorithmic}
+    \caption{Backtracking Armijo line search}
+    \label{algo:backtracking-armijo-line-search}
+    \end{algorithm}
 
     \item The algorithm is gauranteed to terminate because the Armijo condition is always satisfied when $\alpha$ is low enough.
     
@@ -376,16 +422,114 @@ This note is written as I study algorithms for the non-linear least squares prob
 \subsubsection{Interval Binary Search with Wolfe Conditions}
 
 \begin{itemize}
-    \item Frandsen \etal\ presents an algorithm they call {\bf soft line search}, which is basically interval binary search with conditions called the ``Wolfe conditions.'' 
+    \item Frandsen \etal\ presents an algorithm they call {\bf soft line search} \cite{Frandsen:2004}, which is basically interval binary search with conditions called the ``Wolfe conditions''.
     
-    \item The {\bf Wolfe conditions} \cite{Cao:2021} consists of two conditions. The first condition ensures that $\alpha$ is small enough, and the second conditions ensures that $\alpha$ is not too small.
+    \item The {\bf Wolfe conditions} \cite{Norcedal:2006} consists of two conditions. The first condition ensures that $\alpha$ is small enough, and the second conditions ensures that $\alpha$ is not too small.
     \begin{itemize}
         \item The first condition is just the Armijo condition with the extra requirement that $\gamma < 0.5$.
-        \item The second condition is called the {\bf Wolfe curvature condition}:
+        \item The second condition is called the {\bf curvature condition}:
         \begin{align*}
-            \phi'(\alpha) \geq \beta \cdot \phi'(0)
+            \varphi'(\alpha) \geq \beta \cdot \varphi'(0)
         \end{align*}
-        where $\gamma < \beta < 1$, and $\beta$ is often picked to be much greater than $\gamma$, typically $0.1$. The curvature condition requires that the gradient increases by some amount, making sure that the picked $\alpha$ yields $\ve{x}$ that is close to a stationary point.
+        where $\gamma < \beta < 1$, and $\beta$ is often picked to be much greater than $\gamma$, typically $0.1$. See Figure~\ref{fig:wolfe-curvature-condition}. The curvature condition requires that the gradient increases by some amount, making sure that the picked $\alpha$ yields $\ve{x}$ that is close to a stationary point.
+    \end{itemize}
+
+    \begin{figure}
+        \centering
+        \includegraphics[width=4in]{wolfe-curvature-condition.png}
+        \caption{Curvature condition \cite{Cao:2021,Norcedal:2006}.}
+        \label{fig:wolfe-curvature-condition}
+    \end{figure}
+
+    \item We note that \emph{the curvature condition does not hold at $\alpha = 0$}. If we substitute $\alpha = 0$, we have the condition reads $\varphi'(0) \geq \beta \cdot \varphi'(0)$. In other words, $(1 - \beta) \varphi'(0) \geq 0$. This is false because $1 - \beta > 0$, but $\varphi'(0) < 0$.
+
+    \item To faciliate further discussion, we shall encode the curvature condition as a function in a pseudo programming language like in Algorithm~\ref{algo:curvature-conditions}.
+    
+    \begin{algorithm}[t]
+        \begin{algorithmic}
+            \Procedure{Curvature}{$\alpha$}
+                \State \Return $\varphi'(\alpha) \geq \beta \cdot \varphi'(0)$
+            \EndProcedure            
+        \end{algorithmic}
+        \caption{The curvature condition and its strict version, encoded as functions in a pseudo programming language.}
+        \label{algo:curvature-conditions}
+    \end{algorithm}
+
+    \item The pseudocode for the algorithm in given in Algorithm~\ref{algo:interval-binary-search-with-wolfe-conditions}.    
+    
+    \begin{algorithm}[t]        
+        \begin{algorithmic}
+            \Procedure{Interval-Binary-Search-With-Wolfe-Conditions}{}
+            \If {$\varphi'(0) \geq 0$}
+                \State \Return $0$
+            \EndIf
+            \State $k \gets 0$
+            \State $a \gets 0$
+            \State $b \gets \min\{1, \alpha_{\max}\}$
+            \While {$\Call{Armijo}{b}$ {\bf and} ({\bf not} $\Call{Curvature}{b}$) {\bf and} $(b \leq \alpha_{\max})$ {\bf and} $(k < k_{\max})$}                        
+                \State $a \gets b$
+                \State $b \gets \min\{2b, \alpha_{\max}\}$
+                \State $k \gets k+1$            
+            \EndWhile
+            \State $\alpha \gets b$
+            \While {({\bf not} $\Call{Armijo}{\alpha}$) {\bf or} ({\bf not} $\Call{Curvature}{\alpha}$) {\bf and} $(k < k_{\max})$}
+                \State $\alpha, a, b \gets \Call{Refine}{\alpha,a,b}$
+                \State $k \gets k+1$
+            \EndWhile
+            \If $\varphi(\alpha) \geq \varphi(0)$
+                \State $\alpha \gets 0$
+            \EndIf
+            \State \Return $\alpha$            
+            \EndProcedure                                    
+
+            \State
+
+            \Procedure{Refine}{$\alpha, a, b$}
+                \State $D \gets b - a$
+                \State $c \gets (\varphi(b) - \varphi(a) - D \phi'(a)) / D^2$
+                \If {$c < 0$}
+                    \State $\alpha \gets a - \varphi'(a) / (2c)$
+                    \State $\alpha \gets \min\{ \max\{ \alpha, a + 0.1D\}, b - 0.1D \}$
+                \Else
+                    \State $\alpha \gets (a+b) / 2$
+                \EndIf
+                \If {$\Call{Armijo}{\alpha}$}
+                    \State $a \gets \alpha$
+                \Else
+                    \State $b \gets \alpha$                    
+                \EndIf
+                \State \Return $\alpha, a, b$
+            \EndProcedure
+        \end{algorithmic}
+        \caption{Interval binary search with Wolfe conditions}
+        \label{algo:interval-binary-search-with-wolfe-conditions}
+    \end{algorithm}
+
+    \item The algorithm is quite complicated. There are two while loops.
+    \begin{itemize}
+        \item The first while loop finds an interval $[a,b]$ to be used in the binary search.
+        \item The second while loop implements the binary search.
+    \end{itemize}
+
+    \item The loop invariance of the second while loop is has the following three conditions.
+    \begin{enumerate}
+        \item $\alpha \in [a,b]$.
+        \item $\Call{Armijo}{a}$ {\bf and} ({\bf not} $\Call{Curvature}{a}$).
+        \item ({\bf not} $\Call{Armijo}{b}$) {\bf or} $\Call{Curvature}{b}$.
+    \end{enumerate}
+    In other words, we want $a$ to too small, and $b$ to be too large or sufficiently large. Because $\alpha$ is between something too small and something large enough or too large, $\alpha$ has a chance to be just right.
+    
+    \item The first loop updates $[a,b]$ until the we find an interval that satisfies the last two coditions above.
+    
+    \begin{itemize}
+        \item Setting $a = 0$ at before the first loop makes sure that both $\Call{Armijo}{a}$ and ({\bf not} $\Call{Curvature}{a}$) hold. However, we don't know about what conditions $b$ satisfies at that point, and the first loop would find a $b$ that violates at least one of them.
+    
+        \item We can see that the updates in the first loop are correct. If we choose to update $a \gets b$, it means that the predicate of the while loop is true. This means that $\Call{Armijo}{b}$ and ({\bf not} $\Call{Curvature}{b}$) hold, and we are free to set $a$ to $b$.            
+    \end{itemize}
+    
+    \item Let's take a closer look at the second loop.
+    \begin{itemize}
+        \item         
     \end{itemize}
 \end{itemize}
 
