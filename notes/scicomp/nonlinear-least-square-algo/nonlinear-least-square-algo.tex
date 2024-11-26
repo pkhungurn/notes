@@ -900,7 +900,7 @@ This note is written as I study algorithms for the non-linear least squares prob
                     \State $\ve{x} \gets \ve{x}_{\mrm{new}}$
                     \State $A = J(\ve{x})^T J(\ve{x})$
                     \State $\ve{g} \gets J(\ve{x})^T \ve{f}(\ve{x})$
-                    \State $\mu \gets \mu \cdot \max\{ \frac{1}{3}, 1 - (2\varrho -2)^3 \}$
+                    \State $\mu \gets \mu \cdot \max\{ \frac{1}{3}, 1 - (2\varrho -1)^3 \}$
                     \State $\nu \gets 2$
                 \Else
                     \State $\mu \gets \mu \nu$
