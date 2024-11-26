@@ -201,7 +201,7 @@ This note is written as I study algorithms for the non-linear least squares prob
 \subsection{Gradient Descent}
 
 \begin{itemize}
-    \item One of the most popular descent method is {\bf gradient descent}. It choose $\ve{h} = -(\nabla \mcal{L}(\ve{x}))^T$  and $\alpha$ to be a fixed small constant.
+    \item One of the most popular descent method is {\bf gradient descent}. It chooses $\ve{h} = -(\nabla \mcal{L}(\ve{x}))^T$  and $\alpha$ to be a fixed small constant.
     
     \item The choice of the descent direction is the best choice locally at $\ve{x}^{(k)}$.
     
@@ -604,7 +604,7 @@ This note is written as I study algorithms for the non-linear least squares prob
 
     \item In a {\bf damped method}, we use the following minimization problem instead:
     \begin{align}
-        \ve{h} = \argmin_{\| \ve{h} \| \leq \Delta} \bigg\{ \mathtt{L}(\ve{h}) + \frac{1}{2}\mu \ve{h}^T \ve{h} \bigg\}. \label{eq:damped-method-optimization}
+        \ve{h} = \argmin_{\ve{h}} \bigg\{ \mathtt{L}(\ve{h}) + \frac{1}{2}\mu \ve{h}^T \ve{h} \bigg\}. \label{eq:damped-method-optimization}
     \end{align}
     The term $\frac{1}{2}\mu\ve{h}^T \ve{h}$ penalize large update direction.
 
@@ -815,7 +815,7 @@ This note is written as I study algorithms for the non-linear least squares prob
 \subsection{The Levenberg--Marquardt Method}
 
 \begin{itemize}
-    \item Levenberg \cite{Levenberg:1944} and later Marquard \cite{Marquadrt:1963} suggests the use of a damped Gauss--Newton method.
+    \item Levenberg \cite{Levenberg:1944} and later Marquardt \cite{Marquadrt:1963} suggests the use of a damped Gauss--Newton method.
     
     \item The update direction $\ve{h}_{\mrm{lm}}$ is determined by solving the following equation:
     \begin{align*}
@@ -890,7 +890,7 @@ This note is written as I study algorithms for the non-linear least squares prob
             \State $\ve{g} \gets J(\ve{x})^T \ve{f}(\ve{x})$
             \State $\mu = \tau \cdot \max_{1 \leq i \leq n} \{a_{ii}\}$
             \While {$\| \ve{g} \|_\infty > \varepsilon_1$ {\bf and} $k \leq k_{\max}$}
-                \State Determint $\ve{h}_{\mrm{lm}}$ by solving $(A + \mu I)\ve{h}_{\mrm{lm}} = \ve{g}$.
+                \State Determine $\ve{h}_{\mrm{lm}}$ by solving $(A + \mu I)\ve{h}_{\mrm{lm}} = \ve{g}$.
                 \If {$\| \ve{h}_{\mrm{lm}} \leq \varepsilon_2 (\| \ve{x}\| + \varepsilon_2)$}
                     \State \Return $\ve{x}$
                 \EndIf
