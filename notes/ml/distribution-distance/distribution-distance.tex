@@ -1,0 +1,489 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+\usepackage{verbatim}
+\usepackage{hyperref}
+\usepackage{bbm}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\Dee}{\mathrm{D}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\Var}{\mathrm{Var}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+\newcommand{\ov}[1]{\overline{#1}}
+\newcommand{\data}{\mathrm{data}}
+
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+
+\title{How to Measure Distance Between High-Dimensional Distributions}
+\author{Pramook Khungurn}
+
+\begin{document}
+\maketitle
+
+This is note is about how to measure distance between probability distributions in high-dimensional spaces such as distributions of images. The main application of this problem is evaluation of generative models. The content of this note is mainly based on an expository article by Bischoff \etal~\cite{Bischoff:2024}.
+
+\begin{itemize}
+    \item The paper title starts with ``A Practical Guide,'' which means that it is not a survey paper and so is not comprehensive. 
+    
+    \item The authors say that the aim is to ``provide an accessible entrypoint to understanding popular sampled-based statistical distance.''
+    
+    \item From the get-go, the authors give a list of more specialized papers. Let's list them here for reference.
+    
+    \begin{itemize}
+        \item Theis \etal\ \emph{A note on evaluation of generative models.} \cite{Theis:2016}.
+        \item Borji. \emph{Pros and cons of GAN evaluation measures.} \cite{Borji:2018}
+        \item Xu \etal\ \emph{An empirical study on evaluation metrics of generative adversarial networks.} \cite{Xu:2018}
+        \item Yang \etal\ \emph{Revisiting the Evaluation of Image Synthesis with GANs.} \cite{Yang:2023}
+        \item Basseville. \emph{Divergence measures for statistical data processing—An annotated bibliography}. \cite{Basseville:2013}
+        \item Gibbs and Su. \emph{On choosing and bounding probability metrics.} \cite{Gibbs:2002}
+    \end{itemize}
+\end{itemize}
+
+\section{Problem Setup}
+
+\begin{itemize}
+    \item We have two datasets of samples.
+    \begin{itemize}
+        \item $\{ x_1, x_2, \dotsc, x_n \} \sim p_1(x)$.
+        \item $\{ y_1, y_2, \dotsc, y_m \} \sim p_2(y)$.
+    \end{itemize}
+    Here $p_1$ and $p_2$ are probability distributions on the same domain.
+    These two distributions can either be
+    \begin{itemize}
+        \item two generative models,
+        \item a generative model and the training data.
+    \end{itemize}    
+
+    \item We typically assume that the data domain is $\Real^d$ where $d$ is large.
+
+    \item We want to quantify how similar $p_1$ and $p_2$ to each other. 
+    
+    \item However, we don't have access to the distributions. We only have the samples.
+\end{itemize}
+
+\section{Sliced-Based Distances}
+
+\begin{itemize}
+    \item When $d$ is large, computing distance between distributions become very expensive.
+    
+    \item To deal with this problem, ``sliced'' distances have been instroduced \cite{Kolouri:2019, Nadjahi:2022, Goldfeld:2021}.
+    
+    \item Main idea: for many existing statistical distances, we can efficiently evaluate the distance in low-dimensional spaces, especially in 1D.
+    
+    \item A slice is thus typically a projection of the data points onto a line in $\Real^d$.
+    \begin{itemize}
+        \item Each point is mapped to the nearest point on the line.
+    \end{itemize}
+
+    \item The projection is typically chosen at random.
+    \begin{itemize}
+        \item This is typically a point from the unit sphere $S^{d-1}$.
+    \end{itemize}
+
+    \item Using only one projection is unreliable. So, we do multiple random projections, compute the distance with respect to each projection, and then average the results.
+    
+    \begin{itemize}
+        \item More formally, this is the expected value of the distance metric where the projection is chosen at random.        
+    \end{itemize}
+        
+    \item As long as the distance computed in 1D is a metric, the sliced distance computed this way is a metric as well \cite{Nadjahi:2022}.    
+    
+    \item The most popular sliced distance is the {\bf sliced Wasserstein distance}. It has several desirable properties.
+    \begin{itemize}
+        \item It can be computed in a differentiable manner.
+        \item Computation does not rely heavily on choices of hyperparameters.
+        \item It is very fast to compute.
+    \end{itemize}
+
+    \item Before we can talk about sliced Wasserstein, we need to talk about Wasserstein distance first.
+
+    \item \begin{definition}
+        Let $p_1$ and $p_2$ be probability distributions on a domain $\Omega$. A {\bf coupling} between $p_1$ and $p_2$ is a distribution $\gamma$ on $\Omega \times \Omega$ such that the marginal distributions agree with $p_1$ and $p_2$. More specifically,
+        \begin{align*}
+            p_1(x_1) &=  \int_{\Omega} \gamma(x_1, x_2)\, \dee x_2, \\
+            p_2(x_2) &=  \int_{\Omega} \gamma(x_1, x_2)\, \dee x_1.
+        \end{align*}
+        We also call a coupling a {\bf transport plan}.        
+    \end{definition}
+
+    \item Let $\Gamma(p_1, p_2)$ denote the set of all couplings between $p_1$ and $p_2$.
+    
+    \item \begin{definition}
+        Let $q \geq 1$ be a real number. The {\bf $q$-norm} of $x \in \Real^d$ is
+        \begin{align*}
+            \| x \|_q = \bigg( \sum_{i=1}^d |x^i|^q \bigg)^{1/q}
+        \end{align*}
+        where $x^i$ denotes the $i$th component of $x$ (i.e., Spivak's notation).
+    \end{definition}
+    
+    \item \begin{definition}
+        Let $p_1$ and $p_2$ be probability distributions on $\Real^d$. The {\bf Wasserstein-$q$ distance} is defined as
+        \begin{align*}
+            W_q(p_1, p_2) = \inf_{\gamma \sim \Gamma(p_1, p_2)} \bigg( E_{(x_1, x_2) \sim \gamma} \Big[ \big\| x_1 - x_2 \big\|^q_q \Big] \bigg)^{1/q}.
+        \end{align*}
+    \end{definition}
+
+    \item The Wasserstein distance is also called the {\bf earth mover's distance} (EMD).
+
+    \item We typically estimate $W_q(p_1,p_2)$ by finite samples from $p_1$ and $p_2$.
+    
+    \item More concretely, we compute the Wasserstein-$q$ distances between empirical distributions of $p_1$ and $p_2$.
+
+    \item \begin{definition}
+        Let $p$ be a probability distribution on $\Omega$. Let $N$ be a positive integer, and let $x_1$, $x_2$, $\dotsc$, $x_N$ be i.i.d. samples from $p$. An {\bf empirical distribution} $p^{(N)}$ is given by
+        \begin{align*}
+            p^{(N)}(x) = \frac{1}{N} \sum_{i=1}^N \delta(x - x_i)
+        \end{align*}
+        where $\delta$ denotes the Dirac delta function.        
+    \end{definition}
+
+    \item So, given $p_1$ and $p_2$, we can estimate $W_q(p_1, p_2)$ with $W_q(p^{(N)}_1, p^{(N)}_2)$ where $p^{(N)}_1$ and $p^{(N)}_2$ are empirical distributions of $p_1$ and $p_2$, respectively.
+
+    \begin{itemize}
+        \item According to Papp and Sherlock, this estimate is biased but consistent  \cite{Papp:2022}. In other words,
+        \begin{align*}
+            \lim_{N \ra \infty} W_q(p^{(N)}_1, p^{(N)}_2) = W_q(p_1, p_2).
+        \end{align*}
+
+        \item However, convergence is expoentially slower as the dimensionality of the space increases.        
+    \end{itemize}    
+
+    \item Let us now turn to how to compute $W_q(p^{(N)}_1, p^{(N)}_2)$. 
+    
+    \item This problem of is the special case of the {\bf Kantorovich problem}.
+    
+    \begin{itemize}
+        \item We are given two sets of samples $\{ x_1, x_2, \dotsc, x_N \}$ and $\{ y_1, y_2, \dotsc, y_N \}$.
+        
+        \item We are also given a cost matrix $C$ whose entries are pairwise distance between $x_i$ and $y_j$:
+        \begin{align*}
+            C = \begin{bmatrix}
+                \mathfrak{d}(x_1, y_1) & \mathfrak{d}(x_1, y_2) & \cdots & \mathfrak{d}(x_1, y_N) \\ 
+                \mathfrak{d}(x_2, y_1) & \mathfrak{d}(x_2, y_2) & \cdots & \mathfrak{d}(x_2, y_N)  \\ 
+                \vdots & \vdots & \ddots & \vdots \\
+                \mathfrak{d}(x_N, y_1) & \mathfrak{d}(x_N, y_2) & \cdots & \mathfrak{d}(x_N, y_N) 
+            \end{bmatrix}   
+        \end{align*}
+        Here, $\mathfrak{d}(\cdot, \cdot)$ is a distance metric.
+        
+        \item We are then given two vectors $\mu \in [0,1]^N$ and $\nu \in [0,1]^N$ such that $\mathbbm{1}^T \mu = \mathbbm{1}^T\nu = 1$ where $\mathbbm{1}$ is the vector whose entries are always ones. 
+        \begin{itemize}
+            \item These vectors represents discrete probabilities on $\{ x_1, x_2, \dotsc, x_N \}$ and $\{ y_1, y_2, \dotsc, y_N \}$, respectively.
+        \end{itemize}
+        
+        \item Let $\mcal{U}(\mu, \nu) \subset [0,1]^{N \times N}$ denote the set of $N \times N$ matrix such that $U\mathbbm{1} = \mu$ and $U^T \mathbbm{1} = \nu$.
+        
+        \item Each matrix $P \in \mcal{U}(\mu, \nu)$ is a coupling, i.e. a transport plan, of $\mu$ and $\nu$.
+        
+        \item The Kantorovich problem is as follows:
+        \begin{align*}
+            \inf_{P \in \mcal{U}(\mu, \nu)} \{ P  \otimes C \} 
+        \end{align*}
+        where $\otimes$ denote element-wise multiplication.
+    \end{itemize}
+
+    \item The Kantorovich problem is a linear program. It can also be casted into the problem of min-cost maximum flow.
+
+    \item Surprisingly, when $\mu$ and $\nu$ are vectors that are associated with empirical distributions, we have that the solution to the Kantorovich problem has a special form \cite{Peyre:2019} (Proposition 2.1).
+    
+    \begin{theorem}
+        If $\mu = \nu = \mathbbm{1}/N$, then there is an optimal solution of the Kantorovich probem that is a permutation matrix.
+    \end{theorem}
+
+    In other words, it becomes a min-cost bipartite matching problem. Hence, it can be solved by the Hungarian algorithm in $O(N^3)$ time.
+
+    \item However, when $d = 1$, we can compute the solution to the Kantorovich problem much faster.
+    \begin{itemize}
+        \item Sort $\{ x_1, x_2, \dotsc, x_N \}$ and $\{ y_1, y_2, \dotsc, y_N \}$ in increasing order.
+        \item The solution is then to match $x_1$ with $y_1$, $x_2$ with $y_2$, and so on.
+        \item As a result,
+        \begin{align*}
+            \inf_{P \in \mcal{U}(\mu, \nu)} \{ P  \otimes C \} = \sum_{i=1}^N \mathfrak{d}(x_i, y_i).
+        \end{align*}
+    \end{itemize}
+    This algorithm takes $O(N \log N)$. This is why sliced Wasserstein distance is much faster to compute than regular Wasserstein distance.
+    
+    \item Note, however, that the sliced Wasserstein distance does not converge to the Wasserstein distance even if we take the number of projections to infinity \cite{Nadjahi:2022}.
+    
+    \item A drawback to sliced distance is that, if the two distributions differ only along a small subset of directions, then it is hard to hit those directions with random projections.
+\end{itemize}
+
+\section{Classifier Two-sample Test}
+
+\begin{itemize}
+    \item The {\bf classifier two-sample test} (C2st) uses a classsifier that discriminates between samples from the two distributions.
+    
+    \item Classifier performance is the distance between the distributions: the better the performance, the farther the distributions.
+    
+    \item For example, we can train a classifier $c(x)$ to distinguish samples from distributions $p$ and $q$. Then, we can evaluate C2ST as
+    \begin{align*}
+        \frac{1}{2}\Big( E_{x \sim }[\mathbbm{1}(c(x) = 0)] + E_{x \sim q}[\mathbbm{1}(c(x) = 1)] \Big)
+    \end{align*}
+    where $\mathbbm{1}(\cdot)$ is the indicator function. 
+        
+    \item The expression above is classifier accuracy.
+    \begin{itemize}
+        \item If the value is $0.5$, which the classifer is at chance level, then the distributions are indistinguisable to the classifer.
+        
+        \item If the value is $1.0$, then the two distributions have disjoint support.
+        
+        \item For any two distributions, there is the maximum accuracy that any classifier can attain.
+        \begin{itemize}
+            \item This can be evaluated if we have access to the distribution functions of both distributions, which we generally do not have.
+        \end{itemize}            
+    \end{itemize}
+
+    \item To make C2ST as accurate as possible, one must train the optimal classifier.
+    \begin{itemize}
+        \item By using neural networks, we hope that we can train a classifer that is close to optimal.
+    \end{itemize}
+
+    \item C2ST pros
+    \begin{itemize}
+        \item Highly interpretable.
+        \item Can be used to test statistical significance of the difference between two sets of samples.
+    \end{itemize}
+
+    \item C2ST cons
+    \begin{itemize}
+        \item Resource intensive: you need to train a classifier.
+        \item Very challenging to use a classifier in a training loop.
+        \begin{itemize}
+            \item GANs are notorizely hard to train.
+        \end{itemize}
+        \item C2ST values depend on classifer capacity, architecture, and hyperparameters, and training processes. This means you cannot really say anything for sure.
+    \end{itemize}
+
+    \item Common failure modes.
+    \begin{itemize}
+        \item C2ST number is low, but the distributions are not similar.
+        \begin{itemize}
+            \item Using not enough training examples or underpowered architectures can result in C2ST values that are lower than the maximally possible value.            
+            \item It's easy to fool yourself that you have struck gold when the classifier you train is not an optimal one.
+        \end{itemize}
+        
+        \item C2ST can be surprisingly high for seemingly good generative results.
+        \begin{itemize}
+            \item A generative model might align very well with the data for every marginal.
+            \item The C2ST can still be high if the data is high-dimensinoal.
+            \item It can be hard to achieve low C2ST values in high-dimensional data.
+            \item For example, you can try to represent each image in the MNIST dataset with mixture of Gaussians. Even if the Gaussian images look good, a classifier can still tease out the original MNIST dataset from the Gaussian mixture ones.
+        \end{itemize}
+    \end{itemize}
+
+    \item Other variants
+    \begin{itemize}
+        \item Statistics other than accuracy \cite{Raschka:2014} can be used to define C2ST too.
+        \item Mean square error of achieved accuracy to target value of $0.5$ \cite{Kim:GL2ST:2019}.
+        \item Likelihood ratio statistics \cite{Pandeva:2024}. 
+        \item Average different in logits \cite{Cheng:CL2ST:2022}.
+    \end{itemize}    
+
+    \item Learned classifier can be used to estimate the density ratio $p(x)/q(x)$.
+    \begin{itemize}
+        \item This has application in computing the KL divergence \cite{Titsias:2019, Huszár:2017} and Pearson divergence \cite{Srivastava:2020}.
+    \end{itemize}
+\end{itemize}
+
+\section{Maximum Mean Discrepancy}
+
+\begin{itemize}
+    \item {\bf Maximum mean discrepancy} (MMD) is a popular distance metric \cite{Gretton:2012}.
+    \begin{itemize}
+        \item Applicable to a variety of data domains.
+        \item Has been used to evaluate generative models \cite{Sutherland:2021, Borji:2018,Lueckman:2021}.
+        \item Has the ability to indicate where the model and the true distribution differ.
+    \end{itemize}
+    
+    \item It uses a function $\phi$, called a {\bf feature map}, to embed samples before computing any statistics.
+    \begin{itemize}
+        \item If we choose the feature map, then properties of the underlying distribution can be easily computed.
+    \end{itemize}
+
+    \item We can define MMD as the difference between the means of the embedding of two distributions.
+    \begin{align*}
+        \operatorname{MMD}[\phi,p_1,p_2] = \sqrt{ \big\| E_{x \sim p_1}[\phi(x)] - E_{x \sim p_2}[\phi(x)] \big\|^2}.
+    \end{align*}
+
+    \item An illuminating set of examples.
+    \begin{itemize}
+        \item Say, we want to compare two distributions $p_1$ and $p_2$ on the real line $\mathbb{R}$.
+        
+        \item Let us consider the simplest feature map, the identity function: $\phi^{(1)}(x) = x$. 
+        
+        \item We have that the MMD is just the absolute difference between the means of the distributions.
+        \begin{align*}
+            \operatorname{MMMD}[\phi^{(1)}, p_1, p_2] = |\mu_1 - \mu_2|            
+        \end{align*}
+        where $\mu_1 = E_{x \sim p_1}[x]$ and $\mu_2 = E_{x \sim p_2}[x]$.
+
+        \item So, $\operatorname{MMMD}[\phi^{(1)}, \cdot, \cdot]$ can only distinguish between distributions with different means.
+        
+        \item However, we can make the feature map more complex to distinguish other features. For example, we can add $x^2$ term.
+        \begin{align*}
+            \phi^{(2)}(x) = \begin{bmatrix}
+                x \\ x^2
+            \end{bmatrix}
+        \end{align*}
+
+        \item Because $E[x^2] = \mu^2 + E[(x - \mu)^2] = \mu^2 + \sigma^2$ where $\sigma$ is the standard deviation of the random variable $x$. We have that
+        \begin{align*}
+            \Big( \operatorname{MMD}[\phi^{(2)}, p_1, p_2] \Big)^2
+            &=  (E_{x\sim p_1}[x] - E_{x\sim p_2}[x])^2 + (E_{x\sim p_1}[x^2] - E_{x\sim p_2}[x^2])^2 \\
+            &= (\mu_1 - \mu_2)^2 + (\mu_1^2 + \sigma_1^2 - \mu_2^2 - \sigma_2^2)^2.
+        \end{align*}
+        Here $\sigma_1$ and $\sigma_2$ are standard deviation of $p_1$ and $p_2$, respectively. So, with $\phi^{(2)}$, we can distinguish distributions with different variance as well.        
+    \end{itemize}
+
+    \item Following the examples above, we can keep adding features to distinguish higher moments if we want to distinguish more distributions. Howver, this is not feasible because, to distinguish all distributions, we need infinitely many monents and so infinitely many features.
+
+    \item The above limitation can be circumvent by the {\bf kernel trick}.
+    \begin{itemize}
+        \item First, rewrite MMD using inner products of features.        
+        \begin{align*}
+            &\big( \operatorname{MMD}[\phi,p_1,p_2] \big)^2 \\
+            &= \big\| E_{x \sim p_1}[\phi(x)] - E_{x \sim p_2}[\phi(x)] \big\|^2 \\
+            &= \big\langle E_{x \sim p_1}[\phi(x)] - E_{x \sim p_2}[\phi(x)], E_{x \sim p_1}[\phi(x)] - E_{x \sim p_2}[\phi(x)] \big\rangle \\
+            &= \big\langle E_{x \sim p_1}[\phi(x)], E_{x \sim p_1}[\phi(x)] \big\rangle + \big\langle E_{x \sim p_2}[\phi(x)], E_{x \sim p_2}[\phi(x)] \big\rangle - 2 \big\langle E_{x \sim p_1}[\phi(x)], E_{x \sim p_2}[\phi(x)] \big\rangle \\
+            &= E_{x \sim p_1, x' \sim p_1}\big[ \langle \phi(x), \phi(x')  \rangle \big] 
+            + E_{x \sim p_2, x' \sim p_2}\big[ \langle \phi(x), \phi(x')  \rangle \big]
+            + 2 E_{x \sim p_1, x' \sim p_2}\big[ \langle \phi(x), \phi(x')  \rangle \big].
+        \end{align*}
+
+        \item Next, write each inner product as a {\bf kernel function}
+        \begin{align*}
+            k(x,y) = \langle \phi(x), \phi(y) \rangle.
+        \end{align*}
+
+        \item So, the MMD becomes
+        \begin{align*}
+            \big( \operatorname{MMD}[k,p_1,p_2] \big)^2
+            &= E_{x \sim p_1, x' \sim p_1}\big[ k(x, x') \big] 
+            + E_{x \sim p_2, x' \sim p_2}\big[ k(x, x') \big]
+            + 2 E_{x \sim p_1, x' \sim p_2}\big[ k(x, x') \big].
+        \end{align*}        
+    \end{itemize}   
+    
+    \item If we can find a kernel that captures all the infinintely many moments, then MMD would be zero if and only if the two distributions are exactly the same. This means that MMD becomes a metric. Such as kernel is called a {\bf characteristic kernel}.
+        
+    \item An example of a characteristic kernel is the Gaussian kernel
+    \begin{align*}
+        k_G(x,x') = \exp\bigg( - \frac{\| x - x' \|^2}{2\sigma^2} \bigg).
+    \end{align*}
+    Other kernels can be found in \cite{Fukumizu:2009}.
+
+    \item The following is an unbiased estimate of the MMD.
+    \begin{align*}
+        \operatorname{MMD}^2 = \frac{1}{m(m-1)} \sum_{i\neq j} k(x_i, x_j) + \frac{1}{n(n-1)} \sum_{i\neq j} k(y_i, y_j) - \frac{2}{mn}\sum_{i,j} k(x_i,y_j)
+    \end{align*}
+    where $\{ x_1, x_2, \dotsc x_m \}$ are i.i.d. samples from $p_1$, and $\{ y_1, y_2, \dotsc, y_n \}$ are i.i.d. samples from $p_2$.
+
+    \item The selection of the right kernel and its parameters is crucial.
+    
+    \item In case of the Gaussian kernel, the parameter to choose is the standard deviation $\sigma$.
+    \begin{itemize}
+        \item As $\lim \sigma \ra 0$, we have that $k_G(x,x') \ra \mathbbm{1}(x = x')$. So, the kernel is 0 most of the time.
+        \item On the other hand $\sigma$ is to high, then $k_G(x,x')$ would be close to 1 almost all the time.
+    \end{itemize}
+
+    \item How to pick $\sigma$.
+    \begin{itemize}
+        \item The {\bf median heuristics} sets $\sigma$ to the media distance between points in the aggregate sample.
+        
+        \item Use data splitting. This involves dividing datasets into parts.
+        \begin{itemize}
+            \item One part is used for kernel selection.
+            \item One part is used for evaluating MMD.            
+        \end{itemize}
+        This naturally reduces the number of data points for estimating MMD.
+
+        \item There are ways to pick $\sigma$ without data splitting \cite{Biggs:2023,Schrab:2023,Kubler:2022,Kubler:2023}.
+    \end{itemize}
+\end{itemize}
+
+\section{Embedding-Space Measures}
+
+\begin{itemize}
+    \item We use a neural network called an {\bf embedding network} $f: \mcal{X} \ra \Real^d$ to map a data item to a feature vector.
+    \begin{itemize}
+        \item Most of the time, $d$ is much lower than the dimensionality of the data space $\mcal{X}$.
+    \end{itemize}
+
+    \item Given two sets of samples, we compute two sets of embeddings. Then, the embedding can be compared with apprpriate distance.
+    
+    \item It is common to approximate the embedded distribution with a Guassian distribution by estimating their means $\mu$ and covariance matrices $\Sigma$. Under Gaussian approximation, the squared Wasserstein distance (also called the Fr\'{e}chet distance) can be computed as:
+    \begin{align*}
+        W^2((\mu_1, \Sigma_1), (\mu_2, \Sigma_2)) = \| \mu_1 - \mu_2 \|^2 + \tr\big( \Sigma_1 + \Sigma_2 - 2(\Sigma_1\Sigma_2)^{1/2}\big)
+    \end{align*}    
+    However, any other metric can be used.
+
+    \item The prime example of this type of metric is the {\bf Fr\'{e}chet inception distance} (FID) \cite{Heusel:2018}.
+    \begin{itemize}
+        \item The embedding network is InceptionV3 \cite{Szegedy:2015} trained on ImageNet classification with the classification head removed.
+        
+        \item FID is biased in finite samples.
+    \end{itemize}
+
+    \item {\bf Kernel inception distance} (KID) uses MMD as a metric in the embedding space \cite{Binkowski:2021}. 
+    \begin{itemize}
+        \item Pros
+        \begin{itemize}
+            \item Unlike FID, KID has a simple, unbised estimator with better sample efficiency.
+            \item Does not assume any parametric form of the distributions.
+        \end{itemize}
+        
+        \item Cons
+        \begin{itemize}
+            \item Must carefuly select hyperparameter for the kernel function.
+        \end{itemize}
+    \end{itemize}
+
+    \item {\bf CLIP-MMD} uses CLIP and an embedding network and compute the distance with MMD using a Gaussian kernel \cite{Jayasumana:2024}.    
+
+    \item Limitation of the approach is that we need a good embedding network.
+    \begin{itemize}
+        \item People are exploring other embedding networks such as CLIP, and vision language models.
+    \end{itemize}
+\end{itemize}
+
+\bibliographystyle{arxivalpha}
+\bibliography{distribution-distance}  
+\end{document}
