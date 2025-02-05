@@ -80,7 +80,7 @@ This is note is about how to measure distance between probability distributions 
 \section{Problem Setup}
 
 \begin{itemize}
-    \item We have two datasets of samples.
+    \item We have two datasets of i.i.d. samples.
     \begin{itemize}
         \item $\{ x_1, x_2, \dotsc, x_n \} \sim p_1(x)$.
         \item $\{ y_1, y_2, \dotsc, y_m \} \sim p_2(y)$.
@@ -183,7 +183,7 @@ This is note is about how to measure distance between probability distributions 
             \lim_{N \ra \infty} W_q(p^{(N)}_1, p^{(N)}_2) = W_q(p_1, p_2).
         \end{align*}
 
-        \item However, convergence is expoentially slower as the dimensionality of the space increases.        
+        \item However, convergence is exponentially slower as the dimensionality of the space increases.        
     \end{itemize}    
 
     \item Let us now turn to how to compute $W_q(p^{(N)}_1, p^{(N)}_2)$. 
@@ -287,7 +287,7 @@ This is note is about how to measure distance between probability distributions 
         \item Resource intensive: you need to train a classifier.
         \item Very challenging to use a classifier in a training loop.
         \begin{itemize}
-            \item GANs are notorizely hard to train.
+            \item GANs are notoriously hard to train.
         \end{itemize}
         \item C2ST values depend on classifer capacity, architecture, and hyperparameters, and training processes. This means you cannot really say anything for sure.
     \end{itemize}
@@ -351,11 +351,11 @@ This is note is about how to measure distance between probability distributions 
         
         \item We have that the MMD is just the absolute difference between the means of the distributions.
         \begin{align*}
-            \operatorname{MMMD}[\phi^{(1)}, p_1, p_2] = |\mu_1 - \mu_2|            
+            \operatorname{MMD}[\phi^{(1)}, p_1, p_2] = |\mu_1 - \mu_2|            
         \end{align*}
         where $\mu_1 = E_{x \sim p_1}[x]$ and $\mu_2 = E_{x \sim p_2}[x]$.
 
-        \item So, $\operatorname{MMMD}[\phi^{(1)}, \cdot, \cdot]$ can only distinguish between distributions with different means.
+        \item So, $\operatorname{MMD}[\phi^{(1)}, \cdot, \cdot]$ can only distinguish between distributions with different means.
         
         \item However, we can make the feature map more complex to distinguish other features. For example, we can add $x^2$ term.
         \begin{align*}
@@ -480,7 +480,7 @@ This is note is about how to measure distance between probability distributions 
 
     \item Limitation of the approach is that we need a good embedding network.
     \begin{itemize}
-        \item People are exploring other embedding networks such as CLIP, and vision language models.
+        \item People are exploring other embedding networks such as CLIP and vision language models.
     \end{itemize}
 \end{itemize}
 
