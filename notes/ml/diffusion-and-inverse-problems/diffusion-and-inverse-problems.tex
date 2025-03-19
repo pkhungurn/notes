@@ -1,0 +1,514 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{mathrsfs}
+\usepackage{graphicx}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+\usepackage{verbatim}
+\usepackage{hyperref}
+\usepackage{algpseudocode}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\Dee}{\mathrm{D}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\Var}{\mathrm{Var}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\ves}[1]{\boldsymbol{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+\newcommand{\ov}[1]{\overline{#1}}
+\newcommand{\data}{\mathrm{data}}
+
+\title{Diffusion Models and Inverse Problems}
+\author{Pramook Khungurn}
+
+\begin{document}
+\maketitle
+
+This note is written as I read the survey paper ``A Survey on Diffusion Models for Inverse Problems'' by Dara \etal~\cite{Daras:2024}.
+
+\section{Problem Setting}
+
+\begin{itemize}
+  \item A data item is denoted by $\ve{x} \in \Real^n$.
+  
+  \item We are interested in a random variable $\ve{X}$ whose values are data items. The probability distribution of $\ve{X}$ is denoted by $p_{\ve{X}}$.
+  
+  \item Given a data item $\ve{x}$, we extract from it a \textbf{measurement} $\ve{y} \in \Real^m$.
+  
+  \item We model the measurement process with a \textbf{measurement model}, which is also called a \textbf{forward model} or a \textbf{corruption model} in literature. That is, we establish a random variable $\ve{Y}$ whose values are measurements according to the following equation.
+  \begin{align*}
+    \ve{Y} = \mcal{A}(\ve{X}) + \sigma_{\ve{y}} \ve{Z}
+  \end{align*}
+  where $\mcal{A}: \Real^n \ra \Real^m$ is a deterministic function and $\ve{Z} \sim \mcal{N}(0,I)$. The function $\mcal{A}$ is often called the \textbf{forward measurement operator} or just the \textbf{measurement operator}.
+
+  \item In an inverse problem, we are given a measurement $\ve{y}$. The goal is to produce a data item $\ve{x}$ that could have produced $\ve{y}$ according to the measurement model.
+
+  \item Examples of inverse problems. Here, $\sigma_{\ve{y}} = 0$ unless noted otherwise.
+  \begin{itemize}
+    \item {\bf Denoising.} $\mcal{A}$ is the identitfy function, and $\sigma_{\ve{y}} > 0$. This results in the measurement $\ve{y}$ being $\ve{x}$ with some added noise.
+    
+    \item {\bf Inpainting.} $\mcal{A}$ zeros out some components $\ve{x}$.
+    
+    \item {\bf Compressed sensing.} $\mcal{A}(\ve{x}) = A\ve{x}$ where $A$ is a matrix with entries sampled from a Gaussian random variable.
+    
+    \item {\bf Signal recovery from convolution.} $\mcal{A}(\ve{x}) = \ve{x} * \ve{k}$ where $*$ denotes convolution. \textbf{Deblurring} and \textbf{super-resolution} are examples of signal recovery from convolution.    
+  \end{itemize}  
+
+  Note that all of the examples above are \emph{linear} in the sense that $\mcal{A}(\ve{x}) = A\ve{x}$ for some matrix $A \in \Real^{m \times n}$. Morevoer, $m = n$ in all of them. However, these constraints need not hold in general. Here is an example of a nonlinear inverse problem.
+
+  \begin{itemize}
+    \item {\bf Phase retrieval.} $\mcal{A}(\ve{x}) = |\mathscr{F}(\ve{x})|$ where $\mathscr{F}$ is the discrete Fourier transform operator, and $| \cdot |$ denotes the norm of a complex number. Here, the measurement is the norms of the Fourier coefficients, which means that the phase information has been thrown away.
+    
+    \item {\bf Decompression.} $\mcal{A}$ is a non-linear function that compresses $\ve{x}$. For example, $\ve{x}$ can be an image, and $\mcal{A}$ is the JPEG compression algorithm.
+  \end{itemize}
+
+  \item One of the characteristic of the above problems are that perfect recovery is impossible.
+  \begin{itemize}
+    \item In other words, these problems are \emph{ill-posed}.
+  \end{itemize}
+
+  \item As result, we almost always have say exactly what type of recovery we want.
+  \begin{itemize}
+    \item {\bf Posterior sampling.} We do not care about the exact $\ve{x}$, but we just want to sample from the \textbf{posterior} distribution $p_{\ve{X}}(\ve{x}|\ve{Y} = \ve{y})$.
+    \begin{itemize}
+      \item For brevity, we shall write this as just $p(\ve{x}|\ve{y})$.
+    \end{itemize}
+
+    \item {\bf Maximum a posterior (MAP) estimation.} We look for $\ve{x}$ that maximizes $p(\ve{x}|\ve{y})$.
+    
+    \item {\bf Minimum mean square error (MMSE) estimation.} We seek $\ve{x}^*$ that minimizes
+    \begin{align*}
+      \mcal{L}(\ve{x}^*) = E_{\ve{x} \sim p(\ve{x}|\ve{y})} [\| \ve{x} - \ve{x}^* \|^2].
+    \end{align*}
+    This results in the expectation $E[\ve{X}|\ve{Y}=\ve{y}]$ (or just simply $E[\ve{x}|\ve{y}]$).
+  \end{itemize}
+  
+  \item There are limitations to MAP and MMSE estimations \cite{Blau:2018, Delbracio:2024}.
+  \begin{itemize}
+    \item They can suffer from ``regression to the mean.''
+    \item This means that the predicted $\ve{x}$ may lack important details and be outside the desire solution space.
+  \end{itemize}
+  So, in this note, the focus is on posterior sampling.
+
+  \item As the title of this note implies, we are interested in using diffusion models to sample from $p(\ve{x}|\ve{y})$. 
+  
+  \item A direct way to do so is to just train a conditional diffusion model to do this job. 
+  
+  \item Indeed, there are many conditional diffusion models for specific inverse problems such as:
+  \begin{itemize}
+    \item super-resolution \cite{Li:SRDiff:2021, Saharia:2021}, 
+    \item deblurring \cite{Whang:2021}, 
+    \item inpainting \cite{Saharia:Palette:2022}, and 
+    \item image restoration \cite{Saharia:Palette:2022, Luo:MRSDE:2023, Luo:Refusion:2023}.
+  \end{itemize}  
+  Even ControlNet \cite{Zhang:ControlNet:2023} and similar approches can be thought of an instance of solving an inverse problem. 
+  
+  \item However, these approches require training a new diffusion model fron scratch or fine-tuning existing ones. This can be quite expensive.
+  
+  \item Instead, we focus on the \textbf{unsupervised approach}, in which we take an existing diffusion model and use it to sample from $p(\ve{x}|\ve{y})$ without any training or fine-tuning.
+  
+  \item Let us first see how using a diffusion model can be useful. To see this we need to mathematically examine posterior sampling. According to Bayes' rule, we have that
+  \begin{align*}
+    p(\ve{x}|\ve{y}) 
+    &= p(\ve{X} = \ve{x}| \ve{Y} = \ve{y}) 
+    = \frac{p(\ve{Y} = \ve{y}|\ve{X} = \ve{x})p(\ve{X} = \ve{x})}{p(\ve{Y} = \ve{y})} 
+    = \frac{p_{\ve{Y}}(\ve{y}|\ve{x})p_{\ve{X}}(\ve{x})}{p_{\ve{Y}}(\ve{y})}.
+  \end{align*}
+  We generally do not care about $p_{\ve{Y}}(\ve{y})$ because $\ve{y}$ is already given to us. So, we usually just write
+  \begin{align*}
+    p(\ve{x}|\ve{y}) \propto p(\ve{y}|\ve{x}) p_{\ve{X}}(\ve{x}).
+  \end{align*}
+  Our task thus becomes sampling from the unnormalized distribution $p(\ve{y}|\ve{x}) p_{\ve{X}}(\ve{x})$.
+  The distribution $p_{\ve{X}}(\ve{x})$ is called the \textbf{prior} and $p(\ve{y}|\ve{x})$ is called the \textbf{likelihood}.
+
+  \item A pre-trained diffusion model can be useful because we can use it as a prior $p_{\ve{X}}$. However, there are several difficulty in this direction.
+  
+  \item First, given a sample $\ve{x}$, a pre-trained diffusion model does not allow us evaluate $p_{\ve{X}}(\ve{x})$ directly.
+  
+  \item Second, we need to find a way to somehow approximate $p(\ve{y}|\ve{x})$ or something related to it with the diffusion model.
+\end{itemize}
+
+\section{Background}
+
+\subsection{Diffusion Processes}
+
+\begin{itemize}
+  \item Given a data distribution $p_{\ve{X}}$, we can construct a stochastic process $\{ \ve{X}_t : 0 \leq t \leq T \}$ such that $\ve{X}_0 \sim p_\ve{X}$ and $\ve{X}_T$ is approximately distributed according to $\mcal{N}(\ve{0}, \sigma_T^2 I)$ for some $\sigma_T > 0$. This is done through a stochastic differential equation (SDE):
+  \begin{align}
+    \dee \ve{X}_t = \ve{f}(\ve{X}_t, t)\, \dee t + g(t)\, \dee \ve{W}_t \label{eqn:diffusion-sde}
+  \end{align}
+  where $W_t$ is the standard Brownian motion in $\Real^n$. The stochastic process we desire is the solution to the above SDE with the intial condition $\ve{X}_0 \sim p_\ve{X}$.
+  
+  \item Let us give names to functions inside the above SDE.
+  \begin{itemize}
+    \item The function $\ve{f}: \Real^n \times \Real \ra \Real^n$ is called the \textbf{drift coefficient}.
+    \item The function $g: \Real \ra \Real$ is called the \textbf{diffusion coefficient}.    
+  \end{itemize}
+
+  \item We will be working with the distribution of $\ve{X}_t$, which is denoted by $p_{\ve{X}_t}$ under standard notation. However, for convenience and brevity, let us use $p_t$ instead of $p_{\ve{X}_t}$. In other words,
+  \begin{align*}
+    p_t(\ve{x}_t) = p_{\ve{X}_t}(\ve{x}_t) = p(\ve{X}_t = \ve{x}_t).
+  \end{align*}
+
+  \item According to Anderson \cite{Anderson:1982}, we can sample $p_0$ by solving the reverse SDE
+  \begin{align}
+    \dee \ve{X}_t = \Big( \ve{f}(\ve{X}_t, t) - g^2(t) \nabla_{\ve{X}_t} \log p_t(\ve{X}_t) \Big)\, \dee t + g(t)\, \dee \overline{\ve{W}}_t \label{eqn:reverse-time-sde}
+  \end{align}
+  from $t=T$ to $t=0$, initializing $\ve{X}_T$ by sampling from $p_T$, an isotropic Gaussian distribution. Here, $\overline{\ve{W}}_t$ is the standard Brownnian motion that runs backwards in time.
+
+  \item Song \etal\ observes that the following ODE,
+  \begin{align}
+    \frac{\dee \ve{x}_t}{\dee t} = \ve{f}(\ve{x}_t, t) - \frac{g^2(t)}{2} \nabla_{\ve{x}_t} \log p_t(\ve{x}_t), \label{eqn:probability-flow-ode}
+  \end{align}
+  satisfies the same Fokker--Planck equation as the SDE \eqref{eqn:diffusion-sde} \cite{Song:SDE:2021}. Hence, we also have a deterministic sampling scheme to sample from $p_\ve{X}$.
+
+  \item There are two variants of the SDE in Equation~\ref{eqn:diffusion-sde} that are widely used.
+  \begin{itemize}
+    \item \textbf{Variance exploding SDE.} 
+    \begin{itemize}
+      \item We set $\ve{f}(\ve{X}_t,t) = \ve{0}$.
+      \item The SDE \eqref{eqn:diffusion-sde} then boils down to the following relationship between random variables.
+      \begin{align*}
+        \ve{X}_t = \ve{X}_0 + \sigma_t \ve{Z}
+      \end{align*}
+      where $\ve{X}_0 \sim p_0 = p_\ve{X}$, $\ve{Z} \sim \mcal{N}(\ve{0},I)$, and 
+      \begin{align*}
+        \sigma_t = \sqrt{\int_0^t g^2(u)\, \dee u}.
+      \end{align*}
+      \item A typical noise schedule is $\sigma_t = t$, which corresponds to $g(t) = \sqrt{2t}$, and $\ve{X}_t = \ve{X}_0 + t\ve{Z}$. This schedule is used in the famous EDM paper \cite{Karras:EDM:2022}.
+    \end{itemize}    
+
+    \item \textbf{Variance preversing SDE.}
+    \begin{itemize}
+      \item We choose the drift and the diffusion coefficients so that the following relationship holds:
+      \begin{align*}
+        \ve{X}_t = \alpha_t \ve{X}_0 + \sigma_t \ve{Z}, \mbox{ and } \alpha_t^2 + \sigma_t^2 = 1.
+      \end{align*}
+      
+      \item Again, $\ve{X}_0 \sim p_0 = p_\ve{X}$ and $\ve{Z} \sim \mcal{N}(\ve{0},I)$. 
+      
+      \item The functions $\alpha_t: [0,T] \ra \Real$ and $\sigma_t: [0,T] \ra \Real$ are both called ``noise schedules.''
+
+      \item An example of a variance preserving SDE is the following Ornstein--Uhlenbeck process,
+      \begin{align*}
+        \dee\ve{X}_t = -\ve{X}_t\, \dee t + \sqrt{2}\, \dee \ve{W}_t,
+      \end{align*}
+      which gives $\alpha_t = \exp(-t)$ and $\sigma_t = \sqrt{1 - \exp(-2t)}$.
+    \end{itemize}    
+  \end{itemize}
+
+  \item In general, we will be using an SDE of the form
+  \begin{align*}
+    \dee \ve{X}_t = f(t) \ve{X}_t\, \dee t + g(t)\, \dee\ve{W}_t
+  \end{align*}
+  for some $f: \Real \ra \Real$. This equation gives us the relation
+  \begin{align}
+    \ve{X}_t = \alpha_t \ve{X}_0 + \sigma_t \ve{Z} \label{eqn:diffusion-random-vars}
+  \end{align}
+  where $\ve{X}_0 \sim p_0 = p_\ve{X}$ and $\ve{Z} \sim \mcal{N}(\ve{0},I)$. The noise schedules $\alpha_t$ and $\sigma_t$ are related to $f(t)$ and $g(t)$ as follows \cite{Karras:EDM:2022}:
+  \begin{align*}
+    \alpha_t &= \exp\bigg( \int_0^t f(u)\, \dee u \bigg), \\
+    \sigma_t &= \sqrt{\int_0^t \frac{g^2(u)}{\alpha_u^2}\, \dee u }, \\
+    f(t) &= \frac{\dot{\alpha}_t}{\alpha_t}, \\
+    g(t) &= \alpha_t \sqrt{2 \sigma_t \dot{\sigma}_t}.
+  \end{align*}
+  Here, $\dot{\alpha}_t$ and $\dot{\sigma}_t$ are derivatives of $\alpha_t$ and $\sigma_t$ with respect to time.
+\end{itemize}
+
+\subsection{Tweedie's Formula and Diffusion Model Training}
+
+\begin{itemize}
+  \item \begin{theorem}[Tweedie's formula.] Let $\ve{X}$ and $\ve{Y}$ be random variables such that $\ve{Y} = \ve{X} + \sigma \ve{Z}$ where $\ve{Z} \sim \mcal{N}(\ve{0},I)$. It follows that
+  \begin{align*}
+    E[\ve{X}|\ve{Y} = \ve{y}] = \ve{y} + \sigma^2 \nabla_{\ve{y}} \log p_\ve{Y}(\ve{y}).
+  \end{align*}    
+  \end{theorem}
+
+  \item The expression $\nabla_{\ve{y}} \log p_\ve{Y}(\ve{y})$ is called the \textbf{score} of $p_{\ve{Y}}$.
+
+  \item Applying Tweedie's formula to Equation~\eqref{eqn:diffusion-random-vars}, we have that
+  \begin{align*}
+      E[\alpha_t \ve{X}_0 | \ve{X}_t = \ve{x}_t] = \ve{x}_t + \sigma_t^2 \nabla_{\ve{x}_t} \log p_t(\ve{x}_t).
+  \end{align*}
+  In other words,
+  \begin{align*}
+    E[\ve{X}_0 | \ve{X}_t = \ve{x}_t] = \frac{\ve{x}_t + \sigma_t^2 \nabla_{\ve{x}_t} \log p_t(\ve{x}_t)}{\alpha_t}.
+  \end{align*}
+  Or, more concisely,
+  \begin{align}
+    E[\ve{x}_0|\ve{x}_t] = \frac{\ve{x}_t + \sigma_t^2 \nabla_{\ve{x}_t} \log p_t(\ve{x}_t)}{\alpha_t}.
+  \end{align}
+  This gives
+  \begin{align}
+    \nabla_{\ve{x}_t} \log p_t(\ve{x}_t) = \frac{\alpha_t E[\ve{x}_0|\ve{x}_t] - \ve{x}_t}{\sigma_t^2}.
+  \end{align}
+
+  \item A diffusion model is a neural network $\ve{h}_{\ves{\theta}}$ with parameters $\ves{\theta}$ such that $\ve{h}_{\ves{\theta}}(\ve{x}_t, t)$ approximates $E[\ve{x}_0|\ve{x}_t]$. It can be trained with the following \textbf{denoising score matching} objective
+  \begin{align*}
+    \mcal{L}_{\mrm{DSM}}(\ves{\theta}) = E_{t, \ve{x}_0 \sim p_{\ve{X}}, \ve{z} \sim \mcal{N}(\ve{0},I)} \Big[ \big\| \ve{h}_{\ves{\theta}}(\alpha_t \ve{x}_0 + \sigma_t \ve{z}, t ) \big\|^2 \Big].
+  \end{align*}
+
+  \item Let $\hat{\ve{x}}_0(\ve{x}_t)$ denotes the expected $\ve{x}_0$ given $\ve{x}_t$ computed by the neural network.
+  \begin{align*}
+    \hat{\ve{x}}_0(\ve{x}_t) = \ve{h}_{\ves{\theta}}(\ve{x}_t, t).
+  \end{align*}
+
+  \item It follows that we may estimate the score of $p_t$ as follows:
+  \begin{align}
+    \nabla_{\ve{x}_t} \log p_t(\ve{x}_t) \approx \frac{\alpha_t \hat{\ve{x}}_0(\ve{x}_t) - \ve{x}_t}{\sigma_t^2}.
+  \end{align}
+\end{itemize}
+
+\subsection{Denoising Diffusion Implicit Model (DDIM)}
+
+\begin{itemize}  
+  \item Given a stochastic process $\{ \ve{X}_t: 0 \leq t \leq T \}$ where Equation~\eqref{eqn:diffusion-random-vars} holds, Song \etal\ gives an alternative process where $\ve{X}_t$ can be generated \cite{Song:DDIM:2022}.
+  \begin{enumerate}
+    \item Sample $\ve{X}_0 \sim p_0$.
+    \item Sample $\ve{X}_T \sim p(\ve{X}_t|\ve{X}_0) =  \mcal{N}(\ve{X}_t; \alpha_T \ve{X}_0, \sigma_T^2 I)$.
+    \item Given that some $t' > t$ has been sampled, sample $\ve{X}_t$ accoding to $p(\ve{X}_t|\ve{X}_0, \ve{X}_{t'})$, which is given by
+    \begin{align*}
+      p(\ve{X}_t|\ve{X}_0, \ve{X}_{t'}) = \mcal{N}\bigg( \ve{X}_t; \alpha_t \ve{X}_0 + \sqrt{\sigma_t^2 - \varsigma^2} \frac{\ve{X}_{t'} - \alpha_{t'} \ve{X}_0}{\sigma_{t'}} , \varsigma^2 I \bigg)
+    \end{align*}    
+  \end{enumerate}
+  This process works for any value of $\varsigma \geq 0$. 
+  
+  \item In particular, if $\varsigma = 0$, then we simply set
+  \begin{align}
+    \ve{X}_{t} \gets \alpha_t \ve{X}_0 + \sigma_t \frac{\ve{X}_{t'} - \alpha_{t'} \ve{X}_0}{\sigma_{t'}}. \label{eqn:pre-ddim-update}
+  \end{align}
+  In fact, $\ve{X}_t$ for all $0 < t < T$ is determistic given we have sampled $\ve{X}_0$ and $\ve{X}_T$.
+
+  \item However, the process we just described cannot be used to sample from $p_0$ because it requires being able to sample from $p_0$ in the first place.
+  
+  \item Song \etal\ proposes a practical sampling process by changing Equation~\eqref{eqn:pre-ddim-update} to use $E[\ve{X}_0|\ve{X}_{t'}]$ in place of $\ve{X}_0$.
+  \begin{align}
+    \ve{X}_t \gets E[\ve{X}_0|\ve{X}_{t'}] + \sigma_t \frac{\ve{X}_{t'} - \alpha_{t'} E[\ve{X}_0|\ve{X}_{t'}]}{\sigma_{t'}} \label{eqn:ddim-update}
+  \end{align}
+  Now, there is no dependency on $\ve{X}_0$ any more. In fact, we can use a diffusion model $\ve{h}_{\ves{\theta}}$ to estimate $E[\ve{X}_0|\ve{X}_{t'}]$.
+  
+  \item The RHS of Equation~\eqref{eqn:ddim-update} is an important operation, so let's give it a name. Let
+  \begin{align*}
+    \operatorname{UncondDDIM}(\ve{x}_{t'}, \hat{\ve{x}}_0, t', t) 
+    = \alpha_t \hat{\ve{x}}_0 + \sigma_t \frac{\ve{x}_{t'} - \alpha_{t'}\hat{\ve{x}}_0}{\sigma_{t'}}
+    = \bigg( \alpha_t - \frac{\alpha_{t'}}{\sigma_{t'}} \bigg) \hat{\ve{x}}_0 + \frac{\sigma_t}{\sigma_{t'}}\ve{x}_{t'}
+  \end{align*}
+
+  \item The \textbf{DDIM sampling} algorithm uses the $\operatorname{UncondDDIM}$ operation to sample from $p_0$. It require a series of times $0 = t_0 < t_1 < t_2 < \dotsb < t_K = T$, and it goes as follows.
+  
+  \begin{algorithmic}[1]
+    \State Sample $\ve{x}_{K} \sim \mcal{N}(\ve{0}, \sigma_T^2I)$.
+    \For{$k \gets K$ \textbf{downto} $1$}
+      \State $\hat{\ve{x}}_0 \gets \ve{h}_{\ves{\theta}}(\ve{x}_k, t_{k})$
+      \State $\ve{x}_{k-1} \gets \operatorname{UncondDDIM}(\ve{x}_k, \hat{\ve{x}}_0, t_{k}, t_{k-1})$
+    \EndFor
+    \State \Return $\ve{x}_0$
+  \end{algorithmic}
+\end{itemize}
+
+\subsection{Conditional Sampling}
+
+\begin{itemize}
+  \item The goal of inverse problem is to sample from $p_0(\cdot|\ve{y})$ assuming $\ve{Y} = \mcal{A}(\ve{X}_0) + \sigma_{\ve{y}}\ve{Z}$ with $\ve{Z} \sim \mcal{N}(\ve{0},I)$.
+  
+  \item We can use the framework for diffusion models to do the job. In particular, we can sample from $p_0(\cdot|\ve{y})$ by solving a variant of Equation~\ref{eqn:reverse-time-sde}:
+  \begin{align*}
+    \dee \ve{X}_t = \Big( \ve{f}(\ve{X}_t, t) - g^2(t) \nabla_{\ve{X}_t} \log p_t(\ve{X}_t|\ve{Y}=\ve{y}) \Big)\, \dee t + g(t)\, \dee \overline{\ve{W}}_t.
+  \end{align*}
+  Equivalently, we can also solve a similar variant of the probability flow ODE \eqref{eqn:probability-flow-ode}:
+  \begin{align}
+    \frac{\dee \ve{x}_t}{\dee t} = \ve{f}(\ve{x}_t, t) - \frac{g^2(t)}{2} \nabla_{\ve{x}_t} \log p_t(\ve{x}_t|\ve{Y}=\ve{y}).
+  \end{align}
+
+  \item One can see that we require the \textbf{conditional score} $\nabla_{\ve{x}_t} \log p_t(\ve{x}_t|\ve{Y}=\ve{y})$.
+  \begin{itemize}
+    \item For brevity, we shall write it as $\nabla_{\ve{x}_t} \log p_t(\ve{x}_t|\ve{y})$.
+  \end{itemize}
+
+  \item For supervised approach, we train $\ve{h}_{\theta}(\ve{x}_t, t, \ve{y})$ so that it approximates $E[\ve{X}_0 | \ve{X}_t = \ve{x}_t, \ve{Y} = \ve{y}]$ with the following \textbf{conditonal denosing score matching} (CDSM) loss
+  \begin{align*}
+    \mcal{L}_{\mrm{CDSM}}(\ves{\theta}) = E_{t, \ve{x} \sim p_{\ve{X}}, \ve{z}_{\ve{x}} \sim \mcal{N}(\ve{0}, I_n), \ve{z}_{\ve{y}} \sim \mcal{N}(\ve{0}, I_m) } \Big[ \big\| \ve{h}_{\ves{\theta}}(\alpha_t \ve{x} + \sigma_t \ve{z}_{\ve{x}}, t, \mcal{A}(\ve{x}) + \sigma_{\ve{y}}\ve{z}_{\ve{y}} ) - \ve{x} \big\|^2 \Big].
+  \end{align*}
+  Then, we can approximate $E[\ve{X}_0 | \ve{X}_t = \ve{x}_t, \ve{Y} = \ve{y}]$ with 
+  \begin{align*}
+    \hat{\ve{x}}(\ve{x}_t|\ve{y}) = \ve{h}_{\ves{\theta}}(\ve{x}_t, t, \ve{y})
+  \end{align*}
+  and $\nabla_{\ve{x}_t} \log p_t(\ve{x}_t|\ve{y})$ with
+  \begin{align*}
+    \nabla_{\ve{x}_t} \log p_t(\ve{x}_t|\ve{y}) \approx \frac{\alpha_t \hat{\ve{x}}_0(\ve{x}_t|\ve{y}) - \ve{x}_t}{\sigma_t^2}.
+  \end{align*}
+
+  \item However, in unsupervised approaches, we only have access to a vanilla diffusion model $\ve{h}_{\ves{\theta}}(\ve{x}_t, t)$, not a conditional diffusion model $\ve{h}_{\ves{\theta}}(\ve{x}_t, t, \ve{y})$. So, we have to do something else.
+  
+  \item Because
+  \begin{align*}
+      p(\ve{X}_t = \ve{x}_t|\ve{Y} = \ve{y}) = \frac{p(\ve{Y} = \ve{y}|\ve{X}_t = \ve{x}_t) p(\ve{X}_t = \ve{x_t})}{p(\ve{Y} = \ve{y})}.
+  \end{align*}
+  It follows that
+  \begin{align*}
+    \nabla_{\ve{x}_t} \log p(\ve{X}_t = \ve{x}_t|\ve{Y} = \ve{y}) 
+    &= \nabla_{\ve{x}_t} \log p(\ve{Y} = \ve{y}|\ve{X}_t = \ve{x}_t) + \nabla_{\ve{x}_t} \log p(\ve{X}_t = \ve{x_t}) - \nabla_{\ve{x}_t} \log p(\ve{Y} = \ve{y})    
+  \end{align*}
+  In other words,
+  \begin{align}
+    \nabla_{\ve{x}_t} \log p_task(\ve{x}_t|\ve{y}) 
+    &= \nabla_{\ve{x}_t} \log p(\ve{y}|\ve{x}_t) + \nabla_{\ve{x}_t} \log p_t(\ve{x}_t)
+  \end{align}
+
+  \item This means that we can rewrite the reverse time SDE as
+  \begin{align*}
+    \dee \ve{X}_t = \Big( \ve{f}(\ve{X}_t, t) - g^2(t) \big( \nabla_{\ve{X}_t} \log p(\ve{y}|\ve{X}_t ) + \nabla_{\ve{X}_t} \log p_t(\ve{X}_t) \big) \Big)\, \dee t + g(t)\, \dee \overline{\ve{W}}_t
+  \end{align*}
+  and the probability flow ODE as
+  \begin{align*}
+    \frac{\dee \ve{x}_t}{\dee t} = \ve{f}(\ve{x}_t, t) - \frac{g^2(t)}{2} \big( \nabla_{\ve{x}_t} \log p(\ve{y}|\ve{x}_t) + \nabla_{\ve{x}_t} \log p_t(\ve{x}_t) \big).
+  \end{align*}
+
+  \item We already know how to approximate $\nabla_{\ve{x}_t} \log p_t(\ve{x}_t)$ with a diffusion model. So, all we have left to do is to approximate the gradient of the log-likelihood $\nabla_{\ve{x}_t} \log p(\ve{y}|\ve{x}_t)$.
+  
+  \item However, the likelihood is given by an integral
+  \begin{align*}
+    p(\ve{y}|\ve{x}_t) \int p(\ve{y}|\ve{x}_0) p_0(\ve{x}_0|\ve{x}_t)\, \dee \ve{x}_0.
+  \end{align*}
+  This is hard to compute, and it can be shown that doing so is intractible \cite{Gupta:2024}. So, we have to do something else.
+\end{itemize}
+
+\section{Taxonomy of Methods}
+
+\begin{itemize}
+  \item The survey paper includes about 30 methods or so.
+  
+  \item It attempts to categorize these according to three sets of criteria.
+  \begin{itemize}
+    \item {\bf What the method does.} This is the main criterion. There are 5 categories.
+    \begin{enumerate}
+      \item {\bf Explicit approximation for likelihood term.} Approximate $\nabla \log p(\ve{y}|\ve{x}_t)$ with a closed-form expression.
+      \item {\bf Variational inference.} Approximate the posterior $p(\ve{x}|\ve{y})$ with a simpler, tractable, parameterized distribution. The parameters of these distribution must then be optimized.
+      \item {\bf CSGM-type methods.} Optimize the noise $\ve{x}_T$ used to start the diffusion process.
+      \item {\bf Asymptotically exact methods.} Try to sample from the true posterior distribution $p(\ve{x}|\ve{y})$ by either using Markov chain Monte Carlo (MCMC) or sequential Monte Carlo (SMC).
+      \item {\bf Others.} This category houses methods that do not fall into the previous categories.
+    \end{enumerate}
+
+    \item {\bf Optimization techniques used.}
+    \begin{enumerate}
+      \item {\bf Grad.} Update $\ve{x}_t$ with a gradient.
+      \item {\bf Proj.} Project $\ve{x}_t$ or $E[\ve{x}_0|\ve{x}_t]$ to the ``measurement subspace.''
+      \item {\bf Samp.} Sample the next particle by defining a proposal distribution and propagate multiple chains of particles.
+      \item {\bf Opt.} Define and solve an optimization problem at every step of the sampling process. Alternatively, define a global optimization problem that emcompasses all timesteps and then solve it.
+    \end{enumerate}
+    A method can use more than one optimization techniques and so can belong to multiple categories.
+
+    \item {\bf Type of inverse problem the method can solve.}
+    \begin{itemize}
+      \item An inverse problem can be linear or non-linear based on whether the operator $\mcal{A}$ is linear or not.
+      \item An inverse problem may not have noise ($\sigma_{\ve{y}} = 0$) or have it ($\sigma_{\ve{y}} > 0$).
+      \item An inverse problem can be blind or non-blind based on whether information on $\mcal{A}$ is available or not. In a typically blind problems, the type of operator $\mcal{A}$ is known, but its parameters are unknown.
+    \end{itemize}
+  \end{itemize}
+\end{itemize}
+
+\section{Explicit Approximation to the Likelihood Term}
+
+\begin{itemize}
+  \item In general, the approximation has the following form
+  \begin{align*}
+    \nabla_{\ve{x}_t} \log p(\ve{y}|\ve{x}_t) \approx -\frac{\mcal{L}_t \mcal{M}_t}{\mcal{G}_t}.
+  \end{align*}
+  Here,
+  \begin{itemize}
+    \item $\mcal{M}_t \in \Real^m$ represents an error vector that measures the discrepancy between the real measurement $\ve{y}$ and the measurement restored from $\ve{x}_t$.
+    \item $\mcal{L}_t \in \Real^{n \times m}$ is a matrix the projects the error vector $\mcal{M}_t \in \Real^m$ back into $\Real^n$.
+    \item $\mcal{G}_t$ is a scalar scaling factor.
+  \end{itemize}  
+\end{itemize}
+
+\subsection{Score-Based Annealed Langevin Dynamics (Score ALD)}
+
+\begin{itemize}
+  \item Proposed by Jalal \etal~\cite{Jalal:ScoreALD:2021}.
+  
+  \item Works only on linear problems with noise.
+  \begin{itemize}
+    \item Let $\mcal{A}(\ve{x}) = A\ve{x}$ where $A \in \Real^{m \times n}$.  
+  \end{itemize}   
+  
+  \item Makes the following approximation:
+  \begin{align*}
+    \nabla_{\ve{x}_t} \log p(\ve{y}|\ve{x}_t) \approx - \frac{A^T (\ve{y} - A\ve{x}_t)}{\sigma_\ve{y}^2 + \gamma_t^2}
+  \end{align*}
+  where $\gamma_t$ is a parameter to be tuned.
+  
+  \item The method guides the sample in the opposite direction of the measurement error $\mcal{M}_t = \ve{y} - A\ve{x}_t$ after being projected back with $\mcal{L}_t = A^T$. So, this method is of category Proj.
+\end{itemize}
+
+\subsection{Diffusion Posterior Sampling (DPS)}
+
+\begin{itemize}
+  \item Proposed by Chung \etal~\cite{Chung:DPS:2024}.
+  
+  \item DPS makes the following assumption.
+  \begin{align*}
+    \nabla_{\ve{x}_t} \log p(\ve{y}|\ve{X}_t = \ve{x}_t) \approx \nabla_{\ve{x}_t} \log p(\ve{y}|\ve{X}_0 = E[\ve{X}_0|\ve{X}_t = \ve{x}_t]).
+  \end{align*}
+
+  \item Because
+  \begin{align*}
+    p(\ve{y}|\ve{X}_0 = E[\ve{X}_0|\ve{X}_t = \ve{x}_t]) = \mcal{N}(\ve{y}; \mcal{A}(E[\ve{X}_0|\ve{X}_t = \ve{x}_t]), \sigma_{\ve{y}}^2 I),
+  \end{align*}
+  we have that
+  \begin{align*}
+    \nabla_{\ve{x}_t} \log p(\ve{y}|\ve{X}_t = \ve{x}_t) 
+    &= \nabla_{\ve{x}_t} \log \mcal{N}(\ve{y}; \mcal{A}(E[\ve{X}_0|\ve{X}_t = \ve{x}_t]), \sigma_{\ve{y}}^2 I) \\
+    &= \nabla_{\ve{x}_t} \bigg( \frac{1}{2 \sigma_{\ve{y}}^2} \| \ve{y} - \mcal{A}(E[\ve{X}_0|\ve{X}_t = \ve{x}_t]) \|  \bigg) \\
+    &= - \frac{1}{2\sigma_{\ve{y}}^2} \big( \nabla_{\ve{x}_t} \mcal{A}(E[\ve{X}_0|\ve{X}_t = \ve{x}_t]) \big)^T \big(  \ve{y} - \mcal{A}(E[\ve{X}_0|\ve{X}_t = \ve{x}_t])\big).
+  \end{align*}
+  So,
+  \begin{itemize}
+    \item $\mcal{G}_t = 1/(2\sigma^2_{\ve{y}})$,
+    \item $\mcal{L}_t = \big( \nabla_{\ve{x}_t} \mcal{A}(E[\ve{X}_0|\ve{X}_t = \ve{x}_t]) \big)^T$, and
+    \item $\mcal{M}_t = \ve{y} - \mcal{A}(E[\ve{X}_0|\ve{X}_t = \ve{x}_t])$.
+  \end{itemize}
+
+  \item In practice, DPS does not use $\mcal{G}_t = 1/(2\sigma^2_{\ve{y}})$. Instead, it proposes using scaling factor
+  \begin{align*}
+    \mcal{G}_t = \zeta_t = \frac{\zeta'}{\| \ve{y} - \mcal{A}(E[\ve{X}_0|\ve{X}_t = \ve{x}_t]) \|}
+  \end{align*}
+  where $\zeta'$ is a constant.
+\end{itemize}
+
+\bibliographystyle{arxivalpha}
+\bibliography{diffusion-and-inverse-problems}  
+\end{document}
