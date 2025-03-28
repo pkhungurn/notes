@@ -449,9 +449,9 @@ This note is written as I read the survey paper ``A Survey on Diffusion Models f
   \end{align*}
   Here,
   \begin{itemize}
-    \item $\mcal{M}_t \in \Real^m$ represents an error vector that measures the discrepancy between the real measurement $\ve{y}$ and the measurement restored from $\ve{x}_t$.
-    \item $\mcal{L}_t \in \Real^{n \times m}$ is a matrix the projects the error vector $\mcal{M}_t \in \Real^m$ back into $\Real^n$.
-    \item $\mcal{G}_t$ is a scalar scaling factor.
+    \item $\mcal{M}_t \in \Real^m$ is the ``measurement error.'' It represents an error vector that measures the discrepancy between the real measurement $\ve{y}$ and the measurement restored from $\ve{x}_t$.
+    \item $\mcal{L}_t \in \Real^{n \times m}$ is the ``lifting matrix.'' It is a matrix the projects the error vector $\mcal{M}_t \in \Real^m$ back into $\Real^n$.
+    \item $\mcal{G}_t$ is the ``guidance strength.'' It is a scalar scaling factor.
   \end{itemize}  
 \end{itemize}
 
@@ -479,6 +479,8 @@ This note is written as I read the survey paper ``A Survey on Diffusion Models f
 \begin{itemize}
   \item Proposed by Chung \etal~\cite{Chung:DPS:2024}.
   
+  \item DPS works with non-linear inverse problems with noise.
+  
   \item DPS makes the following assumption.
   \begin{align*}
     \nabla_{\ve{x}_t} \log p(\ve{y}|\ve{X}_t = \ve{x}_t) \approx \nabla_{\ve{x}_t} \log p(\ve{y}|\ve{X}_0 = E[\ve{X}_0|\ve{X}_t = \ve{x}_t]).
@@ -502,11 +504,50 @@ This note is written as I read the survey paper ``A Survey on Diffusion Models f
     \item $\mcal{M}_t = \ve{y} - \mcal{A}(E[\ve{X}_0|\ve{X}_t = \ve{x}_t])$.
   \end{itemize}
 
-  \item In practice, DPS does not use $\mcal{G}_t = 1/(2\sigma^2_{\ve{y}})$. Instead, it proposes using scaling factor
+  \item In practice, DPS does not use $\mcal{G}_t = 1/(2\sigma^2_{\ve{y}})$. Instead, it proposes using guidance strength
   \begin{align*}
     \mcal{G}_t = \zeta_t = \frac{\zeta'}{\| \ve{y} - \mcal{A}(E[\ve{X}_0|\ve{X}_t = \ve{x}_t]) \|}
   \end{align*}
   where $\zeta'$ is a constant.
+
+  \item Manifold constrained gradient (MCG) is an older and less general version of DPS \cite{Chung:DPS:2024}.
+  \begin{itemize}
+    \item It works only on linear problems.
+    \item If you assume that data lies on a lower-dimensional manifold that is locally linear, then the update by MCG (and DPS) would make the noisy data stay on the manifold.
+  \end{itemize}
+\end{itemize}
+
+\subsection{Pseudoinverse-Guided Diffusion Models ($\Pi$GDM)}
+
+\begin{itemize}
+  \item Proposed by Song \etal~\cite{Song:PiGDM:2023}.
+  
+  \item Recall that
+  \begin{align*}
+    p(\ve{y}|\ve{x}_t) = \int p(\ve{y}|\ve{x}_0) p(\ve{x}_0 | \ve{x}_t)\, \dee \ve{x}_0.
+  \end{align*}
+
+  \item In DPS, we approximate $p(\ve{x}_0|\ve{x}_t)$ by $\delta(\ve{x}_0 - E[\ve{X}_0|\ve{X}_t = \ve{x}_t])$.
+  
+  \item In $\Pi$GDM, the author proposes using
+  \begin{align*}
+      p(\ve{x}_0|\ve{x}_t) \approx \mcal{N}(E[\ve{X}_0|\ve{X}_t=\ve{x}_t], r_t^2 I)
+  \end{align*}
+  where $r_t$ is a hyperparameter.
+
+  \item For linear inverse problems, this leads to
+  \begin{align*}
+    p(\ve{y}|\ve{x}_t) \approx \mcal{N}(AE[\ve{X}_0|\ve{X}_t=\ve{x}_t], r_t^2 AA^T + \sigma_{\ve{y}}^2 I).
+  \end{align*}
+  Hence,
+  \begin{align*}
+    \nabla_{\ve{x}+t} \log  p(\ve{y}|\ve{x}_t) \approx - \nabla_{\ve{x}_t} \big( E[\ve{X}_0|\ve{X}_t = \ve{x}_t] \big) (r_t^2 AA^T + \sigma_{\ve{y}}^2I)^{-1} A^T (\ve{y} - AE{\ve{X}_0|\ve{X}_t = \ve{x}_t}).
+  \end{align*}
+  In other words,
+  \begin{align*}
+    \mcal{L}_t &= \nabla_{\ve{x}_t} \big( E[\ve{X}_0|\ve{X}_t = \ve{x}_t] \big) (r_t^2 AA^T + \sigma_{\ve{y}}^2I)^{-1} A^T \\
+    \mcal{M}_t &= \ve{y} - AE{\ve{X}_0|\ve{X}_t = \ve{x}_t}.
+  \end{align*}
 \end{itemize}
 
 \bibliographystyle{arxivalpha}
