@@ -219,24 +219,68 @@
             \begin{align*}
                 \mathcal{D} u(x, h) = \frac{u(x-h) + u(x+h)}{2} - u(x).
             \end{align*}
-            This can be rewritten as:
-            \begin{align*}
-                \mathcal{D}u(x,h) = \frac{1}{2}\Big( \big(u(x+h) - u(x)\big) - \big( u(x) - u(x-h) \big) \Big)
-            \end{align*}
-            </li>
 
-            <li>We have that
+            <li>Consider the limit
             \begin{align*}
                 \lim_{h \ra 0} \frac{\mcal{D}u(x,h)}{h^2} 
-                &= \frac{1}{2} \lim_{h \ra 0} \frac{1}{h} \bigg( \frac{u(x+h) - u(x)}{h} - \frac{u(x) - u(x-h)}{h} \bigg) 
-                = \frac{1}{2} \frac{\dee}{\dee x} \bigg( \frac{\dee u}{\dee x} \bigg)
-                = \frac{1}{2} \frac{\dee^2 u}{\dee x^2}
-                \propto \Delta u
+                &= \lim_{h \ra 0} \frac{1}{h^2} \bigg( \frac{u(x-h) + u(x+h)}{2} - u(x) \bigg)
             \end{align*}
-            </li>
+            By Taylor's approximation, we have that
+            \begin{align*}
+                u(x+h) &= u(x) + hu'(x) + \frac{h^2}{2} u''(x) + O(h^3) \\
+                u(x-h) &= u(x) - hu'(x) + \frac{h^2}{2} u''(x) + O(h^3).
+            \end{align*}
+            So,
+            \begin{align*}
+                \lim_{h \ra 0} \frac{\mcal{D}u(x,h)}{h^2} 
+                &= \lim_{h \ra 0} \frac{1}{h^2} \bigg( \frac{2u(x) + h^2 u''(x)}{2} - u(x) + O(h^3) \bigg) \\
+                &= \lim_{h \ra 0} \bigg( \frac{u''(x)}{2} + O(h) \bigg) \\
+                &= \frac{1}{2} u''(x) \\
+                &\propto \Delta u(x)
+            \end{align*}
+            Hence, $\Delta u$ does represents deviation from average.
+            </li>        
+            
+            <li>
+            Another way to say this is to observe that
+            \begin{align*}
+                \mathcal{D}u(x,h) = \frac{1}{2}\Big( \big(u(x+h) - u(x)\big) - \big( u(x) - u(x-h) \big) \Big).
+            \end{align*}
+            So, $\mathcal{D}u(x,h)$ is a difference of difference, which implies that it is the second derivative muiltiplied by some scaling factors ($1/2$ in this case).
+            </li>            
             
             <li>3Blue1Brown has a very good expository video about this: <a href="https://www.3blue1brown.com/lessons/pdes">[LINK]</a>.</li>
         </ul>
+        </li>
+
+        <li>Let's generalize Example 2 to scalar functions of $\Real^d$.
+        <ul>
+            <li>Here, $u$ has signature $\Real^d \ra \Real$.</li>
+            
+            <li>Again, we can consider the difference $u(\ve{x})$ from the following 2d values $\{ u(\ve{x} \pm h\ve{e}_i) : 1 \leq i \leq d \}$ where $\ve{e}_i$ is the vector in $\Real^d$ whose $i$th one-hot vector in $\Real^d$.
+            \begin{align*}
+                \mathcal{D} u(\ve{x}, h) 
+                &= \bigg( \frac{1}{2d} \sum_{i=1}^d \big( u(\ve{x} + h\ve{e}_i) + u(\ve{x} - h\ve{e}_i) \big) \bigg) - u(\ve{x}) \\
+                &=  \frac{1}{d} \sum_{i=1}^d \bigg( \frac{u(\ve{x} + h\ve{e}_i) + u(\ve{x} - h\ve{e}_i)}{2} - u(\ve{x}) \bigg)
+            \end{align*}
+            </li>
+
+            <li>Using what we know from Example 2, we have that
+            \begin{align*}
+                \lim_{h \ra 0} \frac{\mathcal{D} u(\ve{x}, h)}{h^2} 
+                &= \frac{1}{d} \sum_{i=1}^d \lim_{h\ra 0} \frac{1}{h^2} \bigg( \frac{u(\ve{x} + h\ve{e}_i) + u(\ve{x} - h\ve{e}_i)}{2} - u(\ve{x}) \bigg) \\
+                &= \frac{1}{d} \sum_{i=1}^d \frac{\nabla_{i,i} u(\ve{x})}{2}  \\ 
+                &= \frac{1}{2d} \Delta u(\ve{x}).
+            \end{align*}
+            </li>
+        </ul>
+        </li>
+
+        <li>In general, according to Keenan Crane's <a href="https://www.youtube.com/watch?v=oEq9ROl9Umk">course video</a>, we can think of $\Delta u(\ve{x})$ as difference between the value $u(\ve{x})$ and the average value over a small sphere around $\ve{x}$. In other words,
+        \begin{align*}
+            \Delta u(\ve{x}) \propto \lim_{h \ra 0} \frac{1}{h^2} \bigg( \frac{1}{|S_h(\ve{x})|} \int_{S_h(\ve{x})} u(\ve{u})\, \dee \ve{y}  - u(\ve{x})\bigg)
+        \end{align*}
+        where $S_h(\ve{x})$ is the sphere of radius $h$ around $\ve{x}$, and $|$S_h(\ve{x})|$ denotes the sphere's area.
         </li>
     </ul>
     
