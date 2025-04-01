@@ -28,6 +28,7 @@
 \newcommand{\Var}{\mathrm{Var}}
 
 \newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\ves}[1]{\boldsymbol{#1}}
 \newcommand{\mrm}[1]{\mathrm{#1}}
 \newcommand{\etal}{{et~al.}}
 \newcommand{\sphere}{\mathbb{S}^2}
@@ -58,9 +59,232 @@
 \begin{document}
 \maketitle
 
-This note is written as I read the paper ``Neural Jacobian Fields: Learning Intrinsic Mappings of Arbitrary Meshes'' by Aigerman \etal~\cite{Aigerman:2022}
+This note is written as I read the paper ``Neural Jacobian Fields: Learning Intrinsic Mappings of Arbitrary Meshes'' by Aigerman \etal~\cite{Aigerman:2022}.
+
+\section{Problem Setup}
+
+\begin{itemize}
+    \item This paper presents a framework to generate ``piecewise linear mappings'' of meshes with a neural network.    
+\end{itemize}
+
+\subsection{Linear Piecewise Mapping}
+
+\begin{itemize}
+    \item Let us formally define what a mesh is.
+    \begin{itemize}
+        \item We are given a triangular mesh $\mcal{S}$ in $\Real^3$ with vertices $\ve{V}$ and triangles $\ve{T}$.
+        \item The $i$th triangle in $\ve{T}$ is denoted by $\ve{t}_i$.
+        \item The {\bf tangent space} of $\ve{t}_i$ is the linear space orthogonal to its normal. It is denoted by $T_i$.
+        \begin{itemize}
+            \item Bascially, this is the plane in $\Real^3$ that the triangle lies in.
+        \end{itemize}
+        \item A {\bf frame} of triangle $\ve{t}_i$ is an oriented orthonomal basis fo its tangent space. It is denoted by $\mcal{B}_i$.
+        \begin{itemize}
+            \item We don't actually know in which direction the frame points to.
+            \item I guess the natural direction is the direction of the normal vector.            
+        \end{itemize}
+    \end{itemize}
+
+    \item Let's talk about how the tangent space is represented numerically.
+    \begin{itemize}
+        \item Let us say that the three vertices of $\ve{t}_i$ have indices $j$, $k$, and $l$.
+        \item So, the triangle vertices are $\ve{v}_j$, $\ve{v}_k$, and $\ve{v}_l$.
+        \item Let us also say that we designate $\ve{v}_j$ is the origin of tangent space $T_i$.
+        \item So, we have that $T_i = \{ a(\ve{v}_k - \ve{v}_j) + b(\ve{v}_l - \ve{v}_j) : a, b \in \Real \}$.
+        \begin{itemize}
+            \item Here, we see that $T_i$ is a set of vectors because $\ve{v}_k - \ve{v}_j$ and $\ve{v}_l - \ve{v}_j$ are vectors.            
+        \end{itemize}
+        \item $\mcal{B}_i$ is an orthonomal basis of $T_i$. So, we may say that it is a $3 \times 2$ matrix:
+        \begin{align*}
+            \mcal{B}_i = \begin{bmatrix}
+                \ves{\beta}_{i,1} & \ves{\beta}_{i,2}
+            \end{bmatrix}            
+        \end{align*}
+        where $\ves{\beta}_{i,1}, \ves{\beta}_{i,2} \in \Real^3$ such that $\| \ves{\beta}_{i,1} \| = \| \ves{\beta}_{i,2} \| = 1$ and $\ves{\beta}_{i,1}^T \ves{\beta}_{i,2} = 1$. Last but not least, $T_i = \{ a \ves{\beta}_{i,1} + b \ves{\beta}_{i,2} : a, b \in \Real \}.$
+        \item Because $\mcal{B}_i$ is an orthonormal basis of $T_i$, we have that, for any vector $\ve{v} \in T_i$, we can find the coordinates of $\ve{v}$ with respect to $\mcal{B}_i$ as follows:
+        \begin{align*}
+            \mbox{$\ve{v}$'s coordinate} = \mcal{B}_i^T \ve{v}.
+        \end{align*}
+    \end{itemize}
+    
+    \item A {\bf map} or a {\bf mapping}, in our context, is a function $\Phi: \Real^3 \ra \Real^3$.
+    
+    \item A map $\Phi$ is a {\bf piecewise linear mapping} with respect to a mesh $\mcal{S}$ if the restriction of $\Phi$ to any triangle $\ve{t}_i$, denote $\Phi|_{\ve{t}_i}$ is affine.
+    \begin{itemize}
+        \item This is the most common family of maps used when considering mappings of meshes.
+        \item It is uniquely defined by assigning a new position to one of the vertices.
+        \begin{itemize}
+            \item In other words, we have that $\ve{v}_j \mapsto \Phi_j$. Here, $\ve{v}_j$ is the $j$th vertex in $\ve{V}$, and $\Phi_j$ is its image under $\Phi$ (by abuse of notation).
+            
+            \item Any point inside the triangle is sent to the interpolation through barycentric coordinates of the image of the triangle vertices.            
+            
+            \item As a result, we may encode $\Phi$ as a matrix of the same dimension as $\ve{V}$ if we are not concerned with points not on the mesh $\mcal{S}$.
+            \begin{itemize}
+                \item In this case, $\Phi$ is a matrix of size $3 \times |\ve{V}|$.
+            \end{itemize}
+        \end{itemize}        
+    \end{itemize}
+    
+    \item There's another way to encoder $\Phi$ using matrices we call ``Jacobians.''
+    
+    \item The {\bf Jacobian} $J_i$ of triangle $\ve{t}_i$ is a linear transformation of dimension $3 \times 2$ from $\ve{t}_i$'s tangent space to $\Real^3$.
+    \begin{itemize}
+        \item So, it's signature is $J_i: T_i \ra \Real^3$.
+        \item It as a $3 \times 2$ matrix in the coordinates of the frame $\mcal{B}_i$ by solving
+        \begin{align}
+            J_i = \mcal{B}_i^T \begin{bmatrix}
+                \ve{v}_k - \ve{v}_j & \ve{v}_l - \ve{j}
+            \end{bmatrix}
+            = \begin{bmatrix}
+                \Phi_k - \Phi_j & \Phi_l - \Phi_j
+            \end{bmatrix}. \label{eqn:jacobian-definition}
+        \end{align}
+        \item We can write $J_i$ in terms of $\Phi \in \Real^{3 \times |\ve{V}|}$ as follows.
+        \begin{itemize}
+            \item We first rewrite the RHS of Equation~\eqref{eqn:jacobian-definition} in terms of $\Phi$.
+            \item There's a matrix $S_{jkl} \in \Real^{|V| \times 3}$ whose entries are $0$s and $1$s such that
+            \begin{align*}
+                \Phi S_{jkl} = \begin{bmatrix} \Phi_j & \Phi_k & \Phi_l \end{bmatrix}.
+            \end{align*}
+            \item As a resulit, we have that
+            \begin{align*}
+                \Phi S_{jkl} \begin{bmatrix} -1 & -1 \\ 1 & 0 \\ 0 & 1 \end{bmatrix} 
+                = \begin{bmatrix} \Phi_j & \Phi_k & \Phi_l \end{bmatrix} \begin{bmatrix} -1 & -1 \\ 1 & 0 \\ 0 & 1 \end{bmatrix}
+                = \begin{bmatrix} \Phi_k - \Phi_j & \Phi_l - \Phi_j \end{bmatrix}.
+            \end{align*}
+            \item Because $\mcal{B}_j \in \Real^{3 \times 2}$ and $\begin{bmatrix} \ve{v}_k-\ve{v}_j & \ve{v}_l-\ve{v}_j \end{bmatrix} \in \Real^{3\times 2}$, we have that $\mcal{B}_j^T \begin{bmatrix} \ve{v}_k-\ve{v}_j & \ve{v}_l-\ve{v}_j \end{bmatrix}$ is a $2 \times 2$ matrix. Morever, it better has full rank because we don't want $\ve{v}_k - \ve{v}_j$ and $\ve{v}_l - \ve{j}$ to be linearly dependent. Hence,
+            \begin{align*}
+                J_i = \Phi S_{jkl} \begin{bmatrix} -1 & -1 \\ 1 & 0 \\ 0 & 1 \end{bmatrix}  \big( \mcal{B}_j \begin{bmatrix} \ve{v}_k-\ve{v}_j & \ve{v}_l-\ve{v}_j \end{bmatrix} \big)^{-1}.
+            \end{align*}
+            \item The paper defines
+            \begin{align*}
+                \nabla_i = \left( S_{jkl} \begin{bmatrix} -1 & -1 \\ 1 & 0 \\ 0 & 1 \end{bmatrix}  \big( \mcal{B}_j \begin{bmatrix} \ve{v}_k-\ve{v}_j & \ve{v}_l-\ve{v}_j \end{bmatrix} \big)^{-1} \right)^T \in \Real^{2 \times |\ve{V}|},
+            \end{align*}
+            so that we may write
+            \begin{align*}
+                J_i = \Phi \nabla_i^T.
+            \end{align*}
+            The ``operator'' $\nabla_i$ maps $\Phi$ to the Jacobian $J_i$ in the basis $\mcal{B}_i$.
+        \end{itemize}
+        \item We can also write the whole stack of Jacobians as follows:
+        \begin{align*}
+            J = \begin{bmatrix}
+                J_1 & J_2 & \cdots & J_{|\ve{T}|}                
+            \end{bmatrix}
+            &= \Phi \nabla^T
+        \end{align*}
+        where
+        \begin{align*}
+            \nabla = \begin{bmatrix}
+                \nabla_1 \\ \nabla_2 \\ \vdots \\ \nabla_{|\ve{T}|}
+            \end{bmatrix}.
+        \end{align*}
+    \end{itemize}
+
+    \item If we have $J$, the stack of every Jacobian matrices, then it determines $\Phi$ up to a translation if the mesh is connected.
+    \begin{itemize}
+        \item If the mesh is connected, then there is a sequence of triangle edges that connect $\ve{v}_0$ to any particular vertex $\ve{v}_m$.
+        \item For each of these triangle edges, say $(\ve{v}_j, \ve{v}_k)$ that belongs to Triangle $i$, then we can use $J_i$ to compute $\Phi_k - \Phi_j$.
+        \item We can then follow this chain to compute $\Phi_m - \Phi_0$ for all indices $m \in \{1, \dotsc, |V|-1\}$.
+        \item So, $\Phi$ is determined up to the position of $\Phi_0$.
+    \end{itemize}
+    As a result, computing the Jacobians is tantamount to computing a piecewise linear mapping (up to a translation).
+\end{itemize}
+
+\subsection{Predicting Piecewise Linear Mapping}
+
+\begin{itemize}
+    \item The goal of the paper is to create a neural network that consumes a mesh and produces a piecewise linear mapping of the mesh.
+    
+    \item We know what the output looks like. It's a stack of Jacobian $J$, which determines the mapping $\Phi$ up to a translation.
+    
+    \item So, let's talk about the missing part: what ``consuming a mesh'' means.
+    
+    \item Before that, let's mention the main goal of the paper. {\bf How the prediction gets done should be agnostic to the triangulation of the mesh.}
+    \begin{itemize}
+        \item The network should not need to know how many triangles the input mesh has. What triangles are in the mesh, and how are the triangles are connected.
+    \end{itemize}
+
+    \item So, the input that the network takes is as follow.
+    \begin{itemize}
+        \item The network takes a {\bf global code} $\ve{z}$ of the mesh. 
+        \begin{itemize}
+            \item The paper uses the encoding by PointNet \cite{Qi:PointNet:2017}.
+            \begin{itemize}
+                \item We sample $1024$ points on the mesh.
+                \item We create a tensor of point information. Each entry corresponds to a point and has the following fields: (1) the point's 3D position, (2) the point's normal vector, and (3) the point's Wave-Kernel signature \cite{Aubry:WKS:2011} of size 50.
+                \item We feed the above tensor to PointNet to get an encoding.            
+            \end{itemize}                    
+        \end{itemize}
+
+        \item It can also takes other conditioning information $\ve{y}$ such as the desired pose of the output mesh, the joint angles of the skeleton, desired positon to which mesh should bend to, and so on.
+        
+        \item To produce a Jacobian matrix for each triangle $\ve{t}_i$, the network takes in information of the centroid $\ve{c}_i$ of the triangle as input.
+        \begin{itemize}
+            \item The centroid's position.
+            \item The centroid's normal vector, which is the triangle's normal vectors.
+            \item The centroid's Wave-Kernel signature of size 50.
+        \end{itemize}
+    \end{itemize}
+
+    \item The paper mentions that it trains the main network alongside the PointNet encoder. So, in effect, the paper wants to create the system of two networks.
+    \begin{itemize}
+        \item A {\bf mesh encoder} that maps the shape of a mesh to a {\bf global code} $\ve{z}$.
+        \item A {\bf mapper} that takes in the global code $\ve{z}$, the conditioning information $\ve{y}$, and centroid features $\ve{c}_i$ and output the Jacobian of that triangle $J_i$.
+    \end{itemize}
+
+    \item Note that the above two networks do not have to know how many triangles there are in the mesh or how the triangles are connected.
+\end{itemize}
+
+\section{Method}
+
+\begin{itemize}
+    \item The training data is a collection of tuples $\{ \mcal{S}^\ell, \Psi^\ell, \ve{y}^\ell \}$ where
+    \begin{itemize}
+        \item $\mcal{S}^\ell$ is the a mesh.
+        \item $\Psi^\ell$ is the groundtruth mapping, which is basically an assignment of each vertex in $\mcal{S}^\ell$ to a new position.
+        \item $\ve{y}^\ell$ is a conditioning information.
+    \end{itemize}
+
+    \item In order to for the prediction to be triangulation agnostic, it is done in two phases.
+    \begin{itemize}
+        \item First, we predict a matrix $P_i \in \Real^{3 \times 2}$ from $(\ve{c}_i, \ve{z}, \ve{y})$.
+        \item Then, we restrict the matrices $P_i$ to the tangent space of $\ve{t}_i$ to get a new matrix $R_i$, which we return.
+    \end{itemize}
+
+    \item The 2nd phase is based on the following logic.
+    \begin{itemize}
+        \item We are given an arbitrary assignment of a matrix $P_i \in \Real^{3 \times 2}$ to each triangle $\ve{t}_i$.
+        \begin{itemize}
+            \item When stacked up, this becomes $P = \begin{bmatrix}
+                P_1 & P_2 & \cdots & P_{|\ve{T}|}
+            \end{bmatrix}$.
+        \end{itemize}
+        
+        \item We would like to retrive a map $\Phi^*$ such that $\Phi^* \nabla^T$ is the closest to $P$ in the least square sense.
+        
+        \item This can be done by solving the {\bf Poisson equation}
+        \begin{align*}
+            \Phi^* = \argmin_{\Phi} \sum_{i} |\ve{t}_i| \big\| \Phi \nabla_i^T - P_i \big\|^2
+        \end{align*}
+        where $|\ve{t}_i|$ is the area of the triangle $\ve{t}_i$ on the source mesh $\mcal{S}$.
+        
+        \item The above minimization, if I intepret it correctly, is a linear least square problem.
+        \begin{itemize}
+            \item That is, we can turn $P \in \Real^{3 \times (2|\ve{T}|)}$ into a vector $\ve{p} \in \Real^{6|\ve{T}|}$.
+            \item We can also turn $\Phi \in \Real^{3 \times |\ve{V}|}$ into a vector $\ves{\phi} \in \Real^{3|\ve{V}|}$.
+            \item We can turn $\nabla^T_i$ into a matrix $D \in \Real^{(6|\ve{T}|) \times (3|\ve{V}|)}.$ 
+            \item Then, we have that the optimization problem becomes:
+            \begin{align*}
+                \ves{\phi}^* = \argmin_{\ves{\phi}} \| A^{1/2} D \ves{\phi} - \ve{p} \|^2
+            \end{align*}
+            where $A$ is a diagonal matrix that scales each row with the area of the corresponding triangle of that row.
+            \item Natually, we have that $\ves{\phi}^* = (A^{1/2} D)^{-1} \ve{p}$.
+        \end{itemize}
+    \end{itemize}
+\end{itemize}
 
 
 \bibliographystyle{arxivalpha}
-\bibliography{distribution-distance}  
+\bibliography{neural-jacobian-fields}  
 \end{document}
