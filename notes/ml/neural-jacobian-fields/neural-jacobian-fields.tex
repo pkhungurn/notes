@@ -130,10 +130,10 @@ This note is written as I read the paper ``Neural Jacobian Fields: Learning Intr
     \item The {\bf Jacobian} $J_i$ of triangle $\ve{t}_i$ is a linear transformation of dimension $3 \times 2$ from $\ve{t}_i$'s tangent space to $\Real^3$.
     \begin{itemize}
         \item So, it's signature is $J_i: T_i \ra \Real^3$.
-        \item It as a $3 \times 2$ matrix in the coordinates of the frame $\mcal{B}_i$ by solving
+        \item It is a $3 \times 2$ matrix in the coordinates of the frame $\mcal{B}_i$ by solving
         \begin{align}
             J_i = \mcal{B}_i^T \begin{bmatrix}
-                \ve{v}_k - \ve{v}_j & \ve{v}_l - \ve{j}
+                \ve{v}_k - \ve{v}_j & \ve{v}_l - \ve{v}_j
             \end{bmatrix}
             = \begin{bmatrix}
                 \Phi_k - \Phi_j & \Phi_l - \Phi_j

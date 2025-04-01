@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>Discrete Laplacians</title>
+
+    <!-- Bootstrap -->
+    <link href="../../../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../../../css/theme.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+      TeX: { equationNumbers: {autoNumber: "AMS"} } 
+    });
+    </script>
+    <script type="text/javascript"
+            src="../../../MathJax/MathJax.js?config=TeX-AMS_HTML-full">
+    </script>
+
+    <script type="text/javascript" src="../../../js/jquery-3.4.1.min.js"></script>    
+    <script type="text/javascript" src="../../../js/bigfoot.min.js"></script>    
+
+    <link rel="stylesheet" type="text/css" href="../../../css/bigfoot-default.css">    
+
+</head>
+<body>
+<div class="container">
+    <span style="visibility: hidden;">
+        \(
+        \def\sc#1{\dosc#1\csod}
+        \def\dosc#1#2\csod{{\rm #1{\small #2}}}
+
+        \newcommand{\dee}{\mathrm{d}}
+        \newcommand{\Dee}{\mathrm{D}}
+        \newcommand{\In}{\mathrm{in}}
+        \newcommand{\Out}{\mathrm{out}}
+        \newcommand{\pdf}{\mathrm{pdf}}
+        \newcommand{\Cov}{\mathrm{Cov}}
+        \newcommand{\Var}{\mathrm{Var}}
+
+        \newcommand{\ve}[1]{\mathbf{#1}}
+        \newcommand{\mrm}[1]{\mathrm{#1}}
+        \newcommand{\etal}{{et~al.}}
+        \newcommand{\sphere}{\mathbb{S}^2}
+        \newcommand{\modeint}{\mathcal{M}}
+        \newcommand{\azimint}{\mathcal{N}}
+        \newcommand{\ra}{\rightarrow}
+        \newcommand{\mcal}[1]{\mathcal{#1}}
+        \newcommand{\X}{\mathcal{X}}
+        \newcommand{\Y}{\mathcal{Y}}
+        \newcommand{\Z}{\mathcal{Z}}
+        \newcommand{\x}{\mathbf{x}}
+        \newcommand{\y}{\mathbf{y}}
+        \newcommand{\z}{\mathbf{z}}
+        \newcommand{\tr}{\mathrm{tr}}
+        \newcommand{\sgn}{\mathrm{sgn}}
+        \newcommand{\diag}{\mathrm{diag}}
+        \newcommand{\Real}{\mathbb{R}}
+        \newcommand{\sseq}{\subseteq}
+        \newcommand{\ov}[1]{\overline{#1}}
+        \DeclareMathOperator*{\argmax}{arg\,max}
+        \DeclareMathOperator*{\argmin}{arg\,min}
+
+        \newcommand{\data}{\mathrm{data}}
+        \newcommand{\N}{\mathcal{N}}
+        \newcommand{\Hil}{\mathcal{H}}
+        \)
+    </span>
+
+    <br>
+    <h1>Discrete Laplacians</h1>
+    <hr>
+
+    <h2>1 &nbsp; What are Laplacians</h2>
+
+    <ul>
+        <li>"Laplacians" here refers to <b>Laplace operators</b> or <b>Laplace-Beltrami operators</b>.
+        <ul>
+            <li>The latter is a generalization of the former to functions defined on manifolds.</li>
+        </ul>
+        </li>
+        
+        <li>The Laplacian operates on real, scalar functions $u: \Real^d \ra \Real$.</li>
+
+        <li>It is denoted as $\Delta u$, which is another scalar function of signature $\Real^d \ra \Real$.</li>
+
+        <li>Using standard notation, it is defined as follows:
+        \begin{align*}
+            \Delta u(\ve{x}) 
+            &= \frac{\partial^2 u(\ve{x})}{\partial x_1^2} 
+                + \frac{\partial^2 u(\ve{x})}{\partial x_2^2} 
+                + \dotsb 
+                + \frac{\partial^2 u(\ve{x})}{\partial x_d^2} 
+            = \sum_{i=1}^d \frac{\partial^2 u(\ve{x})}{\partial x_i^2}.
+        \end{align*}
+        Equivalently, using <a href="https://pkhungurn.github.io/notes/notes/math/multivar-deriv-notations/multivar-deriv-notations.pdf">my own notations for partial derivatives</a>, it can be written as follows:
+        \begin{align*}
+            \Delta u(\ve{x}) 
+            = \sum_{i=1}^d \nabla_{i,i} u(\ve{x})
+            = \sum_{i=1}^d u_{\nabla_{i,i}}(\ve{x})
+        \end{align*}
+        </li>
+
+        <li>Sometimes, people write the Laplacian as $\nabla^2$, but we would not use this because can be confused with the <b>Hessian</b> matrix:
+        \begin{align*}
+            \mathbf{H}_f(\ve{x}) = \begin{bmatrix}
+                \nabla_{1,1}u(\ve{x}) & \nabla_{1,2}u(\ve{x}) & \cdots & \nabla_{1,d}u(\ve{x}) \\
+                \nabla_{2,1}u(\ve{x}) & \nabla_{2,2}u(\ve{x}) & \cdots & \nabla_{2,d}u(\ve{x}) \\
+                \vdots & \vdots & \ddots & \vdots \\
+                \nabla_{d,1}u(\ve{x}) & \nabla_{2,2}u(\ve{x}) & \cdots & \nabla_{d,d}u(\ve{x})
+            \end{bmatrix}
+        \end{align*}
+        In my notation,
+        \begin{align*}
+            \mathbf{H}_u(\ve{x}) = \nabla\Big( \big( \nabla u(\ve{x}) \big)^T \Big),
+        \end{align*}
+        so it's very close to $\nabla^2 u(\ve{x})$.
+        </li>
+
+        <li>A better alternative notation for the Laplacian is $\nabla \cdot \nabla u$.
+        <ul>
+            <li>This is because we can think of the gradient operator as a "vector":
+            \begin{align*}
+                \nabla = \begin{bmatrix}
+                    \nabla_1 & \nabla_2 & \cdots & \nabla_d
+                \end{bmatrix}.
+            \end{align*}
+            </li>
+
+            <li>If we stick it to a scalar function $u$, it becomes
+            \begin{align*}
+                
+                \nabla u = \begin{bmatrix}
+                    \nabla_1 u & \nabla_2 u & \cdots & \nabla_d u
+                \end{bmatrix}.
+            \end{align*}
+            </li>
+
+            <li>So,
+            \begin{align*}
+                \nabla \cdot \nabla u = \begin{bmatrix}
+                    \nabla_1 u & \nabla_2 u & \cdots & \nabla_d u
+                \end{bmatrix} \cdot \begin{bmatrix}
+                \nabla_1 u & \nabla_2 u & \cdots & \nabla_d u
+                \end{bmatrix}
+                = \sum_{i=1}^d \nabla_i \nabla_{i} u
+                = \sum_{i=1}^d \nabla_{i,i} u.
+            \end{align*}
+            </li>
+        </ul>
+        </li>
+
+        <li>The Laplace operator appears in many famous partial differential equations.
+        <ul>
+            <li><b>Laplace's equation</b>:
+            \begin{align*}
+                \Delta u = 0
+            \end{align*}
+            </li>
+
+            <li><b>Poisson's equation</b>:
+            \begin{align*}
+                \Delta u = f
+            \end{align*}
+            where $f: \Real^n \ra \Real$ is another scalar function.
+            </li>
+
+            <li><b>Heat equation</b>:
+            \begin{align*}
+                \frac{\partial u}{\partial t} = \alpha \Delta u
+            \end{align*}            
+            </li>       
+            
+            <li><b>Wave equation</b>:
+            \begin{align*}
+            \frac{\partial^2 u}{\partial t^2} = \alpha \Delta u
+            \end{align*}
+            </li>
+        </ul>
+        </li>
+    </ul>
+
+    <hr>
+    <h2>2 &nbsp; Laplacian = Deviation from Average</h2>
+
+    <ul>
+        <li>We can think of the Laplacian of a function $u$ as the difference between value at a point and the average of the function value's in that point's neighborhood.</li>
+
+        <li><b>Example 1.</b> Graph Laplacians.
+        <ul>
+            <li>Consider a graph $G = (V,E)$.</li>
+            <li>Let $u$ be a function $V \ra \Real$, and let $u_i$ denotes the function value at the $i$th vertex.</li>
+            <li>Then, the <b>graph Laplacian</b> $L$ is an operator that maps $u$ to the following scalar funcvtion on graph:
+            \begin{align*}
+                (Lu)_i = \bigg( \frac{1}{\deg(i)} \sum_{(i,j) \in E} u_i \bigg) - u_i
+            \end{align*}
+            Clearly, this is the difference between Vertex $i$'s value and the average of the values of its neighbors.
+            </li>
+        </ul>
+        </li>
+
+        <li><b>Example 2. Laplacian of a 1D function.</b>
+        <ul>
+            <li>Let's say $u$ has signature $[0,1] \ra \Real$.</li>
+            
+            <li>Let $h > 0$. The difference between $u(x)$ and the average between $u(x-h)$ and $u(x+h)$ is given by
+            \begin{align*}
+                \mathcal{D} u(x, h) = \frac{u(x-h) + u(x+h)}{2} - u(x).
+            \end{align*}
+            This can be rewritten as:
+            \begin{align*}
+                \mathcal{D}u(x,h) = \frac{1}{2}\Big( \big(u(x+h) - u(x)\big) - \big( u(x) - u(x-h) \big) \Big)
+            \end{align*}
+            </li>
+
+            <li>We have that
+            \begin{align*}
+                \lim_{h \ra 0} \frac{\mcal{D}u(x,h)}{h^2} 
+                &= \frac{1}{2} \lim_{h \ra 0} \frac{1}{h} \bigg( \frac{u(x+h) - u(x)}{h} - \frac{u(x) - u(x-h)}{h} \bigg) 
+                = \frac{1}{2} \frac{\dee}{\dee x} \bigg( \frac{\dee u}{\dee x} \bigg)
+                = \frac{1}{2} \frac{\dee^2 u}{\dee x^2}
+                \propto \Delta u
+            \end{align*}
+            </li>
+            
+            <li>3Blue1Brown has a very good expository video about this: <a href="https://www.3blue1brown.com/lessons/pdes">[LINK]</a>.</li>
+        </ul>
+        </li>
+    </ul>
+    
+    <hr>
+    <div class="page-header"></div>
+    <p>Last modified: 2025/04/01</p>    
+</div>
+
+<script type="text/javascript">
+$.bigfoot();
+</script>
+
+</body>
+</html>
