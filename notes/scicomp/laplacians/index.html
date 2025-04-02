@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>Laplacians</title>
+
+    <!-- Bootstrap -->
+    <link href="../../../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../../../css/theme.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+      TeX: { equationNumbers: {autoNumber: "AMS"} } 
+    });
+    </script>
+    <script type="text/javascript"
+            src="../../../MathJax/MathJax.js?config=TeX-AMS_HTML-full">
+    </script>
+
+    <script type="text/javascript" src="../../../js/jquery-3.4.1.min.js"></script>    
+    <script type="text/javascript" src="../../../js/bigfoot.min.js"></script>    
+
+    <link rel="stylesheet" type="text/css" href="../../../css/bigfoot-default.css">    
+
+</head>
+<body>
+<div class="container">
+    <span style="visibility: hidden;">
+        \(
+        \def\sc#1{\dosc#1\csod}
+        \def\dosc#1#2\csod{{\rm #1{\small #2}}}
+
+        \newcommand{\dee}{\mathrm{d}}
+        \newcommand{\Dee}{\mathrm{D}}
+        \newcommand{\In}{\mathrm{in}}
+        \newcommand{\Out}{\mathrm{out}}
+        \newcommand{\pdf}{\mathrm{pdf}}
+        \newcommand{\Cov}{\mathrm{Cov}}
+        \newcommand{\Var}{\mathrm{Var}}
+
+        \newcommand{\ve}[1]{\mathbf{#1}}
+        \newcommand{\mrm}[1]{\mathrm{#1}}
+        \newcommand{\etal}{{et~al.}}
+        \newcommand{\sphere}{\mathbb{S}^2}
+        \newcommand{\modeint}{\mathcal{M}}
+        \newcommand{\azimint}{\mathcal{N}}
+        \newcommand{\ra}{\rightarrow}
+        \newcommand{\mcal}[1]{\mathcal{#1}}
+        \newcommand{\X}{\mathcal{X}}
+        \newcommand{\Y}{\mathcal{Y}}
+        \newcommand{\Z}{\mathcal{Z}}
+        \newcommand{\x}{\mathbf{x}}
+        \newcommand{\y}{\mathbf{y}}
+        \newcommand{\z}{\mathbf{z}}
+        \newcommand{\tr}{\mathrm{tr}}
+        \newcommand{\sgn}{\mathrm{sgn}}
+        \newcommand{\diag}{\mathrm{diag}}
+        \newcommand{\Real}{\mathbb{R}}
+        \newcommand{\sseq}{\subseteq}
+        \newcommand{\ov}[1]{\overline{#1}}
+        \DeclareMathOperator*{\argmax}{arg\,max}
+        \DeclareMathOperator*{\argmin}{arg\,min}
+
+        \newcommand{\data}{\mathrm{data}}
+        \newcommand{\N}{\mathcal{N}}
+        \newcommand{\Hil}{\mathcal{H}}
+        \)
+    </span>
+
+    <br>
+    <h1>Laplacians (aka Laplace Operators)</h1>
+    <hr>
+
+    
+    <p>Laplacian shows up a lot in physics and scientific computing. I have never really encountered them in research until I tried to read a paper on geometry processing (<a href="https://arxiv.org/abs/2205.02904">this one in particular</a>). I didn't understand one of the crucial equation, so I think I would read up some material to know what's going on. This note is a part of that studying process. The material is mainly from <a href="https://www.youtube.com/watch?v=oEq9ROl9Umk">Keenan Crane's video</a>, and it covers many interpretations and properties of the Laplacian.</p>
+
+    <hr>
+
+
+    <h2>1 &nbsp; What are Laplacians</h2>
+
+    <ul>
+        <li>"Laplacians" here refers to <b>Laplace operators</b>.</li>
+        
+        <li>The Laplacian operates on real, scalar functions $u: \Real^d \ra \Real$.</li>
+
+        <li>It is denoted with $\Delta$. It takes in $u: \Real^d \ra \Real$ and produces another function $\Delta u: \Real^d \ra \Real$.
+        <ul>
+            <li>So, its signature is $(\Real^d \ra \Real) \ra (\Real^d \ra \Real)$.</li>
+        </ul>
+        </li>        
+
+        <li>Using standard notation, it is defined as follows:
+        \begin{align*}
+            \Delta u(\ve{x}) 
+            &= \frac{\partial^2 u(\ve{x})}{\partial x_1^2} 
+                + \frac{\partial^2 u(\ve{x})}{\partial x_2^2} 
+                + \dotsb 
+                + \frac{\partial^2 u(\ve{x})}{\partial x_d^2} 
+            = \sum_{i=1}^d \frac{\partial^2 u(\ve{x})}{\partial x_i^2}.
+        \end{align*}
+        Equivalently, using <a href="https://pkhungurn.github.io/notes/notes/math/multivar-deriv-notations/multivar-deriv-notations.pdf">my own notations for partial derivatives</a>, it can be written as follows:
+        \begin{align*}
+            \Delta u(\ve{x}) 
+            = \sum_{i=1}^d \nabla_{i,i} u(\ve{x})
+            = \sum_{i=1}^d u_{\nabla_{i,i}}(\ve{x})
+        \end{align*}
+        </li>                
+
+        <li>The Laplacian appears in many famous partial differential equations.
+        <ul>
+            <li><b>Laplace's equation</b>:
+            \begin{align*}
+                \Delta u = \ve{0}
+            \end{align*}
+            </li>
+
+            <li><b>Poisson's equation</b>:
+            \begin{align*}
+                \Delta u = f
+            \end{align*}
+            where $f: \Real^n \ra \Real$ is another scalar function.
+            </li>
+
+            <li><b>Heat equation</b>:
+            \begin{align*}
+                \frac{\partial u}{\partial t} = \Delta u
+            \end{align*}            
+            </li>       
+            
+            <li><b>Wave equation</b>:
+            \begin{align*}
+            \frac{\partial^2 u}{\partial t^2} = \Delta u
+            \end{align*}
+            </li>
+        </ul>
+        </li>
+
+        <li>Needless to say, the Laplacian is a linear operator because taking derivatives and adding them up are linear.</li>
+    </ul>
+
+    <hr>
+    <h2>2 &nbsp; Laplacian as Deviation from Average</h2>
+
+    <ul>
+        <li>We can think of the Laplacian of a function $u$ as the difference between value at a point and the average of the function value's in that point's neighborhood.</li>
+    </ul>
+
+    <h3>2.1 &nbsp; Graph Laplacians</h3>
+
+    <ul>
+        <li>Consider a graph $G = (V,E)$.</li>
+        <li>Let $u$ be a function $V \ra \Real$, and let $u_i$ denotes the function value at the $i$th vertex.</li>
+        <li>Then, the <b>graph Laplacian</b> $L$ is an operator that maps $u$ to the following scalar funcvtion on graph:
+        \begin{align*}
+            (Lu)_i = \bigg( \frac{1}{\deg(i)} \sum_{(i,j) \in E} u_i \bigg) - u_i
+        \end{align*}
+        Clearly, this is the difference between Vertex $i$'s value and the average of the values of its neighbors.
+        </li>
+    </ul>
+
+    <h3>2.2 &nbsp; Laplacian of a 1D function</h3>
+
+    <ul>
+        <li>Let's say $u$ has signature $[0,1] \ra \Real$.</li>
+
+        <li>Applying the Laplacian to $u$, get the second derivative:
+        \begin{align*}
+            \Delta u(x) = \ddot{u}(x)
+        \end{align*}
+        </li>
+        
+        <li>Let $h > 0$. The difference between $u(x)$ and the average between $u(x-h)$ and $u(x+h)$ is given by
+        \begin{align*}
+            \mathcal{D} u(x, h) = \frac{u(x-h) + u(x+h)}{2} - u(x).
+        \end{align*}
+        So,
+        <ul>
+            <li>If $\mathcal{D}u(x,h) > 0$, then $u(x)$ is lower than the average of $u$ values of $x$'s neighbors.</li>
+            <li>If $\mathcal{D}u(x,h) > 0$, then $u(x)$ is greater than the average of $u$ values of $x$'s neighbors.</li>
+        </ul>
+
+        <li>Consider the limit
+        \begin{align*}
+            \lim_{h \ra 0} \frac{\mcal{D}u(x,h)}{h^2} 
+            &= \lim_{h \ra 0} \frac{1}{h^2} \bigg( \frac{u(x-h) + u(x+h)}{2} - u(x) \bigg)
+        \end{align*}
+        By Taylor's approximation, we have that
+        \begin{align*}
+            u(x+h) &= u(x) + h\dot{u}(x) + \frac{h^2}{2} \ddot{u}(x) + O(h^3) \\
+            u(x-h) &= u(x) - h\dot{u}(x) + \frac{h^2}{2} \ddot{u}(x) + O(h^3).
+        \end{align*}
+        So,
+        \begin{align*}
+            \lim_{h \ra 0} \frac{\mcal{D}u(x,h)}{h^2} 
+            &= \lim_{h \ra 0} \frac{1}{h^2} \bigg( \frac{2u(x) + h^2 \ddot{u}(x)}{2} - u(x) + O(h^3) \bigg) \\
+            &= \lim_{h \ra 0} \bigg( \frac{\ddot{u}(x)}{2} + O(h) \bigg) \\
+            &= \frac{1}{2} \ddot{u}(x) \\
+            &\propto \Delta u(x)
+        \end{align*}
+        Hence, $\Delta u$ does represents deviation from average.
+        </li>        
+        
+        <li>
+        Another way to say this is to observe that
+        \begin{align*}
+            \mathcal{D}u(x,h) = \frac{1}{2}\Big( \big(u(x+h) - u(x)\big) - \big( u(x) - u(x-h) \big) \Big).
+        \end{align*}
+        So, $\mathcal{D}u(x,h)$ is a difference of difference, which implies that it is the second derivative muiltiplied by some scaling factors ($1/2$ in this case).
+        <ul>
+            <li>3Blue1Brown has a very good expository video about this: <a href="https://www.3blue1brown.com/lessons/pdes">[LINK]</a>.</li>
+        </ul>
+        </li>
+    </ul>            
+
+    <h4>2.2.1 &nbsp; Relationship to Convexity</h4>
+        
+    <ul>
+        <li>We note that the second derivative $\ddot{u}(x)$ tells us about the convexity and concavity of the function.</li>
+        
+        <li>When $\ddot{u}(x) > 0$, the function is convex around $x$.
+        <ul>
+            <li>This means that, there exists $\varepsilon > 0$, 
+            such that, for all $x_1, x_2 \in (x-\varepsilon, x+\varepsilon)$, it is true that 
+            $$u((1-t)x_1 + t(x_2)) \leq (1-t)u(x_1) + t(x_2)$$ 
+            for all $0 \leq t \leq 1$. </li>
+            <li>This dovetails with the fact that $u(x)$ is lower than the average of neighboring values
+            because we can pick $x_1 = x-\varepsilon/2$ and $x_2 = x+\varepsilon/2$ and $t = 1/2$, 
+            and we will have that 
+            \begin{align*}
+            u(x) 
+            = u\bigg( \frac{1}{2}\bigg( x - \frac{\varepsilon}{2} \bigg) + \frac{1}{2}\bigg( x + \frac{\varepsilon}{2} \bigg) \bigg) 
+            \leq \frac{1}{2} u\bigg( x - \frac{\varepsilon}{2} \bigg) + \frac{1}{2}u\bigg( x + \frac{\varepsilon}{2} \bigg).
+            \end{align*}</li>
+            <li>So,
+                \begin{align*}
+                \frac{u(x-\varepsilon/2) + u(x+\varepsilon/2)}{2} - u(x) \geq 0.
+                \end{align*}</li>
+        </ul>
+        </li>
+
+        <li>When $\ddot{u}(x) < 0$, the function is concave around $x$.
+        <ul>
+            <li>This means that, there exists $\varepsilon > 0$, such that, for all $x_1, x_2 \in (x-\varepsilon, x+\varepsilon)$, it is true that 
+            $$u((1-t)x_1 + t(x_2)) \geq (1-t)u(x_1) + t(x_2)$$ 
+            for all $0 \leq t \leq 1$. 
+            </li>
+            <li>
+            This dovetails with the fact that $u(x)$ is above than the average of neighboring values
+            because we can pick $x_1 = x-\varepsilon/2$ and $x_2 = x+\varepsilon/2$ and $t = 1/2$, 
+            and we will have that 
+            \begin{align*}
+            u(x) 
+            = u\bigg( \frac{1}{2}\bigg( x - \frac{\varepsilon}{2} \bigg) + \frac{1}{2}\bigg( x + \frac{\varepsilon}{2} \bigg) \bigg) 
+            \geq \frac{1}{2} u\bigg( x - \frac{\varepsilon}{2} \bigg) + \frac{1}{2}u\bigg( x + \frac{\varepsilon}{2} \bigg).
+            \end{align*}
+            </li>
+            <li>So,
+            \begin{align*}
+            \frac{u(x-\varepsilon/2) + u(x+\varepsilon/2)}{2} - u(x) \leq 0.
+            \end{align*}</li>
+        </ul>
+        </li>                
+    </ul>
+
+    <h3>2.3 &nbsp; Laplacians of a Multi-Dimensional Scalar Function</h3>
+
+    <ul>    
+        <li>Let's generalize Section 2.2 to scalar functions of $\Real^d$.
+        <ul>
+            <li>Here, $u$ has signature $\Real^d \ra \Real$.</li>
+            
+            <li>Again, we can consider the difference $u(\ve{x})$ from the following 2d values $\{ u(\ve{x} \pm h\ve{e}_i) : 1 \leq i \leq d \}$ where $\ve{e}_i$ is the vector in $\Real^d$ whose $i$th one-hot vector in $\Real^d$.
+            \begin{align*}
+                \mathcal{D} u(\ve{x}, h) 
+                &= \bigg( \frac{1}{2d} \sum_{i=1}^d \big( u(\ve{x} + h\ve{e}_i) + u(\ve{x} - h\ve{e}_i) \big) \bigg) - u(\ve{x}) \\
+                &=  \frac{1}{d} \sum_{i=1}^d \bigg( \frac{u(\ve{x} + h\ve{e}_i) + u(\ve{x} - h\ve{e}_i)}{2} - u(\ve{x}) \bigg)
+            \end{align*}
+            </li>
+
+            <li>Using what we know from Example 2, we have that
+            \begin{align*}
+                \lim_{h \ra 0} \frac{\mathcal{D} u(\ve{x}, h)}{h^2} 
+                &= \frac{1}{d} \sum_{i=1}^d \lim_{h\ra 0} \frac{1}{h^2} \bigg( \frac{u(\ve{x} + h\ve{e}_i) + u(\ve{x} - h\ve{e}_i)}{2} - u(\ve{x}) \bigg) \\
+                &= \frac{1}{d} \sum_{i=1}^d \frac{\nabla_{i,i} u(\ve{x})}{2}  \\ 
+                &= \frac{1}{2d} \Delta u(\ve{x}).
+            \end{align*}
+            </li>
+        </ul>
+        </li>
+
+        <li>In general, we can think of $\Delta u(\ve{x})$ as difference between the value $u(\ve{x})$ and the average value over a small sphere around $\ve{x}$. In other words,
+        \begin{align*}
+            \Delta u(\ve{x}) \propto \lim_{h \ra 0} \frac{1}{h^2} \bigg( \frac{1}{|S_h(\ve{x})|} \int_{S_h(\ve{x})} u(\ve{u})\, \dee \ve{y}  - u(\ve{x})\bigg)
+        \end{align*}
+        where $S_h(\ve{x})$ is the sphere of radius $h$ around $\ve{x}$, and $|S_h(\ve{x})|$ denotes the sphere's area.
+        </li>
+    </ul>
+
+    <h3>2.4 &nbsp; Interpretations of PDEs Involving Laplacians</h3>
+
+    <ul>
+        <li>Armed with this interpretation of the Laplacian, we can interpret some PDEs we discuss in Section 1.</li>
+    </ul>
+
+    <h4>2.4.1 &nbsp; Laplace Equation and Dirichlet Problem</h4>
+    <ul>
+        <li>The Laplace equation arises in the <b>Dirichlet problem</b>.</li>
+        <li>Here, we are given a region $\Omega \in \Real^d$ with boundary $\partial \Omega$.</li>
+        <li>We are also given a continuous $f: \partial\Omega \ra \Real$.</li>
+        <li>We are required to find $u: \Omega \ra \Real$ such that 
+        \begin{align*}
+        \Delta u(\ve{x}) = \ve{0} \quad \mbox{ and } \quad u(\ve{x}) = f(\ve{x}) \mbox{ when } \ve{x} \in \delta \Omega.
+        \end{align*}</li>
+        <li>A function $u$ that satisfies the Laplace equation is called a <b>harmonic</b> function.</li>
+        <li>If $u$ is a harmonic function, then $u(\ve{x})$ is equal to the average of $u$ values in $\ve{x}$'s neighbor.</li>
+        <li>This means several things.
+        <ul>
+            <li>There is no convexity or concavity inside $\Omega$.</li>
+            <li>No sudden jumps or kinks.</li> 
+            <li>$u$ is close to being linear (but may not be due to the influence of the boundary).</li>
+            <li>$u$ is like a taut membrane that spans $\Omega$ while interpolating values on the boundary $\partial \Omega$.</li>                    
+        </ul>
+        </li>            
+    </ul>
+
+    <h4>2.4.2 &nbsp; Heat Equation</h4>
+    <ul>
+        <li>Next, let's talk about the heat equation $\partial u / \partial t = \Delta u$.</li>
+
+        <li>Now, $u$ is a function of both $t$ and $\ve{x}$. It has signature $\Real^{d+1} \ra \Real$.</li>
+
+        <li>It says that the update to $u(t,\ve{x})$ over time is proportional to difference between $u(t,\ve{x})$ and the value of $u(t,\cdot)$ around $\ve{x}$'s neighbor.</li>
+        
+        <li>Let's interpret this a little bit more.
+        <ul>
+            <li>If $u(t,\ve{x}) > 0$, it means that $u(t,\ve{x})$ is lower than the average of neighbors. It gets increased.</li>
+            <li>If $u(t,\ve{x}) < 0$, it means that $u(t,\ve{x})$ is greatr than the average of neighbors. It gets decreased.</li>
+        </ul>
+        </li>
+
+        <li>If we let $u(t,\ve{x})$ evolves time, peaks will be flatten, and depressions will be filled. $u$ will tends towards a constant function.</li>
+
+        <li>The equation is called the ``heat'' equation because we can think of $u(t,\ve{x})$ as the temperature of point $\ve{x}$ at time $t$. Because heat flows until there is no temperature gradient (i.e., the temperatures at all points are the same), the heat equation reasonably describes heat transfer.</li>                
+    </ul>            
+    
+    <h4>2.4.3 &nbsp; Wave Equation</h4>
+
+    <ul>
+        <li>Lastly, let's talk about the wave equation $\partial^2 u / \partial t^2 = \Delta u$.</li>
+
+        <li>The second derivative is the acceleration of $u(t,\ve{x})$.</li>
+
+        <li>Another way to think about acceleration is to think about it has the "force" that the value experiences.
+        <ul>
+            <li>If $u(t,\ve{x})$ is lower than the average of neighbors, then $u(t,\ve{x}) > 0$. It experiences a force pushing it upward.</li>
+            <li>If $u(t,\ve{x})$ is greater than the average of neighbors, then $u(t,\ve{x}) < 0$. It experiences a force pushing it downward.</li>
+        </ul>
+        </li>
+    </ul>
+
+    <hr>
+
+    <h2>3 &nbsp; Laplacian as Trace of Hessian</h2>
+
+    <ul>
+        <li>Sometimes, people write the Laplacian as $\nabla^2$, but we would not use this because can be confused with the <b>Hessian</b> matrix:
+        \begin{align*}
+            H_u(\ve{x}) = \begin{bmatrix}
+                \nabla_{1,1}u(\ve{x}) & \nabla_{1,2}u(\ve{x}) & \cdots & \nabla_{1,d}u(\ve{x}) \\
+                \nabla_{2,1}u(\ve{x}) & \nabla_{2,2}u(\ve{x}) & \cdots & \nabla_{2,d}u(\ve{x}) \\
+                \vdots & \vdots & \ddots & \vdots \\
+                \nabla_{d,1}u(\ve{x}) & \nabla_{2,2}u(\ve{x}) & \cdots & \nabla_{d,d}u(\ve{x})
+            \end{bmatrix}
+        \end{align*}
+        
+        <li>In my notation,
+        \begin{align*}
+            H_u(\ve{x}) = \nabla\Big( \big( \nabla u(\ve{x}) \big)^T \Big),
+        \end{align*}
+        so it's very close to $\nabla^2 u(\ve{x})$. So, we will use $\nabla^2 u(\ve{x})$ to denote the Hessian too.
+        </li>        
+
+        <li>The Hessian $H_u(\ve{x})$ provides the best quadratic approximate of $u$ around $\ve{x}$. This comes from the Taylor's approximation
+        \begin{align*}
+            u(\ve{x} + \ve{h}) \approx u(\ve{x}) + \nabla \ve{u}(\ve{x})\ve{h} + \frac{1}{2} \ve{h}^T \nabla^2 u(\ve{x}) \ve{h}.
+        \end{align*}
+        </li>
+
+        <li>We can also view the Hessian as a bilinear form. Consider the expression
+        \begin{align*}
+            \ve{b}^T \nabla^2 u(\ve{x}) \ve{a}
+            &= \ve{b}^T \nabla \big( \nabla u(\ve{x})^T \big) \ve{a}.
+        \end{align*}        
+        </li>
+
+        <li>Recall that, given a vector function $\ve{f}: \Real^d \ra \Real^d$, the directional derivative along direction $\ve{a}$ of $\ve{f}$ at $\ve{x}$ is given by
+        \begin{align*}
+            \nabla_{\ve{a}}\ve{f(\ve{x})} = \lim_{h \ra 0} \frac{\ve{f}(\ve{x} + h\ve{a}) - \ve{f}(\ve{a})}{h}.
+        \end{align*}        
+        </li>
+
+        <li>It is well known that
+        \begin{align*}
+            \nabla_{\ve{a}}\ve{f(\ve{x})} = \nabla\ve{f}(\ve{x}) \ve{a}.
+        \end{align*}
+        </li>
+
+        <li>So, one reinterpret the action of the Hessian as a bilinear form as follows.
+        \begin{align*}
+            \ve{b}^T \nabla^2 u(\ve{x}) \ve{a} 
+            &= \ve{b}^T \nabla \big( \nabla u(\ve{x})^T \big) \ve{a}
+            = \ve{b}^T \nabla_\ve{a} \big( \nabla u(\ve{x})^T \big)
+            = \langle \ve{b}, \nabla_\ve{a} \big( \nabla u(\ve{x})^T \big) \rangle.
+        \end{align*}
+        In other words, it is the dot product between $\ve{b}$ and the directional derivative of the gradient of $u$ along $\ve{a}$
+        </li>
+
+        <li>The Laplacian is, of course, the trace of the Hessian.
+        \begin{align*}
+            \Delta u(\ve{x}) = \tr(\nabla^2 (\ve{x})).
+        \end{align*}
+        </li>
+    </ul>
+
+    <hr>
+
+    <h2>4 &nbsp; Laplacian as Divergence of the Gradient</h2>
+
+    <ul>
+        <li>A better alternative notation for the Laplacian is $\nabla \cdot \nabla u$.
+            <ul>
+                <li>This is because we can think of the gradient operator as a "vector":
+                \begin{align*}
+                    \nabla = \begin{bmatrix}
+                        \nabla_1 & \nabla_2 & \cdots & \nabla_d
+                    \end{bmatrix}.
+                \end{align*}
+                </li>
+    
+                <li>If we stick it to a scalar function $u$, it becomes
+                \begin{align*}
+                    
+                    \nabla u = \begin{bmatrix}
+                        \nabla_1 u & \nabla_2 u & \cdots & \nabla_d u
+                    \end{bmatrix}.
+                \end{align*}
+                </li>
+    
+                <li>So,
+                \begin{align*}
+                    \nabla \cdot \nabla u = \begin{bmatrix}
+                        \nabla_1 u & \nabla_2 u & \cdots & \nabla_d u
+                    \end{bmatrix} \cdot \begin{bmatrix}
+                    \nabla_1 u & \nabla_2 u & \cdots & \nabla_d u
+                    \end{bmatrix}
+                    = \sum_{i=1}^d \nabla_i \nabla_{i} u
+                    = \sum_{i=1}^d \nabla_{i,i} u.
+                \end{align*}
+                </li>                
+            </ul>
+        </li>
+
+        <li>$\nabla \cdot$ is an operator called the <b>divergence</b>. It sends a vector field $\Real^d \ra \Real^d$ to a scalar function $\Real^d \ra \Real$.
+        \begin{align*}
+            \nabla \cdot \ve{f}(\ve{x}) = \sum_{i=1}^d \nabla_i f_i(\ve{x}).
+        \end{align*}
+        </li>
+
+        <li>The divergence measures the density of outward flux according to $\ve{f}$ around $\ve{x}$.
+        <ul>
+            <li>If $\nabla \cdot f(\ve{x})$ is postiive, it means that $\ve{f}$ points outward from $\ve{x}$ more than it points inward.</li>
+            <li>If $\nabla \cdot f(\ve{x})$ is negative, it means that $\ve{f}$ points inward from $\ve{x}$ more than it points outward.</li>
+            <li>If $\nabla \cdot f(\ve{x})$ is zero, then the inward and outward flux is balance.</li>
+        </ul>
+        </li>
+
+        <li>So, the Laplacian $\Delta u$ is the divergence of the gradient of $u$:
+        \begin{align*}
+            \Delta u(\ve{x}) = \nabla \cdot \big(\nabla u(\ve{x})\big)^T.
+        \end{align*}
+        </li>
+
+        <li>The gradient $\nabla u(\ve{x})$ points in the direction of steepest ascent.
+        <ul>
+            <li>It points in around a local maximum.</li>
+            <li>It points out around a local minimum.</li>
+        </ul>
+        </li>
+
+        <li>So, the Laplacian, which is $\nabla \cdot (\nabla u(\ve{x}))^T$, behaves as follows:
+        <ul>
+            <li>It is positive near a local minimum.</li>
+            <li>It is negative near a local maximum.</li>
+        </ul>
+        </li>
+    </ul>
+
+    <hr>
+
+    <h2>5 &nbsp; Laplacian via Random Walks</h2>
+
+    <ul>
+        <li>Consider the following initial value problem involving the heat equation.
+        \begin{align*}
+            \frac{\partial}{\partial t} u(t,\ve{x}) &= \Delta \ve{u}(t,\ve{x}) \\
+            u(0,\ve{x}) &= \phi(\ve{x})
+        \end{align*}
+        where $\phi: \Real^d \ra \Real$.
+        </li>
+
+        <li>The <b>heat kernel</b> $k_t(\ve{r})$ is a time-varying Gaussian function
+        \begin{align*}
+            k_t(\ve{x}, \ve{y}) = \frac{1}{(4\pi t)^{d/2}} \exp \bigg( -\frac{\| \ve{r} \|^2}{4t} \bigg).
+        \end{align*}
+        </li>
+
+        <li>We can describe the solution of the initial value problem above as follows.
+        \begin{align*}
+            u(t,\ve{x}) = \int k_t(\ve{x} - \ve{y}) \phi(\ve{y})\, \dee \ve{y} = (k_t * \phi)(\ve{x})
+        \end{align*}
+        where $*$ denotes convolution.
+        </li>
+
+        <li>Let $\{ \ve{X}_t : 0 \leq t \leq \infty \}$ denotes the standard Brownian motion in $\Real^d$. It turns out that
+        \begin{align*}
+            u(t,\ve{x}) = E[\phi(\ve{X}_t)|\ve{X}_0 = \ve{x}].
+        \end{align*}
+        </li>
+
+        <li>Moreover, we have that
+        \begin{align*}
+            \Delta \phi(\ve{x}) 
+            = \lim_{t \ra 0} \frac{u(t,\ve{x}) - u(0, \ve{x})}{t}
+            = \lim_{t \ra 0} \frac{E[\phi(\ve{X}_t)|\ve{X}_0 = \ve{x}] - E[\phi(\ve{X}_0)|\ve{X}_0 = \ve{x}]}{t}
+            = \frac{\dee E[\phi(\ve{X}_t)]}{\dee t} \bigg|_{t =0}.
+        \end{align*}
+        </li>
+    </ul>
+
+    <hr>
+
+    <h2>6 &nbsp; Laplacian via Dirichlet Energy</h2>
+
+    <ul>
+        <li>Let us go back to the Dirichlet problem, which we may formulate as follows. Given,
+        <ul>
+            <li>a region $\Omega \subset \Real^d$ with bounldary $\partial \Omega$ and</li>
+            <li>a function $f: \partial\Omega \ra \Real$,</li>
+        </ul>
+        fill the values of $f$ inside $\Omega$ "as smoothly as possible."
+        </li>
+
+        <li>Let us denote the solution of the problem above by $u$.
+        <ul>
+            <li>The constraint we have on $u$ is that $u(\ve{x}) = f(\ve{x})$ for all $\ve{x} \in \partial \Omega$.</li>
+        </ul>
+        </li>
+
+        <li>Here, one can take "as smoothly as possible" to mean that the gradient of $u$ is as small as possible, which means that there are no large variations across small distance.</li>
+
+        <li>We can measure smoothness by the <b>Dirichlet energy</b>.
+        $$\mcal{E}(u) = \int_{\Omega} \| \nabla u(\ve{x}) \|^2\, \dee\ve{x}.$$
+        </li>
+    </ul>
+
+    <h3>6.1 &nbsp; Dirichlet Form</h3>
+    <ul>
+        <li>The Dirichlet energy can be defined with the <a href="https://en.wikipedia.org/wiki/Dirichlet_form"><b>Dirichlet form</b></a>.
+        \begin{align*}
+            D(f,g) = \int_{\Omega} \nabla f(\ve{x}) \cdot \nabla g(\ve{x})\, \dee \ve{x}.
+        \end{align*}
+        So,
+        \begin{align*}
+            \mcal{E}(u) = D(u,u).
+        \end{align*}
+        </li>
+
+        <li>Notice that
+        \begin{align*}
+            \nabla_i \big( f(\ve{x}) \nabla_i g(\ve{x}) \big) &= \nabla_i f(\ve{x}) \nabla_i g(\ve{x}) + f(\ve{x}) \nabla_{i,i} g(\ve{x}) \\
+            \nabla_i f(\ve{x}) \nabla_i g(\ve{x}) &= \nabla_i \big( f(\ve{x}) \nabla_i g(\ve{x}) \big) - f(\ve{x}) \nabla_{i,i} g(\ve{x}).
+        \end{align*}
+        So,
+        \begin{align*}
+            D(f,g) 
+            &= \int_{\Omega} \nabla f(\ve{x}) \cdot \nabla g(\ve{x}) \, \dee \ve{x} \\
+            &= \int_{\Omega} \bigg( \sum_{i=1}^d \nabla_i f(\ve{x}) \nabla_i g(\ve{x}) \bigg) \, \dee \ve{x} \\
+            &= \int_{\Omega} \bigg( \sum_{i=1}^d \nabla_i \big( f(\ve{x}) \nabla_i g(\ve{x}) \big) - f(\ve{x}) \nabla_{i,i} g(\ve{x}) \bigg) \, \dee \ve{x} \\
+            &= \int_{\Omega} \bigg( \sum_{i=1}^d \nabla_i \big( f(\ve{x}) \nabla_i g(\ve{x}) \big) \bigg) \, \dee \ve{x} -  \int_{\Omega} \bigg( \sum_{i=1}^d f(\ve{x}) \nabla_{i,i} g(\ve{x}) \bigg) \, \dee \ve{x} \\
+            &= \int_{\Omega} \nabla \cdot (f(\ve{x}) \nabla g(\ve{x})) \, \dee \ve{x} -  \int_{\Omega} f(\ve{x}) \bigg( \sum_{i=1}^d \nabla_{i,i} g(\ve{x}) \bigg) \, \dee \ve{x} \\
+            &= \int_{\Omega} \nabla \cdot (f(\ve{x}) \nabla g(\ve{x})) \, \dee \ve{x} -  \int_{\Omega} f(\ve{x}) \Delta g(\ve{x}) \, \dee \ve{x} 
+        \end{align*}        
+        </li>
+        
+        <li>In order to derive further, let us introduce the volume measure $V(\ve{x})$ and area measure $A(\ve{X})$.</li>
+
+        <li>Recall that the divergence theorem states that
+        \begin{align*}
+            \int_{\Omega} \nabla \cdot \ve{f}(\ve{x})\, \dee V(\ve{x}) = \int_{\partial \Omega} f(\ve{x}) \cdot \hat{\ve{n}}(\ve{x})\, \dee A(\ve{x})
+        \end{align*}
+        where $\hat{\ve{n}}(\ve{x})$ is the unit normal vector pointing out of the boundary $\partial\Omega$ at $\ve{x}$.
+        </li>
+
+        <li>As a result, we may conclude that
+        \begin{align*}
+        \int_{\Omega} \nabla \cdot (f(\ve{x}) \nabla g(\ve{x})) \, \dee \ve{x} 
+        = \int_{\Omega} \nabla \cdot (f(\ve{x}) \nabla g(\ve{x})) \, \dee V(\ve{x}) 
+        = \int_{\partial \Omega} f(\ve{x}) \nabla g(\ve{x}) \cdot \hat{\ve{n}}(\ve{x})\, \dee A(\ve{x}).
+        \end{align*}
+        </li>
+
+        <li>This allows us to write $D(f,g)$ as follows:
+        \begin{align*}
+            D(f,g) 
+            &= \int_{\partial \Omega} f(\ve{x}) \nabla g(\ve{x}) \cdot \hat{\ve{n}}(\ve{x})\, \dee A(\ve{x}) -  \int_{\Omega} f(\ve{x}) \Delta g(\ve{x}) \, \dee \ve{x} \\
+            &= \int_{\partial \Omega} g(\ve{x}) \nabla f(\ve{x}) \cdot \hat{\ve{n}}(\ve{x})\, \dee A(\ve{x}) -  \int_{\Omega} g(\ve{x}) \Delta f(\ve{x}) \, \dee \ve{x}
+        \end{align*}
+        The last line comes from the fact that, in the derivation above, we can exchange $f$ and $g$ at the beginning and carray out the derivation until the end.
+        </li>
+    </ul>
+
+    <h3>6.2 &nbsp; Solution of Laplace Equation as Minimizer of Dirichlet Energy</h3>
+
+    <ul>
+        <li>For the Dirichlet problem, we seek $u$ that minimizes the Dirichlet energy, which can now be rewritten as:
+        \begin{align*}
+            \mcal{E}(u) = D(u,u) = \int_{\partial \Omega} u(\ve{x}) \nabla u(\ve{x}) \cdot \hat{\ve{n}}(\ve{x})\, \dee A(\ve{x}) -  \int_{\Omega} u(\ve{x}) \Delta u(\ve{x}) \, \dee \ve{x}.
+        \end{align*}
+        </li>
+
+        <li>Let $u$ be our solution to the Dirichlet problem.</li>
+        
+        <li>Let $h(\ve{x}): \Omega \ra \Real$ be any function such that $h(\ve{x}) = 0$ for all $\ve{x} \in \partial\Omega$. It follows that $u + th$ satisfies the boundary condition as well.</li> 
+        
+        <li>Let
+        \begin{align*}
+            \varphi(t) 
+            = \mcal{E}(u + th) 
+            = \int_\Omega \| \nabla( u(\ve{x}) + t h(\ve{x})) \|^2 \dee{\ve{x}}
+            = \int_\Omega \| \nabla u(\ve{x}) \|^2 \dee{\ve{x}} + 2 t \int_{\Omega} \nabla u(\ve{x}) \cdot \nabla h(\ve{x})\, \dee\ve{x} + t^2 \int_\Omega \| \nabla h(\ve{x}) \|^2 \dee{\ve{x}}.
+        \end{align*}
+        We have that
+        \begin{align*}
+            \dot{\varphi}(t)
+            = 2 \int_{\Omega} \nabla u(\ve{x}) \cdot \nabla h(\ve{x})\, \dee\ve{x} + 2 t \int_\Omega \| \nabla h(\ve{x}) \|^2 \dee{\ve{x}}
+        \end{align*}
+        </li>
+        
+        <li>Because $\phi(t)$ has a minimum at $t = 0$, it follows that $\dot{\phi}(0) = 0$. As a result,
+        \begin{align*}
+            0 = 2\int_{\Omega} \nabla u(\ve{x}) \cdot \nabla h(\ve{x})\, \dee\ve{x} = 2D(u,h) = 2\int_{\partial \Omega} h(\ve{x}) \nabla u(\ve{x}) \cdot \hat{\ve{n}}(\ve{x})\, \dee A(\ve{x}) - 2\int_{\Omega} h(\ve{x}) \Delta u(\ve{x}) \, \dee \ve{x}.
+        \end{align*}</li>
+
+        <li>Because $h(\ve{x}) = 0$ everywhere on $\partial \Omega$, we have that
+        \begin{align*}
+        \int_{\partial \Omega} h(\ve{x}) \nabla u(\ve{x}) \cdot \hat{\ve{n}}(\ve{x})\, \dee A(\ve{x}) = 0.
+        \end{align*}
+        Thus, we can conclude that
+        \begin{align*}
+            0 = -2 \int_{\Omega} h(\ve{x}) \Delta u(\ve{x}) \, \dee \ve{x}.
+        \end{align*}
+        This implies that $\Delta u(\ve{x}) = 0$ for all $\ve{x} \in \Omega$.
+        </li>
+
+        <li>The shows that a minimizer of the Dirichlet energy must satisfies Laplace's equation.</li>        
+
+        <li>Derivation in this section comes from <a href="https://www2.math.upenn.edu/~kazdan/508F14/Notes/DirichletPrin.pdf">here</a>.</li>
+    </ul>
+
+    <h3>6.3 &nbsp; Gradient of the Dirichlet Energy</h3>
+
+    <ul>
+        <li>For two scalar functions $f:\Real^d \ra \Real$ and $g:\Real^d \ra \Real$, the dot product between $f$ and $g$ is defined to be
+        \begin{align*}
+            \langle f, g \rangle = \int_{\Real^d} f(\ve{x})g(\ve{x})\, \dee\ve{x}.
+        \end{align*}
+        </li>
+
+        <li>A <b>functional</b> is a mapping from a function $\Real^d \ra \Real$ to a real number. That is, it is a function of signature $(\Real^d \ra \Real) \ra \Real$.</li>
+
+        <li>We note that the Dirichlet energy $\mcal{E}$ is a functional.</li>
+
+        <li>So, to find the gradient of the Dirichlet energy, we must know what does it mean to find the gradient of a functional $\mcal{F}$.</li>
+
+        <li>For a scalar function $f: \Real^d \ra \Real$, we have the following Taylor's expansion
+        \begin{align*}
+            f(\ve{x}+t\ve{h}) = f(\ve{x}) + t \nabla f(\ve{x}) \ve{h} + O(t^2) = f(\ve{x}) + t \langle \nabla f(\ve{x}), \ve{h} \rangle + O(t^2).
+        \end{align*}
+        As a result,
+        \begin{align*}
+            \lim_{t \ra 0} \frac{f(\ve{x}+t\ve{h}) - f(\ve{x})}{t} = \langle \nabla f(\ve{x}), \ve{h} \rangle
+        \end{align*}
+        So, we can say that gradient of $f(\ve{x})$ is the vector $\ve{g} \in \Real^d$ such that
+        \begin{align*}
+            \lim_{t \ra 0} \frac{f(\ve{x}+t\ve{h}) - f(\ve{x})}{t} = \langle \ve{g}, \ve{h} \rangle
+        \end{align*}
+        for any vectors $\ve{h} \in \Real^d$.
+        </li>
+
+        <li>So, the gradient of a functional $\mcal{F}(u)$ is the function $v: \Real^d \ra \Real$ such that
+        \begin{align*}
+            \lim_{t \ra 0} \frac{\mcal{F}(u + h) - \mcal{F}(u)}{t} =  \langle v, h \rangle
+        \end{align*}
+        for any function $h$.
+        </li>
+
+        <li>We have that
+        \begin{align*}
+            \mcal{E}(u + th) 
+            &= \int_\Omega \| \nabla u(\ve{x}) \|^2 \dee{\ve{x}} + 2 t \int_{\Omega} \nabla u(\ve{x}) \cdot \nabla h(\ve{x})\, \dee\ve{x} + t^2 \int_\Omega \| \nabla h(\ve{x}) \|^2 \dee{\ve{x}} \\
+            &= \mcal{E}(u) + 2 t \int_{\Omega} \nabla u(\ve{x}) \cdot \nabla h(\ve{x})\, \dee\ve{x} + t^2 \mcal{E}(h).
+        \end{align*}
+        As a result,
+        \begin{align*}
+            \lim_{t \ra 0} \frac{\mcal{E}(u + th) - \mcal{E}(u)}{t} 
+            &= 2 \int_{\Omega} \nabla u(\ve{x}) \cdot \nabla h(\ve{x})\, \dee\ve{x} \\
+            &= 2\int_{\partial \Omega} h(\ve{x}) \nabla u(\ve{x}) \cdot \hat{\ve{n}}(\ve{x})\, \dee A(\ve{x}) - 2\int_{\Omega} h(\ve{x}) \Delta u(\ve{x}) \, \dee \ve{x} \\
+            &= 2\int_{\partial \Omega} h(\ve{x}) \nabla u(\ve{x}) \cdot \hat{\ve{n}}(\ve{x})\, \dee A(\ve{x}) + \langle -2 \Delta u, h \rangle.
+        \end{align*}
+        Since this needs to hold for all $h$, we may choose $h$ such that $h(\ve{x}) = 0$ on the boundary $\partial \Omega$. (This is not rigourous at all, but what gives!) So, we have that
+        \begin{align*}
+            \lim_{t \ra 0} \frac{\mcal{E}(u + th) - \mcal{E}(u)}{t} = \langle -2 \Delta u, h \rangle.
+        \end{align*}
+        As a result, we may conclude that
+        \begin{align*}
+            \nabla \mcal{E}(u) = -2 \Delta u.
+        \end{align*}
+        </li>
+
+        <li>This means that $\Delta u$ is the direction of <i>steepest descent</i> with regards to the Dirichlet energy.</li>
+
+        <li>Now, consider the initial value problem involving the heat equation:
+        \begin{align*}
+            \frac{\partial u(t,\ve{x})}{\partial t} &= \Delta u(t,\ve{x}) \\
+            u(0,\ve{x}) &= \phi(\ve{x}).
+        \end{align*}
+        We see that the PDE tells us to perform gradient descent to minimize the Dirichlet energy $\mcal{E}(u(t, \cdot))$ starting from $u(0,\cdot) = \phi$.
+        </li>
+    </ul>
+
+    <h3>6.4 &nbsp; Dirichlet's Principle</h3>
+
+    <ul>
+        <li>We know that the Dirichlet energy is convex. So, if $u$ is a minimizer of the Dirichlet energy, it is unique.</li>
+
+        <li>The solution $u$ must have zero gradient, which implies that $\nabla u = 0$, which is Laplace's equation.</li>
+
+        <li>Hilbert shows that, for reasonble domains $\Omega$ (compact, smooth, with piecewise smooth boundary) and boundary function $f$, the minimizer of Dirichlet energy exists (and is unique).</li>
+
+        <li>So, we have the following as the <b>Dirichlet's principle.</b>
+        <table border="1" cellpadding="10">
+            <tr>
+                <td>For reasonble domains $\Omega$ (compact, smooth, with piecewise smooth boundary) and boundary function $f$,<br>
+                the boundary value problem
+                \begin{align*}
+                    \Delta u(\ve{x}) &= 0  & & \mbox{for all } \ve{x} \in \Omega, \\
+                    u(\ve{x}) &= f(\ve{x}) & & \mbox{for all } \ve{x} \in \partial\Omega
+                \end{align*}
+                has a unique solution, and the solution is the minimizer of the Dirichlet energy
+                \begin{align*}
+                    \mcal{E}(u) = \int_{\Omega} \| \nabla u(\ve{x}) \|^2\, \dee\ve{x}.
+                \end{align*}
+                </td>
+            </tr>
+        </table>
+        </li>
+
+        <li>How do we find the solution in practice? Well, you just solve the heat equation and take the limit as $t \ra \infty$.</li>
+    </ul>
+
+    <h2>7 &nbsp; Poisson's Equation from Energy Minimization Perspective</h2>
+
+    <ul>
+        <li>Consider a problem similar to the Dirichlet problem above. We are given 
+        <ul>
+            <li>a domain $\Omega \subset \Real^d$ with boundary $\partial \Omega$,</li>
+            <li>a function $f: \partial \Omega \ra \Real$.</li>
+            <li>a vector function $\ve{g}: \Omega \ra \Real^d$.</li>
+        </ul>
+        We would like to find a function $u: \Omega \ra \Real$ such that 
+        <ul>
+            <li>$u(\ve{x}) = f(\ve{x})$ for all $\ve{x} \in \partial\Omega$.</li>
+            <li>$u$ minimizes the energy
+            \begin{align*}
+                \mcal{E}(u) = \int_\Omega \| \nabla u(\ve{x}) - \ve{g}(\ve{x}) \|^2\, \dee\ve{x}.
+            \end{align*}
+            </li>
+        </ul>
+        </li>
+    </ul>
+
+    <h3>7.1 &nbsp; An Integration by Part Formula</h3>
+
+    <ul>
+        <li>In order to progress, we need a tool to rewrite the energy like what we did for the Dirichlet problem. This time, we require something a little different.</li>
+
+        <li>Consider a scalar function $f: \Real^d \ra \Real$ and a vector field $\ve{g}: \Real^d \ra \Real^d$.</li>
+
+        <li>We have that
+        \begin{align*}
+            \nabla_i (f(\ve{x}) g_i(\ve{x})) 
+            &= \nabla_i f(\ve{x}) g_i(\ve{x}) + f(\ve{x}) \nabla_i g_i(\ve{x}_i),
+        \end{align*}
+        whicn gives
+        \begin{align*}
+            \nabla_i f(\ve{x}) g_i(\ve{x}) &= \nabla_i (f(\ve{x}) g_i(\ve{x})) - f(\ve{x}) \nabla_i g_i(\ve{x}_i)
+        \end{align*}
+        </li>
+
+        <li>As a result,
+        \begin{align*}
+            \int_{\Omega} \nabla f(\ve{x}) \cdot \ve{g}(\ve{x})\, \dee \ve{x}
+            &= \int_{\Omega} \bigg( \sum_{i=1}^d \nabla_i f(\ve{x}) g_i(\ve{x}) \bigg) \, \dee \ve{x} \\
+            &= \int_{\Omega} \bigg( \sum_{i=1}^d \nabla_i (f(\ve{x}) g_i(\ve{x})) - f(\ve{x}) \nabla_i g_i(\ve{x}_i) \bigg) \, \dee \ve{x} \\
+            &= \int_{\Omega} \bigg( \sum_{i=1}^d \nabla_i (f(\ve{x}) g_i(\ve{x})) \bigg)  \, \dee \ve{x} - \int_{\Omega} \bigg( \sum_{i=1}^d f(\ve{x}) \nabla_i g_i(\ve{x}_i) \bigg) \, \dee \ve{x} \\
+            &= \int_{\Omega} \nabla \cdot \big( f(\ve{x}) \ve{g}(\ve{x}) \big)  \, \dee \ve{x} - \int_{\Omega} f(\ve{x}) \bigg( \sum_{i=1}^d  \nabla_i g_i(\ve{x}_i) \bigg) \, \dee \ve{x} \\
+            &= \int_{\Omega} \nabla \cdot \big( f(\ve{x}) \ve{g}(\ve{x}) \big)  \, \dee \ve{x} - \int_{\Omega} f(\ve{x}) \nabla \cdot \ve{g}(\ve{x}) \, \dee \ve{x} \\
+            &= \int_{\partial\Omega} f(\ve{x}) \ve{g}(\ve{x}) \cdot \hat{\ve{n}}(\ve{x})  \, \dee A(\ve{x}) - \int_{\Omega} f(\ve{x}) \nabla \cdot \ve{g}(\ve{x}) \, \dee \ve{x}
+        \end{align*}
+        </li>
+    </ul>
+
+    <h3>7.2 &nbsp; Deriving Possion's Equation</h3>
+
+    <ul>
+        <li>Again, define $\varphi(t) = \mcal{E}(u + th)$. We have that
+        \begin{align*}
+            \varphi(t)
+            &= \int_{\Omega} \| \nabla(u(\ve{x}) + th(\ve{x})) - \ve{g}(\ve{x}) \|^2\, \dee\ve{x} \\
+            &= \int_{\Omega} \| \nabla(u(\ve{x}) + th(\ve{x})) \|^2\, \dee\ve{x} - 2 \int_\Omega \nabla(u(\ve{x}) + th(\ve{x})) \cdot \ve{g}(\ve{x})  \, \dee\ve{x} + \int_\Omega \| \ve{g}({\ve{x}}) \|^2\, \dee\ve{x} \\
+            &= \int_{\Omega} \| \nabla u(\ve{x})  \|^2\, \dee\ve{x} 
+            + 2t \int_\Omega \nabla{u}(\ve{x}) \cdot \nabla{h}(\ve{x})\, \dee\ve{x} 
+            + t^2 \int_{\Omega} \| \nabla h(\ve{x})  \|^2\, \dee\ve{x} 
+            - 2 \int_\Omega \nabla u(\ve{x}) \cdot \ve{g}(\ve{x})  \, \dee\ve{x} 
+            - 2 t \int_\Omega \nabla h(\ve{x}) \cdot \ve{g}(\ve{x})  \, \dee\ve{x} 
+            + \int_\Omega \| \ve{g}({\ve{x}}) \|^2\, \dee\ve{x}.
+        \end{align*}
+        So,
+        \begin{align*}
+            \dot{\varphi}(t)
+            &= 2 \int_\Omega \nabla{u}(\ve{x}) \cdot \nabla{h}(\ve{x})\, \dee\ve{x} 
+            + 2t \int_{\Omega} \| \nabla h(\ve{x})  \|^2\, \dee\ve{x} 
+            - 2 \int_\Omega \nabla h(\ve{x}) \cdot \ve{g}(\ve{x})  \, \dee\ve{x} \\
+            &= 2 \int_{\Omega} \nabla h(\ve{x}) \cdot (\nabla u(\ve{x}) - \ve{g}(\ve{x}))\, \dee \ve{x} + 2t \int_{\Omega} \| \nabla h(\ve{x})  \|^2\, \dee\ve{x}.
+        \end{align*}
+        </li>
+
+        <li>Again, we argue that $\dot{\phi}(0) = 0$, so
+        \begin{align*}
+            0 
+            &= 2 \int_{\Omega} \nabla h(\ve{x}) \cdot (\nabla u(\ve{x}) - \ve{g}(\ve{x}))\, \dee \ve{x} \\
+            &= 2 \int_{\partial\Omega} h(\ve{x}) (\nabla u(\ve{x}) - \ve{g}(\ve{x})) \cdot \hat{\ve{n}}(\ve{x})  \, \dee A(\ve{x}) - 2 \int_{\Omega} h(\ve{x}) \nabla \cdot (\nabla u(\ve{x}) - \ve{g}(\ve{x})) \, \dee \ve{x} \\
+            &= 2 \int_{\partial\Omega} h(\ve{x}) (\nabla u(\ve{x}) - \ve{g}(\ve{x})) \cdot \hat{\ve{n}}(\ve{x})  \, \dee A(\ve{x}) - 2 \int_{\Omega} h(\ve{x}) (\Delta u(\ve{x}) - \nabla \cdot \ve{g}(\ve{x})) \, \dee \ve{x}.
+        \end{align*}
+        </li>
+
+        <li>For $h(\ve{x})$ that vanishes on the boundary, we have that
+        \begin{align*}
+            0 = -2 \int_{\Omega} h(\ve{x}) (\Delta u(\ve{x}) - \nabla \cdot \ve{g}(\ve{x})) \, \dee \ve{x}
+        \end{align*}
+        As a result, it must be the case that
+        \begin{align*}
+            \Delta u(\ve{x}) - \nabla \cdot \ve{g}(\ve{x}) &= 0
+        \end{align*}
+        or
+        \begin{align*}
+            \Delta u(\ve{x}) &= \nabla \cdot \ve{g}(\ve{x}),
+        \end{align*}
+        which is the Poisson's equation.
+        </li>
+
+        <li>We may also conclude that the gradient of the energy $\mcal{E}(u)$ is $-2(\Delta u - \nabla \cdot \ve{g})$.</li>
+
+        <li>We also have the following Dirichlet's principle for Poisson-type problem.</li>
+        <table border="1" cellpadding="10">
+            <tr>
+                <td>For reasonble domains $\Omega$, boundary function $f$ and vector field $\ve{g}$,<br>
+                the boundary value problem
+                \begin{align*}
+                    \Delta u(\ve{x}) &= \nabla \cdot \ve{g}(\ve{x})  & & \mbox{for all } \ve{x} \in \Omega, \\
+                    u(\ve{x}) &= f(\ve{x}) & & \mbox{for all } \ve{x} \in \partial\Omega
+                \end{align*}
+                has a unique solution, and the solution is the minimizer of the energy
+                \begin{align*}
+                    \mcal{E}(u) = \int_{\Omega} \| \nabla u(\ve{x}) - \ve{g}(\ve{x}) \|^2\, \dee\ve{x}.
+                \end{align*}
+                </td>
+            </tr>
+        </table>
+    </ul>
+
+    <hr>
+    <div class="page-header"></div>
+    <p>Last modified: 2025/04/01</p>    
+</div>
+
+<script type="text/javascript">
+$.bigfoot();
+</script>
+
+</body>
+</html>
