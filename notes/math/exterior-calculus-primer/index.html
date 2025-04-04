@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>A Quick and Dirty Primer on Exterior Calculus</title>
+
+    <!-- Bootstrap -->
+    <link href="../../../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../../../css/theme.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+      TeX: { equationNumbers: {autoNumber: "AMS"} } 
+    });
+    </script>
+    <script type="text/javascript"
+            src="../../../MathJax/MathJax.js?config=TeX-AMS_HTML-full">
+    </script>
+
+    <script type="text/javascript" src="../../../js/jquery-3.4.1.min.js"></script>    
+    <script type="text/javascript" src="../../../js/bigfoot.min.js"></script>    
+
+    <link rel="stylesheet" type="text/css" href="../../../css/bigfoot-default.css">    
+
+</head>
+<body>
+<div class="container">
+    <span style="visibility: hidden;">
+        \(
+        \def\sc#1{\dosc#1\csod}
+        \def\dosc#1#2\csod{{\rm #1{\small #2}}}
+
+        \newcommand{\dee}{\mathrm{d}}
+        \newcommand{\Dee}{\mathrm{D}}
+        \newcommand{\In}{\mathrm{in}}
+        \newcommand{\Out}{\mathrm{out}}
+        \newcommand{\pdf}{\mathrm{pdf}}
+        \newcommand{\Cov}{\mathrm{Cov}}
+        \newcommand{\Var}{\mathrm{Var}}
+
+        \newcommand{\ve}[1]{\mathbf{#1}}
+        \newcommand{\mrm}[1]{\mathrm{#1}}
+        \newcommand{\etal}{{et~al.}}
+        \newcommand{\sphere}{\mathbb{S}^2}
+        \newcommand{\modeint}{\mathcal{M}}
+        \newcommand{\azimint}{\mathcal{N}}
+        \newcommand{\ra}{\rightarrow}
+        \newcommand{\mcal}[1]{\mathcal{#1}}
+        \newcommand{\X}{\mathcal{X}}
+        \newcommand{\Y}{\mathcal{Y}}
+        \newcommand{\Z}{\mathcal{Z}}
+        \newcommand{\x}{\mathbf{x}}
+        \newcommand{\y}{\mathbf{y}}
+        \newcommand{\z}{\mathbf{z}}
+        \newcommand{\tr}{\mathrm{tr}}
+        \newcommand{\sgn}{\mathrm{sgn}}
+        \newcommand{\diag}{\mathrm{diag}}
+        \newcommand{\Real}{\mathbb{R}}
+        \newcommand{\sseq}{\subseteq}
+        \newcommand{\ov}[1]{\overline{#1}}
+        \DeclareMathOperator*{\argmax}{arg\,max}
+        \DeclareMathOperator*{\argmin}{arg\,min}
+
+        \newcommand{\data}{\mathrm{data}}
+        \newcommand{\N}{\mathcal{N}}
+        \newcommand{\Hil}{\mathcal{H}}
+        \)
+    </span>
+
+    <br>
+    <h1>A Quick and Dirty Primer on Exterior Calculus</h1>
+    <hr>
+
+    <p>This is a primer on exterior calculus, which is the study of differential forms and their differentiation and integration. I wrote a similar note before, titled  <a href="https://pkhungurn.github.io/notes/notes/math/diff-form-primer/index.html">"A Primer on Differential Forms."</a> However, that one is too long and too mathy. This note is more concise and based on materials from Keenan Crane's course on <a href="https://brickisland.net/ddg-web/">discrete differential geometry</a>; that is, Chapter 4 of the <a href="https://www.cs.cmu.edu/~kmcrane/Projects/DDG/paper.pdf">course notes</a> and slides about <a href="https://brickisland.net/ddg-web/lectures/DDG-ExteriorAlgebra.pdf">Exterior Algebra</a>, <a href="https://brickisland.net/ddg-web/lectures/DDG-kForms.pdf">$k$-forms</a>, <a href="https://brickisland.net/ddg-web/lectures/DDG-DifferentialForms.pdf">Differential Forms</a>, and <a href="https://brickisland.net/ddg-web/lectures/DDG-ExteriorDerivative.pdf">Exterior Derivatives</a> and <a href="https://brickisland.net/ddg-web/lectures/DDG-Integration.pdf">Integration</a>. This note is supposed to be more down-to-eart, application-oriented, intuitive, and scraggly than the other one.</p>
+
+    <hr>
+
+    <h2>1 &nbsp; Overview</h2>
+
+    <p>Vector algebra</b> is about "little arrows."</p>
+    
+    <hr>
+
+    <b>Vector calculus</b> is about how little arrows change and how to differentiate and integrate them.
+    
+    <p>More precisely, we deal with <b>vector-valued functions</b> and how to differentiate and integrate them.</p>
+
+    <hr>
+    
+    <p><b>Exterior algebra</b> is about "little volumes."</p>
+
+    <p>In math jargon, "little volumes" are called <b>"alternating tensors."</b></p>
+
+    <hr>
+    
+    <p><b>Exterior calculus</b> is about how little volumes changes and how to differentiate and integrate them.</p>    
+
+    <p>More precisely, we deal with <b>alternating-tensor-valued functions</b> (aka <b>differential forms</b>) and how to differentiate and integrate them.</p>        
+
+    <hr>
+
+    <h2>2 &nbsp; Exterior Algebra</h2>
+
+    <h2>2.1 &nbsp; $k$-tensors and $k$-alts</h2>
+
+    <p>A common knowledge from vector calculus is how to compute the volume of an $n$-dimensional parallelipiped.</p>
+    
+    <p>Here, we are given $n$ vectors $\ve{v}_1$, $\ve{v}_2$, $\ve{v}_3$, $\dotsc$, $\ve{v}_n$. The <b>parallelipiped</b> defined by the above vector is the set $$\{ c_1\ve{v}_1 + c_2\ve{v}_2 + \dotsb + c_n\ve{v}_n : 0 \leq c_1, c_2, \dotsc, c_n \leq 1\}.$$</p>
+
+    <hr>
+
+    <p>The <b>signed volume</b> of the parallelipiped is given by
+    \begin{align*}
+        \mbox{signed volume of paralellipiped} = \det \left( \begin{bmatrix} \ve{v}_1 & \ve{v}_2 & \dotsc & \ve{v}_n \end{bmatrix} \right).
+    \end{align*}
+    For simplicity, let's just use $\mathbb{V}(\ve{v}_1, \ve{v}_2, \ve{v}_3, \dotsc, \ve{v}_n)$ to denote the above.</p>
+    
+    <hr>
+
+    <p>Properties of the determinant function tell us about properties of the signed volume.</p>
+
+    <p>First, the signed volume is <b>linear in the $i$th argument</b> for all $i$. In other words, for any $1 \leq i \leq n$,
+    \begin{align*}
+        \mathbb{V}(\ve{v}_1, \dotsc, \ve{v}_{i-1}, c_i \ve{v}_{i}, \ve{v}_{i+1}, \dotsc, \ve{v}_n) &= c_i \mathbb{V}(\ve{v}_1, \dotsc, \ve{v}_{i-1}, \ve{v}_{i}, \ve{v}_{i+1}, \dotsc, \ve{v}_n) \\
+        \mathbb{V}(\ve{v}_1, \dotsc, \ve{v}_{i-1}, \ve{v}_{i} + \ve{w}_i, \ve{v}_{i+1}, \dotsc, \ve{v}_n) &= \mathbb{V}(\ve{v}_1, \dotsc, \ve{v}_{i-1}, \ve{v}_{i}, \ve{v}_{i+1}, \dotsc, \ve{v}_n) + \mathbb{V}(\ve{v}_1, \dotsc, \ve{v}_{i-1}, \ve{w}_{i}, \ve{v}_{i+1}, \dotsc, \ve{v}_n)
+    \end{align*}
+    for any constant $c_i \in \Real$ and vectors $\ve{w}_i, \ve{v}_1, \dotsc, \ve{v}_n \in \Real^n$.</p>
+        
+    <p>Second, the signed volume is <b>alternating</b>. This means that, for any $1 \leq i < n$, we have that
+    \begin{align*}
+    \mathbb{V}(\ve{v}_1, \dotsc, \ve{v}_{i}, \ve{v}_{i+1}, \dotsc, \ve{v}_n) = -\mathbb{V}(\ve{v}_1, \dotsc, \ve{v}_{i+1}, \ve{v}_i, \dotsc, \ve{v}_n).
+    \end{align*}
+    In particular, even permutation of input vectors preserve the sign of the volume, but odd permutations negate the sign.
+    </p>
+
+    <hr>
+
+    <p>The main object of study of exterior algebra is the <b>$k$-alternating tensor</b>, which represents signed volumes of parallelipiped defined by $k$ vectors.
+    <ul>
+        <li>"$k$-alternating tensor" is quite mouthful. Let's just call it <b>$k$-alt</b> in this note.</li>
+        <li>A parallelipiped is determined by $k$ vectors that comes from a $k$-dimensional vector space.</li>
+        <li>So, a $k$-alt should takes in a list of $k$ vectors and spits out a real number.</li>
+        <li>To make $k$-alt agree with conventional notion of signed volume, we require that a $k$-alt be linear in all of its argument and also alternating.</li>
+    </ul>
+    </p>
+
+    <hr>
+    
+    <p>Note that, in the above discussion, we dropped the notion that each of the $k$ vectors above needs to be $k$-dimensional.
+    <ul>
+        <li>This is because we want to talk about volumes of manifolds that are embedded in higher dimensional space.</li>
+
+        <li>For example, we might talk about lengths of curves in 3D spaces or area of a surface in 3D space.</li>
+
+        <li>For the notion of length (i.e. 1D volume), we can think of the length of 1 vector, but the vector is actually in 3D.</li>
+
+        <li>For the notion of area (i.e., 2D volume), we can think of the parallelipiped defined by two 3D vectors.</li>
+
+        <li>So, the inputs to a $k$-alt need not have $k$-dimensions. Usually, it has more dimensions than $k$.</li>
+    </ul></p>
+    </li>
+
+    <hr>
+
+    <p><b>Definition.</b> Let $\mcal{V}$ be a finite-dimensional real vector space. A $k$-tensor is a function $f: \mathcal{V}^k \ra \Real$ that is linear in all of its argument.</p>
+
+    <hr>
+    
+    <p><b>Definition.</b> The set of $k$-tensors on $\mcal{V}$ is denoted by $\mcal{L}^k(\mcal{V})$.</p>
+
+    <hr>
+
+    <p><b>Definition.</b> A $k$-tensor $f$ is <b>alternating</b> if
+    \begin{align*}
+        f(\ve{v}_1, \dotsc, \ve{v}_i, \ve{v}_{i+1}, \dotsc, \ve{v}_k) = f(\ve{v}_1, \dotsc, \ve{v}_{i+1}, \ve{v}_{i}, \dotsc, \ve{v}_k)
+    \end{align*}
+    for all $1 \leq i \leq k-1$. We call an alternating $k$-tensor a <b>$k$-alt</b>.</p>    
+
+    <hr>
+
+    <p><b>Definition.</b> The set of $k$-alts on $\mcal{V}$ is denoted by $\mcal{A}^k(\mcal{V})$.</p></p>
+
+    <hr>
+
+    <p>Given a $k$-tensor, which may not be alternating, we can turn it into a $k$-alt by the following $\operatorname{Alt}$ operator.</p>
+
+    <p><b>Definition.</b> Given $f \in \mcal{L}^k(\mcal{V})$, define $\operatorname{Alt}(f)$ by
+    \begin{align*}
+        \operatorname{Alt}(f)(\ve{v}_1, \ve{v}_2, \dotsc, \ve{v}_k) = \frac{1}{k!} \sum_{\pi \in \mathfrak{S}_k} \sgn(\pi)\, f(\ve{v}_{\pi(1)}, \ve{v}_{\pi(2)}, \dotsc, \ve{v}_{\pi(k)}).
+    \end{align*}
+    We have that $\operatorname{Alt}(f) \in \mcal{A}^k(\mcal{V})$ by construction.
+    </p>
+
+    <hr>
+
+    <h2>2.2 &nbsp; Structure of $\mcal{L}^k(\mcal{V})$</h2>
+
+    <p>We can regard $\mcal{L}^k(\mcal{V})$ as a vector space because we can define addition of tensors and multiplication of tensors by a real number as follows:
+    \begin{align*}
+    (f+g)(\ve{v}_1, \dotsc, \ve{v}_k) &= f(\ve{v}_1, \dotsc, \ve{v}_k) + g(\ve{v}_1, \dotsc, \ve{v}_k), \\
+    (cf)(\ve{v}_1, \dotsc, \ve{v}_k) &= c \big( f(\ve{v}_1, \dotsc, \ve{v}_k)\big).
+    \end{align*}
+    </p>
+
+    <hr>
+
+    <p>Consider the space $\mcal{L}^1(\mcal{V})$ of 1-tensors. An 1-tensor $f$ is just a linear function of signature $\mcal{V} \ra \Real$.</p>
+
+    <p>Let $\mcal{V}$ have $n$-dimensions, and let $\ve{e}_1$, $\ve{e}_2$, $\dotsc$, $\ve{e}_n$ be an orthonomal basis vectors of $\mcal{V}$.</p>
+
+    <p>Then, we have that, for any $\ve{v} \in \mcal{V}$, we can write $\ve{v} = a_1 \ve{e}_1 + a_2 \ve{e}_2 + \dotsb + a_n\ve{e}_n$ for some unique combination of $a_1, a_2, \dotsc, a_n$. As a result,
+    \begin{align*}
+        f(\ve{v}) = f(a_1 \ve{e}_1 + a_2 \ve{e}_2 + \dotsb + a_n\ve{e}_n) = a_1 f(\ve{e}_1) + a_2 f(\ve{e}_2) + \dotsb + a_n f(\ve{e}_n).
+    \end{align*}
+    So, the value of $f$ is completely determined by the values $f(\ve{e}_1)$, $f(\ve{e}_2)$, $f(\ve{e}_3)$, $\dotsc$, and $f(\ve{e}_n)$.
+    </p>
+
+    <p>For each $1 \leq i \leq n$, define $\phi_i$ to be a function such that
+    \begin{align*}
+        \phi_i(a_1 \ve{e}_1 + a_2 \ve{e}_2 + \dotsb + a_n\ve{e}_n) = a_i.
+    \end{align*}
+    That is, $\phi_i$ figures out coefficient of $\ve{e}_i$ of the input vector. We have that $\phi_i \in \mcal{L}^1(\mcal{V})$.
+    </p>
+
+    <p>Moreover, $\phi_1$, $\phi_2$, $\dotsc$, $\phi_n$ are basis vectors of $\mcal{L}^1(\mcal{V})$. Thus, $\mcal{L}^1(\mcal{V})$ has $n$ dimensions.</p>
+
+    <hr>
+
+    <p>In particular, we can deduce that $\mcal{L}^k(\mathcal{V})$ has $n^k$ dimensions.</p>
+
+    <p>The basis functions for $\mcal{L}^ki(\mathcal{V})$ can be defined as follows. Let $I = (i_1, i_2, \dotsc, i_k) \in \{ 1, 2, \dotsc, n \}^k$. Define
+    \begin{align*}
+        \phi_I(\ve{v}_1, \ve{v}_2, \dotsc, \ve{v}_k) = \phi_{i_1}(\ve{v}_1) \phi_{i_2}(\ve{v}_2) \dotsm \phi_{i_k}(\ve{v}_k).
+    \end{align*}
+    Then, the collection of $\phi_I$ for all possible tuples $I$ is the basis function of $\mcal{L}^k(\mathcal{V})$. These are called <b>elementary $k$-tensors.</b>
+    </p>
+
+    <hr>
+
+    <h3>2.3 &nbsp; Tensor Product and Wedge Product</h3>
+
+    <p>We see from the discussion of the basis functions of $\mcal{L}^k(\mathcal{V})$ that a $k$-tensor can be created from products of tensors having lower dimension. This is quite natural because, if we think of dimensions as being orthogonal to one another, then the volume in higher dimension equals to the product of volumes in lower dimensions.</p>
+
+    <hr>
+
+    <p>The tensor product is an operation that captures the above intuition.</p>
+
+    <p><b>Definition.</b> Let $f$ be a $k$-tensor and $g$ be an $\ell$-tensor. The <b>tensor product</b> $f \otimes g$ is a $(k+\ell$)-tensor define as follows:
+    \begin{align*}
+        (f \otimes g)(\ve{v}_1, \dotsc, \ve{v}_k, \ve{v}_{k+1}, \dotsc, \ve{v}_{k+\ell}) = f(\ve{v}_1, \dotsc, \ve{v}_k) g(\ve{v}_{k+1}, \dotsc, \ve{v}_{k+\ell})
+    \end{align*}
+    </p>
+
+    <hr>
+    
+    <div class="page-header"></div>
+    <p>Last modified: 2021/02/15</p>    
+</div>
+
+<script type="text/javascript">
+$.bigfoot();
+</script>
+
+</body>
+</html>
+
+
