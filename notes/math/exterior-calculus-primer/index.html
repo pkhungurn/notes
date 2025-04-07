@@ -83,13 +83,53 @@
     <h1>A Quick and Dirty Primer on Exterior Calculus</h1>
     <hr>
 
-    <p>This is a primer on exterior calculus, which is the study of differential forms and their differentiation and integration. I wrote a similar note before, titled  <a href="https://pkhungurn.github.io/notes/notes/math/diff-form-primer/index.html">"A Primer on Differential Forms."</a> However, that one is too long and too mathy. This note is more concise and based on materials from Keenan Crane's course on <a href="https://brickisland.net/ddg-web/">discrete differential geometry</a>; that is, Chapter 4 of the <a href="https://www.cs.cmu.edu/~kmcrane/Projects/DDG/paper.pdf">course notes</a> and slides about <a href="https://brickisland.net/ddg-web/lectures/DDG-ExteriorAlgebra.pdf">Exterior Algebra</a>, <a href="https://brickisland.net/ddg-web/lectures/DDG-kForms.pdf">$k$-forms</a>, <a href="https://brickisland.net/ddg-web/lectures/DDG-DifferentialForms.pdf">Differential Forms</a>, and <a href="https://brickisland.net/ddg-web/lectures/DDG-ExteriorDerivative.pdf">Exterior Derivatives</a> and <a href="https://brickisland.net/ddg-web/lectures/DDG-Integration.pdf">Integration</a>. This note is supposed to be more down-to-eart, application-oriented, intuitive, and scraggly than the other one.</p>
+    <p>This is a primer on exterior calculus, which is the study of differential forms and their differentiation and integration. I wrote a similar note before, titled  <a href="https://pkhungurn.github.io/notes/notes/math/diff-form-primer/index.html">"A Primer on Differential Forms."</a> However, that one is too long and too mathy. This note is more concise and based on materials from Keenan Crane's course on <a href="https://brickisland.net/ddg-web/">discrete differential geometry</a>; that is, Chapter 4 of the <a href="https://www.cs.cmu.edu/~kmcrane/Projects/DDG/paper.pdf">course notes</a> and slides about <a href="https://brickisland.net/ddg-web/lectures/DDG-ExteriorAlgebra.pdf">Exterior Algebra</a>, <a href="https://brickisland.net/ddg-web/lectures/DDG-kForms.pdf">$k$-forms</a>, <a href="https://brickisland.net/ddg-web/lectures/DDG-DifferentialForms.pdf">Differential Forms</a>, and <a href="https://brickisland.net/ddg-web/lectures/DDG-ExteriorDerivative.pdf">Exterior Derivatives</a> and <a href="https://brickisland.net/ddg-web/lectures/DDG-Integration.pdf">Integration</a>. This note is supposed to be more down-to-earth, application-oriented, intuitive, and scraggly than the other one.</p>
 
     <hr>
 
-    <h2>1 &nbsp; Overview</h2>
+    <h2>1 &nbsp; An Informal Introduction</h2>
 
-    <p>Vector algebra</b> is about "little arrows."</p>
+    <h3>1.1 &nbsp; Integration in the Lense of Measurements of Infinitesimal Volumes</h3>    
+
+    <p>The main use of exterior calculus is to formulate integration on manifolds. However, let us talk about normal integration that we are familiar with first.</p>
+
+    <hr>
+
+    <p>That is, we are familiar with $k$-dimensional integral. We are given a function $f: \Real^k \ra \Real$. And, given a set $U \subseteq \Real^K$, we know how to compute the integral
+    \begin{align*}
+        \int_U f(\ve{u}) \, \dee \ve{u}
+    \end{align*}
+    which is
+    \begin{align*}
+        \int_U f(\ve{u}) \, \dee u^1 \dee u^2 \dotsm  \dee u^k.
+    \end{align*}    
+    </p>
+
+    <p>Notice here that we use Spivak's notation. We index the dimension by superscripts, not subscripts. In other words, we write $\ve{u} = (u^1, u^2, \dotsc, u^k)^T$.</p>
+
+    <hr>
+
+    <p></p>
+
+    <hr>
+
+    <h3>1.2 &nbsp; Integration on Manifolds</h3>
+
+    
+
+    <hr>
+
+    <p>We will formally define what a manifold is later. For now, let's just say that they are <b>parameterized shapes</b>: parameterized lines, parameterized curves, and parametermized volumes and so on.</p>
+
+    <p>That is, a <b>$k$-manifold</b> $M$ is a set of points in $\Real^n$ that is an image of a set $U \subseteq \Real^k$ under a vector function $\ve{g}: \Real^k \ra \Real^n$ that is bijective and differentiable (i.e., a <i>diffeomorphism</i>).</p>
+
+    <p>So, for each $\ve{x} \in M$, there exists $\mcal{u} \in \Real^k$ such that $\ve{g}(\ve{u}) = \ve{x}$.</p>
+
+    <hr>
+
+<!--
+    
+    
     
     <hr>
 
@@ -227,6 +267,7 @@
     \end{align*}
     At this point, it seems that there should be $n^k$ basis blades for $\Lambda^k(\mcal{V})$. However, recall that the antisymmetry property of the wedge product allows us to swap the vectors inside each wedge project in any order we want. As a result, the ordering of the basis vectors in each blade above is not important. The only important thing is what vectors are present in that blade. Therefore, there are actually ${n \choose k}$ different blades, which and each corresponds to a sequence $1 \leq i_1 < i_2 < \dotsm < i_k \leq n$.
     </p>
+-->
 
     <hr>
     
