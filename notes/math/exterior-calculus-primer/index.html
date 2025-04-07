@@ -113,15 +113,15 @@
 
     <h2>2 &nbsp; Exterior Algebra</h2>
 
-    <h2>2.1 &nbsp; $k$-tensors and $k$-alts</h2>
+    <h2>2.1 &nbsp; Motivation</h2>
 
-    <p>A common knowledge from vector calculus is how to compute the volume of an $n$-dimensional parallelipiped.</p>
+    <p>A common knowledge from vector calculus is how to compute the volume of an $n$-dimensional parallelotope.</p>
     
-    <p>Here, we are given $n$ vectors $\ve{v}_1$, $\ve{v}_2$, $\ve{v}_3$, $\dotsc$, $\ve{v}_n$. The <b>parallelipiped</b> defined by the above vector is the set $$\{ c_1\ve{v}_1 + c_2\ve{v}_2 + \dotsb + c_n\ve{v}_n : 0 \leq c_1, c_2, \dotsc, c_n \leq 1\}.$$</p>
+    <p>Here, we are given $n$ vectors $\ve{v}_1$, $\ve{v}_2$, $\ve{v}_3$, $\dotsc$, $\ve{v}_n$. The <b>parallelotope</b> defined by the above vector is the set $$\{ c_1\ve{v}_1 + c_2\ve{v}_2 + \dotsb + c_n\ve{v}_n : 0 \leq c_1, c_2, \dotsc, c_n \leq 1\}.$$</p>
 
     <hr>
 
-    <p>The <b>signed volume</b> of the parallelipiped is given by
+    <p>The <b>signed volume</b> of the parallelotope is given by
     \begin{align*}
         \mbox{signed volume of paralellipiped} = \det \left( \begin{bmatrix} \ve{v}_1 & \ve{v}_2 & \dotsc & \ve{v}_n \end{bmatrix} \right).
     \end{align*}
@@ -147,120 +147,85 @@
 
     <hr>
 
-    <p>The main object of study of exterior algebra is the <b>$k$-alternating tensor</b>, which represents signed volumes of parallelipiped defined by $k$ vectors.
+    <h2>$k$-Blades and $k$-Vectors</h2>
+
+    <p><b>Definition.</b> Let $\mcal{V}$ be a finite-dimensional vector space. A <b>$k$</b>-blade on $\mcal{V}$ is an expression of the form
+    \begin{align*}
+        \ve{v}_1 \wedge \ve{v}_2 \wedge \dotsc \wedge \ve{v}_k
+    \end{align*}
+    where $\ve{v}_i \in \mcal{V}$ for all $1 \leq i \leq k$. The operator $\wedge$ is called the <b>wedge product</b> or an <b>exterior product</b>.
+    </p>
+
+    <p>Intuitively, a $k$-blade represents the parallelotope formed by $\ve{v}_1$,  $\ve{v}_2$, $\dotsc$, $\ve{v}_k$. This is not quite the case, but let's entertain this concept for a bit.</p>
+
+    <hr>
+
+    <p>To make definition easier, let us define a $0$-blade to be the number 1.</p>
+
+    <hr>
+
+    <p><b>Definition.</b> A <b>$k$-vector</b> is a (formal) linear combination of $k$-blades with real coefficients.</p>
+
+    <hr>
+
+    <p>So,
     <ul>
-        <li>"$k$-alternating tensor" is quite mouthful. Let's just call it <b>$k$-alt</b> in this note.</li>
-        <li>A parallelipiped is determined by $k$ vectors that comes from a $k$-dimensional vector space.</li>
-        <li>So, a $k$-alt should takes in a list of $k$ vectors and spits out a real number.</li>
-        <li>To make $k$-alt agree with conventional notion of signed volume, we require that a $k$-alt be linear in all of its argument and also alternating.</li>
+        <li>A $0$-vector is just a scalar because a linear combination of scalar is just another scalar.</li>
+
+        <li>A $1$-vector is just a vector in $\mcal{V}$ because a linear combinarion of vectors is just another vector.</li>
+
+        <li>A $2$-vector is more complicated. It looks like $(1,0,0) \wedge (0,1,0)$ or $(1,1,0) \wedge (0,0,1) + 10 \times (0,2,5) \wedge (10, 20, 30)$. </li>
     </ul>
     </p>
 
     <hr>
-    
-    <p>Note that, in the above discussion, we dropped the notion that each of the $k$ vectors above needs to be $k$-dimensional.
+
+    <p>The wedge product is an operator with the following rules that are designed to mimic the determinant function.
     <ul>
-        <li>This is because we want to talk about volumes of manifolds that are embedded in higher dimensional space.</li>
+        <li><b>Mulitilinearity.</b> The wedge product is linear in all its arguments. That is,
+        \begin{align*}
+            \ve{v}_1 \wedge \dotsm \wedge  (c \ve{v}_i) \wedge \dotsm \wedge \ve{v}_k &= c (\ve{v}_1 \wedge \dotsm \wedge  \ve{v}_i \wedge \dotsm \wedge \ve{v}_k) \\
+            \ve{v}_1 \wedge \dotsm \wedge  (\ve{v}_i + \ve{w}_i) \wedge \dotsm \wedge \ve{v}_k &= \ve{v}_1 \wedge \dotsm \wedge  \ve{v}_i \wedge \dotsm \wedge \ve{v}_k + \ve{v}_1 \wedge \dotsm \wedge  \ve{w}_i \wedge \dotsm \wedge \ve{v}_k
+        \end{align*}
+        for any scalar $c \in \Real$ and any vectors $\ve{w}_i, \ve{v}_1, \ve{v}_2, \dotsc, \ve{v}_k \in \mcal{V}$.
+        </li>
 
-        <li>For example, we might talk about lengths of curves in 3D spaces or area of a surface in 3D space.</li>
-
-        <li>For the notion of length (i.e. 1D volume), we can think of the length of 1 vector, but the vector is actually in 3D.</li>
-
-        <li>For the notion of area (i.e., 2D volume), we can think of the parallelipiped defined by two 3D vectors.</li>
-
-        <li>So, the inputs to a $k$-alt need not have $k$-dimensions. Usually, it has more dimensions than $k$.</li>
-    </ul></p>
-    </li>
-
-    <hr>
-
-    <p><b>Definition.</b> Let $\mcal{V}$ be a finite-dimensional real vector space. A $k$-tensor is a function $f: \mathcal{V}^k \ra \Real$ that is linear in all of its argument.</p>
-
-    <hr>
-    
-    <p><b>Definition.</b> The set of $k$-tensors on $\mcal{V}$ is denoted by $\mcal{L}^k(\mcal{V})$.</p>
-
-    <hr>
-
-    <p><b>Definition.</b> A $k$-tensor $f$ is <b>alternating</b> if
-    \begin{align*}
-        f(\ve{v}_1, \dotsc, \ve{v}_i, \ve{v}_{i+1}, \dotsc, \ve{v}_k) = f(\ve{v}_1, \dotsc, \ve{v}_{i+1}, \ve{v}_{i}, \dotsc, \ve{v}_k)
-    \end{align*}
-    for all $1 \leq i \leq k-1$. We call an alternating $k$-tensor a <b>$k$-alt</b>.</p>    
-
-    <hr>
-
-    <p><b>Definition.</b> The set of $k$-alts on $\mcal{V}$ is denoted by $\mcal{A}^k(\mcal{V})$.</p></p>
-
-    <hr>
-
-    <p>Given a $k$-tensor, which may not be alternating, we can turn it into a $k$-alt by the following $\operatorname{Alt}$ operator.</p>
-
-    <p><b>Definition.</b> Given $f \in \mcal{L}^k(\mcal{V})$, define $\operatorname{Alt}(f)$ by
-    \begin{align*}
-        \operatorname{Alt}(f)(\ve{v}_1, \ve{v}_2, \dotsc, \ve{v}_k) = \frac{1}{k!} \sum_{\pi \in \mathfrak{S}_k} \sgn(\pi)\, f(\ve{v}_{\pi(1)}, \ve{v}_{\pi(2)}, \dotsc, \ve{v}_{\pi(k)}).
-    \end{align*}
-    We have that $\operatorname{Alt}(f) \in \mcal{A}^k(\mcal{V})$ by construction.
+        <li><b>Antisymmetry.</b> Swapping a pair of adjacent vectors in a blade negates the sign of the blade.
+        \begin{align*}
+        \ve{v}_1 \wedge \dotsm \wedge \ve{v}_i \wedge \ve{v}_{i+1} \wedge \dotsm \wedge \ve{v}_k &= - \ve{v}_1 \wedge \dotsm \wedge  \ve{v}_{i+1} \wedge \ve{v}_i \wedge \dotsm \wedge \ve{v}_k.
+        \end{align*}
+        </li>
+    </ul>
     </p>
 
     <hr>
 
-    <h2>2.2 &nbsp; Structure of $\mcal{L}^k(\mcal{V})$</h2>
-
-    <p>We can regard $\mcal{L}^k(\mcal{V})$ as a vector space because we can define addition of tensors and multiplication of tensors by a real number as follows:
-    \begin{align*}
-    (f+g)(\ve{v}_1, \dotsc, \ve{v}_k) &= f(\ve{v}_1, \dotsc, \ve{v}_k) + g(\ve{v}_1, \dotsc, \ve{v}_k), \\
-    (cf)(\ve{v}_1, \dotsc, \ve{v}_k) &= c \big( f(\ve{v}_1, \dotsc, \ve{v}_k)\big).
-    \end{align*}
-    </p>
+    <p>It is obvious that $k$-vectors form a vector space. The vector space of $k$-vectors on $\mcal{V}$ is denoted by $\Lambda^k(\mcal{V})$.</p>
 
     <hr>
 
-    <p>Consider the space $\mcal{L}^1(\mcal{V})$ of 1-tensors. An 1-tensor $f$ is just a linear function of signature $\mcal{V} \ra \Real$.</p>
+    <p>How many dimensions does $\Lambda^k(\mcal{V})$ have? It's actually ${n \choose k}$.</p>
 
-    <p>Let $\mcal{V}$ have $n$-dimensions, and let $\ve{e}_1$, $\ve{e}_2$, $\dotsc$, $\ve{e}_n$ be an orthonomal basis vectors of $\mcal{V}$.</p>
-
-    <p>Then, we have that, for any $\ve{v} \in \mcal{V}$, we can write $\ve{v} = a_1 \ve{e}_1 + a_2 \ve{e}_2 + \dotsb + a_n\ve{e}_n$ for some unique combination of $a_1, a_2, \dotsc, a_n$. As a result,
+    <p>The way to see this is to introduce a basis $\ve{e}_1$, $\ve{e}_2$, $\dotsc$, $\ve{e}_n$ of $\mcal{V}$. It follows that there is a unique matrix $A = [a_{ij}] \in \Real^{n \times k}$ such that 
     \begin{align*}
-        f(\ve{v}) = f(a_1 \ve{e}_1 + a_2 \ve{e}_2 + \dotsb + a_n\ve{e}_n) = a_1 f(\ve{e}_1) + a_2 f(\ve{e}_2) + \dotsb + a_n f(\ve{e}_n).
+    \begin{bmatrix}
+        \ve{v}_1 & \ve{v}_2 & \cdots & \ve{v}_k
+    \end{bmatrix}
+    = \begin{bmatrix}
+        \ve{e}_1 & \ve{e}_2 & \cdots & \ve{e}_k
+    \end{bmatrix}
+    \begin{bmatrix}
+        a_{11} & a_{12} & \cdots & a_{1k} \\
+        a_{21} & a_{22} & \cdots & a_{2k} \\
+        \vdots & \vdots & \ddots  & \vdots \\
+        a_{n1} & a_{n2} & \cdots & a_{nk} 
+    \end{bmatrix}.    
     \end{align*}
-    So, the value of $f$ is completely determined by the values $f(\ve{e}_1)$, $f(\ve{e}_2)$, $f(\ve{e}_3)$, $\dotsc$, and $f(\ve{e}_n)$.
-    </p>
-
-    <p>For each $1 \leq i \leq n$, define $\phi_i$ to be a function such that
+    So, using the multi-linear property of the wedge project, we can expand $\ve{v}_1 \wedge \ve{v}_2 \wedge \dotsm \wedge \ve{v}_k$ as follows:
     \begin{align*}
-        \phi_i(a_1 \ve{e}_1 + a_2 \ve{e}_2 + \dotsb + a_n\ve{e}_n) = a_i.
+        \ve{v}_1 \wedge \ve{v}_2 \wedge \dotsm \wedge \ve{v}_k = \sum_{(i_1, i_2, \dotsc, i_k) \in \{1, \dotsc, n\}^k} a_{i_1 1} a_{i_2 2} \dotsm a_{i_k k}\, \ve{e}_{i_1} \wedge \ve{e}_{i_2} \wedge \dotsm \wedge \ve{e}_{i_k}.
     \end{align*}
-    That is, $\phi_i$ figures out coefficient of $\ve{e}_i$ of the input vector. We have that $\phi_i \in \mcal{L}^1(\mcal{V})$.
-    </p>
-
-    <p>Moreover, $\phi_1$, $\phi_2$, $\dotsc$, $\phi_n$ are basis vectors of $\mcal{L}^1(\mcal{V})$. Thus, $\mcal{L}^1(\mcal{V})$ has $n$ dimensions.</p>
-
-    <hr>
-
-    <p>In particular, we can deduce that $\mcal{L}^k(\mathcal{V})$ has $n^k$ dimensions.</p>
-
-    <p>The basis functions for $\mcal{L}^ki(\mathcal{V})$ can be defined as follows. Let $I = (i_1, i_2, \dotsc, i_k) \in \{ 1, 2, \dotsc, n \}^k$. Define
-    \begin{align*}
-        \phi_I(\ve{v}_1, \ve{v}_2, \dotsc, \ve{v}_k) = \phi_{i_1}(\ve{v}_1) \phi_{i_2}(\ve{v}_2) \dotsm \phi_{i_k}(\ve{v}_k).
-    \end{align*}
-    Then, the collection of $\phi_I$ for all possible tuples $I$ is the basis function of $\mcal{L}^k(\mathcal{V})$. These are called <b>elementary $k$-tensors.</b>
-    </p>
-
-    <hr>
-
-    <h3>2.3 &nbsp; Tensor Product and Wedge Product</h3>
-
-    <p>We see from the discussion of the basis functions of $\mcal{L}^k(\mathcal{V})$ that a $k$-tensor can be created from products of tensors having lower dimension. This is quite natural because, if we think of dimensions as being orthogonal to one another, then the volume in higher dimension equals to the product of volumes in lower dimensions.</p>
-
-    <hr>
-
-    <p>The tensor product is an operation that captures the above intuition.</p>
-
-    <p><b>Definition.</b> Let $f$ be a $k$-tensor and $g$ be an $\ell$-tensor. The <b>tensor product</b> $f \otimes g$ is a $(k+\ell$)-tensor define as follows:
-    \begin{align*}
-        (f \otimes g)(\ve{v}_1, \dotsc, \ve{v}_k, \ve{v}_{k+1}, \dotsc, \ve{v}_{k+\ell}) = f(\ve{v}_1, \dotsc, \ve{v}_k) g(\ve{v}_{k+1}, \dotsc, \ve{v}_{k+\ell})
-    \end{align*}
+    At this point, it seems that there should be $n^k$ basis blades for $\Lambda^k(\mcal{V})$. However, recall that the antisymmetry property of the wedge product allows us to swap the vectors inside each wedge project in any order we want. As a result, the ordering of the basis vectors in each blade above is not important. The only important thing is what vectors are present in that blade. Therefore, there are actually ${n \choose k}$ different blades, which and each corresponds to a sequence $1 \leq i_1 < i_2 < \dotsm < i_k \leq n$.
     </p>
 
     <hr>
