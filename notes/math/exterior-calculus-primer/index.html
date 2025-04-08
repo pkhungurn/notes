@@ -91,41 +91,512 @@
 
     <p>The main use of exterior calculus is to formulate integration on manifolds. However, let us talk about normal integration that we are familiar with first.</p>
 
+    <hr>
+
     <h3>1.1 &nbsp; The Base Case</h3>        
+
+    <p>We will be using Spivak's notation. That is, we index the dimension by superscripts, not subscripts.</p>
+
+    <p>In other words, we write a vector $\ve{x} \in \Real^n$ as $\ve{x} = (x^1, x^2, \dotsc, x^n)^T$.</p>
 
     <hr>
 
-    <p>We are familiar with $k$-dimensional integral. We are given a function $f: \Real^k \ra \Real$. And, given a set $U \subseteq \Real^K$, we know how to compute the integral
+    <p>We are familiar with $k$-dimensional integral.</p>
+
+    <p>We are given a function $f: \Real^n \ra \Real$. And, given a set $A \subseteq \Real^K$, we know how to compute the integral
     \begin{align*}
-        \int_U f(\ve{u}) \, \dee \ve{u}
+        \int_A f(\ve{x}) \, \dee \ve{x}
     \end{align*}
     which is
     \begin{align*}
-        \int_U f(\ve{u}) \, \dee u^1 \dee u^2 \dotsm  \dee u^k.
+        \int_A f(\ve{x}) \, \dee x^1 \dee x^2 \dotsm  \dee x^n.
+    \end{align*}</p>
+
+    <p>The value of this integral is defined by the Riemann integration, the Riemann-Stieltjes integral, the Lebesque intregal, or what have you.</p>
+
+    <hr>
+
+    <p>The above multi-dimensional integral is our base case. Everything we do in this note will reduce to it in some form or another. Once we reach this base case, we shut up and calculate with our knowledge of freshman year calculus.</p>
+
+    <hr>
+
+    <h3>1.2 &nbsp; Exterior Calculus Notations</h3>
+
+    <p>In exterior calculus, we don't use the symbol $\dee x^1 \dee x^2 \dotsm \dee x^n$. Instead, we write
+    \begin{align*}
+        \dee x^1 \wedge \dee x^2 \wedge \dotsb \wedge \dee x^n
+    \end{align*}
+    where $\wedge$ is an operator called the <b>wedge product</b>. Using the above expression, the multi-dimensional integral above becomes
+    \begin{align*}
+        \int_A f(\ve{x}) \, \dee x^1 \wedge \dee x^2 \wedge \dotsb \wedge \dee x^n.
     \end{align*}    
+    </p>        
+
+    <hr>
+
+    <p>We call an expression of the form $\dee x^1 \wedge \dee x^2 \wedge \dotsb \wedge \dee x^n$ an <b>$n$-form</b>.</p>
+
+    <hr>
+
+    <p>We call an expression of the form $f(\ve{x})\, \dee x^1 \wedge \dee x^2 \wedge \dotsb \wedge \dee x^n$ a <b>differential $n$-form</b>.</p>
+
+    <hr>
+
+    <p>Writing $\dee x^1 \wedge \dee x^2 \wedge \dotsb \wedge \dee x^n$ is quite handful. We introduce two notations to shorten them.
+    <ul>
+        <li>If we let $I = (1,2,\dotsc,n)$, then we can write $\dee x^I$ as a substitute for $\dee x^1 \wedge \dee x^2 \wedge \dotsb \wedge \dee x^n$.</li>
+
+        <li>We can also write $dx^{1,2,\dotsc,n}$ in place of $\dee x^1 \wedge \dee x^2 \wedge \dotsb \wedge \dee x^n$.</li>
+    </ul>
+    </p>    
+
+    <hr>
+
+    <h3>1.3 &nbsp; The Classic Change of Variable Formula</h3>
+
+    <p>We now discuss the change of variable fomula, which will force us to discuss how infinitestimal volumes change under transformation. Exterior calculus provides a language for discussing infinitestimal volumes, so it is a good point to start.</p>
+
+    <hr>
+
+    <p>First, let us state the change of variable formula using the old notation</p>
+
+    <p><b>Theorem (Change of Variable Formula).</b> Let $f: \Real^n \ra \Real$ and let $\ve{g}: \Real^n \ra \Real^n$ be a diffeomorphism on the set $A \subseteq \Real^n$. Let $B = \{ \ve{g}(\ve{x}) : \ve{x} \in A \}$. Then,
+    \begin{align*}
+        \int_B f(\ve{y})\, \dee y^1 \dee y^2 \dotsm \dee y^n = \int_A f(\ve{g}(\ve{x})) (\det \nabla \ve{g}(\ve{x}))\, \dee x^1 \dee x^2 \dotsm \dee x^n.
+    \end{align*}
     </p>
 
-    <p>Notice here that we use Spivak's notation. We index the dimension by superscripts, not subscripts. In other words, we write $\ve{u} = (u^1, u^2, \dotsc, u^k)^T$.</p>
+    <hr>
+
+    <p>To make sense of the change of variable formula, we needs to reinterpret integrals as accumulating contributions of infinitesimal volumes.</p>
 
     <hr>
 
-    <p></p>
+    <p>To make this more precise, we think of each point $\ve{y} \in B$ as being associated with a parallelotope
+    \begin{align*}
+        \bigg[y^1, y^1 + \dee y^1 \bigg] \times \bigg[y^2, y^2 + \dee y^2 \bigg] \times \dotsm \times \bigg[y^n, \dee y^n \bigg].
+    \end{align*}
+    where $\dee y^1$, $\dee y^2$, $\dotsc$, $\dee y^n$ are meant to represent infinitestimal quantity. (We'll assign a different meaning to it later.) The volume of this parallelotop is simply
+    \begin{align*}
+        \dee y^1 \dee y^2 \dotsm \dee y^n,
+    \end{align*}
+    and the contribution of the point $\ve{y}$ is given by
+    \begin{align*}
+        f(\ve{y})\, \dee y^1 \dee y^2 \dotsm \dee y^n.
+    \end{align*}
+    The integral $\int_B f(\ve{y})\, \dee y^1 \dee y^2 \dotsm \dee y^n$ tells us to add all the contribution of all points $\ve{y}$ up. 
+    </p>
 
     <hr>
 
-    <h3>1.2 &nbsp; Integration on Manifolds</h3>
+    <p>To get the RHS of the change of variable formula, we note that the law of total derivative tells us that, for any $i$,
+    \begin{align*}
+        \dee y^i 
+        &= \frac{\partial  y^i}{\partial x^1} \dee x^1 + \frac{\partial y^i}{\partial x^2} \dee x^2 + \dotsb + \frac{\partial y^i}{\partial x^n} \dee x^n \\
+        &= \frac{\partial  g^i(\ve{x})}{\partial x^1} \dee x^1 + \frac{\partial g^i(\ve{x})}{\partial x^2} \dee x^2 + \dotsb + \frac{\partial g^i(\ve{x})}{\partial x^n} \dee x^n \\
+        &= \sum_{j=1}^n \frac{\partial g^i(\ve{x})}{\partial x^j} \dee x^j.
+    \end{align*}
+    As a result,
+    \begin{align*}
+        \dee y^1 \dee y^2 \dotsm \dee y^n = \bigg( \sum_{j=1}^n \frac{\partial \ve{g}^1(\ve{x})}{\partial x^j} \dee x^j \bigg) \bigg( \sum_{j=1}^n \frac{\partial \ve{g}^2(\ve{x})}{\partial x^j} \dee x^j \bigg) \dotsm \bigg( \sum_{j=1}^n \frac{\partial \ve{g}^n(\ve{x})}{\partial x^j} \dee x^j \bigg).
+    \end{align*}
+    Now, by some weird reasoning about volumes and the determinant function, we can conclude that 
+    \begin{align*}
+    & \bigg( \sum_{j=1}^n \frac{\partial \ve{g}^1(\ve{x})}{\partial x^j} \dee x^j \bigg) \bigg( \sum_{j=1}^n \frac{\partial \ve{g}^2(\ve{x})}{\partial x^j} \dee x^j \bigg) \dotsm \bigg( \sum_{j=1}^n \frac{\partial \ve{g}^n(\ve{x})}{\partial x^j} \dee x^j \bigg) \\
+    &= \det \begin{bmatrix}
+        \frac{\partial g^1(\ve{x})}{\partial x^1} & \frac{\partial g^1(\ve{x})}{\partial x^2} & \cdots & \frac{\partial g^1(\ve{x})}{\partial x^n} \\
+        \frac{\partial g^2(\ve{x})}{\partial x^1} & \frac{\partial g^2(\ve{x})}{\partial x^2} & \cdots & \frac{\partial g^2(\ve{x})}{\partial x^n} \\
+        \vdots & \vdots & \ddots & \vdots \\
+        \frac{\partial g^n(\ve{x})}{\partial x^1} & \frac{\partial g^n(\ve{x})}{\partial x^2} & \cdots & \frac{\partial g^n(\ve{x})}{\partial x^n} 
+    \end{bmatrix}
+    \, \dee x^1 \dee x^2 \dotsm \dee x^n \\
+    &= \big( \det \nabla \ve{g}(\ve{x}) \big)\, \dee x^1 \dee x^2 \dotsm \dee x^n.
+    \end{align*}
+    So, the contribution of point $\ve{x} \in A$ is $f(\ve{y}) \big( \det \nabla \ve{g}(\ve{x}) \big)\, \dee x^1 \dee x^2 \dotsm \dee x^n = f(\ve{g}(\ve{x})) \big( \det \nabla \ve{g}(\ve{x}) \big)\, \dee x^1 \dee x^2 \dotsm \dee x^n$. So, we have
+    \begin{align*}
+        \int_B f(\ve{y})\, \dee y^1 \dee y^2 \dotsm \dee y^n = \int_A f(\ve{g}(\ve{x})) (\det \nabla \ve{g}(\ve{x}))\, \dee x^1 \dee x^2 \dotsm \dee x^n.
+    \end{align*}
+    </p>
 
+    <hr>
+
+    <h3>1.4 &nbsp; Tangent Spaces</h3>
+
+    <p>To see the change of variable formula through the lense of exterior calculus, we need to reinterpret the notion of infinitesimal volumes.</p>
+
+    <hr>
+
+    <p>In the view of exterior calculus, each point $\ve{x}$ in $\Real^n$ has an associated vector space isomorphic to $\Real^n$ called the <b>tangent space</b>.</p>
+
+    <p><b>Definition.</b> Let $\ve{x} \in \Real^n$. A <b>tangent vector</b> at $\ve{x}$ is a tuple $(\ve{x}; \ve{v})$ where $\ve{v} \in \Real^n$. The tangent vectors at $\ve{x}$ can be added and multiplied by scalar as follows:
+    \begin{align*}
+        (\ve{x};\ve{v}) + (\ve{x};\ve{w}) &= (\ve{x};\ve{v} + \ve{w}) \\
+        c (\ve{x};\ve{v}) + (\ve{x}; c\ve{v})
+    \end{align*}
+    for any $\ve{v}, \ve{w} \in \Real^n$ and $c \in \Real$. The set of all tangent spaces at $\ve{x}$ forms an $n$-dimensional vector space isomorphic to $\Real^n$. It is denoted by $\mcal{T}_\ve{x}(\Real^n)$.
+    </p>
+
+    <hr>
     
+    <p>The tangent space at $\ve{x}$ can be thought of as a space of infinitesimal vectors eminating from $\ve{x}$. It gives a local linear space near $\ve{x}$.</p>
 
     <hr>
 
-    <p>We will formally define what a manifold is later. For now, let's just say that they are <b>parameterized shapes</b>: parameterized lines, parameterized curves, and parametermized volumes and so on.</p>
+    <p>Let $\ve{e_1}$, $\ve{e_2}$, $\dotsc$, $\ve{e_n}$ be $n$-dimensional one-hot vectors. We have that these vectors form the standard orthonomal basis of $\Real^n$.</p>
 
-    <p>That is, a <b>$k$-manifold</b> $M$ is a set of points in $\Real^n$ that is an image of a set $U \subseteq \Real^k$ under a vector function $\ve{g}: \Real^k \ra \Real^n$ that is bijective and differentiable (i.e., a <i>diffeomorphism</i>).</p>
-
-    <p>So, for each $\ve{x} \in M$, there exists $\mcal{u} \in \Real^k$ such that $\ve{g}(\ve{u}) = \ve{x}$.</p>
+    <p>As a result, $(\ve{x};\ve{e_1})$, $(\ve{x};\ve{e_2})$, $\dotsc$, $(\ve{x};\ve{e_n})$ form the standard orthonomal basis of $\mcal{T}_\ve{x}(\Real^n)$. We shall denote them by
+    \begin{align*}
+        \frac{\partial}{\partial x^1}\bigg|_{\ve{x}},
+        \frac{\partial}{\partial x^2}\bigg|_{\ve{x}},
+        \dotsc,
+        \frac{\partial}{\partial x^n}\bigg|_{\ve{x}},
+    \end{align*}
+    respectively.
+    </p>
 
     <hr>
+
+    <p>Consider a diffeomorphism $\ve{g}: A \ra B$ where $A, B \subseteq \Real^n$. We know that, for any $\ve{x} \in A$ and $\ve{v} \in \Real^n$,
+    \begin{align*}
+        \lim_{t \ra 0} \frac{\ve{g}(\ve{x} + t\ve{v}) - \ve{g}(\ve{x})}{t} = \nabla \ve{g}(\ve{x})\, \ve{v}.
+    \end{align*}
+    In other words, if $\ve{y} = \ve{g}(\ve{x})$, then
+    \begin{align*}
+        g(\ve{x} + t\ve{v}) \approx \ve{y} + t \nabla \ve{g}(\ve{x})\, \ve{v}.
+    \end{align*}
+    for any $t$ that is small enough. So, if we think of $\ve{v}$ as a vector in the tangent space $\mcal{T}_{\ve{x}}(\Real^n)$, then there is a natual correspondence between $\ve{v}$ and $\nabla \ve{g}(\ve{x})\, \ve{v}$, which can be thought of as a vector in $\mcal{T}_{\ve{y}}(\Real^n)$.
+    </p>
+
+    <hr>
+
+    <p>The notion of the <b>pushforward</b> captures this natual correspondence.
+    
+    <p><b>Definition (Pushforward).</b> Let $A, B$ be open subsets of $\Real^n$. Let $\ve{g}: A \ra B$ be a diffeomorophism. The <b>pushforward</b> of $\ve{g}$, denoted by $\ve{g}_*$ is a map defined by
+    \begin{align*}
+        \ve{g}_*((\ve{x};\ve{v})) = (\ve{g}(\ve{x}); \nabla \ve{g}(\ve{x})\, \ve{v})
+    \end{align*}
+    for all $\ve{x} \in A$ and all $\ve{v} \in \mcal{T}_\ve{x}(\Real^n)$. In other words, we have that
+    \begin{align*}
+        \ve{g}_*\bigg( \frac{\partial}{\partial x^j}\bigg|_{\ve{x}} \bigg) = \sum_{i=1}^n \frac{\partial g^i(\ve{x})}{\partial x^j} \frac{\partial}{\partial y^i}\bigg|_{\ve{y}}
+    \end{align*}
+    for all $1 \leq j \leq n$.
+    </p>
+
+    <hr>
+
+    <h3>1.5 &nbsp; Infinitesimal Volumes</h3>
+
+    <p>We use infinitesimal volumes when we try to interpret integral. In exterior calculus, an infinitestimal volume is just a normal volume in tangent space. In other words, when we want to discuss the volume
+    \begin{align*}
+        [x^1 + \dee x^1] \times [x^2 + \dee x^2] \times \dotsm \times [x^n + \dee x^n],
+    \end{align*}
+    we will instead discuss the parallelotope
+    \begin{align*}
+        \bigg\{ c^1 \frac{\partial}{\partial x^1}\bigg|_{\ve{x}} + c^2 \frac{\partial}{\partial x^2}\bigg|_{\ve{x}} + \dotsb + c^n \frac{\partial}{\partial x^n}\bigg|_{\ve{x}} : 0 \leq c^1, c^2, \dotsc, c^n \leq \leq 1 \bigg\}
+    \end{align*}
+    in the tangent space $\mcal{T}_\ve{x}(\Real^n)$ instead.
+    </p>
+
+    <hr>
+    
+    <p>We see that the parallelotope above is made up of $n$ vectors. Moreover, the only thing we care about this parallelotope from the perspective of integration is its signed volume. </p>
+
+    <hr>
+
+    <p>A common knowledge from vector calculus is how to compute the signed volume of such an $n$-dimensional parallelotope.</p>
+    
+    <p>That is, suppose that we are given $n$ vectors $\ve{v}_1$, $\ve{v}_2$, $\ve{v}_3$, $\dotsc$, $\ve{v}_n$. The signed volume of the parallelotope $$\{ c^1\ve{v}_1 + c^2\ve{v}_2 + \dotsb + c^n\ve{v}_n : 0 \leq c^1, c^2, \dotsc, c^n \leq 1\}$$</p>
+    is given by
+    \begin{align*}
+        \det \left( \begin{bmatrix} \ve{v}_1 & \ve{v}_2 & \dotsc & \ve{v}_n \end{bmatrix} \right).
+    \end{align*}
+    For simplicity, let's just use $\mathbb{V}(\ve{v}_1, \ve{v}_2, \ve{v}_3, \dotsc, \ve{v}_n)$ to denote the expression above.</p>
+    
+    <hr>
+
+    <p>Properties of the determinant function tell us about properties of the signed volume.</p>
+
+    <p>First, the signed volume is <b>linear in the $i$th argument</b> for all $i$. In other words, for any $1 \leq i \leq n$,
+    \begin{align*}
+        \mathbb{V}(\ve{v}_1, \dotsc, \ve{v}_{i-1}, c^i \ve{v}_{i}, \ve{v}_{i+1}, \dotsc, \ve{v}_n) &= c^i \mathbb{V}(\ve{v}_1, \dotsc, \ve{v}_{i-1}, \ve{v}_{i}, \ve{v}_{i+1}, \dotsc, \ve{v}_n) \\
+        \mathbb{V}(\ve{v}_1, \dotsc, \ve{v}_{i-1}, \ve{v}_{i} + \ve{w}_i, \ve{v}_{i+1}, \dotsc, \ve{v}_n) &= \mathbb{V}(\ve{v}_1, \dotsc, \ve{v}_{i-1}, \ve{v}_{i}, \ve{v}_{i+1}, \dotsc, \ve{v}_n) + \mathbb{V}(\ve{v}_1, \dotsc, \ve{v}_{i-1}, \ve{w}_{i}, \ve{v}_{i+1}, \dotsc, \ve{v}_n)
+    \end{align*}
+    for any constant $c^i \in \Real$ and vectors $\ve{w}_i, \ve{v}_1, \dotsc, \ve{v}_n \in \Real^n$.</p>
+        
+    <p>Second, the signed volume is <b>alternating</b>. This means that, for any $1 \leq i < n$, we have that
+    \begin{align*}
+    \mathbb{V}(\ve{v}_1, \dotsc, \ve{v}_{i}, \ve{v}_{i+1}, \dotsc, \ve{v}_n) = -\mathbb{V}(\ve{v}_1, \dotsc, \ve{v}_{i+1}, \ve{v}_i, \dotsc, \ve{v}_n).
+    \end{align*}
+    In particular, even permutation of input vectors preserve the sign of the volume, but odd permutations negate the sign.
+    </p>
+
+    <hr>
+
+    <h3>1.6 &nbsp; $k$-Blades and $k$-Vectors</h3>
+
+    <p>Exerterior calculus introduces the notion of <b>$k$-blades</b> and <b>$k$-vectors</b> to capture this notion of volumes created by vectors.</p>
+
+    <hr>
+
+    <p><b>Definition.</b> Let $\mcal{V}$ be an $n$-dimensional vector space. A <b>$k$</b>-blade on $\mcal{V}$ is an expression of the form
+    \begin{align*}
+        \ve{v}_1 \wedge \ve{v}_2 \wedge \dotsc \wedge \ve{v}_k
+    \end{align*}
+    where $\ve{v}_i \in \mcal{V}$ for all $1 \leq i \leq k$. The operator $\wedge$ is the "same" wedge project we used with $n$-forms.
+    </p>
+
+    <p>Intuitively, a $k$-blade represents the parallelotope formed by $\ve{v}_1$,  $\ve{v}_2$, $\dotsc$, $\ve{v}_k$. This is not quite the case, but let's entertain this concept for a bit.</p>
+
+    <hr>
+
+    <p>To make definition easier, let us define a $0$-blade to be the number 1.</p>
+
+    <hr>
+
+    <p><b>Definition.</b> A <b>$k$-vector</b> is a (formal) linear combination of $k$-blades with real coefficients.</p>
+
+    <hr>
+
+    <p>So,
+    <ul>
+        <li>A $0$-vector is just a scalar because a linear combination of scalar is just another scalar.</li>
+
+        <li>A $1$-vector is just a vector in $\mcal{V}$ because a linear combinarion of vectors is just another vector.</li>
+
+        <li>A $2$-vector is more complicated. It looks like $(1,0,0)^T \wedge (0,1,0)^T$ or $(1,1,0)^T \wedge (0,0,1)^T + 10 \times (0,2,5)^T \wedge (10, 20, 30)^T$. </li>
+    </ul>
+    </p>
+
+    <hr>
+
+    <p>The wedge product is an operator with the following rules that are designed to mimic the determinant function.
+    <ul>
+        <li><b>Multilinearity.</b> The wedge product is linear in all its arguments. That is,
+        \begin{align*}
+            \ve{v}_1 \wedge \dotsm \wedge  (c \ve{v}_i) \wedge \dotsm \wedge \ve{v}_k &= c (\ve{v}_1 \wedge \dotsm \wedge  \ve{v}_i \wedge \dotsm \wedge \ve{v}_k) \\
+            \ve{v}_1 \wedge \dotsm \wedge  (\ve{v}_i + \ve{w}_i) \wedge \dotsm \wedge \ve{v}_k &= \ve{v}_1 \wedge \dotsm \wedge  \ve{v}_i \wedge \dotsm \wedge \ve{v}_k + \ve{v}_1 \wedge \dotsm \wedge  \ve{w}_i \wedge \dotsm \wedge \ve{v}_k
+        \end{align*}
+        for any scalar $c \in \Real$ and any vectors $\ve{w}_i, \ve{v}_1, \ve{v}_2, \dotsc, \ve{v}_k \in \mcal{V}$.
+        </li>
+
+        <li><b>Antisymmetry.</b> Swapping a pair of adjacent vectors in a blade negates the sign of the blade.
+        \begin{align*}
+        \ve{v}_1 \wedge \dotsm \wedge \ve{v}_i \wedge \ve{v}_{i+1} \wedge \dotsm \wedge \ve{v}_k &= - \ve{v}_1 \wedge \dotsm \wedge  \ve{v}_{i+1} \wedge \ve{v}_i \wedge \dotsm \wedge \ve{v}_k.
+        \end{align*}
+        </li>
+    </ul>
+    </p>    
+
+    <hr>
+
+    <p>It is obvious that $k$-vectors form a vector space. The vector space of $k$-vectors on $\mcal{V}$ is denoted by $\Lambda^k(\mcal{V})$.</p>
+
+    <hr>
+
+    <p>How many dimensions does $\Lambda^k(\mcal{V})$ have? It's actually ${n \choose k}$.</p>
+
+    <p>The way to see this is to introduce a basis $\ve{e}_1$, $\ve{e}_2$, $\dotsc$, $\ve{e}_n$ of $\mcal{V}$. It follows that there is a unique matrix $A = [a_{ij}] \in \Real^{k \times n}$ such that 
+    \begin{align*}
+    \begin{bmatrix}
+        \ve{v}_1 \\ \ve{v}_2 \\ \cdots \\ \ve{v}_k
+    \end{bmatrix}
+    =  \begin{bmatrix}
+        a_{11} & a_{12} & \cdots & a_{1n} \\
+        a_{21} & a_{22} & \cdots & a_{2n} \\
+        \vdots & \vdots & \ddots  & \vdots \\
+        a_{k1} & a_{k2} & \cdots & a_{kn} 
+    \end{bmatrix}
+    \begin{bmatrix}
+        \ve{e}_1 \\ \ve{e}_2 \\ \cdots \\ \ve{e}_n
+    \end{bmatrix}.
+    \end{align*}
+    So, using the multi-linear property of the wedge project, we can expand $\ve{v}_1 \wedge \ve{v}_2 \wedge \dotsm \wedge \ve{v}_k$ as follows:
+    \begin{align*}
+        \ve{v}_1 \wedge \ve{v}_2 \wedge \dotsm \wedge \ve{v}_k = \sum_{(i_1, i_2, \dotsc, i_k) \in \{1, \dotsc, n\}^k} a_{1 i_1} a_{2 i_2} \dotsm a_{k i_k}\, \ve{e}_{i_1} \wedge \ve{e}_{i_2} \wedge \dotsm \wedge \ve{e}_{i_k}.
+    \end{align*}
+    At this point, it seems that there should be $n^k$ basis blades for $\Lambda^k(\mcal{V})$. However, recall that the antisymmetry property of the wedge product allows us to swap the vectors inside each wedge project in any order we want. As a result, the ordering of the basis vectors in each blade above is not important. The only important thing is what vectors are present in that blade. Therefore, there are actually ${n \choose k}$ different blades, which and each corresponds to a sequence $1 \leq i_1 < i_2 < \dotsm < i_k \leq n$.
+    </p>
+
+    <hr>
+
+    <p>In particular, let us discuss $\Lambda^n(\Real^n)$, which is the space of $n$-vectors on $\Real^n$.</p>
+
+    <p>We have that $\Lambda^n(\Real^n)$ has only one dimension, and the basis vector is $\ve{e}_1 \wedge \ve{e}_2 \wedge \dotsm \wedge \ve{e}_n$.</p>
+
+    <p>Moreover, the way the wedge product is designed, we have that, if $A = [a_{ij}] \in \Real^{n \times n}$ is a matrix such that
+    \begin{align*}
+    \begin{bmatrix}
+        \ve{v}_1 \\ \ve{v}_2 \\ \cdots \\ \ve{v}_n
+    \end{bmatrix}
+    =  \begin{bmatrix}
+        a_{11} & a_{12} & \cdots & a_{1n} \\
+        a_{21} & a_{22} & \cdots & a_{2n} \\
+        \vdots & \vdots & \ddots  & \vdots \\
+        a_{n1} & a_{n2} & \cdots & a_{nn} 
+    \end{bmatrix}
+    \begin{bmatrix}
+        \ve{e}_1 \\ \ve{e}_2 \\ \cdots \\ \ve{e}_n
+    \end{bmatrix},
+    \end{align*}
+    then
+    \begin{align*}
+        \ve{v}_1 \wedge \ve{v}_2 \wedge \dotsm \wedge \ve{v}_n = (\det A) \, \ve{e}_1 \wedge \ve{e}_2 \wedge \dotsm \wedge \ve{e}_n
+    \end{align*}
+    </p>
+
+    <hr>
+
+    <h3>1.7 &nbsp; Infinitesimal Volumes Under Transformation</h3>
+
+    <p>Let us go back to the change of variable formula we discussed up to Section 1.5.</p>
+
+    <hr>
+
+    <p>We say that the infinitesimal volume associated with point $\ve{x} \in A$ is the parallelotope in the tangent space $\mcal{T}_\ve{x}(\Real^n)$ formed by the orthonomal basis vectors of $\mcal{T}_\ve{x}(\Real^n)$.</p>
+
+    <p>Using the $n$-vector notation, this volume is:
+    \begin{align*}
+        \frac{\partial}{\partial x^1}\bigg|_{\ve{x}} 
+        \wedge \frac{\partial}{\partial x^2}\bigg|_{\ve{x}}
+        \wedge \dotsm 
+        \wedge \frac{\partial}{\partial x^n}\bigg|_{\ve{x}}.
+    \end{align*}
+    </p>
+
+    <hr>
+
+    <p>Because the point $\ve{x}$ gets transformed by $\ve{g}$ and the tangent vectors get transformed by the pushforward $\ve{g}^*$, we have that the parallelotoep above gets transformed as follows:
+    \begin{align*}
+        \frac{\partial}{\partial x^1}\bigg|_{\ve{x}} \wedge \frac{\partial}{\partial x^2}\bigg|_{\ve{x}} \wedge \dotsm \wedge \frac{\partial}{\partial x^n}\bigg|_{\ve{x}}
+        &\mapsto \ve{g}^*\bigg( \frac{\partial}{\partial x^1}\bigg|_{\ve{x}} \bigg) \wedge \ve{g}^*\bigg( \frac{\partial}{\partial x^2}\bigg|_{\ve{x}} \bigg) \wedge \dotsm \wedge \ve{g}^*\bigg( \frac{\partial}{\partial x^n}\bigg|_{\ve{x}} \bigg) \\
+        &= \bigg( \sum_{i=1}^n \frac{\partial g^i(\ve{x})}{\partial x^1} \frac{\partial}{\partial y^i}\bigg|_{\ve{y}} \bigg) \wedge \bigg( \sum_{i=1}^n \frac{\partial g^i(\ve{x})}{\partial x^2} \frac{\partial}{\partial y^i}\bigg|_{\ve{y}} \bigg) \wedge \dotsb \wedge \bigg( \sum_{i=1}^n \frac{\partial g^i(\ve{x})}{\partial x^n} \frac{\partial}{\partial y^i}\bigg|_{\ve{y}} \bigg) \\
+        &= (\det \nabla \ve{g}(\ve{x}))\, \frac{\partial}{\partial y^1}\bigg|_{\ve{y}} \wedge \frac{\partial}{\partial y^2}\bigg|_{\ve{y}} \wedge \dotsb \wedge \frac{\partial}{\partial y^n}\bigg|_{\ve{y}}.
+    \end{align*}
+    The last line is due to the fact that
+    \begin{align*}
+        \begin{bmatrix}
+            \ve{g}^*\Big(\frac{\partial}{\partial x^1}\bigg|_{\ve{x}}\Big) \\
+            \ve{g}^*\Big(\frac{\partial}{\partial x^2}\bigg|_{\ve{x}}\Big) \\
+            \vdots \\
+            \ve{g}^*\Big(\frac{\partial}{\partial x^n}\bigg|_{\ve{x}}\Big)
+        \end{bmatrix}
+        =
+        \begin{bmatrix}
+            \frac{\partial g^1(\ve{x})}{\partial x^1} & \frac{\partial g^2(\ve{x})}{\partial x^1} & \cdots & \frac{\partial g^n(\ve{x})}{\partial x^1} \\
+            \frac{\partial g^1(\ve{x})}{\partial x^2} & \frac{\partial g^2(\ve{x})}{\partial x^2} & \cdots & \frac{\partial g^n(\ve{x})}{\partial x^2} \\
+            \vdots & \vdots & \ddots & \vdots \\
+            \frac{\partial g^1(\ve{x})}{\partial x^n} & \frac{\partial g^2(\ve{x})}{\partial x^n} & \cdots & \frac{\partial g^n(\ve{x})}{\partial x^n} 
+        \end{bmatrix}
+        \begin{bmatrix}
+            \frac{\partial}{\partial y^1}\bigg|_{\ve{y}} \\
+            \frac{\partial}{\partial y^2}\bigg|_{\ve{y}} \\
+            \vdots \\
+            \frac{\partial}{\partial y^n}\bigg|_{\ve{y}}
+        \end{bmatrix} 
+        = (\nabla \ve{g}(\ve{x}))^T \begin{bmatrix}
+        \frac{\partial}{\partial y^1}\bigg|_{\ve{y}} \\
+        \frac{\partial}{\partial y^2}\bigg|_{\ve{y}} \\
+        \vdots \\
+        \frac{\partial}{\partial y^n}\bigg|_{\ve{y}}.
+    \end{bmatrix} 
+    \end{align*}
+    </p>
+
+    <hr>
+
+    <h3>1.8 &nbsp; $k$-forms as Duals of $k$-vectors</h3>
+
+    <p><b>Duality</b> is an important concept in linear algebra. A "vector" has a counterpart called a "covector." A covecter "measures" a vector in the sense that you can pass a vector to a covector, and the covecter will spits out a real number.</p>
+
+    <hr>
+
+    <p><b>Definition.</b> Let $\mcal{V}$ be a finite-dimensional real vector space. The <b>dual space</b> $\mcal{V}^*$ is the vector space of functions of signature $\mcal{V} \ra \Real$ that are linear. This means that, for any $\beta \in \mcal{V}^*$, it must be the case that
+    \begin{align*}
+        \beta(\ve{a} + \ve{b}) &= \beta(\ve{a}) + \beta(\ve{b}) \\
+        \beta(c \ve{v}) &= c \beta(\ve{a}) 
+    \end{align*}
+    for any $\ve{a}, \ve{b} \in \mcal{V}$ and $c \in \Real$. Each element of $\mcal{V}^*$ is called a <b>covector</b>.
+    </p>
+
+    <hr>
+
+    <p>Again, let's $\ve{e}_1$, $\ve{e}_2$, $\dotsc$, $\ve{e}_n$ be an orthonormal basis vectors of $\mcal{V}$. Then, we have that, for any $\ve{a} \in \mcal{V}$, we can write $\ve{a} = \sum_{i=1}^n a^i \ve{e}_i$ for some constants $a^1, a^2, \dotsc, a^n \in \Real$. As a result,
+    \begin{align*}
+        \beta(\ve{a}) = a^1 \beta(\ve{e}_1) + a^2 \beta(\ve{e}_2) + \dotsb + a^n \beta(\ve{e}_n).
+    \end{align*}
+    So, $\beta$ is completely determined by $n$ values $\beta(\ve{e}_1)$, $\beta(\ve{e}_2)$, $\dotsc$,  and $\beta(\ve{e}_n)$.
+    </p>
+
+    <hr>
+
+    <p>The above fact allows us to determine a basis of $\mcal{V}^*$. These are functions of the form $\varepsilon^i$ where
+    \begin{align*}
+        \varepsilon^i(a^1 \ve{e}_1 + a^2 \ve{e}_2 + \dotsb a^n \ve{e}_n) = a^i.
+    \end{align*}
+    That is, $\varepsilon^i$ picks out the coefficient of $\ve{e}_i$ of its input. Every function $\alpha \in \mcal{V}^*$ can be written
+    as
+    \begin{align*}
+        \beta = b_1 \varepsilon^1 + b_2 \varepsilon^2 + \dotsb + b_n \varepsilon^n
+    \end{align*}
+    where $b_i = \beta(\ve{e}_i)$ as we have noted above.
+    </p>    
+
+    <hr>
+
+    <p>It follows that $\mcal{V}$ are $\mcal{V}^*$ are isomorphic to each other, so $\mcal{V}^*$ is a real vector space of dimension $n$ as well.</p>
+
+    <hr>
+
+    <p>Note that, when you measure a vector $\ve{a} = a^1 \ve{e}_1 + a^2 \ve{e}_2 + \dotsb + a^n \ve{e}_n$ with a covector $\beta = b_1 \varepsilon^1 + b_2 \varepsilon^2 + \dotsb + b_n \varepsilon^n$. Then, the result is
+    \begin{align*}
+        b_1 a^1 + b_2 a^2 + \dotsb + b_n a^n 
+        = \begin{bmatrix} 
+            b_1 & b_2 & \cdots & b_n 
+        \end{bmatrix}
+        \begin{bmatrix} 
+            a^1 \\ a^2 \\ \vdots \\ a^n 
+        \end{bmatrix},
+    \end{align*}
+    which is a dot product. We can think of vector $\ve{a}$ as the column vector, and covector $\beta$ as the row vector. So, taking measurement with a dual means projecting a vector $\ve{a}$ to the vector representation of $\beta$ and finds the product of the lengths.
+    </p>
+
+    <hr>
+
+    <p>Consider a vector $a^1 \ve{e}_1 + a^2 \ve{e}_2 + \dotsb + a^n \ve{e}_n$. We know that there is a corresponding covector $a^1 \varepsilon^1 + a^2 \varepsilon^2 + \dotsb + a^n \varepsilon^n$.</p>
+
+    <p>Similarly, for a covector $a_1 \varepsilon^1 + a_1 \varepsilon^2 + \dotsb + a_1 \varepsilon^n$, there is a corresponding vector $a_1 \ve{e}_1 + a_2 \ve{e}_2 + \dotsb + a_n\ve{e}_n$.</p>
+
+    <p>If we let $a^i$ and $a_i$ denote the same constant for all $i$, then we see that there is the following duality:
+    \begin{align*}
+    a^1 \ve{e}_1 + a^2 \ve{e}_2 + \dotsb + a^n \ve{e}_n \iff a_1 \varepsilon^1 + a_1 \varepsilon^2 + \dotsb + a_1 \varepsilon^n
+    \end{align*}
+    </p>
+
+    <hr>
+
+    <p>The above duality is captured by <b>musical notation.</b> Assuming that $a^i = a_i$ for all $i$, the <b>flat symbol</b> $\flat$ sends a vector to is corresponding covector:
+    \begin{align*}
+        (a^1 \ve{e}_1 + a^2 \ve{e}_2 + \dotsb + a^n \ve{e}_n)^\flat = a_1 \varepsilon^1 + a_2 \varepsilon^2 + \dotsb + a_n a_1 \varepsilon^n.
+    \end{align*}
+    On the other hand, the <b>sharp symbol</b> $\sharp$ sends a covector to its corresponding vector.
+    \begin{align*}
+    (a_1 \varepsilon^1 + a_2 \varepsilon^2 + \dotsb + a_n a_1 \varepsilon^n)^\sharp = a^1 \ve{e}_1 + a^2 \ve{e}_2 + \dotsb + a^n \ve{e}_n.
+    \end{align*}
+    </p>
+
+    <hr>
+
+    <p>We can now discuss a deeper notion of what a $k$-form is.
+
+    <p><b>Definition.</b> A <b>$k$-form</b> is a linear function that maps a $k$-vector to a scalar. In other words, it is a member of the dual space of $\Lambda^k(\mcal{V})$. We denote the vector space of $k$-forms by $\mcal{L}^k(\mcal{V})$.</p>
+
+    <hr>
+
+    <p>Note that we said earlier that the basis vectors of $\mcal{T}_\ve{x}(\Real^n)$ are denoted by 
+    \begin{align*}
+        \frac{\partial}{\partial x^1} \bigg|_{\ve{x}}
+    \end{align*}
+    </p>
 
 <!--
     
@@ -155,118 +626,6 @@
 
     <h2>2.1 &nbsp; Motivation</h2>
 
-    <p>A common knowledge from vector calculus is how to compute the volume of an $n$-dimensional parallelotope.</p>
-    
-    <p>Here, we are given $n$ vectors $\ve{v}_1$, $\ve{v}_2$, $\ve{v}_3$, $\dotsc$, $\ve{v}_n$. The <b>parallelotope</b> defined by the above vector is the set $$\{ c_1\ve{v}_1 + c_2\ve{v}_2 + \dotsb + c_n\ve{v}_n : 0 \leq c_1, c_2, \dotsc, c_n \leq 1\}.$$</p>
-
-    <hr>
-
-    <p>The <b>signed volume</b> of the parallelotope is given by
-    \begin{align*}
-        \mbox{signed volume of paralellipiped} = \det \left( \begin{bmatrix} \ve{v}_1 & \ve{v}_2 & \dotsc & \ve{v}_n \end{bmatrix} \right).
-    \end{align*}
-    For simplicity, let's just use $\mathbb{V}(\ve{v}_1, \ve{v}_2, \ve{v}_3, \dotsc, \ve{v}_n)$ to denote the above.</p>
-    
-    <hr>
-
-    <p>Properties of the determinant function tell us about properties of the signed volume.</p>
-
-    <p>First, the signed volume is <b>linear in the $i$th argument</b> for all $i$. In other words, for any $1 \leq i \leq n$,
-    \begin{align*}
-        \mathbb{V}(\ve{v}_1, \dotsc, \ve{v}_{i-1}, c_i \ve{v}_{i}, \ve{v}_{i+1}, \dotsc, \ve{v}_n) &= c_i \mathbb{V}(\ve{v}_1, \dotsc, \ve{v}_{i-1}, \ve{v}_{i}, \ve{v}_{i+1}, \dotsc, \ve{v}_n) \\
-        \mathbb{V}(\ve{v}_1, \dotsc, \ve{v}_{i-1}, \ve{v}_{i} + \ve{w}_i, \ve{v}_{i+1}, \dotsc, \ve{v}_n) &= \mathbb{V}(\ve{v}_1, \dotsc, \ve{v}_{i-1}, \ve{v}_{i}, \ve{v}_{i+1}, \dotsc, \ve{v}_n) + \mathbb{V}(\ve{v}_1, \dotsc, \ve{v}_{i-1}, \ve{w}_{i}, \ve{v}_{i+1}, \dotsc, \ve{v}_n)
-    \end{align*}
-    for any constant $c_i \in \Real$ and vectors $\ve{w}_i, \ve{v}_1, \dotsc, \ve{v}_n \in \Real^n$.</p>
-        
-    <p>Second, the signed volume is <b>alternating</b>. This means that, for any $1 \leq i < n$, we have that
-    \begin{align*}
-    \mathbb{V}(\ve{v}_1, \dotsc, \ve{v}_{i}, \ve{v}_{i+1}, \dotsc, \ve{v}_n) = -\mathbb{V}(\ve{v}_1, \dotsc, \ve{v}_{i+1}, \ve{v}_i, \dotsc, \ve{v}_n).
-    \end{align*}
-    In particular, even permutation of input vectors preserve the sign of the volume, but odd permutations negate the sign.
-    </p>
-
-    <hr>
-
-    <h2>$k$-Blades and $k$-Vectors</h2>
-
-    <p><b>Definition.</b> Let $\mcal{V}$ be a finite-dimensional vector space. A <b>$k$</b>-blade on $\mcal{V}$ is an expression of the form
-    \begin{align*}
-        \ve{v}_1 \wedge \ve{v}_2 \wedge \dotsc \wedge \ve{v}_k
-    \end{align*}
-    where $\ve{v}_i \in \mcal{V}$ for all $1 \leq i \leq k$. The operator $\wedge$ is called the <b>wedge product</b> or an <b>exterior product</b>.
-    </p>
-
-    <p>Intuitively, a $k$-blade represents the parallelotope formed by $\ve{v}_1$,  $\ve{v}_2$, $\dotsc$, $\ve{v}_k$. This is not quite the case, but let's entertain this concept for a bit.</p>
-
-    <hr>
-
-    <p>To make definition easier, let us define a $0$-blade to be the number 1.</p>
-
-    <hr>
-
-    <p><b>Definition.</b> A <b>$k$-vector</b> is a (formal) linear combination of $k$-blades with real coefficients.</p>
-
-    <hr>
-
-    <p>So,
-    <ul>
-        <li>A $0$-vector is just a scalar because a linear combination of scalar is just another scalar.</li>
-
-        <li>A $1$-vector is just a vector in $\mcal{V}$ because a linear combinarion of vectors is just another vector.</li>
-
-        <li>A $2$-vector is more complicated. It looks like $(1,0,0) \wedge (0,1,0)$ or $(1,1,0) \wedge (0,0,1) + 10 \times (0,2,5) \wedge (10, 20, 30)$. </li>
-    </ul>
-    </p>
-
-    <hr>
-
-    <p>The wedge product is an operator with the following rules that are designed to mimic the determinant function.
-    <ul>
-        <li><b>Mulitilinearity.</b> The wedge product is linear in all its arguments. That is,
-        \begin{align*}
-            \ve{v}_1 \wedge \dotsm \wedge  (c \ve{v}_i) \wedge \dotsm \wedge \ve{v}_k &= c (\ve{v}_1 \wedge \dotsm \wedge  \ve{v}_i \wedge \dotsm \wedge \ve{v}_k) \\
-            \ve{v}_1 \wedge \dotsm \wedge  (\ve{v}_i + \ve{w}_i) \wedge \dotsm \wedge \ve{v}_k &= \ve{v}_1 \wedge \dotsm \wedge  \ve{v}_i \wedge \dotsm \wedge \ve{v}_k + \ve{v}_1 \wedge \dotsm \wedge  \ve{w}_i \wedge \dotsm \wedge \ve{v}_k
-        \end{align*}
-        for any scalar $c \in \Real$ and any vectors $\ve{w}_i, \ve{v}_1, \ve{v}_2, \dotsc, \ve{v}_k \in \mcal{V}$.
-        </li>
-
-        <li><b>Antisymmetry.</b> Swapping a pair of adjacent vectors in a blade negates the sign of the blade.
-        \begin{align*}
-        \ve{v}_1 \wedge \dotsm \wedge \ve{v}_i \wedge \ve{v}_{i+1} \wedge \dotsm \wedge \ve{v}_k &= - \ve{v}_1 \wedge \dotsm \wedge  \ve{v}_{i+1} \wedge \ve{v}_i \wedge \dotsm \wedge \ve{v}_k.
-        \end{align*}
-        </li>
-    </ul>
-    </p>
-
-    <hr>
-
-    <p>It is obvious that $k$-vectors form a vector space. The vector space of $k$-vectors on $\mcal{V}$ is denoted by $\Lambda^k(\mcal{V})$.</p>
-
-    <hr>
-
-    <p>How many dimensions does $\Lambda^k(\mcal{V})$ have? It's actually ${n \choose k}$.</p>
-
-    <p>The way to see this is to introduce a basis $\ve{e}_1$, $\ve{e}_2$, $\dotsc$, $\ve{e}_n$ of $\mcal{V}$. It follows that there is a unique matrix $A = [a_{ij}] \in \Real^{n \times k}$ such that 
-    \begin{align*}
-    \begin{bmatrix}
-        \ve{v}_1 & \ve{v}_2 & \cdots & \ve{v}_k
-    \end{bmatrix}
-    = \begin{bmatrix}
-        \ve{e}_1 & \ve{e}_2 & \cdots & \ve{e}_k
-    \end{bmatrix}
-    \begin{bmatrix}
-        a_{11} & a_{12} & \cdots & a_{1k} \\
-        a_{21} & a_{22} & \cdots & a_{2k} \\
-        \vdots & \vdots & \ddots  & \vdots \\
-        a_{n1} & a_{n2} & \cdots & a_{nk} 
-    \end{bmatrix}.    
-    \end{align*}
-    So, using the multi-linear property of the wedge project, we can expand $\ve{v}_1 \wedge \ve{v}_2 \wedge \dotsm \wedge \ve{v}_k$ as follows:
-    \begin{align*}
-        \ve{v}_1 \wedge \ve{v}_2 \wedge \dotsm \wedge \ve{v}_k = \sum_{(i_1, i_2, \dotsc, i_k) \in \{1, \dotsc, n\}^k} a_{i_1 1} a_{i_2 2} \dotsm a_{i_k k}\, \ve{e}_{i_1} \wedge \ve{e}_{i_2} \wedge \dotsm \wedge \ve{e}_{i_k}.
-    \end{align*}
-    At this point, it seems that there should be $n^k$ basis blades for $\Lambda^k(\mcal{V})$. However, recall that the antisymmetry property of the wedge product allows us to swap the vectors inside each wedge project in any order we want. As a result, the ordering of the basis vectors in each blade above is not important. The only important thing is what vectors are present in that blade. Therefore, there are actually ${n \choose k}$ different blades, which and each corresponds to a sequence $1 \leq i_1 < i_2 < \dotsm < i_k \leq n$.
-    </p>
 -->
 
     <hr>
