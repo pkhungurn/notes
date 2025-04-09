@@ -5,7 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
-    <title>A Quick and Dirty Primer on Exterior Calculus</title>
+    <title>Another Primer on Exterior Calculus</title>
 
     <!-- Bootstrap -->
     <link href="../../../css/bootstrap.min.css" rel="stylesheet">
@@ -81,10 +81,10 @@
     </span>
 
     <br>
-    <h1>A Quick and Dirty Primer on Exterior Calculus</h1>
+    <h1>Another Primer on Exterior Calculus</h1>
     <hr>
 
-    <p>This is a primer on exterior calculus, which is the study of differential forms and their differentiation and integration. I wrote a similar note before, titled  <a href="https://pkhungurn.github.io/notes/notes/math/diff-form-primer/index.html">"A Primer on Differential Forms."</a> However, that one is too long and too mathy. This note is more concise and based on materials from Keenan Crane's course on <a href="https://brickisland.net/ddg-web/">discrete differential geometry</a>; that is, Chapter 4 of the <a href="https://www.cs.cmu.edu/~kmcrane/Projects/DDG/paper.pdf">course notes</a> and slides about <a href="https://brickisland.net/ddg-web/lectures/DDG-ExteriorAlgebra.pdf">Exterior Algebra</a>, <a href="https://brickisland.net/ddg-web/lectures/DDG-kForms.pdf">$k$-forms</a>, <a href="https://brickisland.net/ddg-web/lectures/DDG-DifferentialForms.pdf">Differential Forms</a>, and <a href="https://brickisland.net/ddg-web/lectures/DDG-ExteriorDerivative.pdf">Exterior Derivatives</a> and <a href="https://brickisland.net/ddg-web/lectures/DDG-Integration.pdf">Integration</a>. This note is supposed to be more down-to-earth, application-oriented, intuitive, and scraggly than the other one.</p>
+    <p>This is a primer on exterior calculus, which is the study of differential forms and their differentiation and integration. I wrote a similar note before, titled  <a href="https://pkhungurn.github.io/notes/notes/math/diff-form-primer/index.html">"A Primer on Differential Forms."</a> However, that one is too mathy for its own good. This note is an expansion of that one. It contains more explanation and incorporates materials from Keenan Crane's course on <a href="https://brickisland.net/ddg-web/">discrete differential geometry</a>; that is, Chapter 4 of the <a href="https://www.cs.cmu.edu/~kmcrane/Projects/DDG/paper.pdf">course notes</a> and slides about <a href="https://brickisland.net/ddg-web/lectures/DDG-ExteriorAlgebra.pdf">Exterior Algebra</a>, <a href="https://brickisland.net/ddg-web/lectures/DDG-kForms.pdf">$k$-forms</a>, <a href="https://brickisland.net/ddg-web/lectures/DDG-DifferentialForms.pdf">Differential Forms</a>, and <a href="https://brickisland.net/ddg-web/lectures/DDG-ExteriorDerivative.pdf">Exterior Derivatives</a> and <a href="https://brickisland.net/ddg-web/lectures/DDG-Integration.pdf">Integration</a>. This note is supposed to be more down-to-earth and easier to read than the other one.</p>
 
     <hr>
 
@@ -1255,7 +1255,35 @@
 
     <hr>
 
-    <h3>2.3 &nbsp; Examples of Calculations on $k$-Vectors</h3>
+    <h3>2.3 &nbsp; Inner Products of Forms</h3>
+
+    <p><b>Definition.</b> Given two $k$-forms $\alpha = \sum_{I \in [n]^k_{<}} \alpha^I \varepsilon^I$ and $\beta = \sum_{I \in [n]^k_{<}} \beta^I \varepsilon^I$. The <b>inner product</b> or the <b>dot prodcut</b> between $\alpha$ and $\beta$, denoted by $\alpha \dot \beta$ or $\langle \alpha, \beta \rangle$, is defined as follows:
+    \begin{align*}
+        \alpha \cdot \beta = \langle \alpha, \beta \rangle = \sum_{I \in [n]^k_{<}} \alpha^I \beta^I.
+    \end{align*}
+    </p>
+
+    <hr>
+
+    <p>Note that the definition above agrees perfectly with the normal notion of dot products of vectors: you expand the vector into an orthonomal basis, multiply the corresponding coefficients, and add the results up.</p>
+
+    <hr>
+
+    <p>The interesting about inner product of forms is that there's a relationship between it and other operations.</p>
+
+    <p><b>Proposition.</b> For any $k$-forms $\alpha$ and $\beta$, we have that
+    \begin{align*}
+        \alpha \wedge \star(\beta) = \langle \alpha, \beta \rangle\, \varepsilon^{1,2,\dotsc,n}.
+    \end{align*}
+    As a result,
+    \begin{align*}
+        \langle \alpha, \beta \rangle = \star(\alpha \wedge \star(\beta))
+    \end{align*}
+    </p>
+
+    <hr>
+
+    <h3>2.4 &nbsp; Examples of Calculations on $k$-Vectors</h3>
 
     <p>Here are some examples of calculations from Keenan Crane's note.</p>
 
@@ -1310,7 +1338,7 @@
 
     <hr>
 
-    <h3>2.4 &nbsp; Exterior Algebra on Differential Forms</h3>
+    <h3>2.5 &nbsp; Exterior Algebra on Differential Forms</h3>
 
     <p>We now discuss how to extend operators on $k$-forms, the wedge product and the Hodge star, to differential forms.</p>
 
@@ -1343,6 +1371,17 @@
     \end{align*}
     </p>
 
+    <p><b>Definition.</b> Let $\alpha$ and $\beta$ be differential $k$-form on $\Real^n$. Suppose that
+    \begin{align*}
+        \alpha(\ve{x}) &= \sum_{I \in [n]^k_{<}} \alpha^I(\ve{x})\, \dee x^I \\
+        \alpha(\ve{x}) &= \sum_{J \in [n]^k_{<}} \beta^I(\ve{x})\, \dee x^J.
+    \end{align*}
+    Then, the <b>dot product</b> or the <b>inner product</b> of $\alpha$ and $\beta$ is the following $0$-form:
+    \begin{align*}
+    (\alpha \cdot \beta)(\ve{x}) = \langle \alpha, \beta \rangle(\ve{x}) &= \sum_{I \in [n]^k_{<}} \alpha^I(\ve{x}) \beta^I(\ve{x}).
+    \end{align*}
+    </p>
+
     <hr>
 
     <p><b>Example 1.</b> Let our vector space be $\Real^2$. Consider the differential form $\alpha (1-x)\,\dee x + x\, \dee y$. What is its Hodge star?</p>
@@ -1372,7 +1411,7 @@
         &= x(1-y)\, \dee x \wedge \dee y.
     \end{align*}
     </p>
-    
+
     <hr>
 
     <h2>3 &nbsp; Integration on Manifold Charts</h2>
@@ -1642,18 +1681,396 @@
     
     <hr>
 
-    <h2>5 &nbsp; Form Derivatives and Generalized Stokes' Theorem</h2>
+    <h2>5 &nbsp; Exterior Derivatives and Anti-Derivatives</h2>
+
+    <p>A main pillar of calculus is the fundamental theorem of calculus. At its core, it states that the integral of the derivative of a function on an interval is equal to the difference of the function at the interval's end points.</p>
+
+    <p>Generalized Stokes's theorem is the analogue of the fundamental theorem of calculus with respect to integration on manifolds. It states that the integral of the derivative of the differential form on a manifold $M$ is equal to the integral of the form on the manifold's boundary $\delta M$.</p>
+
+    <p>In order to state the theorem, though, we have to talk about derivatives of differential forms first.</p>
 
     <hr>
 
-    <h2>6 &nbsp; Volume Forms</h2>
+    <h3>5.1 &nbsp; Exterior Derivatives</h3>
 
-    <p>Now that we know how to integrate on manifolds, we turn to the problem of identifying differential forms that would help us measure things like lengths of curves, areas of surfaces, and volumes of solids.</p>
+    <p><b>Definition.</b> The <b>exterior derivative operator</b> $\dee$ sends a differential $k$-form on $\Real^n$ to a differential $k+1$-form on $\Real^n$. It is defined to be the unique map that satisfies the following properties:
+    <ul>
+        <li><b>Differential.</b> For any $0$-form $f: \Real^n \ra \Real$, we have that
+        \begin{align*}
+            \dee f = \frac{\partial f}{\partial x^1}\, \dee x^1 + \frac{\partial f}{\partial x^2}\, \dee x^2 + \dotsb + \frac{\partial f}{\partial x^n}\, \dee x^n
+        \end{align*}
+        </li>
+
+        <li><b>Product rule.</b> Let $\alpha$ be a differential $k$-form. Then,
+        \begin{align*}
+            \dee(\alpha \wedge \beta) = \dee\alpha \wedge \beta + (-1)^k \alpha \wedge d\beta
+        \end{align*}        
+        </li>
+
+        <li><b>Exactness.</b> For any differential $k$-form $\alpha$, $$d(d\alpha) = 0.$$</li>
+    </ul>
+    </p>
 
     <hr>
 
-    <h2>7 &nbsp; Vector-Valued Forms</h2>
+    <p>We can show that $\dee$ is a linear operator. That is, for any $k$-form $\alpha$ and $\beta$ and constants $a,b \in \Real$, we have that
+    \begin{align*}
+    d(a\alpha + b\beta) = a\,\dee\alpha + b\,\dee\beta
+    \end{align*}    
+    </p>
 
+    <hr>
+
+    <p>We can also see what the operator does to an differential $k$-form expanded in the basis of $k$-forms. That is, let $$\alpha(\ve{x}) = \sum_{I \in [n]^k_{<}} \alpha^I(\ve{x})\, \dee x^I.$$ Then,
+    \begin{align*}
+        \dee \alpha(\ve{x}) = \sum_{I \in [n]^k_{<}} \sum_{j=1}^n \frac{\partial \alpha_I(\ve{x})}{\partial x^j}\, \dee x^j \wedge \dee x^I.
+    \end{align*}
+    </p>
+
+    <hr>
+
+    <p><b>Example.</b> Let $\alpha = xy\,\dee x + e^x \, \dee y.$ Then,
+    \begin{align*}
+        \dee \alpha 
+        &= y\, \dee x \wedge \dee x + x\, \dee y \wedge \dee x + e^x\, \dee x \wedge \dee y \\
+        &= (e^x -y)\, \dee x \wedge \dee y.
+    \end{align*}
+    </p>
+    
+    <hr>
+
+    <p><b>Example.</b> Note that the function $f(\ve{x}) = x^i$ is a $0$-form. We have that $$\dee f = \dee(x_i) = \frac{\partial x_i}{x_i}\, \dee x_i = \dee x_i.$$ So the definition is self consistent.</p>
+
+    <hr>
+
+    <p><b>Example.</b> Here's another example that the definition is self consistent. We can show without using the exactness property (i.e., using only the first two properties) that $\dee(\dee\alpha) = 0$.</p> <p>We do induction on the order of $\alpha$.</p>
+
+    <p>In the base case, $\alpha$ is a 0-form. So, $\alpha = f(\ve{x})$ for some $f: \Real^n \rightarrow \Real$. So,
+    \begin{align*}
+        \dee \alpha &= \dee f = \sum_{j=1}^n \frac{\partial f}{\partial x^j}\, \dee x^j \\
+        \dee(\dee\alpha) &= \dee \bigg( \sum_{i=1}^n \frac{\partial f}{\partial x^i}\, \dee x^i \bigg) \\
+        &= \sum_{i=1}^n \sum_{j=1}^n \frac{\partial}{\partial x^j} \bigg( \frac{\partial f}{\partial x^i} \bigg)\, \dee x^j \wedge \dee x^i \\
+        &= \sum_{i=1}^n \sum_{j=1}^n \frac{\partial^2 f}{\partial x^i \partial x^j} \, \dee x^j \wedge \dee x^i \\
+        &= \bigg( \sum_{i=1}^n\frac{\partial^2 f}{(\partial x^i)^2} \, \dee x^i \wedge \dee x^i \bigg) + \bigg( \sum_{i=1}^n \sum_{j\neq i} \frac{\partial^2 f}{\partial x^i \partial x^j} \, \dee x^j \wedge \dee x^i \bigg) \\
+        &= 0.        
+    \end{align*}
+    The first term is zero because $\dee x^i \wedge \dee x^i = 0$. The second term is zero because $\dee x^i \wedge \dee x^j = -\dee x^j \wedge \dee x^i$, and so each term has another term that cancels it.
+    </p>
+
+    <p>Suppose by way of induction that $\dee(\dee\alpha) = 0$ for all $\alpha$ of order up to $k$. Consider the $(k+1)$-form
+    \begin{align*}
+        \alpha_I(\ve{x})\, \dee x^I 
+        = \alpha_I(\ve{x})\, \dee x^{i_1} \wedge \dee x^{i_2} \wedge \dotsc \wedge \dee x^{i_{k+1}}
+        = (\alpha_I(\ve{x})\, \dee x^{i_1}) \wedge (\dee x^{i_2} \wedge \dotsc \wedge \dee x^{i_{k+1}}).
+    \end{align*}
+    Let us abbreviate $\alpha_I(\ve{x})\, \dee x^{i_1}$ with $\beta$ and $\dee x^{i_2} \wedge \dotsc \wedge \dee x^{i_{k+1}}$ with $\gamma$. The expression becomes:
+    \begin{align*}
+        \alpha_I(\ve{x})\, \dee x^I = \beta \wedge \gamma.
+    \end{align*}
+    So,
+    \begin{align*}
+        \dee(\beta \wedge \gamma) 
+        &= \dee\beta \wedge \gamma - \beta \wedge \dee\gamma \\
+        \dee\big( \dee(\beta \wedge \gamma) \big)
+        &= \dee\big( \dee\beta \wedge \gamma \big) - \dee\big( \beta \wedge \dee\gamma \big) \\
+        &= \dee(\dee\beta) \wedge \gamma + \dee\beta \wedge \dee\gamma - \dee\beta \wedge \dee\gamma + \beta \wedge \dee\dee(\gamma) \\
+        &= \dee(\dee\beta) \wedge \gamma + (\dee\beta \wedge \dee\gamma - \dee\beta \wedge \dee\gamma) + \beta \wedge \dee\dee(\gamma) \\
+        &= 0 + 0 + 0 = 0.
+    \end{align*}
+    Because all $(k+1)$-form can be written as $\sum_{I} \alpha_I(\ve{x})\, \dee x^I$, it follows that $\dee(\dee\alpha) = 0$ for all $(k+1)$-form. $\square$
+    </p>    
+
+    <hr>
+
+    <h3>5.2 &nbsp; Poincare's Lemma</h3>
+
+    <p>When doing integration, a natual question comes up: is this differential form the (exterior derivative) of some other differential forms? Such a differential form is called "exact."</p>
+
+    <p><b>Definition.</b> A form $\omega$ is <b>exact</b> if $\omega = \dee \nu$ for some form $\nu$.</p>
+
+    <hr>
+
+    <p>For every exact form $\omega$, we have that $\dee\omega = \dee(\dee\nu) = 0$. So, if we take the exterior derivative of a differential form and the result is zero, may be it is exact. Let us give such property a name.</p>
+
+    <hr>
+
+    <p>It is not true that every closed form is exact.</p>
+
+    <hr>
+
+    <p><b>Example.</b> Consider the form
+    \begin{align*}
+        \omega = \frac{x}{x^2 + y^2}\, \dee y - \frac{y}{x^2 + y^2}\, \dee x
+    \end{align*}
+    which is defined on the set $\Real^2 - \{(0,0)\}$. We have that
+    \begin{align*}
+        \dee\omega
+        &= \frac{\partial}{\partial x}\bigg( \frac{x}{x^2 + y^2} \bigg)\, \dee x \wedge \dee y
+        - \frac{\partial}{\partial y} \bigg( \frac{y}{x^2 + y^2} \bigg)\, \dee y \wedge \dee x \\
+        &= \bigg[ \frac{\partial}{\partial x}\bigg( \frac{x}{x^2 + y^2} \bigg)
+        + \frac{\partial}{\partial y} \bigg( \frac{y}{x^2 + y^2} \bigg)\bigg]\, \dee x \wedge \dee y \\
+        &= \bigg[ \frac{(x^2 + y^2) - x(2x)}{(x^2 + y^2)^2} + \frac{(x^2 + y^2) - y(2y)}{(x^2 + y^2)^2} \bigg]\, \dee x \wedge \dee y \\
+        &= \bigg[ \frac{-x^2 + y^2}{(x^2 + y^2)^2} + \frac{x^2 - y^2}{(x^2 + y^2)^2} \bigg]\, \dee x \wedge \dee y \\
+        &= 0.
+    \end{align*}
+    So, $\omega$ is closed. However, $\omega$ is not exact. We will see this in the next section.
+    </p>
+
+    <hr>
+
+    <p>Whether a closed form is exact, is the subject of <b>Poincare's lemma</b>. To state it, though, we need a notion of <i>simply connectedness.</i></p>
+
+    <hr>
+
+    <p><b>Definition (informal).</b> A region $A$ is <b>simply connected</b > if and only if any simpled closed curve in $A$ can be continuously shrunk to a point in $K$.</p>
+
+    <hr>
+
+    <p><b>Examples.</b>
+    <ul>
+        <li>A unit disk $\{(x,y) : x^2 + y^2 \leq 1 \}$ is simply connected.</li>
+
+        <li>The annulus $\{ (x,y) : 1/2 \leq x^2 + y^2 \leq 1 \}$, while connected, is not simply connected. This is because the circle $\{ (x,y) : x^2 + y^2 = 3/4 \}$ cannot be shrunk to a point while staying in the annulus all the time.</li>
+    </ul>
+    </p><hr>
+
+    <p>We now state without proof Poincare's lemma.</p>
+
+    <p><b>Theorem (Poincare's Lemma).</b> Let $A$ be simply connected region in $\Real^n$ and $\omega$ be a differential $k$-form defined on $A$ such that $\dee\omega = 0$. Then, there exists a differential $(k-1)$-form $\nu$ such that $\omega = d\nu$. In other words, all closed form $\omega$ in $A$ is exact.</p>
+    <hr>
+
+    <p>Going back to the example, we see that we cannot apply Poincare's lemma there to conlude that the form is exact. This is because the region it is defined on is now simply connected. We cannot shrink a loop around the point $(0,0)$ to a point.</p>
+
+    <hr>
+
+    <p>The upshot of the discussion on Poincare's lemma is that, if domain of integration is simply connected and the integrand is closed, then the integrand has an "anti-derivative," and we can apply generalized Stoke's theorem, which is the subject of the next subsection.</p>
+
+    <hr>
+
+    <h3>5.3 &nbsp; Generalized Stokes's Thereom</h3>
+
+    <p><b>Definition. </b> Let $M$ be an orientable $k$-manifold with non-empty boundary. Given an orientation of $M$, the corresponding <b>induced orientation</b> of $\partial M$ is defined as follows. If $k$ is even, it is the orientation obtained by simply restricting coordinate patches belonging to the orientation of $M$. If $k$ is odd, it is the opposite of the orientation of $\partial M$ obtained this way.</p>
+    
+    <hr>
+
+    <p><b>Theorem (Generalized Stokes's).</b> Let $k > 1$. Let $M$ be a compact oriented $k$-manifold in $\Real^n$. Give $\partial M$ the induced orientation if $\partial M$ is not empty. Let $\omega$ be a $(k-1)$-form defined in an open set of $\Real^n$ containing $M$. Then,
+    \begin{align*}
+        \int_M\, \dee\omega = \int_{\partial M} \omega
+    \end{align*}
+    if $\partial M$ is not empty, and $\int_M\, \dee\omega = 0$ if $\partial M$ is empty.
+    </p>
+    
+    <hr>
+
+    <p>There is also a version of the generalized Stokes's theorem for the case here $k = 1$. It needs a little care because we haven't defined the notion of a $0$-manifold.</p>
+
+    <hr>
+
+    <p><b>Definition.</b> Let $M$ be an oriented $1$-manifold in $\Real^n$ that is covered by a single chart $\psi: [a,b] \rightarrow \Real$ belonging to that orientation. We call $M$ an <b>(smooth) arc</b>. We call $\psi(a)$ the <b>initial point</b> and $\psi(b)$ the <b>final point</b> of $M$.</p>
+    
+    <hr>
+
+    <p><b>Theorem (Generalized Stokes's; 1D version).</b> Let $M$ be a compact arc in $\Real^n$ with initial point $\ve{p}$ and final point $\ve{q}$. Let $f$ be a $0$-form (i.e, a function) defined in a neighborhood around $M$. Then,
+    \begin{align*}
+        \int_M\, \dee f = \int_{\partial M} f  = f(\ve{q}) - f(\ve{p}).
+    \end{align*}
+    </p>
+    
+    <hr>
+
+    <p>In light of the 1D generalized Stokes's theorem, exact differential $1$-forms satisfies a property called <b>path independence</b>. Let's see how this is the case.</p>
+    
+    <p><b>Definition.</b> A <b>path</b> is a piecewise sequence of arcs.</p>
+
+    <p><b>Proposition.</b> Let $\omega = \dee(\nu)$ be an exact differential $1$-form defined on an open subset $U \subseteq \Real^n$. Let $\ve{a}$ and $\ve{b}$ be two points in $U$. Then, for any path $\gamma$ that lies entirely in $U$, we have that
+    \begin{align*}
+        \int_{\gamma} \omega = \int_{\gamma} \dee\nu = \int_{\partial \gamma} \nu = \nu(\ve{b}) - \nu(\ve{a}).
+    \end{align*}
+    In other words, the value of the integral does not depend on the particular path chosen. It only depends on the endpoint.
+    </p>
+
+    <p>One can prove the proposition simply by applying the 1D generalized Stokes's theorem on the arcs that make up the path and adding the results up.</p>
+    
+    <hr>
+
+    <p><b>Example.</b> Let's get back to the 1-form $\omega = (x\,\dee y - y\,\dee x) / (x^2 + y^2)$ we discussed in Section 5.2. We know that $\dee \omega = 0$. However, we said earlier that it is not exact. To see this, suppose by way of contradiction that it is exact. Then, $\omega$ would exhibit path dependence. However, it is easy to find two paths that would result in different values with $\omega$. For example, consider (a) a path that goes straight from $(1,0)$ to $(100,0)$ and (b) another path that goes from $(1,0)$ to $(1,100)$ then to $(100,100)$ and then to $(100,0)$. The first path's integral is $0$, but the second is not.
+    </p>
+    <hr>
+
+    <h2>6 &nbsp; Other Differential Operators</h2>
+
+    <p>In vector calculus, there are three important differential operators: the gradient $\nabla$, the divergence $\nabla \cdot$, and the curl $\nabla \times$. Let us study them in the light of exterior calculus.</p>
+
+    <hr>
+
+    <h3>6.1 &nbsp; The Gradient</h3>
+
+    <p>For a function $f: \Real^n \ra \Real$, the gradient $\nabla f$ is a function of that maps a point $\ve{x}$ to a tangent vector in $\mcal{T}_{\ve{x}}(\Real^n)$:        
+    \begin{align*}
+        \nabla f(\ve{x}) &= \frac{\partial f(\ve{x})}{\partial x^1} \frac{\partial}{\partial x^1} + \frac{\partial f(\ve{x})}{\partial x^2} \frac{\partial}{\partial x^2} + \dotsb + \frac{\partial f(\ve{x})}{\partial x^n} \frac{\partial}{\partial x^n}.
+    \end{align*}
+    </p>
+
+    <hr>
+    
+    <p>We note that there is a striking resemblance between the gradient $\nabla f$ produces and its exterior derivative $\dee f$. Because
+    \begin{align*}
+        \dee f(\ve{x}) &= \frac{\partial f(\ve{x})}{\partial x^1} \dee x^1 + \frac{\partial f(\ve{x})}{\partial x^2} \dee x^2 + \dotsb + \frac{\partial f(\ve{x})}{\partial x^n} \dee x^n, 
+    \end{align*}
+    we have that the gradient and the exterior derivatives are the dual of each other and are related by the following musical notations.
+    \begin{align*}
+        (\nabla f)^\flat &= \dee f \\
+        (\dee f)^\sharp &= \nabla f.
+    \end{align*}
+    In other words, we may write
+    \begin{align*}
+        \nabla f = \sharp \dee f,
+    \end{align*}
+    or just simply
+    \begin{align*}
+        \nabla = \sharp\, \dee.
+    \end{align*}
+
+    <hr>
+
+    Another similarity is that they can be used to compute the directional derivative at $\ve{x}$ along the vector $\ve{v}$
+    \begin{align*}
+        \nabla_{\ve{v}} f(\ve{x}) = \lim_{t \ra 0} \frac{f(\ve{x} + t\ve{v}) - f(\ve{x})}{t}.
+    \end{align*}
+    We have that, if we write $\ve{v}$ in the basis of the tangent space $\mcal{T}_\ve{x}(\Real^n)$ at $x$
+    \begin{align*}
+        \ve{v} = v^1 \frac{\partial}{\partial x^1} + v^2 \frac{\partial}{\partial x^2} + \dotsb + v^n \frac{\partial}{\partial x^n},
+    \end{align*}
+    then
+    \begin{align*}
+        \nabla_{\ve{x}} f(\ve{x}) = \nabla f(\ve{x}) \cdot \ve{v} = \dee f(\ve{v}).
+    \end{align*}
+    Note that, to compute the directional derivative, the gradient relies on the dot product, but the exterior derivative relies on function application.
+    </p>
+
+    <hr>
+
+    <h3>6.2 &nbsp; The Curl</h3>
+
+    <p>Let $\ve{f}$ be a vector field in $\Real^3$. In other words,
+    \begin{align*}
+        \ve{f}(x) = f^1(\ve{x}) \frac{\partial}{\partial x^1} + f^2(\ve{x}) \frac{\partial}{\partial x^2} + f^3(\ve{x}) \frac{\partial}{\partial x^3}.
+    \end{align*}
+    </p>
+
+    <p>The curl of $\ve{f}$ is given by
+    \begin{align*}
+        \nabla \times \ve{f} = \bigg( \frac{\partial f^3}{\partial x^2} - \frac{\partial f^2}{\partial x^3} \bigg) \frac{\partial}{\partial x^1} 
+        + \bigg( \frac{\partial f^1}{\partial x^3} - \frac{\partial f^3}{\partial x^1} \bigg) \frac{\partial}{\partial x^2} 
+        + \bigg( \frac{\partial f^2}{\partial x^1} - \frac{\partial f^1}{\partial x^2} \bigg) \frac{\partial}{\partial x^3}.
+    \end{align*}
+    </p>
+
+    <hr>
+
+    <p>Notice that
+    \begin{align*}
+        \dee(\ve{f}^\flat) 
+        &= \dee\big( f^1\, \dee x^1 + f^2\, \dee x^2 + f^3\, \dee x^3 \big) \\
+        &= \bigg( \frac{\partial f^1}{\partial x^1}\, \dee x^1 + \frac{\partial f^1}{\partial x^2}\, \dee x^2 + \frac{\partial f^1}{\partial x^3}\, \dee x^3 \bigg) \wedge \dee x^1 \\
+        & \qquad + \bigg( \frac{\partial f^2}{\partial x^1}\, \dee x^1 + \frac{\partial f^2}{\partial x^2}\, \dee x^2 + \frac{\partial f^2}{\partial x^3}\, \dee x^3 \bigg) \wedge \dee x^2 \\
+        & \qquad + \bigg( \frac{\partial f^3}{\partial x^1}\, \dee x^1 + \frac{\partial f^3}{\partial x^2}\, \dee x^2 + \frac{\partial f^3}{\partial x^3}\, \dee x^3 \bigg) \wedge \dee x^3 \\
+        &= \bigg( \frac{\partial f^3}{\partial x^2} - \frac{\partial f^2}{\partial x^3} \bigg)\, \dee x^2 \wedge \dee x^3
+        + \bigg( \frac{\partial f^1}{\partial x^3} - \frac{\partial f^3}{\partial x^1} \bigg)\, \dee x^3 \wedge \dee x^1
+        + \bigg( \frac{\partial f^2}{\partial x^1} - \frac{\partial f^1}{\partial x^2} \bigg)\, \dee x^1 \wedge \dee x^2.
+    \end{align*}
+    So,
+    \begin{align*}
+        \star(\dee(\ve{f}^\flat) )
+        &= \bigg( \frac{\partial f^3}{\partial x^2} - \frac{\partial f^2}{\partial x^3} \bigg)\, \dee x^1
+        + \bigg( \frac{\partial f^1}{\partial x^3} - \frac{\partial f^3}{\partial x^1} \bigg)\, \dee x^2
+        + \bigg( \frac{\partial f^2}{\partial x^1} - \frac{\partial f^1}{\partial x^2} \bigg)\, \dee x^3
+    \end{align*}
+    As a result, we can conclude that
+    \begin{align*}
+        \nabla \times \ve{f} = (\star(\dee f^\flat))^\sharp = \sharp\, \star\, \dee\, \flat\, f,
+    \end{align*}
+    or just
+    \begin{align*}
+        \nabla \times = \sharp\, \star\, \dee\, \flat
+    \end{align*}
+    </p>
+
+    <hr>
+
+    <h3>6.3 &nbsp; The Divergence</h3>
+
+    <p>Given a vector field in $\Real^n$
+    \begin{align*}
+        \ve{f}(x) = f^1(\ve{x}) \frac{\partial}{\partial x^1} + f^2(\ve{x}) \frac{\partial}{\partial x^2} + \dotsb + f^n(\ve{x}) \frac{\partial}{\partial x^n}.
+    \end{align*}
+    The divergence of $\ve{f}$ is given by
+    \begin{align*}
+        \nabla \ve{f}(\ve{x}) = \frac{\partial f^1(\ve{x})}{\partial x^1} + \frac{\partial f^2(\ve{x})}{\partial x^2} + \dotsb + \frac{\partial f^n(\ve{x})}{\partial x^n}
+    \end{align*}
+    </p>
+
+    <hr>
+
+    <p>Note that
+    \begin{align*}
+        \star (\ve{f}^\flat) 
+        &= \star \big( f^1\, \dee x^1 + f^2\, \dee x^2 + \dotsb + f^n\, \dee x_n \big) \\
+        &= f^1\, \star(\dee x^1) + f^2\, \star(\dee x^2)  + \dotsb + f^n\, \star(\dee x_n) \\
+        &= \sum_{i=1}^n f^i\, \star(\dee x^i).
+    \end{align*}
+    So,
+    \begin{align*}
+        \dee(\star (\ve{f}^\flat)) 
+        &= \sum_{i=1}^n \bigg( \sum_{j=1}^n \frac{\partial f^i}{\partial x^j}\, \dee x_j \bigg) \wedge \star(\dee x^i) \\
+        &= \sum_{i=1}^n \frac{\partial f^i}{\partial x^i}\, \dee x^i \wedge \star(\dee x^i) \\
+        &= \bigg( \sum_{i=1}^n \frac{\partial f^i}{\partial x^i} \bigg)\, \dee x^{1,2,\dotsc,n}.        
+    \end{align*}
+    Thus,
+    \begin{align*}
+        \star(\dee(\star (\ve{f}^\flat))) 
+        &= \sum_{i=1}^n \frac{\partial f^i}{\partial x^i} = \nabla \cdot \ve{f}.
+    \end{align*}
+    We can conclude that
+    \begin{align*}
+        \nabla \cdot = \star \, \dee \, \star\, \flat
+    \end{align*}
+    </p>
+
+    <hr>
+
+    <h3>6.4 &nbsp; The Laplacian</h3>
+
+    <p>Given a scalar function $f: \Real^n \ra f$, the <b>Laplacian of $f$</b> is given by
+    \begin{align*}
+        \Delta f(\ve{x}) = \nabla \cdot \nabla f(\ve{x}) = \sum_{i=1}^n \frac{\partial^2 f^i(\ve{x})}{(\partial x^i)^2}.
+    \end{align*}
+    </p>
+
+    <hr>
+
+    <p>Using what we derived in previous sections, we have that
+    \begin{align*}
+        \Delta f = \nabla \dot \nabla f = \star \, \dee \, \star\, \flat\, \sharp\, \dee f.
+    \end{align*}
+    Because the $\sharp$ and $\flat$ cancels out, we have  that
+    \begin{align*}
+        \Delta f = \star \, \dee \, \star\, \dee f.
+    \end{align*}
+    In other words,
+    \begin{align*}
+        \Delta = \star \, \dee\, \star\, \dee.
+    \end{align*}
+    </p>
+
+    <hr>
+
+    <p>The identity above only applies to $0$-forms. However, it can be generalized to any $k$-forms. We just have to change the definition to
+    \begin{align*}
+        \nabla = \star \, \dee\, \star\, \dee + \dee\, \star\, \dee\, \star.
+    \end{align*}
+    </p>
+    
     <hr>
     
     <div class="page-header"></div>
