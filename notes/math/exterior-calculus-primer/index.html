@@ -51,6 +51,7 @@
         \newcommand{\Var}{\mathrm{Var}}
 
         \newcommand{\ve}[1]{\mathbf{#1}}
+        \newcommand{\ves}[1]{\boldsymbol{#1}}
         \newcommand{\mrm}[1]{\mathrm{#1}}
         \newcommand{\etal}{{et~al.}}
         \newcommand{\sphere}{\mathbb{S}^2}
@@ -87,7 +88,7 @@
 
     <hr>
 
-    <h2>1 &nbsp; Multiple Integrals</h2>
+    <h2>1 &nbsp; Integration on Flat Spaces</h2>
 
     <p>The main use of exterior calculus is to formulate integration on manifolds. However, let us talk about normal integration that we are familiar with first.</p>
 
@@ -160,7 +161,7 @@
 
     <p>First, let us state the change of variable formula using the old notation</p>
 
-    <p><b>Theorem (Change of Variable Formula).</b> Let $f: \Real^n \ra \Real$ and let $\ve{g}: \Real^n \ra \Real^n$ be a diffeomorphism on the set $A \subseteq \Real^n$. Let $B = \{ \ve{g}(\ve{x}) : \ve{x} \in A \}$. Then,
+    <p><b>Theorem (Change of Variable Formula).</b> Let $f: \Real^n \ra \Real$ and let $\ve{g}: \Real^n \ra \Real^n$ be a diffeomorphism on the set $A \subseteq \Real^n$ such that $\det \nabla \ve{g}(\ve{x}) > 0$ for all $\ve{x} \in A$. Let $B = \{ \ve{g}(\ve{x}) : \ve{x} \in A \}$. Then,
     \begin{align*}
         \int_B f(\ve{y})\, \dee y^1 \dee y^2 \dotsm \dee y^n = \int_A f(\ve{g}(\ve{x})) (\det \nabla \ve{g}(\ve{x}))\, \dee x^1 \dee x^2 \dotsm \dee x^n.
     \end{align*}
@@ -251,7 +252,14 @@
         \dotsc,
         \frac{\partial}{\partial x^n}\bigg|_{\ve{x}},
     \end{align*}
-    respectively.
+    respectively. When it is clear what $\ve{x}$ is from the context, we may drop the $|_\ve{x}$ part. So, the symbols become
+    \begin{align*}
+        \frac{\partial}{\partial x^1},
+        \frac{\partial}{\partial x^2},
+        \dotsc,
+        \frac{\partial}{\partial x^n}.
+    \end{align*}
+    We will do this most of the time. The symbols look like the operator of taking partial derivatives with respect to the coordinates, and they are designed that way. We will see this two paragraphs below.
     </p>
 
     <hr>
@@ -271,13 +279,13 @@
 
     <p>The notion of the <b>pushforward</b> captures this natual correspondence.
     
-    <p><b>Definition (Pushforward).</b> Let $A, B$ be open subsets of $\Real^n$. Let $\ve{g}: A \ra B$ be a diffeomorophism. The <b>pushforward</b> of $\ve{g}$, denoted by $\ve{g}_*$ is a map defined by
+    <p><b>Definition.</b> Let $A, B$ be open subsets of $\Real^n$. Let $\ve{g}: A \ra B$ be a diffeomorophism. The <b>pushforward</b> of $\ve{g}$, denoted by $\ve{g}_*$ is a map defined by
     \begin{align*}
         \ve{g}_*((\ve{x};\ve{v})) = (\ve{g}(\ve{x}); \nabla \ve{g}(\ve{x})\, \ve{v})
     \end{align*}
     for all $\ve{x} \in A$ and all $\ve{v} \in \mcal{T}_\ve{x}(\Real^n)$. In other words, we have that
     \begin{align*}
-        \ve{g}_*\bigg( \frac{\partial}{\partial x^j}\bigg|_{\ve{x}} \bigg) = \sum_{i=1}^n \frac{\partial g^i(\ve{x})}{\partial x^j} \frac{\partial}{\partial y^i}\bigg|_{\ve{y}}
+        \ve{g}_*\bigg( \frac{\partial}{\partial x^j} \bigg) = \sum_{i=1}^n \frac{\partial g^i(\ve{x})}{\partial x^j} \frac{\partial}{\partial y^i}
     \end{align*}
     for all $1 \leq j \leq n$.
     </p>
@@ -292,7 +300,7 @@
     \end{align*}
     we will instead discuss the parallelotope
     \begin{align*}
-        \bigg\{ c^1 \frac{\partial}{\partial x^1}\bigg|_{\ve{x}} + c^2 \frac{\partial}{\partial x^2}\bigg|_{\ve{x}} + \dotsb + c^n \frac{\partial}{\partial x^n}\bigg|_{\ve{x}} : 0 \leq c^1, c^2, \dotsc, c^n \leq \leq 1 \bigg\}
+        \bigg\{ c^1 \frac{\partial}{\partial x^1} + c^2 \frac{\partial}{\partial x^2} + \dotsb + c^n \frac{\partial}{\partial x^n} : 0 \leq c^1, c^2, \dotsc, c^n \leq \leq 1 \bigg\}
     \end{align*}
     in the tangent space $\mcal{T}_\ve{x}(\Real^n)$ instead.
     </p>
@@ -385,7 +393,44 @@
         \end{align*}
         </li>
     </ul>
-    </p>    
+    </p> 
+
+    <hr>
+
+    <p>One of the most important consequence of antisymmetry is the fact that
+    \begin{align*}
+        \ve{v} \wedge \ve{v} = 0.
+    \end{align*}
+    This is because
+    \begin{align*}
+        \ve{v} \wedge \ve{v} = -\ve{v} \wedge \ve{v}.
+    \end{align*}
+    Adding $\ve{v} \wedge \ve{v}$ to both sides, we have that
+    \begin{align*}
+    \ve{v} \wedge \ve{v} + \ve{v} \wedge \ve{v} &= -\ve{v} \wedge \ve{v} + \ve{v} \wedge \ve{v} \\
+    2(\ve{v} \wedge \ve{v}) &= 0(\ve{v} \wedge \ve{v}) \\
+    \ve{v} \wedge \ve{v} &= 0(\ve{v} \wedge \ve{v})
+    \end{align*}
+    and the RHS is just $0$.
+    </p>
+
+    <hr>
+
+    <p>In fact, for the $k$-blade $\ve{v}_1 \wedge \ve{v}_2 \wedge \dotsm \wedge \ve{v}_k$, if any two vectors in the expression are the same, then that $k$-blade is $0$.</p>
+
+    <hr>
+
+    <p>Consequently, we can also show that
+    \begin{align*}
+        \ve{v}_1 \wedge \dotsm \wedge \ve{v}_i \wedge \dotsm \wedge \ve{v}_j \wedge \dotsm \wedge \dotsm \wedge \ve{v}_k
+        &= \ve{v}_1 \wedge \dotsm \wedge \ve{v}_i \wedge \dotsm \wedge (c\ve{v}_i+ \ve{v}_j) \wedge \dotsm \wedge \dotsm \wedge \ve{v}_k
+    \end{align*}
+    for any indices $i$ and $j$ and real constant $c$.
+    </p>
+
+    <hr>
+
+    <p>From the above fact, we can conlude that, if $\ve{v}_1$, $\ve{v}_2$, $\dotsm$, $\ve{v}_k$ are linearly independent, then $\ve{v}_1 \wedge \ve{v}_2 \wedge \dotsm \wedge \ve{v}_k = 0$. This fact is consistent with the fact that $k$ linearly dependent vectors cannot create a $k$-dimensional volume.</p>
 
     <hr>
 
@@ -448,37 +493,60 @@
 
     <h3>1.7 &nbsp; Infinitesimal Volumes Under Transformation</h3>
 
-    <p>Let us go back to the change of variable formula we discussed up to Section 1.5.</p>
+    <p>Let us go back to the change of variable formula we discussed up to Section 1.5.</p>    
 
     <hr>
 
     <p>We say that the infinitesimal volume associated with point $\ve{x} \in A$ is the parallelotope in the tangent space $\mcal{T}_\ve{x}(\Real^n)$ formed by the orthonomal basis vectors of $\mcal{T}_\ve{x}(\Real^n)$.</p>
 
-    <p>Using the $n$-vector notation, this volume is:
+    <p>Note that we said earlier that the basis vectors of $\mcal{T}_\ve{x}(\Real^n)$ are denoted by 
     \begin{align*}
-        \frac{\partial}{\partial x^1}\bigg|_{\ve{x}} 
-        \wedge \frac{\partial}{\partial x^2}\bigg|_{\ve{x}}
+        \frac{\partial}{\partial x^1}, \frac{\partial}{\partial x^2}, \dotsc, \frac{\partial}{\partial x^n}.
+    \end{align*}
+    So, this volume is:
+    \begin{align*}
+        \frac{\partial}{\partial x^1}
+        \wedge \frac{\partial}{\partial x^2}
         \wedge \dotsm 
-        \wedge \frac{\partial}{\partial x^n}\bigg|_{\ve{x}}.
+        \wedge \frac{\partial}{\partial x^n},
+    \end{align*}
+    which is an element of $\Lambda^n(\mcal{T}_\ve{x}(\Real^n))$.
+    </p>
+
+    <hr>
+
+    <p>
+    As an aside, the basis vectors of $\mcal{\Lambda}^k\big( \mcal{T}_\ve{x}(\Real^n) \big)$ are of the form
+    \begin{align*}
+        \frac{\partial}{\partial x^{i_1}} \wedge \frac{\partial}{\partial x^{i_2}} \wedge \dotsm \wedge \frac{\partial}{\partial x^{i_k}}
+    \end{align*}
+    where $1 \leq i_1 < i_2 < \dotsb < i_n \leq n$. We can abbreviate this as
+    \begin{align*}
+    \frac{\partial}{\partial x^{i_1, i_2, \dotsc, i_k}} \qquad \mbox{or} \qquad \frac{\partial}{\partial x^I}
+    \end{align*}
+    where $I = (i_1, i_2, \dotsc, i_k)$. So, the central object of $\mcal{\Lambda}^k\big( \mcal{T}_\ve{x}(\Real^n) \big)$ (i.e., the one and only one basis vector) is
+    \begin{align*} 
+        \frac{\partial}{\partial x^{1,2,\dotsc,n}}.
     \end{align*}
     </p>
+
 
     <hr>
 
     <p>Because the point $\ve{x}$ gets transformed by $\ve{g}$ and the tangent vectors get transformed by the pushforward $\ve{g}^*$, we have that the parallelotoep above gets transformed as follows:
     \begin{align*}
-        \frac{\partial}{\partial x^1}\bigg|_{\ve{x}} \wedge \frac{\partial}{\partial x^2}\bigg|_{\ve{x}} \wedge \dotsm \wedge \frac{\partial}{\partial x^n}\bigg|_{\ve{x}}
-        &\mapsto \ve{g}^*\bigg( \frac{\partial}{\partial x^1}\bigg|_{\ve{x}} \bigg) \wedge \ve{g}^*\bigg( \frac{\partial}{\partial x^2}\bigg|_{\ve{x}} \bigg) \wedge \dotsm \wedge \ve{g}^*\bigg( \frac{\partial}{\partial x^n}\bigg|_{\ve{x}} \bigg) \\
-        &= \bigg( \sum_{i=1}^n \frac{\partial g^i(\ve{x})}{\partial x^1} \frac{\partial}{\partial y^i}\bigg|_{\ve{y}} \bigg) \wedge \bigg( \sum_{i=1}^n \frac{\partial g^i(\ve{x})}{\partial x^2} \frac{\partial}{\partial y^i}\bigg|_{\ve{y}} \bigg) \wedge \dotsb \wedge \bigg( \sum_{i=1}^n \frac{\partial g^i(\ve{x})}{\partial x^n} \frac{\partial}{\partial y^i}\bigg|_{\ve{y}} \bigg) \\
-        &= (\det \nabla \ve{g}(\ve{x}))\, \frac{\partial}{\partial y^1}\bigg|_{\ve{y}} \wedge \frac{\partial}{\partial y^2}\bigg|_{\ve{y}} \wedge \dotsb \wedge \frac{\partial}{\partial y^n}\bigg|_{\ve{y}}.
+        \frac{\partial}{\partial x^1} \wedge \frac{\partial}{\partial x^2} \wedge \dotsm \wedge \frac{\partial}{\partial x^n}
+        &\mapsto \ve{g}^*\bigg( \frac{\partial}{\partial x^1} \bigg) \wedge \ve{g}^*\bigg( \frac{\partial}{\partial x^2} \bigg) \wedge \dotsm \wedge \ve{g}^*\bigg( \frac{\partial}{\partial x^n} \bigg) \\
+        &= \bigg( \sum_{i=1}^n \frac{\partial g^i(\ve{x})}{\partial x^1} \frac{\partial}{\partial y^i} \bigg) \wedge \bigg( \sum_{i=1}^n \frac{\partial g^i(\ve{x})}{\partial x^2} \frac{\partial}{\partial y^i} \bigg) \wedge \dotsb \wedge \bigg( \sum_{i=1}^n \frac{\partial g^i(\ve{x})}{\partial x^n} \frac{\partial}{\partial y^i} \bigg) \\
+        &= (\det \nabla \ve{g}(\ve{x}))\, \frac{\partial}{\partial y^1} \wedge \frac{\partial}{\partial y^2} \wedge \dotsb \wedge \frac{\partial}{\partial y^n}.
     \end{align*}
     The last line is due to the fact that
     \begin{align*}
         \begin{bmatrix}
-            \ve{g}^*\Big(\frac{\partial}{\partial x^1}\bigg|_{\ve{x}}\Big) \\
-            \ve{g}^*\Big(\frac{\partial}{\partial x^2}\bigg|_{\ve{x}}\Big) \\
+            \ve{g}^*\Big(\frac{\partial}{\partial x^1}\Big) \\
+            \ve{g}^*\Big(\frac{\partial}{\partial x^2}\Big) \\
             \vdots \\
-            \ve{g}^*\Big(\frac{\partial}{\partial x^n}\bigg|_{\ve{x}}\Big)
+            \ve{g}^*\Big(\frac{\partial}{\partial x^n}\Big)
         \end{bmatrix}
         =
         \begin{bmatrix}
@@ -488,19 +556,27 @@
             \frac{\partial g^1(\ve{x})}{\partial x^n} & \frac{\partial g^2(\ve{x})}{\partial x^n} & \cdots & \frac{\partial g^n(\ve{x})}{\partial x^n} 
         \end{bmatrix}
         \begin{bmatrix}
-            \frac{\partial}{\partial y^1}\bigg|_{\ve{y}} \\
-            \frac{\partial}{\partial y^2}\bigg|_{\ve{y}} \\
+            \frac{\partial}{\partial y^1} \\
+            \frac{\partial}{\partial y^2} \\
             \vdots \\
-            \frac{\partial}{\partial y^n}\bigg|_{\ve{y}}
+            \frac{\partial}{\partial y^n}
         \end{bmatrix} 
         = (\nabla \ve{g}(\ve{x}))^T \begin{bmatrix}
-        \frac{\partial}{\partial y^1}\bigg|_{\ve{y}} \\
-        \frac{\partial}{\partial y^2}\bigg|_{\ve{y}} \\
+        \frac{\partial}{\partial y^1} \\
+        \frac{\partial}{\partial y^2} \\
         \vdots \\
-        \frac{\partial}{\partial y^n}\bigg|_{\ve{y}}.
+        \frac{\partial}{\partial y^n}.
     \end{bmatrix} 
-    \end{align*}
+    \end{align*}    
     </p>
+    
+    <hr>
+
+    Generalizing from the last derivation, the pushforward $\ve{g}^*$ can also be thought of as a map that sends $\Lambda^n(\mathcal{T}_{\ve{x}}(\Real^2))$ to  $\Lambda^n(\mathcal{T}_{\ve{y}}(\Real^2))$. Its action is as follows:
+    \begin{align*}
+        \ve{g}^*(\ve{v}_1 \wedge \ve{v}_2 \wedge \dotsm \wedge \ve{v}_n) = \ve{g}^*(\ve{v}_1) \wedge \ve{g}^*(\ve{v}_2) \wedge \dotsm \wedge \ve{g}^*(\ve{v}_n)
+    \end{align*}
+    where $\ve{v}_1, \ve{v}_2, \dotsc, \ve{v}_n \in \mcal{T}_{\ve{x}}(\Real^n)$.
 
     <hr>
 
@@ -588,50 +664,1000 @@
 
     <p>We can now discuss a deeper notion of what a $k$-form is.
 
-    <p><b>Definition.</b> A <b>$k$-form</b> is a linear function that maps a $k$-vector to a scalar. In other words, it is a member of the dual space of $\Lambda^k(\mcal{V})$. We denote the vector space of $k$-forms by $\mcal{L}^k(\mcal{V})$.</p>
+    <p><b>Definition.</b> A <b>$k$-form</b> is a linear function that maps a $k$-vector to a scalar. In other words, it is a member of the dual space of $\Lambda^k(\mcal{V})$. We denote the vector space of $k$-forms by $\mcal{A}^k(\mcal{V})$.</p>
+
+    <hr>    
+
+    <p>Recall that $\mcal{T}_\ve{x}(\Real^n)$ is a vector space, and we have symbols for its standard orthonormal basis vectors. The dual space $\mcal{T}_\ve{x}(\Real^n)$ is another vector space. We shall denote the standard orthonormal basis vectors by
+    \begin{align*}
+        \dee x^1, \dee x^2, \dotsc, \dee x^n.
+    \end{align*}
+    Yes, these are the symbols that were used to make the $n$-forms earlier.
+    </p>
 
     <hr>
 
-    <p>Note that we said earlier that the basis vectors of $\mcal{T}_\ve{x}(\Real^n)$ are denoted by 
+    <p>
+    Using the above notations, the basis covectors of $\mcal{A}^k\big( \mcal{T}_\ve{x}(\Real^n) \big)$ are of the form
     \begin{align*}
-        \frac{\partial}{\partial x^1} \bigg|_{\ve{x}}
+        \dee x^{i_1} \wedge \dee x^{i_2} \wedge \dotsm \wedge \dee x^{i_n}
+    \end{align*}
+    where $1 \leq i_1 < i_2 < \dotsb < i_n \leq n$. We can abbreviate this as
+    \begin{align*}
+    \dee x^{i_1, i_2, \dotsc, i_k} \qquad \mbox{or} \qquad \dee x^I
+    \end{align*}
+    where $I = (i_1, i_2, \dotsc, i_k)$.
+    </p>
+
+    <hr>
+
+    <p>We will be discussing sets of tuples $I = (i_1, i_2, \dotsc, i_k)$ such that $1 \leq i_1 < i_2 < \dotsb < i_n \leq n$ quite often. So, let's give this object a handy notation.</p>
+
+    <p>We shall let $[n]$ denote the set $\{ 1, 2, \dotsc, n \}$. Then, naturally
+    \begin{align*}
+        [n]^k = \{ (i_1, i_2, \dotsc, i_k) : i_1, i_2, \dotsc, i_k \in [n] \}
+    \end{align*}
+    So, we can let 
+    \begin{align*}
+        [n]^k_{<} = \{ (i_1, i_2, \dotsc, i_k) : i_1, i_2, \dotsc, i_k \in [n], i_1 < i_2 < \dotsb < i_k \}
+    \end{align*}
+    denote the set that we want.
+    </p>
+
+    <hr>
+
+    <p>So, what does the basis covectors above do? Well, if we have $\ve{a} \in \Lambda^k(\mcal{A}_\ve{x}(\Real^n))$, then we can write
+    \begin{align*}
+        \ve{a} = \sum_{I \in [n]^k_{<}} a^{I} \frac{\partial}{\partial x^I}.
+    \end{align*}
+    The covector $\dee x^{i_1,i_2,\dotsc,i_k}$ picks out the coefficient of $\partial/\partial x^{i_1,i_2,\dotsc,i_k}$:
+    \begin{align*}
+    \dee x^{i_1,i_2,\dotsc,i_k}(\ve{a}) = a^{i_1, i_2, \dotsc, i_k}.
     \end{align*}
     </p>
 
-<!--
-    
-    
-    
     <hr>
 
-    <b>Vector calculus</b> is about how little arrows change and how to differentiate and integrate them.
-    
-    <p>More precisely, we deal with <b>vector-valued functions</b> and how to differentiate and integrate them.</p>
+    <p>Using musical notations, we can capture the duality between $k$-vectors and $k$-forms as follows:
+    \begin{align*}
+        \bigg( \frac{\partial}{\partial x^{i_1,i_2,\dotsc,i_k}} \bigg)^{\flat} &= \dee x^{i_1,i_2,\dotsc,i_k}, \\
+        \Big( \dee x^{i_1,i_2,\dotsc,i_k} \Big)^{\sharp} &= \frac{\partial}{\partial x^{i_1,i_2,\dotsc,i_k}}.
+    \end{align*}
+    Of course, the duality extends to linear combinations of these basis $k$-vectors and $k$-forms.
+    </p>
 
     <hr>
-    
-    <p><b>Exterior algebra</b> is about "little volumes."</p>
 
-    <p>In math jargon, "little volumes" are called <b>"alternating tensors."</b></p>
+    <p>We know that $\Lambda^n(\mcal{T}_\ve{x}(\Real^n))$ is a 1-dimensional vector space whose basis vector is $\partial / \partial x^{1,2,\dots,n}$.</p>
+
+    <p>Because $\mcal{A}^n(\mcal{T}_\ve{x}(\Real^n))$ is isomorphic to $\Lambda^n(\mcal{T}_\ve{x}(\Real^n))$, it is a 1-dimensional vector space whose basis vector is $\dee x^{1,2,\dots,n}$.</p>
+
+    <p>What $\dee x^{1,2,\dots,n}$ is very simple. It picks out the coefficient of $\partial / \partial x^{1,2,\dotsc,n}$ from its input. Since all $n$-vectors in $\Lambda^n(\mcal{T}_\ve{x}(\Real^n))$ is $c \partial / \partial x^{1,2, \dotsc ,n} $ for some constant $c \in \Real$. This operation is very simple indeed.</p>
 
     <hr>
-    
-    <p><b>Exterior calculus</b> is about how little volumes changes and how to differentiate and integrate them.</p>    
 
-    <p>More precisely, we deal with <b>alternating-tensor-valued functions</b> (aka <b>differential forms</b>) and how to differentiate and integrate them.</p>        
+    <h3>1.9 &nbsp; Differential $k$-Forms</h3>
+
+    <p>We now give a deeper definition of a differential $k$-form.</p>
+
+    <p><b>Definition.</b> Consider an $n$-dimensional vector space $\mcal{V}$. A <b>differential $k$-form</b> over $A \subseteq \mcal{V}$ is a function that sends each point $\ve{x}$ in $A$ to a $k$-form in $\mcal{A}^k(\mcal{T}_\ve{x}(\mcal{V}))$.</p>
+
+    <hr>
+
+    <p>A differential $k$-form can be written as a linear combination of basis $k$-forms where the coefficients are functions.
+    \begin{align*}
+        \omega(\ve{x}) = \sum_{I \in [n]^k_{<} } \omega^I(\ve{x})\, \dee x^I
+    \end{align*}
+    where each $\omega^I$ is a function of signature $\mcal{V} \ra \Real$.
+    </p>
+
+    <hr>
+
+    <p>A function from a spatial domain to something is often called a <b>field</b>. So, a differential $k$-form is a <b>field of $k$-forms</b> on the tangent spaces of each point in the domain.</p>
+
+    <hr>
+
+    <p>Recall that a $k$-form is the dual of a $k$-vector, so it is a measuring device for $k$-vectors. A field of $k$-forms is thus a field that associated each point with a measuring device for $k$-vectors in the tangent space of that point.</p>
+
+    <hr>
+
+    <h3>1.10 &nbsp; A New Intepretation of Integration</h3>
+    
+    <p>A natural idea is this. A field of $k$-forms can become useful if we have a field of $k$-vectors on the same domain. When we have both, we can apply the $k$-form at each point to the $k$-vector at each point and get a scalar. We can aggregate these scalars over the domain to get an aggregated measurement. <b>Integration is exactly this.</b></p>
+
+    <hr>
+
+    <p>However, we are not ready to discuss integration on manifolds yet. So, let's do integration in $\Real^n$ first.</p>
+
+    <hr>
+
+    <p>We know that a differential $n$-form is an expression of the form $$f(\ve{x})\, \dee x^{1,2,\dotsc,n}.$$ The integral
+    \begin{align*}
+        \int_A f(\ve{x})\, \dee x^{1,2,\dotsc,n}
+    \end{align*}
+    is the aggregated measurement resulted from using the integrand to measure something over the set $A$. What is not explicitly specified in the expression is what that something is. 
+    </p>
+
+    <hr>
+
+    <p>To define the "something" above, we introduce the notion of differential $k$-vector as an analogue of the different $k$-form.</p>
+
+    <p><b>Definition.</b> A <b>differential $k$-vectors</b> over $A \subseteq \mcal{V}$ is a function that sends a point $\ve{x} \in A$ to a $k$-vector in $\Lambda^k(\mcal{T}_\ve{x}(\mcal{V})).$</p>
+
+    <p>A differential $k$-vector can be written in the following form.
+        \begin{align*}
+        \ve{a}(\ve{x}) = \sum_{I \in [n]^k_{<} } a^I(\ve{x})\, \dee x^I
+    \end{align*}
+    where each $a^I$ is a function of signature $\Real^n \ra \Real$.
+    </p>
+
+    <hr>
+
+    <p>The something we use in the integral $\int_A f(\ve{x})\, \dee x^{1,2,\dotsc,n}$ is the <b>standard differential $n$-vector:</b>
+    \begin{align*}
+        \ve{x} \ra \frac{\partial}{\partial x^{1,2,\dotsc,n}}.
+    \end{align*}
+    Here, the coefficient of $\partial / \partial x^{1,2,\dotsc,n}$ is the constant $1$.
+    </p>
+
+    <hr>
+
+    <p>So, a new interpretation of $\int_A f(\ve{x})\, \dee x^{1,2,\dotsc,n}$ is this.</p>
+
+    <p>The expression tells us to apply the differential $n$-form $f(\ve{x})\, \dee x^{1,2,\dotsc,n}$ to the standard different $n$-vector $\partial / \partial x^{1,2,\dotsc,n}$ over the integration domain $A$ and aggregate the measurements.</p>
+
+    <hr>
+
+    <p>To be more specific, we note that a differential $n$-form $f(\ve{x})\, \dee x^{1,2,\dotsc,n}$ has two parts: the scalar function $f(\ve{x})$ and the $n$-form $dx^{1,2,\dots,n}$.</p>
+
+    <p>We can interpret the two parts as serving different purposes.
+    <ul>
+        <li>The scalar function $f(\ve{x})$ serves as the "main" measurement value. It is the "density" of the quantity we want to measure per unit volume. For example, if we want to integrate light energy being shone over an area, then $f(\ve{x})$ would tell the density of light energy that falls on point $\ve{x}$.</li>
+
+        <li>The $n$-form $dx^{1,2,\dots,n}$ tells us how to measure the infinitesmal volume around $\ve{x}$. The result will gives us a numerical volume, whose purpose is to be multipled to the main measurement value in order to turn "density" into a concrete value whose unit has no "per volume" suffix. </li>
+    </ul>
+    </p>
+
+    <p>So, the main measurement at each point $\ve{x}$ is $f(\ve{x})$, and we aggregate them, scaling each by the "numerical volume" made on the infinitesimal volume $\partial / \partial x^{1,2,\dotsc,n}$. In case of the vanilla integral $\int_A f(\ve{x})\, \dee x^{1,2,\dotsc,n}$, the numerical volume is computed by done applying the $n$-form $\dee x^{1,2,\dotsc,n}$ to the standard $n$-vector $\partial / \partial x^{1,2,\dotsc,n}$, which results in $\dee x^{1,2,\dotsc,n}(\partial / \partial x^{1,2,\dotsc,n}) = 1$.</p>
+
+    <hr>
+
+    <h3>1.11 &nbsp; Pushforwards, Pushbacks, and Change of Variable</h3>
+
+    <p>Let us go back to the change of variable formula
+    \begin{align*}
+        \int_B f(\ve{y})\, \dee y^{1,2,\dotsc,n} = \int_A f(\ve{g}(\ve{x})) (\det \nabla \ve{g}(\ve{x}))\, \dee x^{1,2,\dotsc,n}
+    \end{align*}
+    and try to understand what's going on.
+    </p>
+
+    <hr>
+
+    <p>We can interpret the statement of the formula as trying to do the same calculation in two ways.</p>
+
+    <hr>
+
+    <p>The first way, represented by the LHS, is to go over each point $\ve{y}$ in $B$. The main measurement density at $\ve{y}$ is $f(\ve{y})$ and it is scaled by the volume of the standard $n$-vector, as measured by $\dee y^{1,2,\dotsc,n}$.</p>
+
+    <p>The second is to exploit the correspondence between points in $A$ and $B$. Because, for each $\ve{y} \in B$, there is a unique corresponding $\ve{x}$ such that $\ve{y} = \ve{g}(\ve{x})$. So, we can go to each point $\ve{x}$ in $A$ and apply $\ve{g}$ to get $\ve{y}$. We can then grab the measurement density $f(\ve{g}(\ve{x}))$. Now, the remaining problem is how to scale this measurement with the numerical volume of the infinitesmal volume around $\ve{y}$.</p>
+
+    <p>We cannot simply use $\dee y^{1,2,\dotsc,n}$ as the infinitesimal volume around $\ve{y}$. This is because it comes out of nowhere and not grounded by the fact that we go through each point in $\ve{x}$, which means that we should use the standard $n$-vector $\partial/\partial x^{1,2,\dotsc,n}$ somehow.</p>
+
+    <p>Doing so is quite straightforward, when we use $\ve{g}$ to transform $\ve{x}$, we not only apply it to $\ve{x}$, but we also apply the pushforward $\ve{g}^*$ to $\partial/\partial x^{1,2,\dotsc,n}$. This results in
+    \begin{align*}
+        \ve{g}^*\bigg( \frac{\partial}{\partial x^{1,2,\dotsc,n}} \bigg)
+        &= \ve{g}^*\bigg( \frac{\partial}{\partial x^1} \bigg) \wedge \ve{g}^*\bigg( \frac{\partial}{\partial x^2} \bigg) \wedge \dotsb \wedge \ve{g}^*\bigg( \frac{\partial}{\partial x^n} \bigg) \\
+        &= (\det \nabla \ve{g}(\ve{x}))\, \frac{\partial}{\partial y^1} \wedge \frac{\partial}{\partial y^2} \wedge \dotsm \wedge \frac{\partial}{\partial y^n} \\
+        &= (\det \nabla \ve{g}(\ve{x}))\, \frac{\partial}{\partial y^{1,2,\dotsc,n}}.
+    \end{align*}
+    Then, we can apply the $n$-form $\dee y^{1,2,\dots,n}$ on the above result to get the scaling factor of $\det \nabla \ve{g}(\ve{x})$. This is the scaling factor we should apply to the main measurement $f(\ve{g}(\ve{x}))$ as we go through points in $\ve{x}$. This means that the corresponding $n$-form on $A$
+    \begin{align*}
+        f(\ve{g}(\ve{x})) (\det \nabla \ve{g}(\ve{x}))\, \dee x^{1,2,\dotsc,n}.
+    \end{align*}
+    As a result,
+    \begin{align*}
+        \int_B f(\ve{y})\, \dee y^{1,2,\dotsc,n} = \int_A f(\ve{g}(\ve{x})) (\det \nabla \ve{g}(\ve{x}))\, \dee x^{1,2,\dotsc,n}
+    \end{align*}
+    </p>
+
+    <hr>
+
+    <p>As we said earlier, the change of variable formula is a statement that says two differential $n$-forms are equivalent in the sense that they yield the same result when applied to their respective domains. We encode the relationship between these two differential forms through the concept of <b>pullbacks</b>.</p>
+
+    <p><b>Definition.</b> Let $A$ and $B$ be open subsets of $\Real^n$. Let $\ve{g}: A \ra B$ be a diffeomorphism. Let 
+    $$\beta = \sum_{I \in [n]^k_{<}} \beta^I \dee y^I$$ 
+    be a differential $k$-form on $B$. The <b>pullback of $\beta$ with respect to $\ve{g}$</b>, denoted by $\ve{g}^*\beta$, is the differential $k$-form on $A$ defined by
+    \begin{align*}
+        (\ve{g}^*\beta)(\ve{x}) 
+        = \sum_{I \in [n]^k_{<}} \beta^I(\ve{g}(\ve{x}))\, \dee y^I\bigg(\ve{g}^*\bigg( \frac{\partial}{\partial x^I} \bigg)\bigg)\, \dee x^I.
+    \end{align*}
+    </p>
+
+    <hr>
+
+    <p>With the pullback notation, we can rewrite the change of variable formula as follows.</p>
+
+    <p><b>Theorem (Change of Variable Formula).</b> Let $A$ and $B$ be open subsets of $\Real^n$. Let $\ve{g}: A \ra B$ be a diffeomorophism such that $\det \nabla \ve{g}(\ve{x}) > 0$ for all $\ve{x} \in A$. Let $\beta$ be a differential $n$-form on $B$. Then,
+    \begin{align*}
+        \int_B \beta = \int_A \ve{g}^*\beta.
+    \end{align*}
+    </p>
 
     <hr>
 
     <h2>2 &nbsp; Exterior Algebra</h2>
 
-    <h2>2.1 &nbsp; Motivation</h2>
+    <p>In the last section, while we defined $k$-vectors and $k$-forms, we kind of exclusively studied $n$-forms in $\Real^n$.</p>
 
--->
+    <p>In this section, we study ways to manipulate $k$-vectors and $k$-forms. These include the wedge product ($\wedge$), which allows us to create vectors and forms in higher dimensions from those in lower ones, and the Hodge star ($\star$), which allows us to find orthogonal complements of vectors and forms.</p>
+
+    <p>However, in order to define the wedge product more rigourously, we start with a different definitions of $k$-forms.</p>
+
+    <hr>
+
+    <h3>2.1 &nbsp; Forms as Alternating Tensors</h3>
+
+    <p>In the last section, we start with $k$-vectors and define $k$-forms as their duals. In this section, we define $k$-forms from the ground up, and then say that $k$-vectors are dual of $k$-forms. These two definitions are equivalent, but this way of defining forms allows a precise definition of wedge products.</p>
+
+    <hr>
+
+    <p>The new definition of $k$-forms starts from the definition of $k$-tensors.</p>
+
+    <p><b>Definition.</b> Let $\mcal{V}$ be an $n$-dimensional real vector space. A <b>$k$-tensor</b> on $\mcal{V}$ is a function $\alpha: \mcal{V}^k \ra \Real$ that is linear in all of its argument. That is,
+    \begin{align*}
+        \alpha(\ve{a}_1 , \dotsc ,  (c \ve{a}_i) , \dotsc , \ve{a}_k &)= c \alpha(\ve{a}_1 , \dotsc ,  \ve{a}_i , \dotsc , \ve{a}_k) \\
+        \alpha(\ve{a}_1 , \dotsc ,  (\ve{a}_i + \ve{b}_i) , \dotsc , \ve{a}_k) &= \alpha(\ve{a}_1 , \dotsc ,  \ve{a}_i , \dotsc , \ve{a}_k) + \alpha(\ve{a}_1 , \dotsc ,  \ve{a}_i , \dotsc , \ve{a}_k)
+    \end{align*}
+    for any scalar $c \in \Real$ and any vectors $\ve{b}_i, \ve{a}_1, \ve{a}_2, \dotsc, \ve{a}_k \in \mcal{V}$. The space of all $k$-tensors on $\mcal{V}$ is denoted by $\mcal{L}^k(\mcal{V})$. The number $k$ is called the <b>order</b> of the tensor.
+    </p>
+
+    <hr>
+
+    <p>We can show that $\mcal{L}^1(\mcal{V})$ is a real vector space of dimension $n$. It's actually exactly the same as $\mcal{A}^1(\mcal{V})$. So, the $\varepsilon_1$, $\varepsilon_2$, $\dotsc$, $\varepsilon_n$ make an orthonormal basis of $\mcal{L}^1(\mcal{V})$.</p>
+
+    <hr>
+
+    <p>It's hard to talk about orthonormal basis vectors of $\mcal{L}^k(\mcal{V})$ at the moment, but it becomes a lot easier once we have the notion of a "tensor product," which allows us to build tensors from ones that have lower dimensions.</p>
+
+    <p><b>Definition.</b> Let $\alpha$ be a $k$-tensor on $\mcal{V}$ and $\beta$ be an $\ell$-tensor on $\mcal{V}$. Then, the <b>tensor product</b> $\alpha \otimes \beta$ is a $(k+\ell)$-tensor on $\mcal{V}$ defined as follows:
+    \begin{align*}
+        (\alpha \otimes \beta)(\ve{v}_1, \dotsc, \ve{v}_k, \ve{v}_{k+1}, \dotsc, \ve{v}_{k+\ell}) = \alpha(\ve{v}_1, \dotsc, \ve{v}_k) \beta(\ve{v}_{k+1}, \dotsc, \ve{v}_{k+\ell}).
+    \end{align*}
+    </p>
+
+    <hr>
+
+    <p><b>Proposition.</b> The tensor product has the following properties:
+    <ul>
+        <li>$\alpha \otimes (\beta \otimes \gamma) = (\alpha \otimes \beta) \otimes \gamma$.</li>
+        <li>$(c\alpha) \otimes \beta = c(\alpha \otimes \beta) = \alpha \otimes (c\beta)$ for any real constant $c$.</li>
+        <li>If $\alpha$ and $\beta$ have the same order:
+        \begin{align*}
+            (\alpha+\beta)\otimes \gamma &= \alpha\otimes \gamma + \beta\otimes \gamma, \\
+            \gamma \otimes (\alpha+\beta) &= \gamma\otimes \alpha + \gamma\otimes \beta.
+        \end{align*}        
+        </li>
+    </ul>
+    </p>
+    
+    <hr>
+
+    <p>Now, it becomes easy to talk about $\mcal{L}^{k}(\mcal{V})$ and its standard orthonomal basis. </p>
+    
+    <p>We can show pretty easily that any $\alpha \in \mcal{L}^{k}(\mcal{V})$ is defined entirely based on their actions on tuples of the form
+    \begin{align*}
+        (\ve{e}_{i_1}, \ve{e}_{i_2}, \dotsc, \ve{e}_{i_k}),
+    \end{align*}
+    where each $i_1, i_2, \dotsc, i_k \in \{1, 2, \dotsc, n\}$. These tuples can be thought of as orthonormal basis vectors of $\mcal{V}^k$. So, $\alpha$ can be thought of as a linear combination of functions that takes in a tuple $(\ve{v}_1, \ve{v}_{i_2}, \dotsc, \ve{v}_{i_k}) \in \mcal{V}^k$ and extracts its coefficient of $(\ve{e}_{i_1}, \ve{e}_{i_2}, \dotsc, \ve{e}_{i_k})$. Since there are $n^k$ such tuples, we have that $\mcal{L}^{k}(\mcal{V})$ has dimension $n^k$.
+    </p>
+
+    <p>What is the function that extracts the coefficient of $(\ve{e}_{i_1}, \ve{e}_{i_2}, \dotsc, \ve{e}_{i_k})$ though? We can show that it is exactly
+    \begin{align*}
+        \varepsilon_{i_1} \otimes \varepsilon_{i_2} \otimes \dotsb \otimes \varepsilon_{i_k}.
+    \end{align*}
+    You just have to think about its action on $(\ve{e}_{i_1}, \ve{e}_{i_2}, \dotsc, \ve{e}_{i_k})$!
+    </p>
+
+    <hr>
+
+    <p>Now, we discuss the object that is going to become our alternative definition of a $k$-form. The alternating tensor.</p>
+
+    <p><b>Definition.</b> A $k$-tensor $\alpha$ is <b>alternating</b> if it is true that
+    \begin{align*}
+        \alpha(\ve{a}_1, \dotsc, \ve{a}_i, \ve{a}_{i+1}, \dotsc, \ve{a}_k) = -\alpha(\ve{a}_1, \dotsc, \ve{a}_{i+1}, \ve{a}_{i}, \dotsc, \ve{a}_k)
+    \end{align*}
+    for all $1 \leq i \leq k-1$. A <b>$k$-form</b> is an alternating $k$-tensor.
+    </p>
+
+    <hr>
+
+    <p>Let $\pi$ be a permutaion on $\{ 1, 2, \dotsc, k \}$. If $\alpha$ is a $k$-form, then
+    \begin{align*}
+        \alpha(\ve{a}_{\pi(1)}, \ve{a}_{\pi(2)}, \dotsc, \ve{a}_{\pi(k)}) = \sgn(\pi)\, \alpha(\ve{a}_{1}, \ve{a}_{2}, \dotsc, \ve{a}_{k})
+    \end{align*}
+    </p>
+    
+    <hr>
+
+    <p>We now introduce a way to turn a $k$-tensor to a $k$-form.</p>
+
+    <p><b>Definition.</b> Given $\alpha \in \mathcal{L}^k(V)$, define $\mathrm{Alt}(\alpha)$ by 
+    \begin{align*}
+        \mathrm{Alt}(\alpha)(\ve{a}_1, \dotsc, \ve{a}_k)
+        = \frac{1}{k!} \sum_{\pi \in \mathfrak{S}_k} \sgn(\pi)\, \alpha(\ve{a}_{\pi(1)}, \dotsc, \ve{a}_{\pi(k)}).
+    \end{align*}    
+    where $\mathfrak{S}_k$ denotes the set of permuations on $\{1,2,\dotsc,k\}$.
+    </p>
+
+    <p>It's easy to check that $\mathrm{Alt}(\alpha)$ is alternating for any $k$-tensor $\alpha$. Moreover, if $\alpha$ is already alternating, then $\mrm{Alt}(\alpha) = \alpha$.</p>
+    
+    <hr>
+
+    <p>We can now precisely define what a wedge product is.</p>
+
+    <p><b>Definition.</b> Given $\alpha \in \mathcal{A}^k(\mcal{V})$ and $\beta \in \mathcal{A}^\ell(\mcal{V})$, define the <b>wedge product</b> $\alpha \wedge \beta$ as:
+    \begin{align*}
+        \alpha \wedge \beta = \frac{(k + \ell)!}{k!\ell!} \mathrm{Alt}(\alpha \otimes \beta).
+    \end{align*}
+    </p>
+    
+    <hr>
+
+    <p><b>Proposition.</b> The wedge product satisfies the following properties:
+    <ul>
+        <li>$\alpha \wedge (\beta \wedge \gamma) = (\alpha \wedge \beta) \wedge \gamma.$</li>
+        <li>$(cf) \wedge \beta = c(\alpha \wedge \beta) = \alpha \wedge (cg).$</li>
+        <li>If $\alpha$ and $\beta$ have the same order,
+        \begin{align*}
+            (\alpha+\beta)\wedge \gamma &= \alpha\wedge \gamma + \beta\wedge \gamma, \\
+            \gamma\wedge(\alpha+\beta) &= \gamma \wedge \alpha + \gamma \wedge \beta.
+        \end{align*}
+        </li>
+        <li>If $\alpha$ and $\beta$ have order $k$ and $\ell$, respectively, then
+        \begin{align*}
+            \beta \wedge \alpha = (-1)^{k\ell}\alpha \wedge \beta.
+        \end{align*}
+        </li>        
+    </ul>
+    </p>
+
+    <hr>
+    
+    <p>As we have discussed before, the standard orthonomal basis of $\mcal{A}^k(\mcal{V})$ is given by
+    \begin{align*}
+        \varepsilon_{i_1} \wedge \varepsilon_{i_2} \wedge \dotsm \wedge \varepsilon_{i_k}
+    \end{align*}
+    where $1 \leq i_1 < i_2 < \dotsb < i_k \leq n$. We call these $k$-forms the <b>elementary $k$-forms</b> and their duals the <b>elementary $k$-vectors.</b></
+    </p>
+    
+    <hr>
+
+    <p>The action of an elementary $k$-tensor on a tuple of $k$ vectors are as follows.</p>
+
+    <p><b>Proposition.</b> Let $I \in [n]^k_{<}$. Let $\varepsilon^{I} = \varepsilon^{i_1, i_2, \dotsc, i_k} = \varepsilon_{i_1} \wedge \varepsilon_{i_2} \wedge \dotsm \wedge \varepsilon_{i_k}$ be an elementary $k$-form. Given vectors $\ve{v}_1$, $\dotsc$, $\ve{v}_k$ in $\mcal{V}$. Let $V = [v_{ij}]$ be the $k \times n$ real matrix such that
+    \begin{align*}
+        \begin{bmatrix}
+            \ve{v}_1 \\
+            \ve{v}_2 \\
+            \vdots \\
+            \ve{v}_k
+        \end{bmatrix}
+        \begin{bmatrix}
+            v_{11} & v_{12} & \cdots & v_{1n} \\
+            v_{21} & v_{22} & \cdots & v_{2n} \\
+            \vdots & \vdots & \ddots & \vdots \\
+            v_{k1} & v_{k2} & \cdots & v_{kn}
+        \end{bmatrix}
+        \begin{bmatrix}
+            \ve{e}_1 \\
+            \ve{e}_2 \\
+            \vdots \\
+            \ve{e}_n 
+        \end{bmatrix}.
+    \end{align*}
+    Let $V_I$ be the $k \times k$ matrix whose columns are the $i_1$th, $i_2$th, $i_k$th columns of $V$:
+    \begin{align*}
+        V_I = \begin{bmatrix}
+        v_{1{i_1}} & v_{1{i_2}} & \cdots & v_{1{i_k}} \\
+        v_{2{i_1}} & v_{2{i_2}} & \cdots & v_{2{i_k}} \\
+        \vdots & \vdots & \ddots & \vdots \\
+        v_{k{i_1}} & v_{k{i_2}} & \cdots & k_{v{i_k}}
+    \end{bmatrix}.
+    \end{align*}    
+    Then,
+    \begin{align*}
+        \varepsilon^I(\ve{v}_1, \ve{v}_2, \dotsc, \ve{v}_k) = \det V_I.
+    \end{align*}
+    </p>
+
+    <hr>
+
+    <p>Moreover, because
+    \begin{align*}
+    V_I 
+    = \begin{bmatrix}
+        v_{1{i_1}} & v_{1{i_2}} & \cdots & v_{1{i_n}} \\
+        v_{2{i_1}} & v_{2{i_2}} & \cdots & v_{2{i_n}} \\
+        \vdots & \vdots & \ddots & \vdots \\
+        v_{v{i_1}} & v_{v{i_2}} & \cdots & v_{v{i_n}}
+    \end{bmatrix}
+    = \begin{bmatrix}
+        \varepsilon_{i_1}(\ve{v}_1) & \varepsilon_{i_2}(\ve{v}_1) & \cdots & \varepsilon_{i_k}(\ve{v}_1) \\
+        \varepsilon_{i_1}(\ve{v}_2) & \varepsilon_{i_2}(\ve{v}_2) & \cdots & \varepsilon_{i_k}(\ve{v}_2) \\
+        \vdots & \vdots & \ddots & \vdots \\
+        \varepsilon_{i_1}(\ve{v}_k) & \varepsilon_{i_2}(\ve{v}_k) & \cdots & \varepsilon_{i_k}(\ve{v}_k)
+    \end{bmatrix},
+    \end{align*}
+    we have that
+    \begin{align*}
+    \varepsilon_{i_1} \wedge \varepsilon_{i_2} \wedge \dotsm \wedge \varepsilon_{i_k}(\ve{v}_1, \ve{v}_2, \dotsc, \ve{v}_k)
+    = \det \begin{bmatrix}
+    \varepsilon_{i_1}(\ve{v}_1) & \varepsilon_{i_2}(\ve{v}_1) & \cdots & \varepsilon_{i_k}(\ve{v}_1) \\
+    \varepsilon_{i_1}(\ve{v}_2) & \varepsilon_{i_2}(\ve{v}_2) & \cdots & \varepsilon_{i_k}(\ve{v}_2) \\
+    \vdots & \vdots & \ddots & \vdots \\
+    \varepsilon_{i_1}(\ve{v}_k) & \varepsilon_{i_2}(\ve{v}_k) & \cdots & \varepsilon_{i_k}(\ve{v}_k)
+    \end{bmatrix}
+    \end{align*}
+    </p>
+    
+    <hr>
+
+    <p>In the above equation, we characterize the action of an elementary $k$-form on a $k$-tuple of vectors, what about its action on the $k$-vector $\ve{v}_1 \wedge \ve{v}_2 \wedge \dotsm \wedge \ve{v}_k$?</p>
+
+    <p>Well, it turns out to be exactly the same as the above!
+    \begin{align*}
+    \varepsilon_{i_1} \wedge \varepsilon_{i_2} \wedge \dotsm \wedge \varepsilon_{i_k}(\ve{v}_1 \wedge \ve{v}_2 \wedge \dotsm \wedge \ve{v}_k)
+    = \det \begin{bmatrix}
+    \varepsilon_{i_1}(\ve{v}_1) & \varepsilon_{i_2}(\ve{v}_1) & \cdots & \varepsilon_{i_k}(\ve{v}_1) \\
+    \varepsilon_{i_1}(\ve{v}_2) & \varepsilon_{i_2}(\ve{v}_2) & \cdots & \varepsilon_{i_k}(\ve{v}_2) \\
+    \vdots & \vdots & \ddots & \vdots \\
+    \varepsilon_{i_1}(\ve{v}_k) & \varepsilon_{i_2}(\ve{v}_k) & \cdots & \varepsilon_{i_k}(\ve{v}_k)
+    \end{bmatrix}.
+    \end{align*}
+    </p>    
+
+    <p>So, as far as measurements of $k$-vectors go, we can treat it as a tuple of $k$-vectors and use a $k$-form to measure it.</p>
+
+    <p>This is why nobody bothers to write measurement of a $k$-vector with a $k$-form as
+    $$\varepsilon_{i_1} \wedge \varepsilon_{i_2} \wedge \dotsm \wedge \varepsilon_{i_k}(\ve{v}_1 \wedge \ve{v}_2 \wedge \dotsm \wedge \ve{v}_k).$$
+    They just write
+    $$\varepsilon_{i_1} \wedge \varepsilon_{i_2} \wedge \dotsm \wedge \varepsilon_{i_k}(\ve{v}_1, \ve{v}_2, \dotsc, \ve{v}_k).$$
+    </p>
+
+    <hr>
+
+    <p>We can actually go further. Consider a $k$-form $\alpha_1 \wedge \alpha_2 \wedge \alpha_k$ where each $\alpha_i$ is a 1-form. Then, we can show
+    that
+    \begin{align*}
+    \alpha_1 \wedge \alpha_2 \wedge \dotsm \wedge \alpha_k(\ve{v}_1, \ve{v}_2, \dotsc, \ve{v}_k)
+    &= \det \begin{bmatrix}
+    \alpha_1(\ve{v}_1) & \alpha_2(\ve{v}_1) & \cdots & \alpha_k(\ve{v}_1) \\
+    \alpha_1(\ve{v}_2) & \alpha_2(\ve{v}_2) & \cdots & \alpha_k(\ve{v}_2) \\
+    \vdots & \vdots & \ddots & \vdots \\
+    \alpha_1(\ve{v}_k) & \alpha_2(\ve{v}_k) & \cdots & \alpha_k(\ve{v}_k)
+    \end{bmatrix}.
+    \end{align*}
+    Moreover, we can also show that $\alpha_i(\ve{v}_j)$ is just the dot product between $\ve{v}_j$ and $\alpha_j$'s dual. In other words,
+    \begin{align*}
+        \alpha_i(\ve{v}_j) = \alpha_i^\sharp \cdot \ve{v}_j.
+    \end{align*}
+    As a result, we have an alternative expression
+    \begin{align*}
+    \alpha_1 \wedge \alpha_2 \wedge \dotsm \wedge \alpha_k(\ve{v}_1, \ve{v}_2, \dotsc, \ve{v}_k)
+    &= \det \begin{bmatrix}
+    \alpha_1^\sharp \cdot\ve{v}_1 & \alpha_2^\sharp \cdot \ve{v}_1 & \cdots & \alpha_k^\sharp \cdot \ve{v}_1 \\
+    \alpha_1^\sharp \cdot \ve{v}_2 & \alpha_2^\sharp  \cdot \ve{v}_2 & \cdots & \alpha_k^\sharp  \cdot  \ve{v}_2 \\
+    \vdots & \vdots & \ddots & \vdots \\
+    \alpha_1^\sharp \cdot \ve{v}_k & \alpha_2^\sharp \cdot \ve{v}_k & \cdots & \alpha_k^\sharp \cdot \ve{v}_k
+    \end{bmatrix}.
+    \end{align*}
+    </p>
+
+    <hr>
+    
+    <h3>2.2 &nbsp; Hodge Star</h3>
+
+    <p>The discussion in this section is based on $k$-forms, but it should apply to $k$-vectors as well.</p>
+
+    <hr>
+
+    <p>In linear algebra, we have the notion of "orthogonal complements."</p>
+
+    <p><b>Definition.</b> Let $\mcal{U} \subseteq \mcal{V}$ be a linear subspace of a real $n$-dimensional vector space $\mcal{V}$ with an inner product $\langle \cdot, \cdot \rangle$. The <b>orthogonal complement</b> of $\mcal{U}$ is the collection of vectors
+    \begin{align*}
+        \mcal{U}^{\perp} = \{ \ve{v} \in \mcal{V} : \langle \ve{u}, \ve{v} \rangle = 0, \forall \ve{u} \in \mcal{U} \}.
+    \end{align*}
+    </p>
+
+    <p>The main property of $\mcal{U}^\perp$ is that it "completes" $\mcal{U}$ in the sense that $\mcal{V} = \mcal{U} + \mcal{U}^\perp$ where
+    \begin{align*}
+    \mcal{U} + \mcal{U}^\perp = \{ \ve{u}_1 + \ve{u}_2 : \ve{u}_1 \in \mcal{U}, \ve{u}_2 \in \mcal{U}^{\perp} \}.
+    \end{align*}
+    </p>
+
+    <hr>
+
+    <p>The <b>Hodge star</b> operator gives the orthogonal complement of a $k$-form. It is an orthogonal complement because, when you wedge a Hodge star of a $k$-form to the $k$-form, you get the "complete" from $\varepsilon_1 \wedge \varepsilon_2 \wedge \dotsm \wedge \varepsilon_n$.</p>
+
+    <p><b>Definition.</b> Let $\alpha = \epsilon_{i_1} \wedge \epsilon_{i_2} \wedge \dotsm \wedge \varepsilon_{i_k}$ be an elementary $k$-form in $\mcal{A}^k(\mcal{V})$ where $\mcal{V}$ is an $n$-dimensional real vector space. Its <b>Hodge star</b> i unique $(n-k)$-form, denoted by $\star(\alpha)$, such that $$\alpha \wedge \star(\alpha) = \varepsilon_1 \wedge \varepsilon_2 \wedge \dotsm \wedge \varepsilon_n.$$</p>
+
+    <hr>
+
+    <p>To make this definition work, we must require that $0$-forms are scalars and that the elementary $0$-forms are just scalars. Moreover,
+    \begin{align*}
+        c \wedge \alpha = \alpha \wedge c = c\alpha
+    \end{align*}
+    for any $c \in \Real$ and $\alpha \in \mcal{A}^k{\mcal{V}}$. In this way, we have that
+    \begin{align*}
+        \star(1) &= \varepsilon_1 \wedge \varepsilon_2 \wedge \dotsm \wedge \varepsilon_n, \\
+        \star(\varepsilon_1 \wedge \varepsilon_2 \wedge \dotsm \wedge \varepsilon_n) &= 1
+    \end{align*}
+    </p>
+
+    <hr>
+
+    <p>Let's see some examples. Suppose our vector space is $\Real^3$. Then, we have that
+    \begin{align*}
+        \star(1) &= \varepsilon_1 \wedge \varepsilon_2 \wedge \varepsilon_3 \\
+        \star(\varepsilon_1) &= \varepsilon_2 \wedge \varepsilon_3 \\
+        \star(\varepsilon_2) &= \varepsilon_3 \wedge \varepsilon_1 = - \varepsilon_1 \wedge \varepsilon_3 \\
+        \star(\varepsilon_3) &= \varepsilon_1 \wedge \varepsilon_2 \\
+        \star(\varepsilon_1 \wedge \varepsilon_2) &= \varepsilon_3 \\
+        \star(\varepsilon_2 \wedge \varepsilon_3) &= \varepsilon_1 \\
+        \star(\varepsilon_3 \wedge \varepsilon_1) &= \varepsilon_2 \\
+        \star(\varepsilon_1 \wedge \varepsilon_2 \wedge \varepsilon_3) &= 1.
+    \end{align*}
+    </p>
+
+    <hr>
+
+    <p>If we translate the above example from $k$-forms to $k$-vectors, then we see that
+    \begin{align*}
+        \star(\ve{e}_1 \wedge \ve{e}_2) &= \ve{e}_3 \\
+        \star(\ve{e}_2 \wedge \ve{e}_3) &= \ve{e}_1 \\
+        \star(\ve{e}_3 \wedge \ve{e}_1) &= \ve{e}_2
+    \end{align*}
+    In other words,
+    \begin{align*}
+        \star(\ve{e}_1 \wedge \ve{e}_2) &= \ve{e}_1 \times \ve{e}_2 \\
+        \star(\ve{e}_2 \wedge \ve{e}_3) &= \ve{e}_2 \times \ve{e}_3 \\
+        \star(\ve{e}_3 \wedge \ve{e}_1) &= \ve{e}_3 \times \ve{e}_1
+    \end{align*}
+    where $\times$ denotes the cross product in 3D.
+    </p>
+
+    <hr>
+
+    <p>Another important example is when the vector space is $\Real^2$. Let do this example with $k$-vectors instead of $k$-forms. We have that
+    \begin{align*}
+        \star(1) &= \ve{e}_1 \wedge \ve{e}_2 \\
+        \star(\ve{e}_1) &= \ve{e}_2 \\
+        \star(\ve{e}_2) &= -\ve{e}_1 \\
+        \star(\ve{e}_1 \wedge \ve{e}_2) &= 1
+    \end{align*}
+    The interesting bits about this is the effect of the Hodge star on the basis vector $\ve{e}_1$ and $\ve{e}_2$.
+    \begin{align*}
+        \star(\ve{e}_1) &= \ve{e}_2 = R_{90^\circ} \ve{e}_1\\
+        \star(\ve{e}_2) &= -\ve{e}_1 = R_{90^\circ} \ve{e}_2
+    \end{align*}
+    Here, $R_{90^\circ}$ is operator of rotating by $90^\circ$.
+    </p>
+
+    <hr>
+
+    <p>We can then extend the Hodge star operator so that it covers all $k$-forms by requiring that it distributes through scalar multiplication and addition. In other words, we require that
+    \begin{align*}
+        \star(\alpha + \beta) &= \star(\alpha) + \star(\beta) \\
+        \star(c\alpha) &= c \star(\alpha) 
+    \end{align*}
+    for any scalar $c \in \Real$ and any $k$-forms $\alpha, \beta \in \mcal{A}^k(\mcal{V})$.
+    </p>
+
+    <hr>
+
+    <h3>2.3 &nbsp; Examples of Calculations on $k$-Vectors</h3>
+
+    <p>Here are some examples of calculations from Keenan Crane's note.</p>
+
+    <hr>
+
+    <p><b>Example 1.</b> In $\Real^3$, we have that
+    \begin{align*}
+        &(\ve{e}_1 + 2\ve{e}_2) \wedge (\ve{e}_1 + \ve{e}_2 - \ve{e}_3) \\
+        &= \ve{e}_1 \wedge \ve{e}_1 + \ve{e}_1 \wedge \ve{e}_2 - \ve{e}_1 \wedge \ve{e}_3 + 2 \ve{e}_2 \wedge \ve{e}_1 + 2 \ve{e}_2 \wedge \ve{e}_2 - \ve{e}_2 \wedge 2\ve{e}_3\\
+        &= \ve{e}_1 \wedge \ve{e}_2 - \ve{e}_1 \wedge \ve{e}_3 + 2 \ve{e}_2 \wedge \ve{e}_1 - 2\ve{e}_2 \wedge \ve{e}_3 \\
+        &= \ve{e}_1 \wedge \ve{e}_2 + \ve{e}_3 \wedge \ve{e}_1 - 2 \ve{e}_1 \wedge \ve{e}_2 - 2\ve{e}_2 \wedge \ve{e}_3 \\
+        &= -\ve{e}_1 \wedge \ve{e}_2 + \ve{e}_3 \wedge \ve{e}_1 - 2\ve{e}_2 \wedge \ve{e}_3 \\
+        &= -\ve{e}_1 \wedge \ve{e}_2 - 2\ve{e}_2 \wedge \ve{e}_3 + \ve{e}_3 \wedge \ve{e}_1.
+    \end{align*}
+    </p>
+
+    <hr>
+
+    <p><b>Example 2.</b> In $\Real^3$, we have that
+    \begin{align*}
+        \star(-\ve{e}_1 \wedge \ve{e}_2 - 2\ve{e}_2 \wedge \ve{e}_3 + \ve{e}_3 \wedge \ve{e}_1) 
+        &= - \star(\ve{e}_1 \wedge \ve{e}_2) -2 \star(\ve{e}_2 \wedge \ve{e}_3) + \star(\ve{e}_3 \wedge \ve{e}_1) \\
+        &= -\ve{e}_3 -2 \ve{e}_1 + \ve{e}_2 \\
+        &= -2 \ve{e}_1 + \ve{e}_2 - \ve{e}_3
+    \end{align*}
+    </p>
+
+    <hr>
+
+    <p><b>Example 3.</b> In $\Real^3$, let
+    \begin{align*}
+        \ve{u} &= \ve{e}_1 + \ve{e}_2 + \ve{e}_3 \\
+        \ve{v} &= \ve{e}_1 + 2 \ve{e}_2 + 3 \ve{e}_3 \\
+        \ve{w} &= \ve{e}_1 - \ve{e}_3.
+    \end{align*}
+    Let's compute $\ve{u} \wedge \ve{v} \wedge \ve{w}$.
+    </p>
+
+    <p>We note that $\ve{u} \wedge \ve{v} \wedge \ve{w}$ would be a 3-form, which means that it is $c \ve{e}_1 \wedge \ve{e}_2 \wedge \ve{e}_3$. The coefficient is the volume of the parallelotope formed by $\ve{u}$, $\ve{v}$, and $\ve{w}$. So,
+    \begin{align*}
+        c = \det \begin{bmatrix}
+            1 & 1 & 1 \\
+            1 & 2 & 3 \\
+            1 & 0 & -1
+        \end{bmatrix}
+        = 0.
+    \end{align*}
+    As a result, $\ve{u} \wedge \ve{v} \wedge \ve{w} = 0$.
+    </p>
+
+    <p>Another way to see this is to notice that $2\ve{v} + \ve{w} = 2\ve{e}_1 + 2\ve{e}_2 + 2\ve{e}_3 = 2\ve{u}$. This means that the vectors are not linearly independent, so the parallelotope formed by them would have zero volume, which means that $\ve{u} \wedge \ve{v} \wedge \ve{w} = 0$.</p>
+
+    <hr>
+
+    <h3>2.4 &nbsp; Exterior Algebra on Differential Forms</h3>
+
+    <p>We now discuss how to extend operators on $k$-forms, the wedge product and the Hodge star, to differential forms.</p>
+
+    <hr>
+
+    <p>This is actually quite simple: just treat the coefficient functions as scalars!</p>
+
+    <hr>
+
+    <p><b>Definition.</b> Let $\alpha$ be a differential $k$-form on $\Real^n$, and $\beta$ be a differential $\ell$ form on $\Real^n$. Suppose that
+    \begin{align*}
+        \alpha(\ve{x}) &= \sum_{I \in [n]^k_{<}} \alpha^I(\ve{x})\, \dee x^I \\
+        \alpha(\ve{x}) &= \sum_{J \in [n]^\ell_{<}} \beta^I(\ve{x})\, \dee x^J.
+    \end{align*}
+    Then, the <b>wedge product</b> of $\alpha$ and $\beta$ is the differential $(k+\ell)$-form $\alpha \wedge \beta$ defined as follows:
+    \begin{align*}
+    (\alpha \wedge \beta)(\ve{x}) &= \sum_{I \in [n]^k_{<}} \sum_{J \in[n]^\ell_{<}} \alpha^I(\ve{x}) \beta^J(\ve{x})\, \dee x^I \wedge \dee x^J.
+    \end{align*}
+    </p>
+
+    <hr>
+
+    <p><b>Definition.</b> Let $\alpha$ be a differential $k$-form on $\Real^n$. Suppose that
+    \begin{align*}
+        \alpha(\ve{x}) &= \sum_{I \in [n]^k_{<}} \alpha^I(\ve{x})\, \dee x^I.            
+    \end{align*}
+    Then. the <b>Hodge star</b> of $\alpha$ is the differential $(n-k)$-form $\star(\alpha)$ defined as follows:
+    \begin{align*}
+        \star(\alpha)(\ve{x}) &= \sum_{I \in [n]^k_{<}} \alpha^I(\ve{x})\, \star(\dee x^I).
+    \end{align*}
+    </p>
+
+    <hr>
+
+    <p><b>Example 1.</b> Let our vector space be $\Real^2$. Consider the differential form $\alpha (1-x)\,\dee x + x\, \dee y$. What is its Hodge star?</p>
+
+    <p>We have that
+    \begin{align*}
+        \star(\alpha) 
+        &= \star((1-x)\, \dee x + x\, \dee y) \\
+        &= (1-x) (\star(\dee x)) + x (\star(\dee y)) \\
+        &= (1-x) \dee y - x\, \dee x \\
+        &= -x\, \dee x + (1-x)\, \dee y.
+    \end{align*}
+    </p>
+
+    <p>Notice that we are using the fact that taking the Hodge star of a 1-form in a 2D space is equivalent to rotating the 1-form by 90 degrees.</p>
+
+    <hr>
+
+    <p><b>Example 2.</b> Working in $\Real^2$ again, let's calculate the wedge product of $\alpha = x\, \dee x$ and $\beta = (1-x)\, \dee x + (1-y)\, \dee y$.</p>
+
+    <p>We have that
+    \begin{align*}
+        \alpha \wedge \beta 
+        &= (x\, \dee x) \wedge ( (1-x)\, \dee x + (1-y)\, \dee y) \\
+        &= [(x\, \dee x) \wedge  ((1-x)\, \dee x)] + [(x\, \dee x) \wedge ((1-y)\, \dee y)] \\
+        &= x(1-x)\, \dee x \wedge \dee x + x(1-y)\, \dee x \wedge \dee y \\
+        &= x(1-y)\, \dee x \wedge \dee y.
+    \end{align*}
+    </p>
+    
+    <hr>
+
+    <h2>3 &nbsp; Integration on Manifold Charts</h2>
+
+    <p>Manifold is a complicated subject. At its heart is the concept of parametermized volume. However, it gets complicated by the fact that we need to consider things likes charts, atlases, orientations, boundaries, and things like that that makes it complicated and ugly.</p>
+
+    <hr>
+
+    <p>In this section, we shall discuss integration on manifolds with the cleanest and simplest core: the patches. We will spend the next section talking about how to property define manifolds in the next section.</p>
+
+    <hr>
+
+    <p><b>Definition.</b> The <b>half space</b> is the set $\mathbb{H}^k = \{ \ve{x} \in \Real^k : x_k \geq 0 \}$.</p>
+
+    <p>Also, define $\mathbb{H}^k_+ = \{ \ve{x} \in \Real^k : x_k > 0 \}$.</p>
+
+    <hr>
+
+    <p><b>Definition.</b> A <b>manifold chart</b> (or just a <b>chart</b>) of dimension $k$ in $\Real^n$ is a subset $V \subseteq \Real^n$ such that there exists a set $U$ that is open in $\Real^k$ or $\mathbb{H}^k$ and a map $\psi: U \ra V$ such that
+    <ul>
+        <li>$\psi$ is a bijection.</li>
+        <li>$\psi$ is differentiable.</li>
+        <li>$\psi^{-1}$ is continuous.</li>
+        <li>$\nabla \psi(\ve{x})$ has rank $k$ for each $\ve{x} \in U.$</li>
+    </ul>
+    The map $\psi$ is called a <b>coordinate patch.</b></p>
+
+    <p>We will also refer to a chart of dimension $k$ as a <b>$k$-chart</b>. A $k$-chart can be thought of as a tuple $(U,V,\ves{\phi})$.</p>
+
+    <hr>
+
+    <p>A chart locally looks like $\Real^k$ because there is a smooth mapping from an open set in $\Real^k$ to it.</p>
+
+    <hr>
+
+    <p>When we talk about integrations on a $k$-chart, we must talk about integrating a differential $k$-form on it. This makes sense because we will fall back to integrating a differential $k$-form on a subset of $\Real^k$.</p>
+
+    <hr>
+
+    <p>We can integrate a differential $k$-form on a subset of $\Real^k$ because the domain of integration comes equipped with a standard differential $k$-vector.</p>
+
+    <p>However, there is no such a thing as a standard differential $k$-vector on a $k$-chart. So, we must do something else.</p>
+
+    <hr>
+
+    <p>What we do is falling back to $U \subseteq \Real^k$, which has a standard differential $k$-vector. We do so through the pullback induced by $\psi$.</p>
+
+    <p><b>Definition.</b> Let $V$ be a $k$-chart in $\Real^n$ with coordinate patch $\psi: U \ra V$. Let $$\beta = \sum_{I \in [n]^k_{<}} \beta^I \dee y^I$$ be a differential $k$-form defined on an open subset of $\Real^n$ that contains $V$. The <b>pullback</b> of $\alpha$ according to $\psi$, denoted by $\psi^* \beta$ is a differential $k$-form on $\Real^k$ that is defined as follows:
+    \begin{align*}
+        \psi^*\beta(\ve{x}) = \sum_{I \in [n]^k_{<}} \beta^I(\psi(\ve{x})) \dee y^I\bigg( \psi_*\bigg( \frac{\partial}{\partial x^{1,2,\dotsc,k}} \bigg) \bigg)\, \dee x^{1,2,\dotsc,k}
+    \end{align*}
+    for each $\ve{x} \in U$.
+    </p>
+
+    <hr>
+
+    <p><b>Definition.</b> The <b>integral of $\beta$ over a $k$-chart $(U,V,\psi)$</b> is defined to be
+    \begin{align*}
+        \int_{V, \psi} \beta = \int_U \psi^*\beta
+    \end{align*}
+    </p>
+
+    <hr>
+
+    <p><b>Example 1.</b> Consider a $1$-chart defined by function 
+    \begin{align*}
+        \psi(s) = \begin{bmatrix} \cos(s) \\ \sin(s) \end{bmatrix}
+    \end{align*}
+    on $U =  [0,2\pi)$, which an open set in $\mathbb{H}^1$. The image $V$ of $\psi$ is the unit circle in $\Real^2$. Let us integrate the 1-form $\alpha = \dee y$ on $V$.
+    </p>
+
+    <p>First, let us write down the pushforward $\psi_*$. We have that
+    \begin{align*}
+        \psi_*\bigg( \frac{\partial}{\partial s} \bigg) 
+        &= \frac{\partial \psi^1(s)}{\partial s} \frac{\partial}{\partial x} + \frac{\partial \psi^2(s)}{\partial s} \frac{\partial}{\partial y} \\
+        &= \frac{\partial \cos(s)}{\partial s} \frac{\partial}{\partial x} + \frac{\partial \sin(s)}{\partial s} \frac{\partial}{\partial y} \\
+        &= -\sin s \frac{\partial}{\partial x} + \cos s \frac{\partial}{\partial y}.
+    \end{align*}
+    Next, we can write down the pullback
+    \begin{align*}
+        \phi^*\alpha 
+        &= \dee y\bigg( \psi_*\bigg( \frac{\partial}{\partial s} \bigg)  \bigg)\, \dee s \\
+        &= \dee y\bigg( -\sin s \frac{\partial}{\partial x} + \cos s \frac{\partial}{\partial y}  \bigg)\, \dee s \\
+        &= \cos s\, \dee s.
+    \end{align*}
+    So,
+    \begin{align*}
+        \int_{V,\psi} \alpha = \int_U \psi^*\alpha = \int_U \cos s\, \dee s = \int_0^{2 \pi} \cos s\, \dee s = [\sin s]_0^{2\pi} = \sin(2\pi) - \sin(0) = 0.
+    \end{align*}
+    </p>
+
+    <hr>
+
+    <p><b>Example 2.</b> Let us use the same $\phi$ as the above example. However, now, we let $U = [0,\pi/2)$ instead. This time, $V$ is the first quadrant of the unit circle with the point $(0,1)$. In this case, we have that
+    \begin{align*}
+        \int_{V,\psi} \alpha = \int_0^{\pi/2} \cos s\, \dee s = [\sin s]_0^{\pi/2} = \sin(\pi/2) - \sin(0) = 1.
+    \end{align*}
+    </p>
+
+    <hr>
+
+    <p><b>Example 3.</b> Let's work on the first quadrant of the circle again. However, let's change the coordinate patch $\psi$ to
+    \begin{align*}
+        \psi(s) = \begin{bmatrix} \cos(2s) \\ \sin(2s) \end{bmatrix}
+    \end{align*}
+    and change the domain $U$ to $[0,\pi/4)$. The range $V$ is still the same as in the last example. Now, we have that
+    \begin{align*}
+        \psi_*\bigg( \frac{\partial}{\partial s} \bigg) 
+        &= \frac{\partial \psi^1(s)}{\partial s} \frac{\partial}{\partial x} + \frac{\partial \psi^2(s)}{\partial s} \frac{\partial}{\partial y} \\
+        &= \frac{\partial \cos(2s)}{\partial s} \frac{\partial}{\partial x} + \frac{\partial \sin(2s)}{\partial s} \frac{\partial}{\partial y} \\
+        &= -2 \sin (2s) \frac{\partial}{\partial x} + 2\cos (2s) \frac{\partial}{\partial y}.
+    \end{align*}
+    The pullback is given by    
+    \begin{align*}
+        \phi^*\alpha 
+        &= \dee y\bigg( \psi_*\bigg( \frac{\partial}{\partial s} \bigg)  \bigg)\, \dee s \\
+        &= \dee y\bigg( -2\sin (2s) \frac{\partial}{\partial x} + 2\cos (2s) \frac{\partial}{\partial y}  \bigg)\, \dee s \\
+        &= 2\cos (2s)\, \dee s.
+    \end{align*}
+    So,
+    \begin{align*}
+        \int_{V,\psi} \alpha = \int_U \psi^*\alpha = \int_U 2\cos (2s)\, \dee s = \int_0^{\pi/4} 2\cos (2s)\, \dee s = [\sin (2s)]_0^{\pi/4} = \sin(\pi/2) - \sin(0) = 1.
+    \end{align*}
+    </p>
+
+    <hr>
+    
+    <p><b>Example 4.</b> From the last example, it might seem like the value of the integral does not depend on the coordinate patch. This is, however, not true.</p>
+
+    <p>Consider an alternative coordinate patch
+    \begin{align*}
+        \phi(s) = \begin{bmatrix} \sin(s) \\ \cos(s) \end{bmatrix}
+    \end{align*}
+    defined on $U = [0,\pi/2)$. The range $V$ is still the first quadrant of the unit circle, but now the curve runs clockwise instead of counter-clockwise. The pushforward becomes
+    \begin{align*}
+        \psi_*\bigg( \frac{\partial}{\partial s} \bigg) 
+        &= \frac{\partial \psi^1(s)}{\partial s} \frac{\partial}{\partial x} + \frac{\partial \psi^2(s)}{\partial s} \frac{\partial}{\partial y} \\
+        &= \frac{\partial \sin(s)}{\partial s} \frac{\partial}{\partial x} + \frac{\partial \cos(s)}{\partial s} \frac{\partial}{\partial y} \\
+        &= \cos s \frac{\partial}{\partial x} - \sin s \frac{\partial}{\partial y}.
+    \end{align*}
+    The pullback is given by
+    \begin{align*}
+        \phi^*\alpha 
+        &= \dee y\bigg( \psi_*\bigg( \frac{\partial}{\partial s} \bigg)  \bigg)\, \dee s \\
+        &= \dee y\bigg( \cos s \frac{\partial}{\partial x} - \sin s \frac{\partial}{\partial y}  \bigg)\, \dee s \\
+        &= -\sin s \, \dee s.
+    \end{align*}
+    So,
+    \begin{align*}
+        \int_{V,\psi} \alpha = \int_0^{\pi/2} -\sin (s)\, \dee s = [\cos(s)]_0^{\pi/2} = \cos(\pi/2) - \cos(0) = -1.
+    \end{align*}
+    </p>
+
+    <hr>
+
+    <p>In fact, the absolute value of the integral will always be the same, but the sign can be different based on how the coordinate patch is defined. </p>
+
+    <hr>
+
+    <p>The fact that there can be an integral on a chart can have two different values reflects that fact that a manifold (an orientable one, that is) can have two orientations. This is a phenomenon we will discuss in the next section.</p>
+
+    <hr>
+
+    <h2>4 &nbsp; Charting up Manifolds</h2>
+
+    <p>In this section, we discuss manifolds in their whole complex glory.</p>
+
+    <hr>
+
+    <h3>4.1 &nbsp; Manifolds and Their Boundaries</h3>
+
+    <p><b>Definition.</b> A subset $M$ of $\Real^n$ is called a <b>$k$-dimensional manifold</b> if the following property holds:  for each $\ve{p} \in M$, there is a set $V \subseteq M$ containing $\ve{p}$ that is open in $M$ which is a $k$-chart.</p>
+
+    <p>We will also refer to a $k$-dimensional as just a <b>$k$-manifold</b>.</p>
+
+    <hr>
+
+    <p><b>Definition.</b> Let $M$ be a $k$-manifold in $\Real^n$. Let $\ve{p} \in M$. If there is a coordinate patch $\psi: U \rightarrow V$ on $M$ about $\ve{p}$ such that $U$ is open in $\Real^k$, we say that $\ve{p}$ is an <b>interior point</b> of $M$. Otherwise, we say that $\ve{p}$ is a <b>boundary point</b>.
+
+    <p>We denote the set of boundary points of $M$ with $\partial M$.</p>
+    <hr>
+    
+    <p>It can be shown that a boundary point in $M$ are those points $\ve{p}$ such that $\ve{p} = \psi(\ve{x}_0)$ where $\ve{x}_0 \in \Real^{k-1} \times \{ 0 \}$. Here, $\psi$ is a coordinate patch about $\ve{p}$.</p>    
+    
+    <hr>
+
+    <p>We note that, if a $k$-manifold is compact, then it can be covered by a finite number of $k$-charts.</p>
+
+    <hr>
+
+    <h3>4.2 &nbsp; Orientation</h3>    
+
+    <p><b>Definition.</b> Let $\ve{g}: A \rightarrow B$ be a diffeomorphism of open sets in $\Real^k$. We say that $\ve{g}$ is <b>orientation-preserving</b> if $\det \nabla\ve{g}(\ve{x}) > 0$ for all $\ve{x} \in A$. We say $\ve{g}$ is <b>orientation-reversing</b> if $\det \nabla\ve{g}(\ve{x}) < 0$ for all $\ve{x} \in A$.</p>
+    
+    <hr>
+
+    <p><b>Proposition.</b> Let $M$ be a $k$-manifold in $\Real^n$. Let $\psi_0: U_0 \rightarrow V_0$ and $\psi_1: U_1 \rightarrow V_1$ be coordinates patches in $M$, with $W = V_0 \cap V_1$ non-empty. Let $W_i = \psi_i^{-1}(W)$. Then the map $\psi_1^{-1} \circ \psi_0: W_0 \rightarrow W_1$ is a diffeomorphism, and its derivative is non-singular.</p>
+
+    <p>We call $\psi_1^{-1} \circ \psi_0$ the <b>transition function</b> between coordinate patches $\psi_0$ and $\psi_1$.</p>
+
+    <hr>
+
+    <p><b>Definition.</b> Let $M$ be a $k$-manifold in $\Real^n$. Given coordinate patches $\psi_i: U_i \rightarrow V_i$ on $M$ for $i = 0,1$. We say they <b>overlap</b> if $V_0 \cap V_1$ is not empty. We say they <b>overlap positively</b> if the transition function $\psi^{-1}_1 \circ \psi_0$ is orientation preserving.</p>
+    
+    <hr>
+
+    <p><b>Definition.</b> If a $k$-manifold $M$ can be covered by a collection of coordinate patches, each pair of which overlap positively (if they overlap at all), then $M$ is said to be <b>orientable</b>. Otherwise, $M$ is said to be <b>non-orientable</b>.</p>
+
+    <hr>
+
+    <p><b>Definition.</b> Let $M$ be a $k$-manifold in $\Real^n$. Suppose $M$ is orientable. Given a collection of coordinate patches covering $M$ that overlap positively, we add to this collection all the coordinat patches that overlap with these patches positively. This expanded collection is called an <b>orientation</b> of $M$. A manifold $M$ together with an orienation of $M$ is called an <b>oriented manifold.</b></p>
+
+    <hr>
+
+    <h3>4.3 &nbsp; Integration on Compact Oriented Manifolds</h3>
+
+    <p>An oriented manifold, by its nature, limits the coordinate patches that can be used on the manifolds so that all integral yields the same numerical values. There is no ambiguity any more in defining the integral.</p>
+
+    <hr>
+
+    <p><b>Definition.</b> Let $\mcal{V}$ be a finite-dimensional vector spacde, and let $f: \Real^n \rightarrow \mcal{V}$. The <b>support</b> of $f$, denoted by $\mathrm{Support} f$, is the closure of the set $\{ \ve{x} : f(\ve{x}) = 0 \}$.</p>
+
+    <p>If $\ve{x} \not\in \mathrm{Support}\ f$, then there is a neighborhood of $\ve{x}$ where $f$ vanishes.</p>
+
+    <hr>
+
+    <p><b>Definition.</b> Let $M$ be a compact oriented $k$-manifold in $\Real^n$. Let $\omega$ be a differential $k$-form defined in an open set of $\Real^n$ containing $M$. Let $C = M \cap (\mathrm{Support}\ \omega)$. We know that $C$ is compact. Suppose there is a coordinate patch $\psi: U \rightarrow V$ on $M$ belonging to the orientation of $M$ such that $C \subseteq V$. By replacing $U$ by a smaller open set if necessary, we may assume that $U$ is bounded. We define the <b>integral of $\omega$ over $M$</b> by the equation:
+    \begin{align*}
+        \int_M \omega = \int_{V,\psi} \omega = \int_{\mathrm{Int}\ U} \psi^* \omega
+    \end{align*}
+    where $\mathrm{Int}\ U = U$ if $U$ is open in $\Real^k$, and $\mathrm{Int}\ U = U \cap \mathbb{H}^k_+$ if $U$ is open in $\mathcal{H}^k$ but not in $\Real^k$.</p>
+
+    <hr>
+
+    <p>Note that we can show that the value of the integral does not depend on the choice of the coordinate patch. This is because (1) there would be transition function that would do the change of variable, and (2) the patches come from the same orientation, and so the determinant of the Jacobian of the transition function would always be positive.</p>
+
+    <hr>
+
+    <p>The problem with the above definition of integral is that we might not be able to find a single chart covers the support of $\omega$. In this case, we can partition the support of $\omega$ up into pieces and then integrate each piece separately. This requires the concept of "partition of unity."</p><hr>
+
+    <p><b>Proposition.</b> Let $M$ be a $k$-manifold in $\Real^n$. Let $\mathcal{A}$ be a collection of open sets in $M$, and let $A$ be their union. There exists a sequence $\rho_1$, $\rho_2$, $\dotsc$ of functions $\rho_i: \Real^n \rightarrow \Real$ such that:
+    <ol>
+        <li>$\rho_i(\ve{x}) \geq 0$ for all $\ve{x}$.</li>
+        <li>The set $S_i = \mathrm{Support}\ \rho_i$ is contained in $A$.</li>
+        <li>Each point of $A$ has a neighborhood that intersects only fintely many of the sets $S_i$.</li>
+        <li>$\sum_{i=1}^\infty \rho_i(\ve{x}) = 1$ for each $\ve{x} \in A$.</li>
+        <li>The function $\rho_i$ is indefinitely differentiable.</li>
+        <li>The sets $S_i$ are compact.</li>
+        <li>For each $i$, the set $S_i$ is contained in an element of $\mathcal{A}$.</li>
+    </ol>
+    </p>
+    <hr>
+    
+    <p><b>Definition.</b> A of functions $\{ \rho_i\}$ that satisfies Condition 1 to 6 in the previous proposition is called a <b>partition of unity</b>. If it also satisfies Condition 7, we say that it is <b>subordinate to $\mathcal{A}$.</b></p>
+    <hr>
+
+    <p>Given a compact oriented manifold $M$, the collection $\mcal{A} = \{ V_\ve{p} : V_\ve{p} \mbox { is the image of a coordinate patch around $\ve{p}$} \} $ is an open cover of $M$. Because $M$ is compact, we may say that $\mcal{A}$ is finite. So, there exists a finite partition of unity $\rho_1$, $\rho_2$, $\dotsc$ subordinate to $\mcal{A}$ such that the support of each $\rho_i$ is covered by one coordinate patch.</p>
+
+    <p>Hence, given a differential $k$-form $\omega$ defined on an open set containing $M$, we can define the integral of $\omega$ on $M$ as
+    \begin{align*}
+        \int_M \omega = \sum_{i=1}^\infty \int_M \rho_i \omega = \sum_{i=1}^\infty \int_{\mathrm{Int}\ U_i} \psi^*(\rho_i \omega)
+    \end{align*}
+    where $\psi_i : U_i \ra V_i$ is the coordinate path where $V_i$ contains the support of $\rho_i$.     
+    </p>
+
+    <p>However, this definition makes sense only if $\omega$ is <b>absolutely integrable.</b> In other words, for a form $\omega = f(\ve{x})\, dx^I$, let $|\omega| = |f(\ve{x})|\, dx^I$. We say that $\omega$ is absolutely integrable if each $|\psi_i^*(\rho_i \omega)|$ is integrable over $\mathrm{Int}\ U_i$.</p>
+    
+    <hr>
+
+    <h2>5 &nbsp; Form Derivatives and Generalized Stokes' Theorem</h2>
+
+    <hr>
+
+    <h2>6 &nbsp; Volume Forms</h2>
+
+    <p>Now that we know how to integrate on manifolds, we turn to the problem of identifying differential forms that would help us measure things like lengths of curves, areas of surfaces, and volumes of solids.</p>
+
+    <hr>
+
+    <h2>7 &nbsp; Vector-Valued Forms</h2>
 
     <hr>
     
     <div class="page-header"></div>
-    <p>Last modified: 2021/02/15</p>    
+    <p>Last modified: 2025/04/08</p>    
 </div>
 
 <script type="text/javascript">
