@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>Discrete Exterior Calculus</title>
+
+    <!-- Bootstrap -->
+    <link href="../../../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../../../css/theme.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+      TeX: { equationNumbers: {autoNumber: "AMS"} } 
+    });
+    </script>
+    <script type="text/javascript"
+            src="../../../MathJax/MathJax.js?config=TeX-AMS_HTML-full">
+    </script>
+
+    <script type="text/javascript" src="../../../js/jquery-3.4.1.min.js"></script>    
+    <script type="text/javascript" src="../../../js/bigfoot.min.js"></script>    
+
+    <link rel="stylesheet" type="text/css" href="../../../css/bigfoot-default.css">    
+
+</head>
+<body>
+<div class="container">
+    <span style="visibility: hidden;">
+        \(
+        \def\sc#1{\dosc#1\csod}
+        \def\dosc#1#2\csod{{\rm #1{\small #2}}}
+
+        \newcommand{\dee}{\mathrm{d}}
+        \newcommand{\Dee}{\mathrm{D}}
+        \newcommand{\In}{\mathrm{in}}
+        \newcommand{\Out}{\mathrm{out}}
+        \newcommand{\pdf}{\mathrm{pdf}}
+        \newcommand{\Cov}{\mathrm{Cov}}
+        \newcommand{\Var}{\mathrm{Var}}
+
+        \newcommand{\ve}[1]{\mathbf{#1}}
+        \newcommand{\ves}[1]{\boldsymbol{#1}}
+        \newcommand{\mrm}[1]{\mathrm{#1}}
+        \newcommand{\etal}{{et~al.}}
+        \newcommand{\sphere}{\mathbb{S}^2}
+        \newcommand{\modeint}{\mathcal{M}}
+        \newcommand{\azimint}{\mathcal{N}}
+        \newcommand{\ra}{\rightarrow}
+        \newcommand{\mcal}[1]{\mathcal{#1}}
+        \newcommand{\X}{\mathcal{X}}
+        \newcommand{\Y}{\mathcal{Y}}
+        \newcommand{\Z}{\mathcal{Z}}
+        \newcommand{\x}{\mathbf{x}}
+        \newcommand{\y}{\mathbf{y}}
+        \newcommand{\z}{\mathbf{z}}
+        \newcommand{\tr}{\mathrm{tr}}
+        \newcommand{\sgn}{\mathrm{sgn}}
+        \newcommand{\diag}{\mathrm{diag}}
+        \newcommand{\Real}{\mathbb{R}}
+        \newcommand{\sseq}{\subseteq}
+        \newcommand{\ov}[1]{\overline{#1}}
+        \DeclareMathOperator*{\argmax}{arg\,max}
+        \DeclareMathOperator*{\argmin}{arg\,min}
+
+        \newcommand{\data}{\mathrm{data}}
+        \newcommand{\N}{\mathcal{N}}
+        \newcommand{\Hil}{\mathcal{H}}
+        \)
+    </span>
+
+    <br>
+    <h1>Discrete Exterior Calculus</h1>
+    
+    <p>Discrete exterior calculus deals with how to translate concepts from exterior calculus such as differential forms and differential operators into discrete settings so that we may solve problems in exterior calculus numerically.</p>
+
+    <p>This note is written as I read Keenan Crane's lecture materials from his <a href="https://brickisland.net/ddg-web/">discrete differential geometry course</a>.</p>
+
+    <hr>
+
+    <h2>1 &nbsp; Simplicial Complexes</h2>
+
+    <p>We will be dealing with manifolds in $\Real^n$, so we need to discretize them first. Manifolds are discretized into something called "simplicial complexes."</p>
+
+    <center>
+      <img src="images/discretization-overview.png" width="600">
+    </center>
+
+    <hr>
+
+    <h2>1.1 &nbsp; Simplices</h2>
+
+    <p>A simplicial complex is made up of elements, each element is called a "simplex" (plural: simplices).</p>
+
+    <hr>
+
+    <p><b>Definition.</b> A subset $S \subseteq \Real^n$ is <b>convex</b> if, for every point $\ve{p}, \ve{q} \in S$, the line segment $\{ (1-t)\ve{p} + t\ve{q} : 0 \leq t \leq 1 \}$ lies entirely in $S$.</p>
+
+    <center>
+      <img src="images/convex-set.png" width="600">
+    </center>
+
+    <hr>
+
+    <p><b>Definition.</b> For any subset $S \subseteq \Real^n$, its <b>convex hull</b> $\mrm{hull}(S)$ is the smallest convex set containing $S$. Equivalently, it is the interesection of all convex sets in $\Real^n$ that contains $S$.</p>
+
+    <hr>
+
+    <p><b>Definition.</b> A collection of points $\ve{p}_0$, $\ve{p}_1$, $\dotsc$, $\ve{p}_k$ are <b>affinely independent</b> if the vectors $\ve{v}_i = \ve{v}_i - \ve{v}_0$ are linearly independent.</p>
+
+    <hr>
+
+    <p>Given a set of $k+1$ affinely independent points, we have that their convex hull form a $k$-dimensional volume of non-zero measure.</p>
+
+    <hr>
+
+    <p><b>Definition.</b> A <b>$k$-simplex</b> is a convex hull of $k+1$ affinely independent points, each of which we call a <b>vertex</b> (plural: vertices).</p>
+
+    <hr>
+
+    <p><b>Definition.</b> Let $\sigma$ denote a $k$-simplex whose vertices are $\ve{p}_0$, $\ve{p}_2$, $\dotsc$, $\ve{p}_{k}$. Then, each point $\ve{p} \in \sigma$ can be written as a linear combination
+    \begin{align*}
+      \ve{p} = \sum_{i=0}^k t_i \ve{p}_i
+    \end{align*}
+    such that each $t_i \geq 0$ and $\sum_{i=1}^n t_i = 1$. The weights $t_i$ are called <b>barycentric coordinates</b> of $\ve{p}$, and the sum $\sum_{i=0}^k t_i \ve{p}_i$ is called a <b>convex combination.</b>
+    </p>
+
+    <hr>
+
+    <h2>1.2 &nbsp; Simplicial Complexes</h2>
+
+    <p>A simplicial complex is a collection of simplices with a certain property. However, we need to define a number of things before we get to that property.</p>
+
+    <hr>
+
+    <p><b>Definition.</b> A <b>face</b> of a simple $\sigma$ is any simplex whose vertices are a subset of the vertices of $\sigma$.</p>
+
+    <p>Faces of a $k$-simplex are simplices whose order are not greater than $k$. Note also that a simplex is a face of itself. Moreover, the empty set is a face of all simplices.</p>
+
+    <hr>
+
+    <p><b>Definition.</b> A (geometric) <b>simplicial complex</b> is a collection of simplicies with the following properties.
+    <ul>
+      <li>The intersection of any two simplices in a complex is a simplex, and it also belongs to the complex.</li>
+      <li>Every face of every simplex in the complex is also in the complex.</li>
+    </ul>
+    </p>
+
+    <hr>
+
+    <p><b>Definition.</b> Let $S$ be a collection of sets. If, for each set $\sigma \in S$, all subsets of $S$ are also contained in $S$, then $S$ is an <b>abstract simplicial complex</b>. A finite set is an <b>abstract simplex</b>.</p>
+
+    <hr>
+
+    <b>Any undirect graph $G = (V,E)$ is an abstract simplicial complex. The vertices are $0$-simplices, and the edges are $1$-simplices.</b>
+    
+    <div class="page-header"></div>
+    <p>Last modified: 2025/04/09</p>    
+</div>
+
+<script type="text/javascript">
+$.bigfoot();
+</script>
+
+</body>
+</html>
+
+
