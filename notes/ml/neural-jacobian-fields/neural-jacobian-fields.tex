@@ -59,12 +59,32 @@
 \begin{document}
 \maketitle
 
+
 This note is written as I read the paper ``Neural Jacobian Fields: Learning Intrinsic Mappings of Arbitrary Meshes'' by Aigerman \etal~\cite{Aigerman:2022}.
 
 \section{Problem Setup}
 
 \begin{itemize}
-    \item This paper presents a framework to generate ``piecewise linear mappings'' of meshes with a neural network.    
+    \item This paper presents a framework to generate ``piecewise linear mappings'' of meshes with a neural network.
+    
+    \item In this note, we treat points in $\Real^d$ as \emph{row vectors}.
+    \begin{itemize}
+        \item So, if $\ve{x} \in \Real^3$, then
+        \begin{align*}
+            \ve{x} = \begin{bmatrix}
+                x_1 & x_2 & x_3
+            \end{bmatrix}.
+        \end{align*}
+
+        \item This means that a linear transformation from $\Real^3$ to $\Real^2$ is encoded with a $3 \times 2$ matrix instead of $2 \times 3$. This matrix is multiplied to the right instead of to the left.
+    \end{itemize}
+
+    \item This makes it quite convenient to represent a batch of $N$ points and matrices.
+    \begin{itemize}
+        \item A batch of $N$ points in $\Real^3$ is represented by a matrix $\ve{P}$ of size $N \times 3$.
+        \item A linear transformations from $\Real^3$ to $\Real^2$ is represented by a matrix $M$ fo size $3 \times 2$.
+        \item If we wish to apply this linear transformation to all points in the batch, we just compute $\ve{P} M$.
+    \end{itemize}    
 \end{itemize}
 
 \subsection{Linear Piecewise Mapping}
@@ -94,84 +114,107 @@ This note is written as I read the paper ``Neural Jacobian Fields: Learning Intr
         \begin{itemize}
             \item Here, we see that $T_i$ is a set of vectors because $\ve{v}_k - \ve{v}_j$ and $\ve{v}_l - \ve{v}_j$ are vectors.            
         \end{itemize}
-        \item $\mcal{B}_i$ is an orthonomal basis of $T_i$. So, we may say that it is a $3 \times 2$ matrix:
+        \item $\mcal{B}_i$ is an orthonomal basis of $T_i$. So, we may say that it is a $2 \times 3$ matrix:
         \begin{align*}
             \mcal{B}_i = \begin{bmatrix}
-                \ves{\beta}_{i,1} & \ves{\beta}_{i,2}
+                \ves{\beta}_{i,1} \\ 
+                \ves{\beta}_{i,2}
             \end{bmatrix}            
         \end{align*}
-        where $\ves{\beta}_{i,1}, \ves{\beta}_{i,2} \in \Real^3$ such that $\| \ves{\beta}_{i,1} \| = \| \ves{\beta}_{i,2} \| = 1$ and $\ves{\beta}_{i,1}^T \ves{\beta}_{i,2} = 1$. Last but not least, $T_i = \{ a \ves{\beta}_{i,1} + b \ves{\beta}_{i,2} : a, b \in \Real \}.$
+        where $\ves{\beta}_{i,1}, \ves{\beta}_{i,2} \in \Real^{3}$ such that $\| \ves{\beta}_{i,1} \| = \| \ves{\beta}_{i,2} \| = 1$ and $\ves{\beta}_{i,1} \cdot \ves{\beta}_{i,2} = 1$. Last but not least, $T_i = \{ a \ves{\beta}_{i,1} + b \ves{\beta}_{i,2} : a, b \in \Real \}.$
         \item Because $\mcal{B}_i$ is an orthonormal basis of $T_i$, we have that, for any vector $\ve{v} \in T_i$, we can find the coordinates of $\ve{v}$ with respect to $\mcal{B}_i$ as follows:
         \begin{align*}
-            \mbox{$\ve{v}$'s coordinate} = \mcal{B}_i^T \ve{v}.
+            \mbox{$\ve{v}$'s coordinate} = \ve{v} \mcal{B}_i^T.
         \end{align*}
     \end{itemize}
     
-    \item A {\bf map} or a {\bf mapping}, in our context, is a function $\Phi: \Real^3 \ra \Real^3$.
+    \item A {\bf map} or a {\bf mapping}, in our context, is a function $\Phi: \Real^{3} \ra \Real^{3}$.
     
     \item A map $\Phi$ is a {\bf piecewise linear mapping} with respect to a mesh $\mcal{S}$ if the restriction of $\Phi$ to any triangle $\ve{t}_i$, denote $\Phi|_{\ve{t}_i}$ is affine.
     \begin{itemize}
         \item This is the most common family of maps used when considering mappings of meshes.
         \item It is uniquely defined by assigning a new position to one of the vertices.
         \begin{itemize}
-            \item In other words, we have that $\ve{v}_j \mapsto \Phi_j$. Here, $\ve{v}_j$ is the $j$th vertex in $\ve{V}$, and $\Phi_j$ is its image under $\Phi$ (by abuse of notation).
+            \item In other words, let $\ve{v}_j$ denote the position of the $j$th vertex. Suppose that we know $\Phi_j$, the image of $\ve{v}_j$ under the mapping, for all $j$.
             
-            \item Any point inside the triangle is sent to the interpolation through barycentric coordinates of the image of the triangle vertices.            
+            \item Then, any point inside the triangle is sent to the interpolation of the $\Phi_j$s with barycentric coordinates.            
             
-            \item As a result, we may encode $\Phi$ as a matrix of the same dimension as $\ve{V}$ if we are not concerned with points not on the mesh $\mcal{S}$.
-            \begin{itemize}
-                \item In this case, $\Phi$ is a matrix of size $3 \times |\ve{V}|$.
-            \end{itemize}
+            \item As a result, we may encode $\Phi$ as a matrix of the same dimension as $\ve{V}$.
+            
+            \item In this case, $\Phi$ is a matrix of size $|\ve{V}| \times 3$.            
         \end{itemize}        
     \end{itemize}
     
     \item There's another way to encoder $\Phi$ using matrices we call ``Jacobians.''
     
-    \item The {\bf Jacobian} $J_i$ of triangle $\ve{t}_i$ is a linear transformation of dimension $3 \times 2$ from $\ve{t}_i$'s tangent space to $\Real^3$.
+    \item The {\bf Jacobian} $J_i$ of triangle $\ve{t}_i$ is a linear transformation of dimension $2 \times 3$ from $\ve{t}_i$'s tangent space to $\Real^{1 \times 3}$.
     \begin{itemize}
-        \item So, it's signature is $J_i: T_i \ra \Real^3$.
-        \item It is a $3 \times 2$ matrix in the coordinates of the frame $\mcal{B}_i$ by solving
+        \item So, it's signature is $J_i: T_i \ra \Real^{3}$.
+        \item We can compute it as  $2 \times 3$ matrix in the coordinates of the frame $\mcal{B}_i$ by solving
         \begin{align}
-            J_i = \mcal{B}_i^T \begin{bmatrix}
-                \ve{v}_k - \ve{v}_j & \ve{v}_l - \ve{v}_j
+            \begin{bmatrix}
+                \ve{v}_k - \ve{v}_j \\ 
+                \ve{v}_l - \ve{v}_j
             \end{bmatrix}
+            \mcal{B}_i^T
+            J_i
             = \begin{bmatrix}
-                \Phi_k - \Phi_j & \Phi_l - \Phi_j
+                \Phi_k - \Phi_j \\ \Phi_l - \Phi_j
             \end{bmatrix}. \label{eqn:jacobian-definition}
         \end{align}
-        \item We can write $J_i$ in terms of $\Phi \in \Real^{3 \times |\ve{V}|}$ as follows.
+        \item We can write $J_i$ in terms of $\Phi \in \Real^{|\ve{V}| \times 3}$ as follows.
         \begin{itemize}
             \item We first rewrite the RHS of Equation~\eqref{eqn:jacobian-definition} in terms of $\Phi$.
-            \item There's a matrix $S_{jkl} \in \Real^{|V| \times 3}$ whose entries are $0$s and $1$s such that
+            \item There's a matrix $S_{jkl} \in \Real^{3 \times |\ve{V}|}$ whose entries are $0$s and $1$s such that
             \begin{align*}
-                \Phi S_{jkl} = \begin{bmatrix} \Phi_j & \Phi_k & \Phi_l \end{bmatrix}.
+                S_{jkl} \Phi = \begin{bmatrix} \Phi_j \\ \Phi_k \\ \Phi_l \end{bmatrix}.
             \end{align*}
             \item As a resulit, we have that
             \begin{align*}
-                \Phi S_{jkl} \begin{bmatrix} -1 & -1 \\ 1 & 0 \\ 0 & 1 \end{bmatrix} 
-                = \begin{bmatrix} \Phi_j & \Phi_k & \Phi_l \end{bmatrix} \begin{bmatrix} -1 & -1 \\ 1 & 0 \\ 0 & 1 \end{bmatrix}
-                = \begin{bmatrix} \Phi_k - \Phi_j & \Phi_l - \Phi_j \end{bmatrix}.
+                \begin{bmatrix} -1 & 1 & 0 \\ -1 & 0 & 1 \end{bmatrix}  S_{jkl} \Phi  
+                = \begin{bmatrix} -1 & 1 & 0 \\ -1 & 0 & 1 \end{bmatrix} \begin{bmatrix} \Phi_j \\ \Phi_k \\ \Phi_l \end{bmatrix}
+                = \begin{bmatrix} \Phi_k - \Phi_j \\ \Phi_l - \Phi_j \end{bmatrix}.
             \end{align*}
-            \item Because $\mcal{B}_j \in \Real^{3 \times 2}$ and $\begin{bmatrix} \ve{v}_k-\ve{v}_j & \ve{v}_l-\ve{v}_j \end{bmatrix} \in \Real^{3\times 2}$, we have that $\mcal{B}_j^T \begin{bmatrix} \ve{v}_k-\ve{v}_j & \ve{v}_l-\ve{v}_j \end{bmatrix}$ is a $2 \times 2$ matrix. Morever, it better has full rank because we don't want $\ve{v}_k - \ve{v}_j$ and $\ve{v}_l - \ve{j}$ to be linearly dependent. Hence,
+            
+            \item Because $\mcal{B}_j \in \Real^{2 \times 3}$ and $\begin{bmatrix} \ve{v}_k-\ve{v}_j \\ \ve{v}_l-\ve{v}_j \end{bmatrix} \in \Real^{2\times 3}$, we have that $\begin{bmatrix} \ve{v}_k-\ve{v}_j \\ \ve{v}_l-\ve{v}_j \end{bmatrix} \mcal{B}_j^T$ is a $2 \times 2$ matrix. Morever, it better has full rank because we don't want $\ve{v}_k - \ve{v}_j$ and $\ve{v}_l - \ve{v}_j$ to be linearly dependent. Now,
             \begin{align*}
-                J_i = \Phi S_{jkl} \begin{bmatrix} -1 & -1 \\ 1 & 0 \\ 0 & 1 \end{bmatrix}  \big( \mcal{B}_j \begin{bmatrix} \ve{v}_k-\ve{v}_j & \ve{v}_l-\ve{v}_j \end{bmatrix} \big)^{-1}.
+                \begin{bmatrix}
+                    \ve{v}_k - \ve{v}_j \\ 
+                    \ve{v}_l - \ve{v}_j
+                \end{bmatrix}
+                \mcal{B}_i^T
+                J_i
+                = \begin{bmatrix} -1 & 1 & 0 \\ -1 & 0 & 1 \end{bmatrix}  S_{jkl} \Phi.
             \end{align*}
+            So,
+            \begin{align*}
+                J_i = \bigg( \begin{bmatrix}
+                    \ve{v}_k - \ve{v}_j \\ 
+                    \ve{v}_l - \ve{v}_j
+                \end{bmatrix}
+                \mcal{B}_i^T \bigg)^{-1} \begin{bmatrix} -1 & 1 & 0 \\ -1 & 0 & 1 \end{bmatrix}  S_{jkl} \Phi.
+            \end{align*}
+            
             \item The paper defines
             \begin{align*}
-                \nabla_i = \left( S_{jkl} \begin{bmatrix} -1 & -1 \\ 1 & 0 \\ 0 & 1 \end{bmatrix}  \big( \mcal{B}_j \begin{bmatrix} \ve{v}_k-\ve{v}_j & \ve{v}_l-\ve{v}_j \end{bmatrix} \big)^{-1} \right)^T \in \Real^{2 \times |\ve{V}|},
+                \nabla_i = J_i = \bigg( \begin{bmatrix}
+                    \ve{v}_k - \ve{v}_j \\ 
+                    \ve{v}_l - \ve{v}_j
+                \end{bmatrix}
+                \mcal{B}_i^T \bigg)^{-1} \begin{bmatrix} -1 & 1 & 0 \\ -1 & 0 & 1 \end{bmatrix}  S_{jkl},
             \end{align*}
             so that we may write
             \begin{align*}
-                J_i = \Phi \nabla_i^T.
+                J_i = \nabla \Phi.
             \end{align*}
-            The ``operator'' $\nabla_i$ maps $\Phi$ to the Jacobian $J_i$ in the basis $\mcal{B}_i$.
+            The ``operator'' $\nabla_i$ maps $\Phi$ to the Jacobian $J_i$ in the basis $\mcal{B}_i$. It is a matrix of size $2 \times |\mathbf{V}|$.
         \end{itemize}
         \item We can also write the whole stack of Jacobians as follows:
         \begin{align*}
             J = \begin{bmatrix}
-                J_1 & J_2 & \cdots & J_{|\ve{T}|}                
+                J_1 \\ J_2 \\ \cdots \\ J_{|\ve{T}|}                
             \end{bmatrix}
-            &= \Phi \nabla^T
+            &= \nabla \Phi 
         \end{align*}
         where
         \begin{align*}
@@ -179,13 +222,14 @@ This note is written as I read the paper ``Neural Jacobian Fields: Learning Intr
                 \nabla_1 \\ \nabla_2 \\ \vdots \\ \nabla_{|\ve{T}|}
             \end{bmatrix}.
         \end{align*}
+        Here, $J$ is a matrix of size $2|\ve{T}| \times 3$, and $\nabla$ is a matrix of size $2|\ve{T}| \times |\ve{V}|$.
     \end{itemize}
 
     \item If we have $J$, the stack of every Jacobian matrices, then it determines $\Phi$ up to a translation if the mesh is connected.
     \begin{itemize}
         \item If the mesh is connected, then there is a sequence of triangle edges that connect $\ve{v}_0$ to any particular vertex $\ve{v}_m$.
         \item For each of these triangle edges, say $(\ve{v}_j, \ve{v}_k)$ that belongs to Triangle $i$, then we can use $J_i$ to compute $\Phi_k - \Phi_j$.
-        \item We can then follow this chain to compute $\Phi_m - \Phi_0$ for all indices $m \in \{1, \dotsc, |V|-1\}$.
+        \item We can then follow this chain to compute $\Phi_m - \Phi_0$ for all indices $m \in \{1, \dotsc, |\ve{V}|-1\}$.
         \item So, $\Phi$ is determined up to the position of $\Phi_0$.
     \end{itemize}
     As a result, computing the Jacobians is tantamount to computing a piecewise linear mapping (up to a translation).
@@ -248,40 +292,78 @@ This note is written as I read the paper ``Neural Jacobian Fields: Learning Intr
 
     \item In order to for the prediction to be triangulation agnostic, it is done in two phases.
     \begin{itemize}
-        \item First, we predict a matrix $P_i \in \Real^{3 \times 2}$ from $(\ve{c}_i, \ve{z}, \ve{y})$.
-        \item Then, we restrict the matrices $P_i$ to the tangent space of $\ve{t}_i$ to get a new matrix $R_i$, which we return.
+        \item First, we predict a matrix $P_i \in \Real^{3 \times 3}$ from $(\ve{c}_i, \ve{z}, \ve{y})$.
+        \item Then, we restrict the matrices $P_i$ to the tangent space of $\ve{t}_i$ to get a new matrix $R_i$, which we pass to the next phase.
+        \item $R_i$ is computed as follows.
+        \begin{align*}
+            R_i = \mathcal{B}_i P_i
+        \end{align*}
     \end{itemize}
 
     \item The 2nd phase is based on the following logic.
     \begin{itemize}
-        \item We are given an arbitrary assignment of a matrix $P_i \in \Real^{3 \times 2}$ to each triangle $\ve{t}_i$.
+        \item We are given an arbitrary assignment of a matrix $R_i \in \Real^{2 \times 3}$ to each triangle $\ve{t}_i$.
         \begin{itemize}
-            \item When stacked up, this becomes $P = \begin{bmatrix}
-                P_1 & P_2 & \cdots & P_{|\ve{T}|}
-            \end{bmatrix}$.
+            \item When stacked up, this becomes $R = \begin{bmatrix}
+                R_1 \\ R_2 \\ \cdots \\ R_{|\ve{T}|}
+            \end{bmatrix} \in \Real^{2|\ve{T}| \times 3}$
         \end{itemize}
         
-        \item We would like to retrive a map $\Phi^*$ such that $\Phi^* \nabla^T$ is the closest to $P$ in the least square sense.
+        \item We would like to retrive a map $\Phi^*$ such that $\nabla \Phi$ is the closest to $P$ in the least square sense.
         
-        \item This can be done by solving the {\bf Poisson equation}
+        \item This can be done by solving the following optimization problem.
         \begin{align*}
-            \Phi^* = \argmin_{\Phi} \sum_{i} |\ve{t}_i| \big\| \Phi \nabla_i^T - P_i \big\|^2
+            \Phi^* = \argmin_{\Phi} \sum_{i} |\ve{t}_i| \big\| \nabla \Phi - R_i \big\|^2
         \end{align*}
         where $|\ve{t}_i|$ is the area of the triangle $\ve{t}_i$ on the source mesh $\mcal{S}$.
         
-        \item The above minimization, if I intepret it correctly, is a linear least square problem.
-        \begin{itemize}
-            \item That is, we can turn $P \in \Real^{3 \times (2|\ve{T}|)}$ into a vector $\ve{p} \in \Real^{6|\ve{T}|}$.
-            \item We can also turn $\Phi \in \Real^{3 \times |\ve{V}|}$ into a vector $\ves{\phi} \in \Real^{3|\ve{V}|}$.
-            \item We can turn $\nabla^T_i$ into a matrix $D \in \Real^{(6|\ve{T}|) \times (3|\ve{V}|)}.$ 
-            \item Then, we have that the optimization problem becomes:
-            \begin{align*}
-                \ves{\phi}^* = \argmin_{\ves{\phi}} \| A^{1/2} D \ves{\phi} - \ve{p} \|^2
-            \end{align*}
-            where $A$ is a diagonal matrix that scales each row with the area of the corresponding triangle of that row.
-            \item Natually, we have that $\ves{\phi}^* = (A^{1/2} D)^{-1} \ve{p}$.
-        \end{itemize}
+        \item We then return $\Phi^*$ is the prediction.
     \end{itemize}
+
+    \item Now, here's the confusing thing about this paper.
+    
+    \begin{itemize}
+        \item It calls 
+        \begin{align*}
+            \Phi^* = \argmin_{\Phi} \sum_{i} |\ve{t}_i| \big\| \nabla \Phi - P_i \big\|^2
+        \end{align*}
+        the ``Poisson's equation.''
+        \begin{itemize}
+            \item This is not Poisson's equation.
+            \item {\bf Poisson's equation} looks like this:
+            \begin{align*}
+                \Delta u = f
+            \end{align*}
+            where $\Delta$ is the Laplacian operator.
+            \item The equation above has no raplacian.
+        \end{itemize}
+
+        \item However, what it tries to do resembles the {\bf Poisson's problem.}
+        \begin{itemize}
+            \item We are given a domain $\Omega \subseteq \Real^3$.
+            \item We are also given a vector field $\ve{g}: \Real^3 \ra \Real^3$.
+            \item Find a scalar function $u: \Omega \ra \Real$ such that it minimizes the Dirichlet energy
+            \begin{align*}
+                \int_\Omega \| \nabla u(\ve{x}) - \ve{g}(\ve{x}) \|^2\, \dee\ve{x}.
+            \end{align*}            
+        \end{itemize}
+
+        \item The solution to the Poisson's problem above can be found by solving the following Poisson's equation.
+        \begin{align*}
+            \Delta u = \nabla \cdot \ve{g}.
+        \end{align*}
+
+        \item The paper proceeds to find matrices that look like they reprsent the $\Delta$ and the $\nabla \cdot$ operators.
+        \begin{itemize}
+            \item Unfortunately, the matrix that they use to represent $\Delta$ is of size $|\ve{V}| \times |\ve{V}|$.
+            \item Moreover, the matrix that they use to represent $\nabla \cdot$ is of size $|\ve{V}| \times 3|\ve{T}|$.
+        \end{itemize}
+        
+        \item However, the $\Delta$ operator that is used in the equation $J = \nabla \Phi$ has size $2|\ve{T}| \times |V|$, which doesn't actually fit anything.
+        
+        \item The main problem is that \emph{Jacobians are not exactly gradients}, so using solving the Poisson's equation for it does not make sense!
+    \end{itemize}
+
 \end{itemize}
 
 
