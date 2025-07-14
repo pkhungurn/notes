@@ -150,6 +150,14 @@ This note is about quaternion exponentiation. I'm basing this note on the note b
     \end{align*}
 \end{itemize}
 
+\section{Rotation and Logarithm}
+
+\begin{itemize}
+    \item Let $q = \cos (\theta/2) + \ve{u} \sin (\theta/2)$. For any vector $\ve{v} = b \ve{i} + c \ve{j} + d \ve{k}$, it is well-known that $q\ve{v}q^*$ is the rotation of $\ve{v}$ around the axis $\ve{u}$ by an angle of $\theta$. As a result, a rotation in $\Real^3$ can be represented by a unit quaternion.
+    
+    \item We can go even further. When we represent a rotation by a unit quaternion $q$, we can take the logarithm of $q$ to get a vector $u \theta \in \Real^3$. So, a rotation in $\Real^3$ can also be represented by a vector in $\Real^3$.
+\end{itemize}
+
 
 \bibliographystyle{arxivalpha}
 \bibliography{quaternion-exp}  
