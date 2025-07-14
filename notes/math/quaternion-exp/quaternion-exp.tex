@@ -1,0 +1,156 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+\usepackage{verbatim}
+\usepackage{hyperref}
+\usepackage{bbm}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\Dee}{\mathrm{D}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\Var}{\mathrm{Var}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\ves}[1]{\boldsymbol{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+\newcommand{\ov}[1]{\overline{#1}}
+\newcommand{\data}{\mathrm{data}}
+
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+
+\title{Quaternion Exponentiation and Logarithm}
+\author{Pramook Khungurn}
+
+\begin{document}
+\maketitle
+
+This note is about quaternion exponentiation. I'm basing this note on the note by Glenn Rowe \cite{Rowe:2025}.
+
+\section{Quaternions}
+
+\begin{itemize}
+    \item A quaternion is a mathematical object of the form
+    \begin{align*}
+        a + b\ve{i} + c\ve{j} + d\ve{k}
+    \end{align*}
+    where $a, b, c, d$ are real numbers, and $\ve{i}, \ve{j}, \ve{k}$ are basis vectors that conform to the multiplication rules below:
+    \begin{align*}
+        \ve{i}^2 &= -1, & \ve{i}\ve{j} &= \ve{k}, & \ve{j}\ve{k} &= -\ve{i}, \\ 
+        \ve{j}\ve{i} &= -\ve{k}, & \ve{j}^2 &= -1, & \ve{j}\ve{k} &= \ve{i}, \\
+        \ve{k}\ve{i} &= \ve{j}, & \ve{k}\ve{j} &= -\ve{i}, & \ve{k}^2 &= -1.
+    \end{align*}
+
+    \item Let us make not of an interesting property. Let $s = b\ve{i} + c\ve{j} + d\ve{k}$. In other words, $s$ is a quaternion with no real part. Then,
+    \begin{align*}
+        s^2 
+        &= (b\ve{i} + c\ve{j} + d\ve{k})^2\\
+        &= -b^2\ve{i}^2 -c^2\ve{j}^2 -d^2\ve{k^2} + bc\ve{i}\ve{j} + bc\ve{j}\ve{i} + cd\ve{j}\ve{k} + cd\ve{k}\ve{j} + bd\ve{k}\ve{i} + bd\ve{i}\ve{k} \\
+        &= -b^2 -c^2 -d^2 + bc\ve{k} - bc\ve{k} + cd\ve{i} - cd\ve{i} + bd\ve{j} - bd\ve{j} \\
+        &= -(b^2 + c^2 + d^2)
+    \end{align*}
+
+    \item The norm of the quaternion $q$ is defined as
+    \begin{align*}
+        \|q\| = \sqrt{a^2 + b^2 + c^2 + d^2}.
+    \end{align*}
+
+    \item So, if $s$ is a quaternion with no real part, then $$s^2 = -\|s\|^2.$$
+    In particular, for $k \in \mathbb{N} \cup \{0\}$,
+    \begin{align*}
+        s^k = \begin{cases}
+            (-1)^{k/2} \|s\|^{k}, & \mbox{$k$ is even} \\
+            (-1)^{(k-1)/2} \|s\|^{k-1} s, & \mbox{$k$ is odd}
+        \end{cases}.
+    \end{align*}
+
+    \item The conjugate of the quaternion $q = a + b\ve{i} + c\ve{j} + d\ve{k}$ is defined as
+    \begin{align*}
+        q^* = a - b\ve{i} - c\ve{j} - d\ve{k}.
+    \end{align*}
+    Again, if we write $q = a + s$ where $s = b\ve{i} + c\ve{j} + d\ve{k}$. Then, $q = a - s$. Moreover,
+    \begin{align*}
+        qq^* = q^*q = (a + s)(a - s) = a^2 - s^2 = a^2 + \| s \|^2 = a^2 + b^2 + c^2 + d^2 = \|q\|^2.
+    \end{align*}    
+\end{itemize}
+
+\section{Quaternion Exponentiation}
+
+\begin{itemize}
+    \item Let $s = b\ve{i} + c\ve{j} + d\ve{k}$ be a quaternion with no real part. Let us assume that $\| s \| \neq 0$. We have that
+    \begin{align*}
+        e^s
+        &= \sum_{k=0}^\infty \frac{s^k}{k!} \\
+        &= \sum_{k=0}^\infty \frac{s^{2k}}{(2k)!} + \sum_{k=0}^\infty \frac{s^{2k+1}}{(2k+1)!} \\
+        &= \sum_{k=0}^\infty \frac{(-1)^k \|s\|^{2k}}{(2k)!} + \sum_{k=0}^\infty \frac{(-1)^k \|s\|^{2k}}{(2k+1)!} s \\
+        &= \sum_{k=0}^\infty \frac{(-1)^k \|s\|^{2k}}{(2k)!} + \frac{s}{\| s \|} \sum_{k=0}^\infty \frac{(-1)^k \|s\|^{2k+1}}{(2k+1)!}  \\
+        &= \cos \| s \| + \frac{s}{\| s \|} \sin \| s \|.
+    \end{align*}
+
+    \item As a result, for $q = a + b\ve{i} + c\ve{j} + d\ve{k} = a + s$, we have that
+    \begin{align*}
+        e^q = e^{a+s} = e^a e^s = e^a \left( \cos \| s \| + \frac{s}{\| s \|} \sin \| s \| \right).
+    \end{align*}
+\end{itemize}
+
+\section{Quaternion Logarithm}
+
+\begin{itemize}
+    \item Let $q$ be a unit quaternion. Then, we can find $\theta \in \Real$ and $u = x\ve{i} + y\ve{j} + z\ve{k}$ such that $\| u \| = 1$ such that
+    \begin{align*}
+        q = \cos\theta + u \sin\theta.
+    \end{align*}
+
+    \item Notice that $\| u\theta \| = \theta$, and $u = (u\theta)/\|u\theta\|$. It follows that
+    \begin{align*}
+        e^{u\theta} = \cos\theta + u \sin\theta
+    \end{align*}
+    As a result, we may say that
+    \begin{align*}
+        \log (\cos \theta + u \sin \theta) = u\theta.
+    \end{align*}
+
+    \item For a general quaternion $q$, we may write $q = \|q\| (\cos \theta + u \sin \theta)$. Hence,
+    \begin{align*}
+        \log q = \log \big( \|q\| (\cos \theta + u \sin \theta) \big) = \log \|q\| + \log (\cos \theta + u \sin \theta) = \log \|q\| + u\theta.
+    \end{align*}
+\end{itemize}
+
+
+\bibliographystyle{arxivalpha}
+\bibliography{quaternion-exp}  
+\end{document}
