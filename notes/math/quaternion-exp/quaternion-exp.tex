@@ -160,14 +160,15 @@ This note is about quaternion exponentiation. I'm basing this note on the note b
         q^* = a - b\ve{i} - c\ve{j} - d\ve{k}.
     \end{align*}
     
-    \item If we write $q = a + s$ where $s = b\ve{i} + c\ve{j} + d\ve{k}$. Then, $q = a - s$. Moreover,
+    \item If we write $q = a + s$ where $s = b\ve{i} + c\ve{j} + d\ve{k}$. Then, $q^* = a - s$. Moreover,
     \begin{align*}
-        qq^* = q^*q = (a + s)(a - s) = a^2 - s^2 = a^2 + \| s \|^2 = a^2 + b^2 + c^2 + d^2 = \|q\|^2.
-    \end{align*}    
+        qq^* = (a + s)(a - s) = a^2 - s^2 = a^2 + \| s \|^2 = a^2 + b^2 + c^2 + d^2 = \|q\|^2.
+    \end{align*}
+    We can show that $q^*q = \| q \|^2 = qq^*$ as well.
 
     \item Let $q = \cos (\theta/2) + u \sin (\theta/2)$ be a unit quaternion. For any purely imaginary quaternion $v = b \ve{i} + c \ve{j} + d \ve{k}$, it is well-known that $qvq^*$ is the rotation of $\ve{v}$ around the axis $u$ by an angle of $\theta$. As a result, a rotation in $\Real^3$ can be represented by a unit quaternion.
     
-    \item We can go even further. When we represent a rotation by a unit quaternion $q$, we can take the logarithm of $q$ to get a vector $u \theta \in \Real^3$. So, a rotation in $\Real^3$ can also be represented by a vector in $\Real^3$.
+    \item We can go even further. When we represent a rotation by a unit quaternion $q$, we can take the logarithm of $q$ to get a vector $u \theta/2 \in \Real^3$. So, a rotation in $\Real^3$ can also be represented by a vector in $\Real^3$.
     
     \item Note, however, that the logarithm representation is not unique. This is because $e^{u\theta} = e^{u(\theta + 2\pi k)}$ for any integer $k$.
 \end{itemize}
