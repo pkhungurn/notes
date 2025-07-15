@@ -79,7 +79,7 @@ This note is about quaternion exponentiation. I'm basing this note on the note b
     \begin{align*}
         s^2 
         &= (b\ve{i} + c\ve{j} + d\ve{k})^2\\
-        &= -b^2\ve{i}^2 -c^2\ve{j}^2 -d^2\ve{k^2} + bc\ve{i}\ve{j} + bc\ve{j}\ve{i} + cd\ve{j}\ve{k} + cd\ve{k}\ve{j} + bd\ve{k}\ve{i} + bd\ve{i}\ve{k} \\
+        &= b^2\ve{i}^2 + c^2\ve{j}^2 + d^2\ve{k}^2 + bc\ve{i}\ve{j} + bc\ve{j}\ve{i} + cd\ve{j}\ve{k} + cd\ve{k}\ve{j} + bd\ve{k}\ve{i} + bd\ve{i}\ve{k} \\
         &= -b^2 -c^2 -d^2 + bc\ve{k} - bc\ve{k} + cd\ve{i} - cd\ve{i} + bd\ve{j} - bd\ve{j} \\
         &= -(b^2 + c^2 + d^2)
     \end{align*}
@@ -111,15 +111,6 @@ This note is about quaternion exponentiation. I'm basing this note on the note b
             (-1)^{k/2} \theta^k , & \mbox{$k$ is even} \\
             (-1)^{(k-1)/2} u \theta^k, & \mbox{$k$ is odd}
         \end{cases}.
-    \end{align*}
-
-    \item The conjugate of the quaternion $q = a + b\ve{i} + c\ve{j} + d\ve{k}$ is defined as
-    \begin{align*}
-        q^* = a - b\ve{i} - c\ve{j} - d\ve{k}.
-    \end{align*}
-    Again, if we write $q = a + s$ where $s = b\ve{i} + c\ve{j} + d\ve{k}$. Then, $q = a - s$. Moreover,
-    \begin{align*}
-        qq^* = q^*q = (a + s)(a - s) = a^2 - s^2 = a^2 + \| s \|^2 = a^2 + b^2 + c^2 + d^2 = \|q\|^2.
     \end{align*}    
 \end{itemize}
 
@@ -131,8 +122,8 @@ This note is about quaternion exponentiation. I'm basing this note on the note b
         e^s = e^{u\theta}
         &= \sum_{k=0}^\infty \frac{(u\theta)^k}{k!} \\
         &= \sum_{k=0}^\infty \frac{(u\theta)^{2k}}{(2k)!} + \sum_{k=0}^\infty \frac{(u\theta)^{2k+1}}{(2k+1)!} \\
-        &= \sum_{k=0}^\infty \frac{(-1)^k \theta^{2k}}{(2k)!} + \sum_{k=0}^\infty \frac{(-1)^k u \theta^{2k+1}}{(2k+1)!} s \\
-        &= \sum_{k=0}^\infty \frac{(-1)^k \theta^{2k}}{(2k)!} + u \sum_{k=0}^\infty \frac{(-1)^k \theta^{2k+1}}{(2k+1)!}  \\
+        &= \sum_{k=0}^\infty \frac{(-1)^k \theta^{2k}}{(2k)!} + \sum_{k=0}^\infty \frac{(-1)^k u \theta^{2k+1}}{(2k+1)!} \\        
+        &= \sum_{k=0}^\infty \frac{(-1)^k \theta^{2k}}{(2k)!} + u \sum_{k=0}^\infty \frac{(-1)^k \theta^{2k+1}}{(2k+1)!} \\
         &= \cos \theta + u \sin \theta.
     \end{align*}
 
@@ -164,9 +155,21 @@ This note is about quaternion exponentiation. I'm basing this note on the note b
 \section{Rotation and Logarithm}
 
 \begin{itemize}
-    \item Let $q = \cos (\theta/2) + u \sin (\theta/2)$. For any purely imaginary quaternion $v = b \ve{i} + c \ve{j} + d \ve{k}$, it is well-known that $qvq^*$ is the rotation of $\ve{v}$ around the axis $u$ by an angle of $\theta$. As a result, a rotation in $\Real^3$ can be represented by a unit quaternion.
+    \item The \emph{conjugate} of the quaternion $q = a + b\ve{i} + c\ve{j} + d\ve{k}$ is defined as
+    \begin{align*}
+        q^* = a - b\ve{i} - c\ve{j} - d\ve{k}.
+    \end{align*}
+    
+    \item If we write $q = a + s$ where $s = b\ve{i} + c\ve{j} + d\ve{k}$. Then, $q = a - s$. Moreover,
+    \begin{align*}
+        qq^* = q^*q = (a + s)(a - s) = a^2 - s^2 = a^2 + \| s \|^2 = a^2 + b^2 + c^2 + d^2 = \|q\|^2.
+    \end{align*}    
+
+    \item Let $q = \cos (\theta/2) + u \sin (\theta/2)$ be a unit quaternion. For any purely imaginary quaternion $v = b \ve{i} + c \ve{j} + d \ve{k}$, it is well-known that $qvq^*$ is the rotation of $\ve{v}$ around the axis $u$ by an angle of $\theta$. As a result, a rotation in $\Real^3$ can be represented by a unit quaternion.
     
     \item We can go even further. When we represent a rotation by a unit quaternion $q$, we can take the logarithm of $q$ to get a vector $u \theta \in \Real^3$. So, a rotation in $\Real^3$ can also be represented by a vector in $\Real^3$.
+    
+    \item Note, however, that the logarithm representation is not unique. This is because $e^{u\theta} = e^{u(\theta + 2\pi k)}$ for any integer $k$.
 \end{itemize}
 
 
