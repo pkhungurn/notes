@@ -75,7 +75,7 @@ This note is about quaternion exponentiation. I'm basing this note on the note b
         \ve{k}\ve{i} &= \ve{j}, & \ve{k}\ve{j} &= -\ve{i}, & \ve{k}^2 &= -1.
     \end{align*}
 
-    \item Let us make not of an interesting property. Let $s = b\ve{i} + c\ve{j} + d\ve{k}$. In other words, $s$ is a quaternion with no real part. Then,
+    \item Let us make note of an interesting property. Let $s = b\ve{i} + c\ve{j} + d\ve{k}$. That is, $s$ is a quaternion without a real part, which means that it is \emph{purely imaginary}. Then,
     \begin{align*}
         s^2 
         &= (b\ve{i} + c\ve{j} + d\ve{k})^2\\
@@ -89,12 +89,27 @@ This note is about quaternion exponentiation. I'm basing this note on the note b
         \|q\| = \sqrt{a^2 + b^2 + c^2 + d^2}.
     \end{align*}
 
-    \item So, if $s$ is a quaternion with no real part, then $$s^2 = -\|s\|^2.$$
+    \item If $s$ is a purely imaginary quaternion, then $$s^2 = -\|s\|^2.$$
     In particular, for $k \in \mathbb{N} \cup \{0\}$,
     \begin{align*}
         s^k = \begin{cases}
             (-1)^{k/2} \|s\|^{k}, & \mbox{$k$ is even} \\
             (-1)^{(k-1)/2} \|s\|^{k-1} s, & \mbox{$k$ is odd}
+        \end{cases}.
+    \end{align*}
+
+    \item Another way to denote the above fact is to write $s = u\theta$ where $\theta = \| s \|$ and $u$ is a unit vector in $\Real^3$ that makes the equation true. (In other words, $u$ is uniquely determined if $\| s \| \neq 0$, but we can pick any unit vector if $\| s \| = 0$.) We have that
+    \begin{align*}
+        u^k = \begin{cases}
+            (-1)^{k/2} , & \mbox{$k$ is even} \\
+            (-1)^{(k-1)/2} u, & \mbox{$k$ is odd}
+        \end{cases}.
+    \end{align*}
+    So,
+    \begin{align*}
+        s^k = (u \theta)^k = \begin{cases}
+            (-1)^{k/2} \theta^k , & \mbox{$k$ is even} \\
+            (-1)^{(k-1)/2} u \theta^k, & \mbox{$k$ is odd}
         \end{cases}.
     \end{align*}
 
@@ -111,37 +126,33 @@ This note is about quaternion exponentiation. I'm basing this note on the note b
 \section{Quaternion Exponentiation}
 
 \begin{itemize}
-    \item Let $s = b\ve{i} + c\ve{j} + d\ve{k}$ be a quaternion with no real part. Let us assume that $\| s \| \neq 0$. We have that
+    \item Let $s = u\theta$ be a purely imaginary quaternion. We have that
     \begin{align*}
-        e^s
-        &= \sum_{k=0}^\infty \frac{s^k}{k!} \\
-        &= \sum_{k=0}^\infty \frac{s^{2k}}{(2k)!} + \sum_{k=0}^\infty \frac{s^{2k+1}}{(2k+1)!} \\
-        &= \sum_{k=0}^\infty \frac{(-1)^k \|s\|^{2k}}{(2k)!} + \sum_{k=0}^\infty \frac{(-1)^k \|s\|^{2k}}{(2k+1)!} s \\
-        &= \sum_{k=0}^\infty \frac{(-1)^k \|s\|^{2k}}{(2k)!} + \frac{s}{\| s \|} \sum_{k=0}^\infty \frac{(-1)^k \|s\|^{2k+1}}{(2k+1)!}  \\
-        &= \cos \| s \| + \frac{s}{\| s \|} \sin \| s \|.
+        e^s = e^{u\theta}
+        &= \sum_{k=0}^\infty \frac{(u\theta)^k}{k!} \\
+        &= \sum_{k=0}^\infty \frac{(u\theta)^{2k}}{(2k)!} + \sum_{k=0}^\infty \frac{(u\theta)^{2k+1}}{(2k+1)!} \\
+        &= \sum_{k=0}^\infty \frac{(-1)^k \theta^{2k}}{(2k)!} + \sum_{k=0}^\infty \frac{(-1)^k u \theta^{2k+1}}{(2k+1)!} s \\
+        &= \sum_{k=0}^\infty \frac{(-1)^k \theta^{2k}}{(2k)!} + u \sum_{k=0}^\infty \frac{(-1)^k \theta^{2k+1}}{(2k+1)!}  \\
+        &= \cos \theta + u \sin \theta.
     \end{align*}
 
-    \item As a result, for $q = a + b\ve{i} + c\ve{j} + d\ve{k} = a + s$, we have that
+    \item As a result, for $q = a + b\ve{i} + c\ve{j} + d\ve{k} = a + s = a + u\theta$, we have that
     \begin{align*}
-        e^q = e^{a+s} = e^a e^s = e^a \left( \cos \| s \| + \frac{s}{\| s \|} \sin \| s \| \right).
+        e^q = e^{a+u\theta} = e^a e^{u\theta} = e^a \left( \cos \theta + u \sin \theta \right).
     \end{align*}
 \end{itemize}
 
 \section{Quaternion Logarithm}
 
 \begin{itemize}
-    \item Let $q$ be a unit quaternion. Then, we can find $\theta \in \Real$ and $u = x\ve{i} + y\ve{j} + z\ve{k}$ such that $\| u \| = 1$ such that
+    \item Let $q$ be a unit quaternion. We can always find $\theta \in \Real$ and $u = x\ve{i} + y\ve{j} + z\ve{k}$ such that $\| u \| = 1$ such that
     \begin{align*}
         q = \cos\theta + u \sin\theta.
     \end{align*}
 
-    \item Notice that $\| u\theta \| = \theta$, and $u = (u\theta)/\|u\theta\|$. It follows that
+    \item From the last section, we know that $e^{u\theta} = \cos\theta + u \sin\theta$. As a result, we may say that
     \begin{align*}
-        e^{u\theta} = \cos\theta + u \sin\theta
-    \end{align*}
-    As a result, we may say that
-    \begin{align*}
-        \log (\cos \theta + u \sin \theta) = u\theta.
+        \log q = \log (\cos \theta + u \sin \theta) = u\theta.
     \end{align*}
 
     \item For a general quaternion $q$, we may write $q = \|q\| (\cos \theta + u \sin \theta)$. Hence,
@@ -153,7 +164,7 @@ This note is about quaternion exponentiation. I'm basing this note on the note b
 \section{Rotation and Logarithm}
 
 \begin{itemize}
-    \item Let $q = \cos (\theta/2) + \ve{u} \sin (\theta/2)$. For any vector $\ve{v} = b \ve{i} + c \ve{j} + d \ve{k}$, it is well-known that $q\ve{v}q^*$ is the rotation of $\ve{v}$ around the axis $\ve{u}$ by an angle of $\theta$. As a result, a rotation in $\Real^3$ can be represented by a unit quaternion.
+    \item Let $q = \cos (\theta/2) + u \sin (\theta/2)$. For any purely imaginary quaternion $v = b \ve{i} + c \ve{j} + d \ve{k}$, it is well-known that $qvq^*$ is the rotation of $\ve{v}$ around the axis $u$ by an angle of $\theta$. As a result, a rotation in $\Real^3$ can be represented by a unit quaternion.
     
     \item We can go even further. When we represent a rotation by a unit quaternion $q$, we can take the logarithm of $q$ to get a vector $u \theta \in \Real^3$. So, a rotation in $\Real^3$ can also be represented by a vector in $\Real^3$.
 \end{itemize}
