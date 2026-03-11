@@ -246,7 +246,7 @@ This note is written as I read the ``deformation transfer for triangle meshes'' 
     \end{itemize}
     The optimal solution is given by
     \begin{align*}
-        \widetilde{\ve{w}} = (A^T A)^{-1} A^T \ve{c},
+        \widetilde{\ve{w}} = (A^T A)^{\dagger} A^T \ve{c},
     \end{align*}
     which is standard knowledge.
 
@@ -347,6 +347,147 @@ This note is written as I read the ``deformation transfer for triangle meshes'' 
         
         \item A target triangle may correspond to multiple source triangles and vice versa.
     \end{itemize}
+\end{itemize}
+
+\section{Vertex Formulation Details}
+
+\begin{itemize}
+    \item To repeat optimization problem for the deformation transfer is as follows.
+    \begin{align*}
+        \min_{\widetilde{\ve{w}}_1, \widetilde{\ve{w}}_2, \ldots, \widetilde{\ve{w}}_m} 
+        \| \ve{c} - A\widetilde{\ve{w}} \|_2^2.
+    \end{align*}
+    However, we didn't actually specify what these variables are.
+
+    \item The first thing to consider that is how many unknowns are there. From the statement, it seems that there are $3m$ unknowns. However, this is not true.
+    \begin{itemize}
+        \item Remember that for each triangle in the deformed target mesh, we need to add a fourth vertex.
+        \item We have seen so far that, in other $S$, $\widetilde{S}$, and $T$, the fourth vertex is a function of the three vertices of the triangle.
+        \item However, the vertices of $\widetilde{T}$ are unknown. If we add a function of unknowns and compute with it, the problem becomes much more complicated to the extent that it cannot be casted as a least-squares problem.
+        \item So, we need to add an unknonw point for each of the triangles instead.
+        \item As a result, there are $3(m + |T|)$ unknowns.
+        \item Therefore, $\widetilde{\ve{w}}$ is a vector of length $3(m + |T|)$.
+    \end{itemize}
+
+    \item Next, let's talk about $\ve{c}$. How many components that it has?
+    \begin{itemize}
+        \item Recall that $\| \ve{c} - A\widetilde{\ve{w}} \|_2^2$ is supposed to be equal to $\sum_{j=1}^{|M|} \| \mtt{T}_{t_j} - \mtt{S}_{s_j} \|^2_F$.
+        
+        \item As a result, there are $M$ pairs of matrices to compare.
+    
+        \item We have that $T_{t_j}$ and $S_{s_j}$ are $4 \times 4$ matrices. However, the 4th row is fixed to $(0, 0, 0, 1)$. So, we only need to compare the first three rows, which has 12 numbers.
+        
+        \item So, $\ve{c}$ has $12|M|$ components.
+    \end{itemize}
+
+    \item As result, $A$ is a $12|M| \times 3(m + |T|)$ matrix. This matrix is mostly sparse.
+\end{itemize}
+
+\section{Correspondence Details}
+
+Note that material in this section is considered standard knowledge in optimization. However, I will include it here so that I have a nice reference when I implement stuffs.
+
+\subsection{Combining Multiple Losses}
+
+\begin{itemize}
+    \item Suppose that we have a loss function that has multiple terms.
+    \begin{align*}
+        E = \sum_{i=1}^k \lambda_i E_i
+    \end{align*}
+    where each term $E_i$ is of the form
+    \begin{align*}
+        E_i = \| \ve{b}_i - A_i \ve{x} \|^2,
+    \end{align*}
+    and $\lambda_i$ are positive weights.
+    
+    \item We have that
+    \begin{align*}
+        E_i 
+        &= (A_i \ve{x} - \ve{b}_i)^T (A_i \ve{x} - \ve{b}_i) \\
+        &= \ve{x}^T A_i^T A_i \ve{x} - 2 \ve{x}^T A_i^T \ve{b}_i + \ve{b}_i^T \ve{b}_i.
+    \end{align*}
+    As a result,
+    \begin{align*}
+        E 
+        &= \sum_{i=1}^k \lambda_i (\ve{x}^T A_i^T A_i \ve{x} - 2 \ve{x}^T A_i^T \ve{b}_i + \ve{b}_i^T \ve{b}_i) \\ 
+        &= \ve{x}^T \left( \sum_{i=1}^k \lambda_i A_i^T A_i \right) \ve{x} - 2 \ve{x}^T \left( \sum_{i=1}^k \lambda_i  A_i^T \ve{b}_i \right) + \sum_{i=1}^k \lambda_i \ve{b}_i^T \ve{b}_i.
+    \end{align*}
+    The loss function is minimized when $\ve{x}$ is the solution to the \emph{normal equation}:
+    \begin{align*}
+        \left( \sum_{i=1}^k \lambda_i A_i^T A_i \right) \ve{x} = \left( \sum_{i=1}^k \lambda_i A_i^T \ve{b}_i \right).
+    \end{align*}
+    The solution is given by:    
+    \begin{align*}
+        \ve{x} = \left( \sum_{i=1}^k \lambda_i A_i^T A_i \right)^{\dagger} \left( \sum_{i=1}^k \lambda_i A_i^T \ve{b}_i \right).
+    \end{align*}    
+\end{itemize}
+
+\subsection{Dealwing with Constraints}
+\begin{itemize}
+    \item Note that the vector $\ve{x}$ in the previous section is the vector of unknown vertex positions of the deformed source mesh $\widetilde{\ve{v}}$, which has $3(n + |S|)$ components.
+
+    \item Nevertheless, not all of the above components are free variables. The constraints are that $\widetilde{\ve{v}}_{a_i} = \ve{w}_{b_i}$ for all $i = 1, 2, \ldots, N$.
+    
+    \item As a result, there are only $3(n + |S| - N)$ free variables.
+    
+    \item Let us say that we partition $\widetilde{\ve{v}}$ into two blocks.
+    \begin{align*}
+        \widetilde{\ve{v}} = \begin{bmatrix} \widetilde{\ve{v}}_{\star} \\ \widetilde{\ve{v}}_{\bullet} \end{bmatrix}
+    \end{align*}
+    where the first block $\widetilde{\ve{v}}_{\star}$ consists of free variables, and the second block $\widetilde{\ve{v}}_{\bullet}$ consists of constrained values.
+
+    \item Let
+    \begin{align*}
+        \mtt{A} &= \sum_{i=1}^k \lambda_i A_i^T A_i, \\
+        \mtt{b} &= \sum_{i=1}^k \lambda_i A_i^T \ve{b}_i.
+    \end{align*}
+    We can divide both $\mtt{A}$ and $\mtt{b}$ into blocks as well.
+    \begin{align*}
+        \mtt{A} &= \begin{bmatrix} \mtt{A}_{\star \star} & \mtt{A}_{\star\bullet} \\ \mtt{A}_{\bullet \star} & \mtt{A}_{\bullet \bullet} \end{bmatrix}, \\
+        \mtt{b} &= \begin{bmatrix} \mtt{b}_{\star} \\ \mtt{b}_{\bullet} \end{bmatrix}.
+    \end{align*}
+    So,
+    \begin{align*}
+        E 
+        &= \begin{bmatrix} \widetilde{\mtt{v}}_{\star}^T & \widetilde{\mtt{v}}_{\bullet}^T \end{bmatrix}
+        \begin{bmatrix} \mtt{A}_{\star \star} & \mtt{A}_{\star\bullet} \\ \mtt{A}_{\bullet \star} & \mtt{A}_{\bullet \bullet} \end{bmatrix}
+        \begin{bmatrix} \widetilde{\ve{v}}_{\star} \\ \widetilde{\ve{v}}_{\bullet} \end{bmatrix}
+        - 2 \begin{bmatrix} \widetilde{\mtt{v}}_{\star}^T & \widetilde{\mtt{v}}_{\bullet}^T \end{bmatrix} 
+        \begin{bmatrix} \mtt{b}_{\star} \\ \mtt{b}_{\bullet} \end{bmatrix}
+        + \sum_{i=1}^k \lambda_i \ve{b}_i^T \ve{b}_i \\
+        &= \widetilde{\mtt{v}}_{\star}^T \mtt{A}_{\star \star} \widetilde{\mtt{v}}_{\star} + \widetilde{\mtt{v}}_{\star}^T \mtt{A}_{\star\bullet} \widetilde{\mtt{v}}_{\bullet} + \widetilde{\mtt{v}}_{\bullet}^T \mtt{A}_{\bullet \star} \widetilde{\mtt{v}}_{\star} + \widetilde{\mtt{v}}_{\bullet}^T \mtt{A}_{\bullet \bullet} \widetilde{\mtt{v}}_{\bullet}
+        -2 \widetilde{\mtt{v}}_{\star}^T \mtt{b}_{\star} -2 \widetilde{\mtt{v}}_{\bullet}^T \mtt{b}_{\bullet} + \sum_{i=1}^k \lambda_i \ve{b}_i^T \ve{b}_i. \\
+        &= \widetilde{\mtt{v}}_{\star}^T \mtt{A}_{\star \star} \widetilde{\mtt{v}}_{\star} 
+        - 2\widetilde{\ve{v}}_{\star}^T \bigg[ 
+             \mtt{b}_{\star} - \frac{\mtt{A}_{\star\bullet} \widetilde{\mtt{v}}_{\bullet} + \mtt{A}_{\bullet\star}^T \widetilde{\mtt{v}}_{\bullet} }{2}
+        \bigg] + C \\
+        &= \widetilde{\mtt{v}}_{\star}^T \mtt{A}_{\star \star} \widetilde{\mtt{v}}_{\star} 
+        - 2\widetilde{\ve{v}}_{\star}^T \big[ 
+             \mtt{b}_{\star} - \mtt{A}_{\star\bullet} \widetilde{\mtt{v}}_{\bullet}
+        \bigg] + C.
+    \end{align*}
+    As a result, the optimal solution is given by
+    \begin{align*}
+        \widetilde{\ve{v}}_{\star} = \mtt{A}_{\star \star} ^{\dagger} \left( \mtt{b}_{\star} - \mtt{A}_{\star\bullet} \widetilde{\ve{v}}_{\bullet} \right).
+    \end{align*}
+\end{itemize}
+
+\subsection{Deformation Smoothness Loss}
+
+\begin{itemize}
+    \item TODO
+\end{itemize}
+
+\subsection{Deformation Identity Loss}
+
+\begin{itemize}
+    \item TODO
+\end{itemize}
+
+\subsection{Closest Valid Point Loss}
+
+\begin{itemize}
+    \item TODO
 \end{itemize}
 
 \bibliographystyle{arxivalpha}

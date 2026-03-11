@@ -1,0 +1,418 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage[amsthm, thmmarks]{ntheorem}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{enumerate}
+\usepackage{verse}
+\usepackage{tikz}
+\usepackage{verbatim}
+\usepackage{hyperref}
+\usepackage{bbm}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{example}[lemma]{Example}
+
+\newcommand{\dee}{\mathrm{d}}
+\newcommand{\Dee}{\mathrm{D}}
+\newcommand{\In}{\mathrm{in}}
+\newcommand{\Out}{\mathrm{out}}
+\newcommand{\pdf}{\mathrm{pdf}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\Var}{\mathrm{Var}}
+
+\newcommand{\ve}[1]{\mathbf{#1}}
+\newcommand{\ves}[1]{\boldsymbol{#1}}
+\newcommand{\mrm}[1]{\mathrm{#1}}
+\newcommand{\etal}{{et~al.}}
+\newcommand{\sphere}{\mathbb{S}^2}
+\newcommand{\modeint}{\mathcal{M}}
+\newcommand{\azimint}{\mathcal{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\mcal}[1]{\mathcal{#1}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\sseq}{\subseteq}
+\newcommand{\ov}[1]{\overline{#1}}
+\newcommand{\data}{\mathrm{data}}
+\newcommand{\mtt}[1]{\mathtt{#1}}
+
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}        
+
+
+\title{Deformation Transfer for Multi-Component Objects}
+\author{Pramook Khungurn}
+
+\begin{document}
+\maketitle
+
+This article is written as I read the ``Deformation Transfer to Multi-Component Objects'' paper by Zhou \etal~\cite{Zhou:2009}.
+
+\section{Introduction}
+
+\begin{itemize}
+    \item This paper is a follow-up work to the classic ``Deformation transfer for triangle meshes'' paper by Sumner and 
+    Popovic \cite{Sumner:2004}.
+
+    \item While not stated in the classic paper, the method only applies to meshes with a single connected component.
+    \begin{itemize}
+        \item I personally tried to apply it to meshes with multiple components (the face of a VRoid model), and it turns out that, while each component might be deformed correctly, the relative positions among the components are just all over the place.    
+    \end{itemize}
+
+    \item This paper provides a solution to the limitation above.
+\end{itemize}
+
+\section{Related Works}
+
+\begin{itemize}
+    \item The paper seems to have a collection of nice references, which I will add here.
+    
+    \item Gradient-domain mesh deformation.
+    \begin{itemize}
+        \item The authors called the affine transformation computed for each triangle in the source mesh the \emph{deformation gradient}.
+        
+        \item The deformation gradient is transferred from the source mesh to the target mesh. Then, we solve a linear system (i.e., the Poisson equation) to smooth it out. 
+        
+        \item The authors thus call the process in the original paper \emph{gradient-domain mesh deformation}.
+        
+        \item There are several follow-up works in this direction \cite{Yu:2004:MeshEditing, Sorkine:2004:LSE, Botsch:2008}.
+    \end{itemize}
+        
+    
+    \item There are a number of interesting follow-up works to the classic paper.
+    \begin{itemize}
+        \item Zayer \etal propose to transfer gradients only at a few key points, and interpolate them to other points with a harmonic function~\cite{Zayer:2005}.
+        
+        \item Botsch \etal shows that the transfer in the classic paper can be achieved without having to add an extra vertex to each of the triangles, making the linear system smaller~\cite{Botsch:2006:DTDPSE}.
+    \end{itemize}
+\end{itemize}
+
+\section{Algorithm Overview}
+
+\begin{itemize}
+    \item The paper still relies on the user providing correspondence between the source and target meshes.
+    \begin{itemize}
+        \item However, this time, each can have multiple components.
+        
+        \item Correspondence can be provided between some pairs of components, but it is not guaranteed that all components will have them.
+    \end{itemize}
+    
+    \item The algorithm first computes a set of closest vertex pairs in the source (and target) mesh to build a graph that encodes the spatial relationship between components.
+    \begin{itemize}
+        \item The correspondence and deformation transfer algorithms of Sumner and Popovic are then adapted to take into account this graph.
+        
+        \item When establishing correspondence between the source and the target, the authors add an energy term to make the components without user-specified markers deform with the components that have them.
+        
+        \item Not all target triangles may have correspondences with source triangles. 
+        
+        \item Moreover, some components in the target may not have any corresponding triangles in the source. These are called \emph{orphan components}.        
+    \end{itemize}
+    
+    \item The algorithm adds two new energy terms when deforming the target to match the source deformation gradient.
+    \begin{itemize}
+        \item The first term tries to preserve the lengths of the graph edges so that the spatial relationship between components is maintained.
+        
+        \item The second term is based on Laplacian coordinates \cite{Sorkine:2004:LSE} and tries to preserve the surface details of the orphan components in the target.
+        
+        \item The two newly added terms are not quadratic functions, and so cannot be optimized by a linear solve. The paper uses an iterative Gauss--Newton method \cite{Khungurn:NonLinearLeastSquaresAlgo}.
+        \begin{itemize}
+            \item We need to find the Jacobian of the loss function, and we need to solve a linear system in each iteration.
+        \end{itemize}
+
+        \item The paper claims that this is efficient for all their experimental data.
+    \end{itemize}
+\end{itemize}
+
+\section{The Algorithm}
+
+\begin{itemize}
+    \item Notations.
+    \begin{itemize}    
+        \item We are given the three meshes: the source mesh $S$, the deformed source mesh $\widetilde{S}$, and the target mesh $T$.
+    
+        \item The target meshes can have multiple disconnected components $T = \{ T_1, T_2, \dotsc \}$, and so are the source meshes.
+        
+        \item We want to generate a deformed target mesh $\widetilde{T}$ that has the same topology as $T$. The relationship between $T$ and $\widetilde{T}$ should be similar to the relationship between $S$ and $\widetilde{S}$.
+        
+        \item Let $\ve{u}_i$ denote a vertex in $S$ and $\widetilde{\ve{u}}_i$ a vertex in $\widetilde{S}$. On the other hand, we let $\ve{v}_i$ and $\widetilde{\ve{v}}_i$ denote a vertex in $T$ and $\widetilde{T}$, respectively.
+        
+        \item We will indicate with a superscript the component that a vertex belongs to. For example, $\ve{v}_i^a$ is the same as $\ve{v}_i$, but $a$ signifies that $\ve{v}_i$ belongs to the component $T_a$.            
+    \end{itemize}
+    
+    \item Like in the work of Sumner and Popovic, we add a fourth vertex $\ve{u}_4$ to each triangle $(\ve{u}_1, \ve{u}_2, \ve{u}_3)$ in $S$ (and $\widetilde{\ve{u}}_4$ to each triangle in $\widetilde{S}$) in the direction of outward normal vector of the triangle, at a distance proportional to the square root of the area.
+    
+    \item The linear part of the affine transformation that maps $(\ve{u}_1, \ve{u}_2, \ve{u}_3)$ to $(\widetilde{\ve{u}}_1, \widetilde{\ve{u}}_2, \widetilde{\ve{u}}_3)$ is given by
+    \begin{align*}
+        F = \widetilde{G} G^{-1}
+    \end{align*}
+    where
+    \begin{align*}
+        G = \begin{bmatrix}
+            \ve{u}_2 - \ve{u}_1 &
+            \ve{u}_3 - \ve{u}_1 &
+            \ve{u}_4 - \ve{u}_1
+        \end{bmatrix} \\
+        \widetilde{G} = \begin{bmatrix}
+            \widetilde{\ve{u}}_2 - \widetilde{\ve{u}}_1 &
+            \widetilde{\ve{u}}_3 - \widetilde{\ve{u}}_1 &
+            \widetilde{\ve{u}}_4 - \widetilde{\ve{u}}_1
+        \end{bmatrix}.
+    \end{align*}
+    These two matrices are $3\times 3$ matrices. The translation part of the affine transformation is just $\widetilde{\ve{u}}_1 - \ve{u}_1$.   
+
+    \item The algorithm has the following big steps.
+
+    \begin{enumerate}
+        \item {\bf Proximity pair computation.}        
+        \begin{itemize}
+            \item For each pair of components $(T_a, T_b)$, the \emph{proximity pairs} $P_{ab}$ is a selected set of vertex index pairs that represent key spatial adjacencies that subsequent processing will try to preserve during the transfer.
+            \item 
+            \item $P_{ab}$ might be empty if $T_a$ and $T_b$ are too far away from each other.
+        \end{itemize}
+
+        \item {\bf Establishing correspondence.}
+        \begin{itemize}
+            \item We assume that the user has provided a small set of point-to-point correspondences between vertices in $S$ and vertices in $T$.
+            
+            \item The goal of this step is to establish triangle-to-triangle correspondences $M$:
+            \begin{align*}
+                M = \{ (s_1, t_1), (s_2, t_2), \ldots, (s_{|M|}, t_{|M|}) \}
+            \end{align*}
+            where a pair $(s_j, t_j)$ means that the triangle with index $t_j$ in $T$ should deform like the triangle with index $s_j$ in $S$.
+
+            \item Unlike in the Sumner--Popovic paper, not all target triangles may have correspondences with source triangles.
+            
+            \item We denote by $H$ the set of ``orphan'' target triangles. (These are the ones that do not correspond to any source triangles.)
+            
+            \item A component whose triangles do not have any correspondences is called an ``orphan'' component. 
+            
+            \item Let us denote the set of orphan components by $T_H$.
+        \end{itemize}        
+
+        \item {\bf Deformation transfer.} The deformation is transferred by solving an energy minimization problem.
+    \end{enumerate}
+\end{itemize}
+
+\subsection{Proximity Pair Computation}
+
+\begin{itemize}
+    \item For every pair of components $(T_a, T_b)$, find the shortest distance between them. This is the distance between vertex $\ve{v}_{i}^a$ in $T_a$ and vertex $\ve{v}_{j}^b$ in $T_b$ that is the smallest.
+    \begin{align*}
+        d_{a,b} = \min_{i,j} \| \ve{v}_{i}^a - \ve{v}_{j}^b \|.
+    \end{align*}
+    Let us denote the pair of vertices that gives us $d_{a,b}$ by $(\ve{v}_{i_1}^a, \ve{v}_{j_1}^b)$.
+
+    \item Build a complete graph $G$ with the components as its nodes. The edges are weighted by the shortest distances computed above.
+    
+    \item Compute a minimal spanning tree $K$ of the graph.
+    
+    \item For each component $T_a$, compute its largest distance $d_a$ from each of its adjacent components in $K$
+    \begin{align*}
+        d_a = \max_{(a,b) \in K} d_{a,b}
+    \end{align*}
+
+    \item For every pair of components $T_a$ and $T_b$ not connected by an edge in $K$, if $d_{a,b} \leq d_a + \epsilon_a$ and $d_{a,b} \leq d_b + \epsilon_b$, connect $T_a$ and $T_b$ by adding an edge between them to $K$. Here, $\epsilon_a$ and $\epsilon_b$ are user specified thresholds.
+    
+    \item In the paper's definition, the paper defines $\epsilon_a$ (and $\epsilon_b$) as the maximal edge length of the component $T_a$ times $1.5$.
+    \begin{itemize}
+        \item By edge length, do they mean length of a triangle's edge?
+    \end{itemize}
+
+    \item If $T_a$ and $T_b$ are not connected in $K$, then $P_{a,b}$ is empty.
+    
+    \item Otherwise, $P_{a,b}$ is the set of vertex pairs $(v_{i_k}^a, v_{j_k}^b)$ such that $\| \ve{v}_{i_k}^a - \ve{v}_{j_k}^b \| \leq d_{a,b} + \min\{ \epsilon_a, \epsilon_b \}$.
+\end{itemize}
+
+\subsection{Establishing Correspondence}
+
+\begin{itemize}
+    \item Similar to what is done in the Sumner--Popovic paper, we try to match between $S$ and $T$ by deforming one mesh to the other.
+    \begin{itemize}
+        \item However, this time, we deform $T$ to $S$ instead of $S$ to $T$.
+    \end{itemize}
+
+    \item Notations.
+    \begin{itemize}
+        \item Recall that the vertices of $T$ are denoted by $\ve{v}_i$.
+        \item The vertices of the deformed target $\widetilde{T}$ are denoted by $\widetilde{\ve{v}}_i$.
+        \begin{itemize}
+            \item We will solve for these later. This is not the place we discuss them.
+        \end{itemize}
+        \item We will use the notation $\ve{x}_i$ to denote the vertices of $T$ that are being deformed to be close to $S$.
+        \begin{itemize}
+            \item This is to distinguish between the deformation in this section ($T$ to $S$) and the one we will perform later ($T$ to $\widetilde{T}$), 
+        \end{itemize}
+    \end{itemize}
+
+    \item The user provides us with a small set of correspondences $M$:
+    \begin{align*}
+        M = \{ (s_1, t_1), (s_2, t_2), \ldots, (s_{|M|}, t_{|M|}) \}.
+    \end{align*}
+    We require that, after the transformation of $T$ to be close to $S$, the positions of the corresponding vertices should match exactly. In other words,
+    \begin{align*}
+        \ve{v}_{s_k} = \ve{x}_{t_k}
+    \end{align*}
+    for all $k = 1, 2, \ldots, |M|$.
+
+    \item The correspondence is determined by minimizing the following \emph{corresponding energy} with respect to the constraints above:
+    \begin{align*}
+        & \mbox{minimize } E = w_S E_S + w_I E_I + w_C E_C + E_R \\
+        & \mbox{subject to: } \ve{v}_{s_k} = \ve{x}_{t_k} \mbox{ for all } k = 1, 2, \ldots, |M|.
+    \end{align*}
+
+    \item Here, the deformation smoothness term $E_S$, the deformation identity term $E_I$, the closest valid point term $E_C$ and their weights are lifted directly from the Sumner--Popovic paper.
+    
+    \item The paper adds a new term $E_R$ to make the components without any user-specified correspondences deform along with those that do. It is computed as follows.
+    \begin{itemize}
+        \item For each component pair $(T_a, T_b)$, \\
+        find a pair of triangles $(t_{i_k}^a, t_{j_k}^b)$\\        
+        such that, for each vertex pair $(v_{i_k}^a, v_{j_k}^b) \in P_{a,b}$,\\
+        $t_{i_k}^a \in \mcal{N}(v_{i_k}^a)$ and $t_{j_k}^b \in \mcal{N}(v_{j_k}^b)$ \\
+        (where $\mcal{N}(v)$ denotes the topological one-ring around $v$)\\ 
+        and that the triangle has the largest separation along the normal directions.
+
+        In particular, the pair is defined as
+        \begin{align*}
+            \argmax_{\substack{t_{i_k}^a \in \mcal{N}(v_{i_k}^a), \\ t_{j_k}^b \in \mcal{N}(v_{j_k}^b)}} | \ve{h} \cdot \ve{n}(t_{i_k}^a) | + | \ve{h} \cdot \ve{n}(t_{j_k}^b) |
+        \end{align*}
+        where $\ve{h}$ is the vector between the barycenters (i.e., the center of mass) of the two triangles, and $\ve{n}(t)$ is the normal vector of the triangle $t$.
+    \end{itemize}
+
+    \item For each of the triangle $t^a_{i_k}$ above, we construct a tetrahedron using one of the three vertices of $t_{j_k}^b$ as the fourth vertex. We also form a tetra hedron for each of the triangles $t^b_{j_k}$. 
+    \begin{itemize}
+        \item How the fourth vertex is picked is not specified. Perhaps because the authors just want to simplify the implementation.
+        
+        \item If the triangles $t_{i_k}^a$ and $t_{j_k}^b$ are close to being coplanar, the tetrahedra will be degenerate. In this case, we simply use $t_{i_k}^a$'s and $t_{j_k}^b$'s fourth vertices.
+    \end{itemize}
+
+    \item The energy $E_R$ is defined as
+    \begin{align*}
+        E_R = \sum_{a,b} \sum_{k=1}^{|P_{a,b}|} \bigg( w_S \| \widehat{F}_{t_{i_k}^a} - \widehat{F}_{t_{j_k}^b} \|^2 + w_I \| \widehat{F}_{t_{i_k}^a} - I \|^2 + w_I \| \widehat{F}_{t_{j_k}^b} - I \|^2 \bigg)
+    \end{align*}
+    where $\widehat{F}_{t_{i_k}^a}$ is the affine transformation of the newly constructed tetrahedron based on $t_{i_k}^a$.
+
+    \item The energy is minimized via the same two-phase method described in the Sumner--Popovic paper, which involves a sequence of linear solves.
+    
+    \item In each iteration, after the linear solve, we need to update the set of closest valid vertex pairs.
+    \begin{itemize}
+        \item For each vertex of the deformed target mesh, we find its closest point in the source mesh.
+        
+        \item If the distance between the vertices is less than a user specified threshold and the difference between the vertices' normals is less than 90 degrees, we add the vertex pair to the valid set.
+    \end{itemize}        
+
+    \item After the deformation is done, we compute the triangle correspondences.
+    \begin{itemize}
+        \item For each deformed target triangle, if one or more of its three vertices are among the user-specified correspondences or in the set of closest valid vertex pairs, it will not be assigned any corresponding source triangles.
+        \begin{itemize}
+            \item Why do this?
+        \end{itemize}
+    
+        \item Otherwise, the corresponding source triangle for that target triangle is the source triangle whose barycenter is the closest to the barycenter of the target triangle.
+    \end{itemize}
+\end{itemize}
+
+\subsection{Deformation Transfer}
+
+\begin{itemize}
+    \item After we have the corresponding triangles, we can solve for the deformed vertex positions $\widetilde{\ve{v}} = ( \widetilde{\ve{v}}_1, \widetilde{\ve{v}}_2, \ldots, \widetilde{\ve{v}}_m)$.
+    
+    \item We minimize a 4-term energy function.
+    \begin{align*}
+        E = w_1 E_1 + w_2 E_2 + w_3 E_3 + w_4 E_4
+    \end{align*}
+    The paper uses $w_1 = w_2 = w_4 = 1$ and $w_3 = 0.1$.
+    \begin{itemize}
+        \item Can't they come up with better notations?
+    \end{itemize}
+
+    \item The $E_1$ term measures the difference between the source and the target transformations.
+    \begin{align*}
+        E_1 = \sum_{i=1}^{M} \| F_{s_i} - F_{t_i} \|^2.
+    \end{align*}
+
+    \item The $E_2$ term forces the transformations of the orphan triangles to be close to the transformation of its adjacent triangles.
+    \begin{align*}
+        E_2 = \sum_{t_i \in H} \sum_{t_j \in \mcal{N}(t_i)} \| F_{t_i} - F_{t_j} \|^2.
+    \end{align*}
+
+    \item $E_3$ term maintains the spatial relationship between components by preserving the edge lengths of the vertex pairs in each $P_{a,b}$.
+    \begin{align*}
+        E_3 =  \sum_{T_a, T_b} \sum_{k=1}^{|P_{a,b}|} \big( \| \widetilde{\ve{v}}_{i_k}^a - \widetilde{\ve{v}}_{j_k}^b \| - \| \ve{v}_{i_k}^a - \ve{v}_{j_k}^b \|  \big)^2
+    \end{align*}
+    \begin{itemize}
+        \item Note that $\| \ve{v}_{i_k}^a - \ve{v}_{j_k}^b\|$ is computed on the rest pose of the target object and remains constant.
+        
+        \item I think this loss function is not quadratic, so we cannot optimize it by a linear solve.
+    \end{itemize}
+
+    \item The $E_4$ term tries to preserve the surface details of orphan components. It is defined as:
+    \begin{align*}
+        E_4 = \sum_{T_a \in H} \big\| L_{T_a} \widetilde{\ve{v}}_{T_a} - \widehat{\delta}(\widetilde{\ve{v}}_{T_a}) \big\|^2.
+    \end{align*}
+    where
+    \begin{itemize}
+        \item $\widetilde{\ve{v}}_{T_a}$ is the vertex positions of the vertices in $T_a$ in the deformed target mesh, 
+        \item $L_{T_a}$ is the Laplacian operation matrix computed on the mesh $T_a$, and
+        \item $\widehat{\delta}(\widetilde{\ve{v}}_{T_a})$ is the Laplacian coordinates of the vertices in $T_a$ \cite{Huang:2006:SGDMD}:
+        \begin{align*}
+            \widehat{\delta}(\widetilde{\ve{v}}_{T_a}) = \frac{L_{T_a} \widetilde{\ve{v}}_{T_a}}{\| L_{T_a} \widetilde{\ve{v}}_{T_a} \|} \| \widetilde{\ve{v}}_{T_a} \|.
+        \end{align*}
+    \end{itemize}            
+    
+    \item Because $E_3$ and $E_4$ are not quadratic functions of the vertex positions, we need to optimize for $E$ with a more general non-linear least squares algorithm.
+    \begin{itemize}
+        \item The paper says a Gauss--Newton method should be used, following the work of Shi \etal \cite{Shi:2007:MeshPuppetry}.
+        
+        \item However, I think we can use Levenberg--Marquardt \cite{Khungurn:NonLinearLeastSquaresAlgo} too.
+    \end{itemize}
+\end{itemize}
+
+\section{Discussion}
+
+\begin{itemize}
+    \item The algorithm in the paper is much more complicated than the algorithm in the classic paper.
+    
+    \item Most of the paper is dry description of the algorithm, which makes it kind of hard to read, but rather concise. (Maybe too concise.)
+    
+    \item The loss terms $E_4$ in the last section is not needed if there are no orphan components.
+    \begin{itemize}
+        \item Because of this, I'm not reading about the Laplace operator 
+    \end{itemize}
+    
+    \item $E_2$ is probably always needed because there will always be orphan triangles (because the paper explicitly omits adding some triangles to the set of correspondences).
+    
+    \item Most of the results given in the paper involve transferring deformation from a single-component source to a multiple-component target. There is only one example where the source is also multi-component.
+    
+    \item The paper mentions that the algorithm works with a multi-component source \emph{as is}, but I don't think this is true.
+    \begin{itemize}
+        \item The paper never specifies whether we need to construct the component graph of the source mesh, and how it is mapped to the target mesh.
+        
+        \item In case parts move relative to each other, the identity of the closest vertex pairs might change. How is one supposed to handle this?
+    \end{itemize}
+
+    \item A later paper points out the algorithm makes an assumption that the special relationships between the parts are the same as the rest pose \cite{Ho:2010:SRPMA}.
+    \begin{itemize}
+        \item This is encoded by the $E_3$ term.
+
+        \item This makes it unsuitable for movements where the spatial relationships between the parts would change like in animation whether body parts move relative to one another.        
+    \end{itemize}
+\end{itemize}
+
+\bibliographystyle{arxivalpha}
+\bibliography{deformation-transfer-multi-components}  
+\end{document}
