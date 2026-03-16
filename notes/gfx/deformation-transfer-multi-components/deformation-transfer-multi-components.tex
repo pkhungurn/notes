@@ -61,7 +61,7 @@
 \begin{document}
 \maketitle
 
-This article is written as I read the ``Deformation Transfer to Multi-Component Objects'' paper by Zhou \etal~\cite{Zhou:2009}.
+This article is written as I read the ``Deformation Transfer for Multi-Component Objects'' paper by Zhou \etal~\cite{Zhou:2009}.
 
 \section{Introduction}
 
@@ -98,7 +98,7 @@ This article is written as I read the ``Deformation Transfer to Multi-Component 
     \begin{itemize}
         \item Zayer \etal propose to transfer gradients only at a few key points, and interpolate them to other points with a harmonic function~\cite{Zayer:2005}.
         
-        \item Botsch \etal shows that the transfer in the classic paper can be achieved without having to add an extra vertex to each of the triangles, making the linear system smaller~\cite{Botsch:2006:DTDPSE}.
+        \item Botsch \etal show that the transfer in the classic paper can be achieved without having to add an extra vertex to each of the triangles, making the linear system smaller~\cite{Botsch:2006:DTDPSE}.
     \end{itemize}
 \end{itemize}
 
@@ -269,7 +269,7 @@ This article is written as I read the ``Deformation Transfer to Multi-Component 
     \end{align*}
     for all $k = 1, 2, \ldots, |M|$.
 
-    \item The correspondence is determined by minimizing the following \emph{corresponding energy} with respect to the constraints above:
+    \item The correspondence is determined by minimizing the following \emph{correspondence energy} with respect to the constraints above:
     \begin{align*}
         & \mbox{minimize } E = w_S E_S + w_I E_I + w_C E_C + E_R \\
         & \mbox{subject to: } \ve{v}_{s_k} = \ve{x}_{t_k} \mbox{ for all } k = 1, 2, \ldots, |M|.
@@ -293,7 +293,7 @@ This article is written as I read the ``Deformation Transfer to Multi-Component 
         where $\ve{h}$ is the vector between the barycenters (i.e., the center of mass) of the two triangles, and $\ve{n}(t)$ is the normal vector of the triangle $t$.
     \end{itemize}
 
-    \item For each of the triangle $t^a_{i_k}$ above, we construct a tetrahedron using one of the three vertices of $t_{j_k}^b$ as the fourth vertex. We also form a tetra hedron for each of the triangles $t^b_{j_k}$. 
+    \item For each of the triangle $t^a_{i_k}$ above, we construct a tetrahedron using one of the three vertices of $t_{j_k}^b$ as the fourth vertex. We also form a tetrahedron for each of the triangles $t^b_{j_k}$. 
     \begin{itemize}
         \item How the fourth vertex is picked is not specified. Perhaps because the authors just want to simplify the implementation.
         
@@ -389,7 +389,7 @@ This article is written as I read the ``Deformation Transfer to Multi-Component 
     
     \item Most of the paper is dry description of the algorithm, which makes it kind of hard to read, but rather concise. (Maybe too concise.)
     
-    \item The loss terms $E_4$ in the last section is not needed if there are no orphan components.
+    \item The loss term $E_4$ in the last section is not needed if there are no orphan components.
     \begin{itemize}
         \item Because of this, I'm not reading about the Laplace operator 
     \end{itemize}
@@ -405,11 +405,11 @@ This article is written as I read the ``Deformation Transfer to Multi-Component 
         \item In case parts move relative to each other, the identity of the closest vertex pairs might change. How is one supposed to handle this?
     \end{itemize}
 
-    \item A later paper points out the algorithm makes an assumption that the special relationships between the parts are the same as the rest pose \cite{Ho:2010:SRPMA}.
+    \item A later paper points out the algorithm makes an assumption that the spatial relationships between the parts are the same as the rest pose \cite{Ho:2010:SRPMA}.
     \begin{itemize}
         \item This is encoded by the $E_3$ term.
 
-        \item This makes it unsuitable for movements where the spatial relationships between the parts would change like in animation whether body parts move relative to one another.        
+        \item This makes it unsuitable for movements where the spatial relationships between the parts would change like in animation where body parts move relative to one another.        
     \end{itemize}
 \end{itemize}
 
